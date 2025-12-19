@@ -475,16 +475,17 @@ def format_odds(odds: Optional[int]) -> str:
 
 def get_fire_rating(edge: float, bet_tier: str) -> str:
     """Get fire rating 1-5 based on edge and tier. 5 = MAX."""
+    # Rating scale: ◆ = filled, ◇ = empty
     if bet_tier == "max" or edge >= 5.0:
-        return "🔥 5"
+        return "◆◆◆◆◆"  # 5/5 MAX
     elif bet_tier == "medium" or edge >= 4.0:
-        return "🔥 4"
+        return "◆◆◆◆◇"  # 4/5
     elif edge >= 3.5:
-        return "🔥 3"
+        return "◆◆◆◇◇"  # 3/5
     elif edge >= 3.0:
-        return "🔥 2"
+        return "◆◆◇◇◇"  # 2/5
     else:
-        return "🔥 1"
+        return "◆◇◇◇◇"  # 1/5
 
 
 def print_executive_table(all_picks: list, target_date) -> None:
