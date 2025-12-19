@@ -4,16 +4,16 @@
 
 set -e
 
-# Configuration
-RESOURCE_GROUP="ncaam-v5-rg"
-LOCATION="eastus"
-ACR_NAME="ncaamv5registry"
-KEY_VAULT_NAME="ncaam-v5-secrets"
-CONTAINER_APP_ENV="ncaam-v5-env"
-POSTGRES_NAME="ncaam-postgres"
-REDIS_NAME="ncaam-redis"
-PREDICTION_NAME="ncaam-prediction"
-IMAGE_TAG="v5.1"
+# Configuration (can be overridden via environment variables)
+RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-ncaam-v5-rg}"
+LOCATION="${AZURE_LOCATION:-eastus}"
+ACR_NAME="${AZURE_ACR_NAME:-ncaamv5registry}"
+KEY_VAULT_NAME="${AZURE_KEY_VAULT_NAME:-ncaam-v5-secrets}"
+CONTAINER_APP_ENV="${AZURE_CONTAINER_APP_ENV:-ncaam-v5-env}"
+POSTGRES_NAME="${AZURE_POSTGRES_NAME:-ncaam-postgres}"
+REDIS_NAME="${AZURE_REDIS_NAME:-ncaam-redis}"
+PREDICTION_NAME="${AZURE_PREDICTION_NAME:-ncaam-prediction}"
+IMAGE_TAG="${IMAGE_TAG:-v5.1}"
 
 echo "🚀 Starting Azure Deployment for NCAA Basketball v5.1"
 echo "=================================================="
