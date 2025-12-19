@@ -657,6 +657,7 @@ impl OddsIngestionService {
     }
 
     /// Get or create game in database
+    /// CRITICAL: Validates home/away assignment and team name resolution
     async fn get_or_create_game(&self, event: &OddsApiEvent) -> Result<Uuid> {
         // Try to find in database
         let existing: Option<(Uuid,)> = sqlx::query_as(
@@ -670,11 +671,76 @@ impl OddsIngestionService {
             return Ok(id);
         }
 
-        // Create new game
-        let game_id = Uuid::new_v4();
-
+        // VALIDATION: Resolve and validate team names BEFORE creating game
         let home_team_id = self.get_or_create_team(&event.home_team).await?;
         let away_team_id = self.get_or_create_team(&event.away_team).await?;
+        
+        // CRITICAL CHECK: Ensure home and away are different teams
+        if home_team_id == away_team_id {
+            return Err(anyhow::anyhow!(
+                "Home and away teams resolved to same team ID: {} (home: '{}', away: '{}')",
+                home_team_id,
+                event.home_team,
+                event.away_team
+            ));
+        }
+        
+        // Get canonical names for validation logging
+        let home_canonical: Option<(String,)> = sqlx::query_as(
+            "SELECT canonical_name FROM teams WHERE id = $1"
+        )
+            .bind(home_team_id)
+            .fetch_optional(&self.db)
+            .await?;
+        
+        let away_canonical: Option<(String,)> = sqlx::query_as(
+            "SELECT canonical_name FROM teams WHERE id = $1"
+        )
+            .bind(away_team_id)
+            .fetch_optional(&self.db)
+            .await?;
+        
+        // Log team resolution for audit (insert only if not exists for this input_name+source+context)
+        let home_has_ratings: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM team_ratings WHERE team_id = $1)"
+        )
+            .bind(home_team_id)
+            .fetch_one(&self.db)
+            .await?;
+        
+        sqlx::query(
+            r#"
+            INSERT INTO team_resolution_audit (input_name, resolved_name, source, context, has_ratings)
+            VALUES ($1, $2, 'the_odds_api', 'home_team', $3)
+            "#
+        )
+            .bind(&event.home_team)
+            .bind(&home_canonical.as_ref().map(|(n,)| n.clone()).unwrap_or_default())
+            .bind(home_has_ratings)
+            .execute(&self.db)
+            .await?;
+        
+        let away_has_ratings: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM team_ratings WHERE team_id = $1)"
+        )
+            .bind(away_team_id)
+            .fetch_one(&self.db)
+            .await?;
+        
+        sqlx::query(
+            r#"
+            INSERT INTO team_resolution_audit (input_name, resolved_name, source, context, has_ratings)
+            VALUES ($1, $2, 'the_odds_api', 'away_team', $3)
+            "#
+        )
+            .bind(&event.away_team)
+            .bind(&away_canonical.as_ref().map(|(n,)| n.clone()).unwrap_or_default())
+            .bind(away_has_ratings)
+            .execute(&self.db)
+            .await?;
+
+        // Create new game
+        let game_id = Uuid::new_v4();
 
         sqlx::query(
             r#"
@@ -693,8 +759,13 @@ impl OddsIngestionService {
             .await?;
 
         info!(
-            "Created game: {} vs {} ({})",
-            event.away_team, event.home_team, game_id
+            "Created game: {} @ {} ({} vs {}) [home_id: {}, away_id: {}]",
+            away_canonical.as_ref().map(|(n,)| n.as_str()).unwrap_or("?"),
+            home_canonical.as_ref().map(|(n,)| n.as_str()).unwrap_or("?"),
+            event.away_team,
+            event.home_team,
+            home_team_id,
+            away_team_id
         );
 
         Ok(game_id)
