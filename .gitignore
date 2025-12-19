@@ -17,9 +17,9 @@ build/
 htmlcov/
 
 # Environment variables and secrets
+# NO .env files - all secrets in secrets/ directory
 .env
 .env.*
-!.env.example
 secrets/*.txt
 secrets/*.key
 secrets/*.pem
