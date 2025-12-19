@@ -412,7 +412,7 @@ func main() {
 
 	// Read database password from Docker secret file
 	dbPassword := readSecretFile("/run/secrets/db_password", "db_password")
-	
+
 	// Parse config - REQUIRED, NO fallbacks
 	config := Config{
 		DatabaseURL: fmt.Sprintf("postgresql://ncaam:%s@postgres:5432/ncaam", dbPassword),
