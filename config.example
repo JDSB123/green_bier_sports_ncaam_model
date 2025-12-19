@@ -1,0 +1,26 @@
+# Configuration Template for NCAA Basketball v5.1
+# Copy this file to .env (if using env vars) or set these as environment variables
+# NOTE: This project uses Docker secrets by default, but these env vars can override ports/locations
+
+# Port Configuration (to avoid conflicts with other projects)
+POSTGRES_HOST_PORT=${POSTGRES_HOST_PORT:-5450}
+REDIS_HOST_PORT=${REDIS_HOST_PORT:-6390}
+PREDICTION_HOST_PORT=${PREDICTION_HOST_PORT:-8092}
+
+# Internal Container Ports (usually don't need to change)
+POSTGRES_CONTAINER_PORT=5432
+REDIS_CONTAINER_PORT=6379
+PREDICTION_CONTAINER_PORT=8082
+
+# Network Configuration
+NETWORK_BACKEND_SUBNET=${NETWORK_BACKEND_SUBNET:-10.51.2.0/24}
+NETWORK_DATA_SUBNET=${NETWORK_DATA_SUBNET:-10.51.3.0/24}
+
+# Project Name (affects container names, volume names, network names)
+COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}
+
+# Azure Configuration (for deployment scripts)
+AZURE_LOCATION=${AZURE_LOCATION:-eastus}
+AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:-ncaam-v5-rg}
+AZURE_ACR_NAME=${AZURE_ACR_NAME:-ncaamv5registry}
+AZURE_KEY_VAULT_NAME=${AZURE_KEY_VAULT_NAME:-ncaam-v5-secrets}

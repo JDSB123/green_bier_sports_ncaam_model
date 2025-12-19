@@ -41,7 +41,7 @@ docker compose up -d
 **Option 2: .env File (Optional)**
 ```bash
 # Copy template
-cp .env.example .env
+cp config.example .env
 
 # Edit .env file
 POSTGRES_HOST_PORT=5451
@@ -336,7 +336,7 @@ docker compose up -d
 
 - `README.md` - Quick start guide
 - `docs/AZURE_MIGRATION.md` - Azure deployment guide
-- `.env.example` - Configuration template
+- `config.example` - Configuration template
 
 ---
 
