@@ -34,37 +34,40 @@ use axum::{
 use serde_json::json;
 
 /// The Odds API event structure
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(default)]
 pub struct OddsApiEvent {
     pub id: String,
     pub sport_key: String,
     pub sport_title: String,
-    pub commence_time: DateTime<Utc>,
+    pub commence_time: Option<DateTime<Utc>>,
     pub home_team: String,
     pub away_team: String,
     pub bookmakers: Vec<Bookmaker>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(default)]
 pub struct Bookmaker {
     pub key: String,
     pub title: String,
-    #[serde(default)]
     pub last_update: Option<DateTime<Utc>>,
     pub markets: Vec<Market>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(default)]
 pub struct Market {
     pub key: String,
-    pub last_update: DateTime<Utc>,
+    pub last_update: Option<DateTime<Utc>>,
     pub outcomes: Vec<Outcome>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(default)]
 pub struct Outcome {
     pub name: String,
-    pub price: i32,
+    pub price: Option<i32>,
     pub point: Option<f64>,
 }
 
@@ -625,25 +628,25 @@ impl OddsIngestionService {
                 "spreads" => {
                     if outcome.name == home_team {
                         snapshot.home_line = outcome.point;
-                        snapshot.home_price = Some(outcome.price);
+                        snapshot.home_price = outcome.price;
                     } else {
                         snapshot.away_line = outcome.point;
-                        snapshot.away_price = Some(outcome.price);
+                        snapshot.away_price = outcome.price;
                     }
                 }
                 "totals" => {
                     if outcome.name == "Over" {
                         snapshot.total_line = outcome.point;
-                        snapshot.over_price = Some(outcome.price);
+                        snapshot.over_price = outcome.price;
                     } else if outcome.name == "Under" {
-                        snapshot.under_price = Some(outcome.price);
+                        snapshot.under_price = outcome.price;
                     }
                 }
                 "h2h" => {
                     if outcome.name == home_team {
-                        snapshot.home_price = Some(outcome.price);
+                        snapshot.home_price = outcome.price;
                     } else {
-                        snapshot.away_price = Some(outcome.price);
+                        snapshot.away_price = outcome.price;
                     }
                 }
                 _ => {}
@@ -685,7 +688,7 @@ impl OddsIngestionService {
             .bind(&event.id)
             .bind(home_team_id)
             .bind(away_team_id)
-            .bind(event.commence_time)
+            .bind(event.commence_time.unwrap_or_else(Utc::now))
             .execute(&self.db)
             .await?;
 
@@ -702,19 +705,16 @@ impl OddsIngestionService {
     async fn get_or_create_team(&self, team_name: &str) -> Result<Uuid> {
         // STEP 1: Try to resolve to canonical name using database function
         // This ensures variant names map to existing canonical names
-        let resolved: Option<(String,)> = sqlx::query_as(
+        let resolved: Option<Option<String>> = sqlx::query_scalar(
             "SELECT resolve_team_name($1)"
         )
             .bind(team_name)
             .fetch_optional(&self.db)
             .await?;
 
-        let canonical_name = if let Some((name,)) = resolved {
-            // Found existing canonical name via alias resolution
-            name
-        } else {
-            // Not found - normalize the input name before creating new team
-            self.normalize_team_name(team_name)
+        let canonical_name = match resolved.flatten() {
+            Some(name) if !name.is_empty() => name,
+            _ => self.normalize_team_name(team_name),
         };
 
         // STEP 2: Get team ID by canonical name (should exist if resolved)

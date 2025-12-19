@@ -1,15 +1,13 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NCAA Basketball v5.0 - MINIMAL PRODUCTION STACK
+# NCAA Basketball v5.1 - PRODUCTION FINAL
 # ═══════════════════════════════════════════════════════════════════════════════
-# SINGLE SOURCE OF TRUTH: 5 essential containers only
+# SINGLE SOURCE OF TRUTH: 3 essential containers only
 # - postgres: Database with team ratings, aliases, odds
-# - redis: Caching layer
-# - odds-ingestion: Fetches odds from The Odds API
-# - ratings-sync: Fetches Barttorvik ratings daily
-# - prediction-service: THE model API (port 8092)
+# - redis: Caching layer  
+# - prediction-service: THE model API (port 8092) - includes Go/Rust binaries
 # ═══════════════════════════════════════════════════════════════════════════════
 
-name: ncaamv5
+name: ncaam_v5_1_model_final
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # DOCKER SECRETS
@@ -56,7 +54,7 @@ services:
 
   postgres:
     image: timescale/timescaledb:latest-pg15
-    container_name: ncaamv5_postgres
+    container_name: ncaam_v5_1_postgres
     <<: *common-env
     secrets:
       - db_password
@@ -66,10 +64,10 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_INITDB_ARGS: "--auth-local=md5 --auth-host=scram-sha-256"
     volumes:
-      - ncaamv5_postgres_data:/var/lib/postgresql/data:rw
+      - ncaam_v5_1_postgres_data:/var/lib/postgresql/data:rw
       - ./database/migrations:/docker-entrypoint-initdb.d:ro
     networks:
-      - ncaamv5_data
+      - ncaam_v5_1_data
     ports:
       - "5450:5432"
     security_opt:
@@ -97,7 +95,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: ncaamv5_redis
+    container_name: ncaam_v5_1_redis
     <<: [*resource-limits, *security-opts]
     secrets:
       - redis_password
@@ -109,7 +107,7 @@ services:
       --stop-writes-on-bgsave-error no
       --requirepass $$(cat /run/secrets/redis_password)"
     networks:
-      - ncaamv5_data
+      - ncaam_v5_1_data
     ports:
       - "6390:6379"
     # Redis needs /data writable for persistence, but /tmp can be tmpfs
@@ -132,18 +130,20 @@ services:
     build:
       context: .  # Build from project root to access Go/Rust services
       dockerfile: ./services/prediction-service-python/Dockerfile.hardened
-    image: ncaamv5-prediction:latest
-    container_name: ncaamv5_prediction
+    image: ncaam_v5_1_prediction:latest
+    container_name: ncaam_v5_1_prediction
     <<: [*common-env, *security-opts]
     secrets:
       - db_password
       - odds_api_key
+      - redis_password
     environment:
       DATABASE_URL: postgresql://ncaam:${DB_PASSWORD}@postgres:5432/ncaam
       THE_ODDS_API_KEY_FILE: /run/secrets/odds_api_key
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     networks:
-      - ncaamv5_backend
-      - ncaamv5_data
+      - ncaam_v5_1_backend
+      - ncaam_v5_1_data
     ports:
       - "8092:8082"
     cap_add:
@@ -152,6 +152,8 @@ services:
       - /tmp:noexec,nosuid,size=100M
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8082/health', timeout=2).read()"]
@@ -167,20 +169,20 @@ services:
     restart: unless-stopped
 
 volumes:
-  ncaamv5_postgres_data:
-    name: ncaamv5_postgres_data
+  ncaam_v5_1_postgres_data:
+    name: ncaam_v5_1_postgres_data
 
 networks:
-  ncaamv5_backend:
-    name: ncaamv5_backend
+  ncaam_v5_1_backend:
+    name: ncaam_v5_1_backend
     driver: bridge
     ipam:
       config:
-        - subnet: 10.50.2.0/24
+        - subnet: 10.51.2.0/24
 
-  ncaamv5_data:
-    name: ncaamv5_data
+  ncaam_v5_1_data:
+    name: ncaam_v5_1_data
     driver: bridge
     ipam:
       config:
-        - subnet: 10.50.3.0/24
+        - subnet: 10.51.3.0/24
