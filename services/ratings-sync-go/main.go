@@ -377,7 +377,7 @@ func (r *RatingsSync) Sync(ctx context.Context) error {
 func readSecretFile(filePath string, secretName string) string {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatalf("CRITICAL: Secret file not found: %s (%s). Container must have secrets mounted. Check docker-compose.yml secrets configuration.", filePath, secretName)
+		log.Fatalf("CRITICAL: Secret file not found: %s (%s). Container must have secrets mounted.", filePath, secretName)
 	}
 	password := strings.TrimSpace(string(data))
 	if password == "" {
@@ -410,7 +410,7 @@ func main() {
 	}
 	defer logger.Sync()
 
-	// Read database password from Docker secret file
+	// Read database password from Docker secret file - REQUIRED, NO fallbacks
 	dbPassword := readSecretFile("/run/secrets/db_password", "db_password")
 
 	// Parse config - REQUIRED, NO fallbacks

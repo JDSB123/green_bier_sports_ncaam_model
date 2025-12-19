@@ -61,6 +61,8 @@ RUN chmod +x /app/bin/odds-ingestion
 # Copy application code with proper ownership
 COPY --chown=ncaam:ncaam services/prediction-service-python/app /app/app
 COPY --chown=ncaam:ncaam services/prediction-service-python/run_today.py /app/run_today.py
+COPY --chown=ncaam:ncaam services/prediction-service-python/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
 # Switch to non-root user
 USER ncaam
@@ -72,5 +74,5 @@ EXPOSE 8082
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8082/health').read()"
 
-# Run FastAPI with uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8082", "--workers", "2"]
+# Run all services via start script
+CMD ["/app/start.sh"]

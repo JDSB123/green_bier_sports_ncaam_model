@@ -43,7 +43,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 # ALWAYS use container network (postgres:5432)
 # No local vs container distinction - ONE source of truth
 # Read secrets from Docker secret files - REQUIRED, NO fallbacks
-def _read_required_secret(file_path: str, secret_name: str) -> str:
+def _read_secret_file(file_path: str, secret_name: str) -> str:
     """Read secret from Docker secret file - FAILS HARD if missing."""
     try:
         with open(file_path, 'r') as f:
@@ -57,8 +57,8 @@ def _read_required_secret(file_path: str, secret_name: str) -> str:
             f"Container must have secrets mounted. Check docker-compose.yml secrets configuration."
         )
 
-DB_PASSWORD = _read_required_secret("/run/secrets/db_password", "db_password")
-REDIS_PASSWORD = _read_required_secret("/run/secrets/redis_password", "redis_password")
+DB_PASSWORD = _read_secret_file("/run/secrets/db_password", "db_password")
+REDIS_PASSWORD = _read_secret_file("/run/secrets/redis_password", "redis_password")
 DATABASE_URL = f"postgresql://ncaam:{DB_PASSWORD}@postgres:5432/ncaam"
 
 # Model parameters (from config, but display here for clarity)
@@ -118,14 +118,8 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     # Sync odds using existing Rust binary (proven first half/full game logic)
     print("  📈 Syncing odds from The Odds API (Rust binary)...")
     try:
-        # Read API key from secret file if available
-        odds_api_key_file = os.getenv("THE_ODDS_API_KEY_FILE", "/run/secrets/odds_api_key")
-        odds_api_key = None
-        if os.path.exists(odds_api_key_file):
-            with open(odds_api_key_file, 'r') as f:
-                odds_api_key = f.read().strip()
-        else:
-            odds_api_key = os.getenv("THE_ODDS_API_KEY", "")
+        # Get API key from Docker secret file - REQUIRED, NO fallbacks
+        odds_api_key = _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
         
         # Build Redis URL from secret (REQUIRED, no fallback)
         redis_url = f"redis://:{REDIS_PASSWORD}@redis:6379"

@@ -105,7 +105,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Result<Self> {
         // API key - REQUIRED from Docker secret file (NO fallbacks)
-        let odds_api_key = read_secret_file("THE_ODDS_API_KEY_FILE", "/run/secrets/odds_api_key")?;
+        let odds_api_key = read_secret_file("/run/secrets/odds_api_key", "odds_api_key")?;
 
         if odds_api_key.trim().is_empty() {
             return Err(anyhow!("THE_ODDS_API_KEY is set but empty"));
@@ -123,11 +123,11 @@ impl Config {
         }
 
         // Database URL - REQUIRED from Docker secret file (NO fallbacks)
-        let db_password = read_secret_file("DB_PASSWORD_FILE", "/run/secrets/db_password")?;
+        let db_password = read_secret_file("/run/secrets/db_password", "db_password")?;
         let database_url = format!("postgresql://ncaam:{}@postgres:5432/ncaam", db_password);
 
         // Redis URL - REQUIRED from Docker secret file (NO fallbacks)
-        let redis_password = read_secret_file("REDIS_PASSWORD_FILE", "/run/secrets/redis_password")?;
+        let redis_password = read_secret_file("/run/secrets/redis_password", "redis_password")?;
         let redis_url = format!("redis://:{}@redis:6379", redis_password);
 
         Ok(Self {
@@ -151,21 +151,12 @@ impl Config {
 }
 
 /// Read a secret from Docker secret file - REQUIRED, NO fallbacks
-/// Fails hard if secret file doesn't exist
-fn read_secret_file(env_var: &str, default_path: &str) -> Result<String> {
-    // Try environment variable pointing to file path first
-    let file_path = if let Ok(path) = env::var(env_var) {
-        path
-    } else {
-        default_path.to_string()
-    };
-    
-    // Read from Docker secret file - REQUIRED, no fallbacks
-    std::fs::read_to_string(&file_path)
+fn read_secret_file(file_path: &str, secret_name: &str) -> Result<String> {
+    std::fs::read_to_string(file_path)
         .map(|s| s.trim().to_string())
         .context(format!(
-            "CRITICAL: Secret file not found at {} (env: {}). Container must have secrets mounted.",
-            file_path, env_var
+            "CRITICAL: Secret file not found at {} ({}). Container must have secrets mounted.",
+            file_path, secret_name
         ))
 }
 

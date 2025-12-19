@@ -19,7 +19,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 PROJECT_ROOT = Path(__file__).parent.absolute()
 SECRETS_DIR = PROJECT_ROOT / "secrets"
 
-# Required secrets and their corresponding .env keys
+# Required secrets
 REQUIRED_SECRETS = {
     "db_password.txt": "DB_PASSWORD",
     "redis_password.txt": "REDIS_PASSWORD",
@@ -42,7 +42,7 @@ def main():
     changes_made = False
     
     print("🔐 Verifying secrets configuration...")
-    print("   (All secrets must be in secrets/ directory - NO .env fallbacks)")
+    print("   (All secrets must be in secrets/ directory - NO ENV VAR FALLBACKS)")
     
     for filename, env_var in REQUIRED_SECRETS.items():
         file_path = SECRETS_DIR / filename
@@ -53,6 +53,7 @@ def main():
             with open(file_path, 'r') as f:
                 content = f.read().strip()
                 if content:
+                    print(f"   ✓ {filename} exists")
                     continue
                 else:
                     print(f"⚠️  Secret file {filename} exists but is empty")
