@@ -20,9 +20,10 @@ secrets:
   odds_api_key:
     file: ./secrets/odds_api_key.txt
 
+# No .env file needed - all secrets read from Docker secret files
 x-common-env: &common-env
-  env_file:
-    - .env
+  environment:
+    TZ: America/Chicago
 
 x-security-opts: &security-opts
   security_opt:
@@ -138,9 +139,10 @@ services:
       - odds_api_key
       - redis_password
     environment:
-      DATABASE_URL: postgresql://ncaam:${DB_PASSWORD}@postgres:5432/ncaam
+      # All secrets read from /run/secrets/* files - NO .env needed
       THE_ODDS_API_KEY_FILE: /run/secrets/odds_api_key
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
     networks:
       - ncaam_v5_1_backend
       - ncaam_v5_1_data
