@@ -62,7 +62,8 @@ RUN chmod +x /app/bin/odds-ingestion
 COPY --chown=ncaam:ncaam services/prediction-service-python/app /app/app
 COPY --chown=ncaam:ncaam services/prediction-service-python/run_today.py /app/run_today.py
 COPY --chown=ncaam:ncaam services/prediction-service-python/start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+# Fix line endings (CRLF -> LF) and make executable
+RUN sed -i 's/\r$//' /app/start.sh 2>/dev/null || true && chmod +x /app/start.sh
 
 # Switch to non-root user
 USER ncaam
@@ -75,4 +76,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8082/health').read()"
 
 # Run all services via start script
-CMD ["/app/start.sh"]
+# Use bash explicitly to avoid shebang path issues
+CMD ["/usr/bin/bash", "/app/start.sh"]

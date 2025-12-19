@@ -74,3 +74,14 @@ That's it. One command. Everything runs inside the container.
 
 This is the **FINAL** production container. Do not modify unless creating a new version.
 
+## Manual-Only Operation
+
+**All operations are user-initiated only. No automatic GitHub Actions or scheduled workflows.**
+
+- ✅ No `.github/workflows/` directory exists
+- ✅ All data fetches are manual via `.\predict.bat`
+- ✅ No automatic triggers, cron jobs, or CI/CD pipelines
+- ✅ Full control: You decide when to run predictions
+
+To run predictions, execute `.\predict.bat` manually when you want fresh data and recommendations.
+
