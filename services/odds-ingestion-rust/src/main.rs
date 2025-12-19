@@ -104,8 +104,8 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self> {
-        // Try to read API key from Docker secret file first, then fall back to env var
-        let odds_api_key = read_secret_or_env("THE_ODDS_API_KEY_FILE", "THE_ODDS_API_KEY")?;
+        // API key - REQUIRED from Docker secret file (NO fallbacks)
+        let odds_api_key = read_secret_file("THE_ODDS_API_KEY_FILE", "/run/secrets/odds_api_key")?;
 
         if odds_api_key.trim().is_empty() {
             return Err(anyhow!("THE_ODDS_API_KEY is set but empty"));
@@ -122,13 +122,13 @@ impl Config {
             ));
         }
 
-        // Database URL - try secret file first
-        let database_url = read_secret_or_env("DATABASE_URL_FILE", "DATABASE_URL")
-            .unwrap_or_else(|_| "postgres://ncaam:ncaam@localhost:5432/ncaam".to_string());
+        // Database URL - REQUIRED from Docker secret file (NO fallbacks)
+        let db_password = read_secret_file("DB_PASSWORD_FILE", "/run/secrets/db_password")?;
+        let database_url = format!("postgresql://ncaam:{}@postgres:5432/ncaam", db_password);
 
-        // Redis URL - try secret file first  
-        let redis_url = read_secret_or_env("REDIS_URL_FILE", "REDIS_URL")
-            .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+        // Redis URL - REQUIRED from Docker secret file (NO fallbacks)
+        let redis_password = read_secret_file("REDIS_PASSWORD_FILE", "/run/secrets/redis_password")?;
+        let redis_url = format!("redis://:{}@redis:6379", redis_password);
 
         Ok(Self {
             odds_api_key,
@@ -150,27 +150,23 @@ impl Config {
     }
 }
 
-/// Read a secret from file (Docker secret) or fall back to environment variable
-fn read_secret_or_env(file_env: &str, direct_env: &str) -> Result<String> {
-    // First try the file path from environment
-    if let Ok(file_path) = env::var(file_env) {
-        if Path::new(&file_path).exists() {
-            return std::fs::read_to_string(&file_path)
-                .map(|s| s.trim().to_string())
-                .context(format!("Failed to read secret from {}", file_path));
-        }
-    }
+/// Read a secret from Docker secret file - REQUIRED, NO fallbacks
+/// Fails hard if secret file doesn't exist
+fn read_secret_file(env_var: &str, default_path: &str) -> Result<String> {
+    // Try environment variable pointing to file path first
+    let file_path = if let Ok(path) = env::var(env_var) {
+        path
+    } else {
+        default_path.to_string()
+    };
     
-    // Check standard Docker secret path
-    let docker_secret_path = format!("/run/secrets/{}", direct_env.to_lowercase().replace("_", "-"));
-    if Path::new(&docker_secret_path).exists() {
-        return std::fs::read_to_string(&docker_secret_path)
-            .map(|s| s.trim().to_string())
-            .context(format!("Failed to read Docker secret from {}", docker_secret_path));
-    }
-    
-    // Fall back to direct environment variable
-    env::var(direct_env).context(format!("{} not set", direct_env))
+    // Read from Docker secret file - REQUIRED, no fallbacks
+    std::fs::read_to_string(&file_path)
+        .map(|s| s.trim().to_string())
+        .context(format!(
+            "CRITICAL: Secret file not found at {} (env: {}). Container must have secrets mounted.",
+            file_path, env_var
+        ))
 }
 
 /// Thread-safe game cache with proper entry API to avoid race conditions
@@ -1048,8 +1044,7 @@ async fn health_handler(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Load .env file
-    dotenvy::dotenv().ok();
+    // NO .env file loading - all secrets MUST come from Docker secret files
 
     // Initialize tracing
     tracing_subscriber::fmt()

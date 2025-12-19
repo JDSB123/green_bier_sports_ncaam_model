@@ -42,17 +42,23 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 
 # ALWAYS use container network (postgres:5432)
 # No local vs container distinction - ONE source of truth
-# Read secrets from Docker secret files (NOT environment variables)
-def _read_secret(file_path: str, fallback: str = "") -> str:
-    """Read secret from Docker secret file."""
+# Read secrets from Docker secret files - REQUIRED, NO fallbacks
+def _read_required_secret(file_path: str, secret_name: str) -> str:
+    """Read secret from Docker secret file - FAILS HARD if missing."""
     try:
         with open(file_path, 'r') as f:
-            return f.read().strip()
+            value = f.read().strip()
+            if not value:
+                raise ValueError(f"Secret file {file_path} is empty")
+            return value
     except FileNotFoundError:
-        return fallback
+        raise FileNotFoundError(
+            f"CRITICAL: Secret file not found: {file_path} ({secret_name}). "
+            f"Container must have secrets mounted. Check docker-compose.yml secrets configuration."
+        )
 
-DB_PASSWORD = _read_secret("/run/secrets/db_password", os.getenv("DB_PASSWORD", "ncaam_dev_password"))
-REDIS_PASSWORD = _read_secret("/run/secrets/redis_password", os.getenv("REDIS_PASSWORD", ""))
+DB_PASSWORD = _read_required_secret("/run/secrets/db_password", "db_password")
+REDIS_PASSWORD = _read_required_secret("/run/secrets/redis_password", "redis_password")
 DATABASE_URL = f"postgresql://ncaam:{DB_PASSWORD}@postgres:5432/ncaam"
 
 # Model parameters (from config, but display here for clarity)
@@ -121,8 +127,8 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
         else:
             odds_api_key = os.getenv("THE_ODDS_API_KEY", "")
         
-        # Build Redis URL from secret
-        redis_url = f"redis://:{REDIS_PASSWORD}@redis:6379" if REDIS_PASSWORD else "redis://redis:6379"
+        # Build Redis URL from secret (REQUIRED, no fallback)
+        redis_url = f"redis://:{REDIS_PASSWORD}@redis:6379"
         
         result = subprocess.run(
             ["/app/bin/odds-ingestion"],

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Ensure required secrets exist in secrets/ directory.
-Syncs from .env if available, otherwise generates defaults.
+Generates secure random passwords for db/redis if missing.
+API key must be provided manually - NO fallbacks.
 This prevents container startup failures due to missing mounted secrets.
 """
 
@@ -10,7 +11,6 @@ import sys
 import io
 import secrets
 from pathlib import Path
-from dotenv import load_dotenv
 
 # Force UTF-8 output for Windows consoles
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -35,54 +35,54 @@ def generate_secure_password(length=24):
     return secrets.token_hex(length // 2)
 
 def main():
-    # Load .env file
-    load_dotenv(PROJECT_ROOT / ".env")
+    # NO .env file loading - all secrets must be in secrets/ directory
     
     ensure_secrets_dir()
     
     changes_made = False
     
     print("🔐 Verifying secrets configuration...")
+    print("   (All secrets must be in secrets/ directory - NO .env fallbacks)")
     
     for filename, env_var in REQUIRED_SECRETS.items():
         file_path = SECRETS_DIR / filename
         
         # Check if file exists
         if file_path.exists():
-            # Optional: verify content matches .env if strictly desired, 
-            # but for now just existence is enough to satisfy docker mounts.
-            continue
-            
+            # Verify it's not empty
+            with open(file_path, 'r') as f:
+                content = f.read().strip()
+                if content:
+                    continue
+                else:
+                    print(f"⚠️  Secret file {filename} exists but is empty")
+        
         print(f"⚠️  Missing secret file: {filename}")
         
-        # Try to get from environment
-        env_value = os.getenv(env_var)
-        
-        if env_value:
-            print(f"   ✓ Found {env_var} in .env, restoring file...")
-            content = env_value
+        if "api_key" in filename:
+            print(f"   ❌ CRITICAL: {filename} is required but missing.")
+            print(f"      Please create {file_path} manually with your API key.")
+            print(f"      This file is REQUIRED - container will fail without it.")
+            sys.exit(1)
         else:
-            if "api_key" in filename:
-                print(f"   ❌ Missing {env_var} in .env - cannot auto-generate API key.")
-                print(f"      Please create {filename} manually or set {env_var} in .env")
-                continue
-            else:
-                print(f"   ✓ Generating new secure value for {filename}...")
-                content = generate_secure_password()
+            print(f"   ✓ Generating new secure random value for {filename}...")
+            content = generate_secure_password()
                 
         # Write the file
         try:
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
             changes_made = True
+            print(f"   ✓ Created {filename}")
         except Exception as e:
             print(f"   ❌ Failed to write {filename}: {e}")
             sys.exit(1)
-
+    
     if changes_made:
-        print("✅ Secrets restored successfully.")
+        print("\n✅ Secrets generated successfully.")
+        print("   NOTE: odds_api_key.txt must be created manually with your API key.")
     else:
-        print("✅ All secrets verified.")
+        print("\n✅ All secrets verified.")
 
 if __name__ == "__main__":
     main()

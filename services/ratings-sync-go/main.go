@@ -19,7 +19,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
@@ -374,6 +373,19 @@ func (r *RatingsSync) Sync(ctx context.Context) error {
 	return nil
 }
 
+// readSecretFile reads a secret from Docker secret file - REQUIRED, NO fallbacks
+func readSecretFile(filePath string, secretName string) string {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatalf("CRITICAL: Secret file not found: %s (%s). Container must have secrets mounted. Check docker-compose.yml secrets configuration.", filePath, secretName)
+	}
+	password := strings.TrimSpace(string(data))
+	if password == "" {
+		log.Fatalf("CRITICAL: Secret file %s is empty (%s).", filePath, secretName)
+	}
+	return password
+}
+
 // getCurrentSeason calculates the current NCAA basketball season
 func getCurrentSeason() int {
 	now := time.Now()
@@ -389,8 +401,7 @@ func getCurrentSeason() int {
 }
 
 func main() {
-	// Load .env file if present
-	godotenv.Load()
+	// NO .env file loading - all secrets MUST come from Docker secret files
 
 	// Initialize logger
 	logger, err := zap.NewProduction()
@@ -399,15 +410,18 @@ func main() {
 	}
 	defer logger.Sync()
 
-	// Parse config
+	// Read database password from Docker secret file
+	dbPassword := readSecretFile("/run/secrets/db_password", "db_password")
+	
+	// Parse config - REQUIRED, NO fallbacks
 	config := Config{
-		DatabaseURL: os.Getenv("DATABASE_URL"),
+		DatabaseURL: fmt.Sprintf("postgresql://ncaam:%s@postgres:5432/ncaam", dbPassword),
 		Season:      getCurrentSeason(),
 		RunOnce:     os.Getenv("RUN_ONCE") == "true",
 	}
 
 	if config.DatabaseURL == "" {
-		config.DatabaseURL = "postgres://ncaam:ncaam@localhost:5432/ncaam"
+		logger.Fatal("CRITICAL: DATABASE_URL not configured. Container must have db_password secret mounted.")
 	}
 
 	// Override season if provided

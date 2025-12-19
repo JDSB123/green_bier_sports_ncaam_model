@@ -173,7 +173,7 @@ class Settings(BaseSettings):
     model: ModelConfig = Field(default_factory=ModelConfig)
 
     class Config:
-        env_file = ".env"
+        # NO .env file - all configuration from environment variables set by docker-compose
         env_nested_delimiter = "__"
 
 

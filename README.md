@@ -17,13 +17,22 @@ That's it. One command. Everything runs inside the container.
 
 ## First-Time Setup
 
-1. Copy `.env.example` to `.env`
-2. Add your secrets to `secrets/`:
-   - `db_password.txt`
-   - `odds_api_key.txt`
-   - `redis_password.txt`
+1. **Create secrets files** (REQUIRED - NO .env fallbacks):
+   ```powershell
+   python ensure_secrets.py
+   ```
+   This creates `db_password.txt` and `redis_password.txt` with secure random values.
+   
+2. **Manually create** `secrets/odds_api_key.txt` with your API key:
+   ```
+   4a0b80471d1ebeeb74c358fa0fcc4a27
+   ```
+   (Replace with your actual API key)
+
 3. Build the container: `docker compose build`
 4. Run: `.\predict.bat`
+
+**IMPORTANT:** All secrets MUST be in `secrets/` directory. Container will FAIL if secrets are missing - NO fallbacks to .env or localhost.
 
 ## Options
 

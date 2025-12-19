@@ -183,3 +183,4 @@ JOIN teams at ON g.away_team_id = at.id;
 COMMENT ON FUNCTION validate_team_name IS 'Validates team name resolution and returns confidence level';
 COMMENT ON FUNCTION validate_game_teams IS 'Validates home/away team assignment and returns validation errors';
 COMMENT ON TABLE team_resolution_audit IS 'Audit log of all team name resolution attempts for debugging';
+
