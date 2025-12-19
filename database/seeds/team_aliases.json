@@ -1,0 +1,1152 @@
+{
+  "version": "1.0",
+  "last_updated": "2025-12-17T13:48:03.981691",
+  "manual": [
+    {
+      "alias": "UIC",
+      "canonical": "Illinois Chicago",
+      "source": "manual",
+      "confidence": 0.9,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Illinois-Chicago",
+      "canonical": "Illinois Chicago",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "IllinoisChicago",
+      "canonical": "Illinois Chicago",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "UL Monroe",
+      "canonical": "Louisiana Monroe",
+      "source": "manual",
+      "confidence": 0.9,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Louisiana-Monroe",
+      "canonical": "Louisiana Monroe",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "ULM",
+      "canonical": "Louisiana Monroe",
+      "source": "manual",
+      "confidence": 0.8,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Jacksonville St",
+      "canonical": "Jacksonville St.",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Jacksonville State",
+      "canonical": "Jacksonville St.",
+      "source": "manual",
+      "confidence": 0.9,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Jax State",
+      "canonical": "Jacksonville St.",
+      "source": "manual",
+      "confidence": 0.8,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "UAB Blazers",
+      "canonical": "UAB",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Alabama Birmingham",
+      "canonical": "UAB",
+      "source": "manual",
+      "confidence": 0.8,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Campbell Fighting Camels",
+      "canonical": "Campbell",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Campbell Camels",
+      "canonical": "Campbell",
+      "source": "manual",
+      "confidence": 0.9,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Creighton Bluejays",
+      "canonical": "Creighton",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Northern Iowa Panthers",
+      "canonical": "Northern Iowa",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Xavier Musketeers",
+      "canonical": "Xavier",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Presbyterian Blue Hose",
+      "canonical": "Presbyterian",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "UC Santa Barbara Gauchos",
+      "canonical": "UC Santa Barbara",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "UT-Arlington Mavericks",
+      "canonical": "UT Arlington",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Albany NY",
+      "canonical": "Albany",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Albany Great Danes",
+      "canonical": "Albany",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "CollCharleston",
+      "canonical": "Charleston",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "College of Charleston",
+      "canonical": "Charleston",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Charleston Cougars",
+      "canonical": "Charleston",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "PortlandU",
+      "canonical": "Portland St.",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Portland U",
+      "canonical": "Portland St.",
+      "source": "manual",
+      "confidence": 0.9,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Portland Pilots",
+      "canonical": "Portland St.",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "ULLafayette",
+      "canonical": "Lafayette",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "UL Lafayette",
+      "canonical": "Lafayette",
+      "source": "manual",
+      "confidence": 0.9,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Louisiana Lafayette",
+      "canonical": "Lafayette",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 0
+    },
+    {
+      "alias": "Louisiana Ragin' Cajuns",
+      "canonical": "Lafayette",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Siena Saints",
+      "canonical": "Siena",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Stanford Cardinal",
+      "canonical": "Stanford",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Vermont Catamounts",
+      "canonical": "Vermont",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Stony Brook Seawolves",
+      "canonical": "Stony Brook",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "The Citadel Bulldogs",
+      "canonical": "The Citadel",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Oregon Ducks",
+      "canonical": "Oregon",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Southern Miss Golden Eagles",
+      "canonical": "Southern Miss",
+      "source": "manual",
+      "confidence": 1.0,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    }
+  ],
+  "learned": [
+    {
+      "alias": "New Hampshire Wildcats",
+      "canonical": "New Hampshire",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Stonehill Skyhawks",
+      "canonical": "Stonehill",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Florida Gators",
+      "canonical": "Florida",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Cincinnati Bearcats",
+      "canonical": "Cincinnati",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Alabama St Hornets",
+      "canonical": "Alabama St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Bellarmine Knights",
+      "canonical": "Bellarmine",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Chattanooga Mocs",
+      "canonical": "Chattanooga",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Binghamton Bearcats",
+      "canonical": "Binghamton",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "East Carolina Pirates",
+      "canonical": "East Carolina",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Eastern Kentucky Colonels",
+      "canonical": "Eastern Kentucky",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Elon Phoenix",
+      "canonical": "Elon",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Richmond Spiders",
+      "canonical": "Richmond",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Florida A&M Rattlers",
+      "canonical": "Florida A&M",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Jacksonville Dolphins",
+      "canonical": "Jacksonville",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Green Bay Phoenix",
+      "canonical": "Green Bay",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Wake Forest Demon Deacons",
+      "canonical": "Wake Forest",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Longwood Lancers",
+      "canonical": "Longwood",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Wagner Seahawks",
+      "canonical": "Wagner",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Maryland-Eastern Shore Hawks",
+      "canonical": "Maryland Eastern Shore",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Memphis Tigers",
+      "canonical": "Memphis",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Vanderbilt Commodores",
+      "canonical": "Vanderbilt",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "UCF Knights",
+      "canonical": "UCF",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Mercer Bears",
+      "canonical": "Mercer",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Syracuse Orange",
+      "canonical": "Syracuse",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Mercyhurst Lakers",
+      "canonical": "Mercyhurst",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Monmouth Hawks",
+      "canonical": "Monmouth",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Quinnipiac Bobcats",
+      "canonical": "Quinnipiac",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "NC State Wolfpack",
+      "canonical": "N.C. State",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Texas Southern Tigers",
+      "canonical": "Texas Southern",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Northern Kentucky Norse",
+      "canonical": "Northern Kentucky",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Oakland Golden Grizzlies",
+      "canonical": "Oakland",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Robert Morris Colonials",
+      "canonical": "Robert Morris",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Youngstown St Penguins",
+      "canonical": "Youngstown St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Cleveland St Vikings",
+      "canonical": "Cleveland St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Nicholls St Colonels",
+      "canonical": "Nicholls St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Houston Christian Huskies",
+      "canonical": "Houston Christian",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Middle Tennessee Blue Raiders",
+      "canonical": "Middle Tennessee",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Kennesaw St Owls",
+      "canonical": "Kennesaw St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Tulane Green Wave",
+      "canonical": "Tulane",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Louisiana Tech Bulldogs",
+      "canonical": "Louisiana Tech",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "South Alabama Jaguars",
+      "canonical": "South Alabama",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Wichita St Shockers",
+      "canonical": "Wichita St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Wofford Terriers",
+      "canonical": "Wofford",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Ole Miss Rebels",
+      "canonical": "Mississippi",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Alabama A&M Bulldogs",
+      "canonical": "Alabama A&M",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Alabama Crimson Tide",
+      "canonical": "Alabama",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "South Florida Bulls",
+      "canonical": "South Florida",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Saint Louis Billikens",
+      "canonical": "Saint Louis",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Bethune-Cookman Wildcats",
+      "canonical": "Bethune Cookman",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Old Dominion Monarchs",
+      "canonical": "Old Dominion",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "James Madison Dukes",
+      "canonical": "James Madison",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Utah Valley Wolverines",
+      "canonical": "Utah Valley",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Weber State Wildcats",
+      "canonical": "Weber St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Arkansas St Red Wolves",
+      "canonical": "Arkansas St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Marquette Golden Eagles",
+      "canonical": "Marquette",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Georgetown Hoyas",
+      "canonical": "Georgetown",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Gonzaga Bulldogs",
+      "canonical": "Gonzaga",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Colorado Buffaloes",
+      "canonical": "Colorado",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Portland St Vikings",
+      "canonical": "Portland St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Santa Clara Broncos",
+      "canonical": "Santa Clara",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "North Texas Mean Green",
+      "canonical": "North Texas",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "UC Davis Aggies",
+      "canonical": "UC Davis",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Seattle Redhawks",
+      "canonical": "Seattle",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Stephen F. Austin Lumberjacks",
+      "canonical": "Stephen F. Austin",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Texas A&M-CC Islanders",
+      "canonical": "Texas A&M",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "USC Trojans",
+      "canonical": "USC",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "UTSA Roadrunners",
+      "canonical": "UTSA",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Oregon St Beavers",
+      "canonical": "Oregon St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Sam Houston St Bearkats",
+      "canonical": "Sam Houston St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "San Diego St Aztecs",
+      "canonical": "San Diego St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Air Force Falcons",
+      "canonical": "Air Force",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Washington St Cougars",
+      "canonical": "Washington St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Eastern Washington Eagles",
+      "canonical": "Eastern Washington",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "San Francisco Dons",
+      "canonical": "San Francisco",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Loyola (Chi) Ramblers",
+      "canonical": "Loyola Chicago",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "UCLA Bruins",
+      "canonical": "UCLA",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Arizona St Sun Devils",
+      "canonical": "Arizona St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "North Florida Ospreys",
+      "canonical": "North Florida",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Appalachian St Mountaineers",
+      "canonical": "Appalachian St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Coastal Carolina Chanticleers",
+      "canonical": "Coastal Carolina",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "SIU-Edwardsville Cougars",
+      "canonical": "SIU Edwardsville",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Indiana St Sycamores",
+      "canonical": "Indiana St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Bradley Braves",
+      "canonical": "Bradley",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Davidson Wildcats",
+      "canonical": "Davidson",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Temple Owls",
+      "canonical": "Temple",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Manhattan Jaspers",
+      "canonical": "Manhattan",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Furman Paladins",
+      "canonical": "Furman",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Georgia Bulldogs",
+      "canonical": "Georgia",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Western Carolina Catamounts",
+      "canonical": "Western Carolina",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Northern Arizona Lumberjacks",
+      "canonical": "Northern Arizona",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Southern Utah Thunderbirds",
+      "canonical": "Southern Utah",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Murray St Racers",
+      "canonical": "Murray St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Drake Bulldogs",
+      "canonical": "Drake",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Georgia Southern Eagles",
+      "canonical": "Georgia Southern",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Oklahoma St Cowboys",
+      "canonical": "Oklahoma St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "UMKC Kangaroos",
+      "canonical": "UMKC",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "TCU Horned Frogs",
+      "canonical": "TCU",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Oral Roberts Golden Eagles",
+      "canonical": "Oral Roberts",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Lindenwood Lions",
+      "canonical": "Lindenwood",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Western Illinois Leathernecks",
+      "canonical": "Western Illinois",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Tennessee Tech Golden Eagles",
+      "canonical": "Tennessee Tech",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "SE Missouri St Redhawks",
+      "canonical": "Southeast Missouri St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Tennessee St Tigers",
+      "canonical": "Tennessee St.",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Southern Illinois Salukis",
+      "canonical": "Southern Illinois",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    },
+    {
+      "alias": "Pepperdine Waves",
+      "canonical": "Pepperdine",
+      "source": "tier1_fuzzy",
+      "confidence": 0.85,
+      "added_date": "2025-12-17",
+      "match_count": 1
+    }
+  ]
+}
