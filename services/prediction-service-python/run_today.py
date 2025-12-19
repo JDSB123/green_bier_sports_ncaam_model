@@ -436,10 +436,14 @@ def get_prediction(
     
     recommendations_list = []
     for rec in recommendations:
-        rec_dict = {
-            k: (v.isoformat() if isinstance(v, datetime) else v)
-            for k, v in rec.__dict__.items()
-        }
+        rec_dict = {}
+        for k, v in rec.__dict__.items():
+            if isinstance(v, datetime):
+                rec_dict[k] = v.isoformat()
+            elif hasattr(v, 'value'):  # Enum type (BetType, Pick, BetTier)
+                rec_dict[k] = v.value
+            else:
+                rec_dict[k] = v
         rec_dict["summary"] = rec.summary
         rec_dict["executive_summary"] = rec.executive_summary
         rec_dict["detailed_rationale"] = rec.detailed_rationale
@@ -460,6 +464,76 @@ def format_spread(spread: Optional[float]) -> str:
     if spread is None:
         return "N/A"
     return f"{spread:+.1f}"
+
+
+def format_odds(odds: Optional[int]) -> str:
+    """Format American odds for display."""
+    if odds is None:
+        return "N/A"
+    return f"{odds:+d}" if odds > 0 else str(odds)
+
+
+def get_fire_rating(edge: float, bet_tier: str) -> str:
+    """Get fire rating emoji based on edge and tier."""
+    if bet_tier == "MAX" or edge >= 4.0:
+        return "🔥🔥🔥"
+    elif bet_tier == "MEDIUM" or edge >= 3.0:
+        return "🔥🔥"
+    else:
+        return "🔥"
+
+
+def print_executive_table(all_picks: list, target_date) -> None:
+    """Print bottom-line-up-front executive summary table."""
+    if not all_picks:
+        print("\n⚠️  No bets meet minimum edge thresholds")
+        return
+    
+    # Sort by fire rating (edge) descending
+    sorted_picks = sorted(all_picks, key=lambda p: p['edge'], reverse=True)
+    
+    # Header
+    print()
+    print("┏" + "━" * 158 + "┓")
+    print("┃" + f"  🎯 EXECUTIVE BETTING SUMMARY - {target_date} ({len(sorted_picks)} PICKS)".ljust(158) + "┃")
+    print("┣" + "━" * 158 + "┫")
+    
+    # Column headers
+    header = (
+        f"┃ {'TIME CST':<10} │ {'MATCHUP':<35} │ {'PERIOD':<6} │ {'MARKET':<8} │ "
+        f"{'PICK':<25} │ {'MODEL':<10} │ {'MARKET':<15} │ {'EDGE':<8} │ {'FIRE':<6} ┃"
+    )
+    print(header)
+    print("┣" + "━" * 158 + "┫")
+    
+    # Data rows
+    for pick in sorted_picks:
+        time_str = pick['time_cst']
+        matchup = f"{pick['away'][:15]} @ {pick['home'][:15]}"
+        period = pick['period']
+        market = pick['market']
+        
+        # Format pick with team name and odds
+        pick_str = pick['pick_display']
+        
+        # Model and market predictions
+        model_str = pick['model_line']
+        market_str = pick['market_line']
+        
+        # Edge
+        edge_str = f"{pick['edge']:.1f} pts" if pick['market'] != "ML" else f"{pick['edge']:.1f}%"
+        
+        # Fire rating
+        fire = pick['fire_rating']
+        
+        row = (
+            f"┃ {time_str:<10} │ {matchup:<35} │ {period:<6} │ {market:<8} │ "
+            f"{pick_str:<25} │ {model_str:<10} │ {market_str:<15} │ {edge_str:<8} │ {fire:<6} ┃"
+        )
+        print(row)
+    
+    print("┗" + "━" * 158 + "┛")
+    print()
 
 
 def format_odds(odds: Optional[int]) -> str:
@@ -563,16 +637,21 @@ def main():
     
     # Process each game
     all_picks = []
+    games_processed = 0
+    games_skipped = 0
+    
     for game in games:
         # Validate ratings
         if not game.get("home_ratings") or not game.get("away_ratings"):
-            print(f"  ⚠️  Skipping {game['away']} @ {game['home']} - Missing ratings")
+            games_skipped += 1
             continue
         
         # Validate odds
         if not game.get("spread") and not game.get("total"):
-            print(f"  ⚠️  Skipping {game['away']} @ {game['home']} - Missing Pinnacle odds")
+            games_skipped += 1
             continue
+        
+        games_processed += 1
         
         # Build market odds
         market_odds = {
@@ -603,48 +682,93 @@ def main():
         pred = result["prediction"]
         recs = result["recommendations"]
         
-        # Display game
-        print(f"┌{'─' * 118}┐")
-        print(f"│ {game['date_cst']} {game['time_cst']:<15} {game['away']:<40} @ {game['home']:<40} │")
-        print(f"├{'─' * 118}┤")
-        
-        # Market line
-        spread_str = f"{game['home']} {format_spread(game['spread'])}" if game['spread'] else "N/A"
-        total_str = f"O/U {game['total']:.1f}" if game['total'] else "N/A"
-        print(f"│ Market: {spread_str} | {total_str:<116} │")
-        
-        # Model prediction
-        model_line = f"Model:  {game['home']} {format_spread(pred['predicted_spread'])} | O/U {pred['predicted_total']:.1f}"
-        print(f"│ {model_line:<116} │")
-        
-        # Recommendations
-        if recs:
-            print(f"│ {'─' * 116} │")
-            for rec in sorted(recs, key=lambda r: r['edge'], reverse=True):
-                if rec['edge'] >= MIN_SPREAD_EDGE:
-                    print(f"│ {rec['executive_summary']:<116} │")
-        
-        print(f"└{'─' * 118}┘")
-        print()
-        
-        # Collect picks
+        # Collect picks for executive table
         for rec in recs:
             if rec['edge'] >= MIN_SPREAD_EDGE:
+                # Determine period and market type
+                bet_type = rec['bet_type']
+                is_1h = "1H" in bet_type
+                period = "1H" if is_1h else "FULL"
+                
+                if "SPREAD" in bet_type:
+                    market = "SPREAD"
+                elif "TOTAL" in bet_type:
+                    market = "TOTAL"
+                else:
+                    market = "ML"
+                
+                # Format pick display with team name and odds
+                pick_val = rec['pick']
+                if market == "SPREAD":
+                    if pick_val == "HOME":
+                        team_name = game["home"]
+                        line = game["spread"] if not is_1h else game.get("spread_1h")
+                        juice = game.get("spread_home_juice") if not is_1h else game.get("spread_1h_home_juice")
+                    else:
+                        team_name = game["away"]
+                        line = -(game["spread"]) if game["spread"] and not is_1h else (-(game.get("spread_1h")) if game.get("spread_1h") else None)
+                        juice = game.get("spread_away_juice") if not is_1h else game.get("spread_1h_away_juice")
+                    pick_display = f"{team_name[:12]} {format_spread(line)} ({format_odds(juice)})"
+                elif market == "TOTAL":
+                    total_line = game["total"] if not is_1h else game.get("total_1h")
+                    if pick_val == "OVER":
+                        juice = game.get("over_juice") if not is_1h else game.get("over_1h_juice")
+                        pick_display = f"OVER {total_line:.1f} ({format_odds(juice)})"
+                    else:
+                        juice = game.get("under_juice") if not is_1h else game.get("under_1h_juice")
+                        pick_display = f"UNDER {total_line:.1f} ({format_odds(juice)})"
+                else:  # Moneyline
+                    if pick_val == "HOME":
+                        team_name = game["home"]
+                        ml_odds = game["home_ml"] if not is_1h else game.get("home_ml_1h")
+                    else:
+                        team_name = game["away"]
+                        ml_odds = game["away_ml"] if not is_1h else game.get("away_ml_1h")
+                    pick_display = f"{team_name[:12]} ML ({format_odds(ml_odds)})"
+                
+                # Model line display
+                if market == "SPREAD":
+                    model_line_val = pred["predicted_spread"] if not is_1h else pred["predicted_spread_1h"]
+                    model_str = f"{format_spread(model_line_val)}"
+                elif market == "TOTAL":
+                    model_line_val = pred["predicted_total"] if not is_1h else pred["predicted_total_1h"]
+                    model_str = f"{model_line_val:.1f}"
+                else:
+                    model_str = f"{pred.get('home_win_prob', 0.5)*100:.0f}%"
+                
+                # Market line display with juice
+                if market == "SPREAD":
+                    mkt_line = game["spread"] if not is_1h else game.get("spread_1h")
+                    mkt_juice = game.get("spread_home_juice", -110) if not is_1h else game.get("spread_1h_home_juice", -110)
+                    market_str = f"{format_spread(mkt_line)} ({format_odds(mkt_juice)})"
+                elif market == "TOTAL":
+                    mkt_line = game["total"] if not is_1h else game.get("total_1h")
+                    mkt_juice = game.get("over_juice", -110) if not is_1h else game.get("over_1h_juice", -110)
+                    market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
+                else:
+                    market_str = f"See odds"
+                
+                # Fire rating
+                fire = get_fire_rating(rec['edge'], rec.get('bet_tier', 'STANDARD'))
+                
                 all_picks.append({
-                    "game": f"{game['away']} @ {game['home']}",
-                    "bet": rec['executive_summary'],
+                    "time_cst": game["time_cst"],
+                    "home": game["home"],
+                    "away": game["away"],
+                    "period": period,
+                    "market": market,
+                    "pick_display": pick_display,
+                    "model_line": model_str,
+                    "market_line": market_str,
                     "edge": rec['edge'],
+                    "bet_tier": rec.get('bet_tier', 'STANDARD'),
+                    "fire_rating": fire,
                 })
     
-    # Summary
-    if all_picks:
-        print("=" * 120)
-        print(f"  🎯 BETTING RECOMMENDATIONS ({len(all_picks)} picks)")
-        print("=" * 120)
-        for pick in sorted(all_picks, key=lambda p: p['edge'], reverse=True):
-            print(f"  {pick['game']}: {pick['bet']} (Edge: {pick['edge']:.1f} pts)")
-    else:
-        print("⚠️  No bets meet minimum edge thresholds")
+    print(f"✓ Processed {games_processed} games ({games_skipped} skipped - missing data)")
+    
+    # Print executive summary table
+    print_executive_table(all_picks, target_date)
 
 
 if __name__ == "__main__":
