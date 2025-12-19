@@ -1,0 +1,100 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+secrets/*.txt
+secrets/*.key
+secrets/*.pem
+secrets/*.secret
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rust
+target/
+Cargo.lock
+
+# Go
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Docker
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backtest results (generated output)
+backtest_results/
+paper_trading/
+predictions/
+
+# Node.js (for future frontend)
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Claude Code
+.claude/
+
+# Test/backtest output files (generated, not source)
+backtest_results_docker.json
+services/backtesting-python/backtest_results.json
+*_backup.csv
+*_fresh.csv
+
+# Windows artifacts
+nul
+
+# Compiled binaries (use Docker builds)
+gateway.exe
+*.exe
+!setup.bat

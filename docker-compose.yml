@@ -1,0 +1,186 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# NCAA Basketball v5.0 - MINIMAL PRODUCTION STACK
+# ═══════════════════════════════════════════════════════════════════════════════
+# SINGLE SOURCE OF TRUTH: 5 essential containers only
+# - postgres: Database with team ratings, aliases, odds
+# - redis: Caching layer
+# - odds-ingestion: Fetches odds from The Odds API
+# - ratings-sync: Fetches Barttorvik ratings daily
+# - prediction-service: THE model API (port 8092)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: ncaamv5
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# DOCKER SECRETS
+# ─────────────────────────────────────────────────────────────────────────────────
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+  odds_api_key:
+    file: ./secrets/odds_api_key.txt
+
+x-common-env: &common-env
+  env_file:
+    - .env
+
+x-security-opts: &security-opts
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  read_only: true
+
+x-resource-limits: &resource-limits
+  deploy:
+    resources:
+      limits:
+        cpus: '0.5'
+        memory: 512M
+      reservations:
+        cpus: '0.25'
+        memory: 256M
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # DATA TIER
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: ncaamv5_postgres
+    <<: *common-env
+    secrets:
+      - db_password
+    environment:
+      POSTGRES_DB: ncaam
+      POSTGRES_USER: ncaam
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_INITDB_ARGS: "--auth-local=md5 --auth-host=scram-sha-256"
+    volumes:
+      - ncaamv5_postgres_data:/var/lib/postgresql/data:rw
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ncaamv5_data
+    ports:
+      - "5450:5432"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ncaam"]
+      <<: *healthcheck-defaults
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ncaamv5_redis
+    <<: [*resource-limits, *security-opts]
+    secrets:
+      - redis_password
+    command: >
+      sh -c "redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save ''
+      --stop-writes-on-bgsave-error no
+      --requirepass $$(cat /run/secrets/redis_password)"
+    networks:
+      - ncaamv5_data
+    ports:
+      - "6390:6379"
+    # Redis needs /data writable for persistence, but /tmp can be tmpfs
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50M
+    cap_add:
+      - NET_BIND_SERVICE
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      <<: *healthcheck-defaults
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # THE MODEL - Self-Contained Prediction Service
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Ingestion (ratings + odds) now runs inside this container via run_today.py
+  # No separate ingestion services needed - everything is self-contained
+
+  prediction-service:
+    build:
+      context: .  # Build from project root to access Go/Rust services
+      dockerfile: ./services/prediction-service-python/Dockerfile.hardened
+    image: ncaamv5-prediction:latest
+    container_name: ncaamv5_prediction
+    <<: [*common-env, *security-opts]
+    secrets:
+      - db_password
+      - odds_api_key
+    environment:
+      DATABASE_URL: postgresql://ncaam:${DB_PASSWORD}@postgres:5432/ncaam
+      THE_ODDS_API_KEY_FILE: /run/secrets/odds_api_key
+    networks:
+      - ncaamv5_backend
+      - ncaamv5_data
+    ports:
+      - "8092:8082"
+    cap_add:
+      - NET_BIND_SERVICE
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100M
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8082/health', timeout=2).read()"]
+      <<: *healthcheck-defaults
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: unless-stopped
+
+volumes:
+  ncaamv5_postgres_data:
+    name: ncaamv5_postgres_data
+
+networks:
+  ncaamv5_backend:
+    name: ncaamv5_backend
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.50.2.0/24
+
+  ncaamv5_data:
+    name: ncaamv5_data
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.50.3.0/24

@@ -1,0 +1,38 @@
+# Ratings Sync Service (Go) - HARDENED
+# Multi-stage build for small runtime image
+FROM golang:1.22-alpine AS builder
+WORKDIR /src
+
+# Install CA certificates
+RUN apk add --no-cache ca-certificates && update-ca-certificates
+
+# Copy module files first for caching
+COPY go.mod go.sum* /src/
+RUN go mod download
+
+# Copy source
+COPY . /src
+
+# Build with security flags
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-w -s" \
+    -a -installsuffix cgo \
+    -o /out/ratings-sync ./main.go
+
+# Runtime - distroless for minimal attack surface
+FROM gcr.io/distroless/static:nonroot
+WORKDIR /app
+
+# Copy binary with proper permissions
+COPY --from=builder --chown=nonroot:nonroot /out/ratings-sync /app/ratings-sync
+
+# Copy CA certificates
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+# Run as non-root user (65532 is nonroot in distroless)
+USER nonroot
+
+# No healthcheck - distroless has no shell/wget and service doesn't support --health-check
+# Service health is verified through database connectivity
+
+ENTRYPOINT ["/app/ratings-sync"]

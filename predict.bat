@@ -1,0 +1,43 @@
+@echo off
+REM NCAA Basketball Prediction System v5.0
+REM 
+REM ONE SOURCE OF TRUTH: Everything runs inside the container
+REM 
+REM USAGE:
+REM   predict.bat                    - Full slate today
+REM   predict.bat --no-sync          - Skip data sync
+REM   predict.bat --game "Duke" "UNC"  - Specific game
+REM   predict.bat --date 2025-12-20     - Specific date
+
+REM Ensure secrets exist
+python ensure_secrets.py
+if errorlevel 1 (
+    echo.
+    echo ❌ Secrets check failed. Please fix the issues above.
+    exit /b 1
+)
+
+REM Ensure containers are running
+docker compose up -d postgres
+if errorlevel 1 (
+    echo.
+    echo ❌ Failed to start postgres container
+    exit /b 1
+)
+
+REM Wait for postgres to be healthy
+timeout /t 5 /nobreak >nul
+
+REM Start prediction service if not running
+docker compose up -d prediction-service
+if errorlevel 1 (
+    echo.
+    echo ❌ Failed to start prediction-service container
+    exit /b 1
+)
+
+REM Wait for service to be ready
+timeout /t 3 /nobreak >nul
+
+REM Execute inside container - ONE source of truth
+docker compose exec -T prediction-service python /app/run_today.py %*
