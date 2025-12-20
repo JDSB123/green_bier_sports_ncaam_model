@@ -1,5 +1,19 @@
-# Format NCAA lineup analysis output
-$serviceUrl = "https://ncaam-prediction.ashycliff-f98889a8.eastus.azurecontainerapps.io"
+# Format NCAA lineup analysis output (resolves live FQDN from Azure Container Apps)
+$resourceGroup = "greenbier-enterprise-rg"
+$containerApp = "ncaam-prediction"
+
+# Resolve current FQDN from Azure; fail fast with a clear message if unavailable
+$serviceUrl = $(
+    az containerapp show --name $containerApp --resource-group $resourceGroup --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
+)
+
+if (-not $serviceUrl) {
+    Write-Host "Unable to resolve service FQDN for $containerApp in $resourceGroup." -ForegroundColor Red
+    Write-Host "Ensure you are logged in (az login) and the app is deployed." -ForegroundColor Yellow
+    exit 1
+}
+
+$serviceUrl = "https://$serviceUrl"
 
 # Matchups from images (Friday, December 19, 2025)
 $matchups = @(
