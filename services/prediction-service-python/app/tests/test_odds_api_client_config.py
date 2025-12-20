@@ -1,5 +1,5 @@
 import os
-from services.prediction-service-python.app.odds_api_client import OddsApiClient
+from app.odds_api_client import OddsApiClient
 
 
 def test_env_defaults_mapping(monkeypatch):
