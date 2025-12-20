@@ -160,7 +160,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "5.0.0-beta"
+    service_version: str = "6.0.0"
     debug: bool = False
 
     # Feature Store
