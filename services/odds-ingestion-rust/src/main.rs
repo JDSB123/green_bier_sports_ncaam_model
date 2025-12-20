@@ -104,12 +104,16 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self> {
-        // API key - REQUIRED from Docker secret file (NO fallbacks)
-        let odds_api_key = read_secret_file("/run/secrets/odds_api_key", "odds_api_key")?;
+        // Secrets/config:
+        // - Docker Compose: read from /run/secrets/*
+        // - Azure Container Apps: read from env vars (no /run/secrets mount)
 
-        if odds_api_key.trim().is_empty() {
-            return Err(anyhow!("THE_ODDS_API_KEY is set but empty"));
-        }
+        // API key
+        let odds_api_key = match env::var("THE_ODDS_API_KEY") {
+            Ok(v) if !v.trim().is_empty() => v,
+            Ok(_) => return Err(anyhow!("THE_ODDS_API_KEY is set but empty")),
+            Err(_) => read_secret_file("/run/secrets/odds_api_key", "odds_api_key")?,
+        };
 
         // Prevent accidental use of sample/placeholder keys
         let key_lower = odds_api_key.trim().to_lowercase();
@@ -122,13 +126,25 @@ impl Config {
             ));
         }
 
-        // Database URL - REQUIRED from Docker secret file (NO fallbacks)
-        let db_password = read_secret_file("/run/secrets/db_password", "db_password")?;
-        let database_url = format!("postgresql://ncaam:{}@postgres:5432/ncaam", db_password);
+        // Database URL
+        let database_url = match env::var("DATABASE_URL") {
+            Ok(v) if !v.trim().is_empty() => v,
+            Ok(_) => return Err(anyhow!("DATABASE_URL is set but empty")),
+            Err(_) => {
+                let db_password = read_secret_file("/run/secrets/db_password", "db_password")?;
+                format!("postgresql://ncaam:{}@postgres:5432/ncaam", db_password)
+            }
+        };
 
-        // Redis URL - REQUIRED from Docker secret file (NO fallbacks)
-        let redis_password = read_secret_file("/run/secrets/redis_password", "redis_password")?;
-        let redis_url = format!("redis://:{}@redis:6379", redis_password);
+        // Redis URL
+        let redis_url = match env::var("REDIS_URL") {
+            Ok(v) if !v.trim().is_empty() => v,
+            Ok(_) => return Err(anyhow!("REDIS_URL is set but empty")),
+            Err(_) => {
+                let redis_password = read_secret_file("/run/secrets/redis_password", "redis_password")?;
+                format!("redis://:{}@redis:6379", redis_password)
+            }
+        };
 
         Ok(Self {
             odds_api_key,
@@ -371,7 +387,9 @@ impl OddsIngestionService {
                 ("apiKey", &self.config.odds_api_key),
                 ("regions", &"us".to_string()),
                 ("markets", &"spreads,totals,h2h".to_string()),
-                ("bookmakers", &"pinnacle,circa,bookmaker".to_string()),
+                // NOTE: Do not restrict bookmakers for full-game markets.
+                // Restricting here causes many events to lack spreads/totals (and therefore
+                // be skipped by the model). We still *prefer* sharper books downstream.
                 ("oddsFormat", &"american".to_string()),
             ])
             .send()
@@ -646,19 +664,7 @@ impl OddsIngestionService {
     /// Get or create game in database
     /// CRITICAL: Validates home/away assignment and team name resolution
     async fn get_or_create_game(&self, event: &OddsApiEvent) -> Result<Uuid> {
-        // Try to find in database
-        let existing: Option<(Uuid,)> = sqlx::query_as(
-            "SELECT id FROM games WHERE external_id = $1"
-        )
-            .bind(&event.id)
-            .fetch_optional(&self.db)
-            .await?;
-
-        if let Some((id,)) = existing {
-            return Ok(id);
-        }
-
-        // VALIDATION: Resolve and validate team names BEFORE creating game
+        // Resolve and validate team names BEFORE upserting game
         let home_team_id = self.get_or_create_team(&event.home_team).await?;
         let away_team_id = self.get_or_create_team(&event.away_team).await?;
         
@@ -726,14 +732,18 @@ impl OddsIngestionService {
             .execute(&self.db)
             .await?;
 
-        // Create new game
+        // Upsert game (IMPORTANT: update team IDs on conflict so fixes to team resolution
+        // take effect without needing manual backfills).
         let game_id = Uuid::new_v4();
-
-        sqlx::query(
+        let (final_game_id,): (Uuid,) = sqlx::query_as(
             r#"
             INSERT INTO games (id, external_id, home_team_id, away_team_id, commence_time, status)
             VALUES ($1, $2, $3, $4, $5, 'scheduled')
-            ON CONFLICT (external_id) DO UPDATE SET commence_time = EXCLUDED.commence_time
+            ON CONFLICT (external_id) DO UPDATE SET
+                home_team_id = EXCLUDED.home_team_id,
+                away_team_id = EXCLUDED.away_team_id,
+                commence_time = EXCLUDED.commence_time,
+                status = 'scheduled'
             RETURNING id
             "#
         )
@@ -742,7 +752,7 @@ impl OddsIngestionService {
             .bind(home_team_id)
             .bind(away_team_id)
             .bind(event.commence_time.unwrap_or_else(Utc::now))
-            .execute(&self.db)
+            .fetch_one(&self.db)
             .await?;
 
         info!(
@@ -755,37 +765,48 @@ impl OddsIngestionService {
             away_team_id
         );
 
-        Ok(game_id)
+        Ok(final_game_id)
     }
 
     /// Get or create team - CRITICAL: Normalizes team names BEFORE storing
     /// Uses resolve_team_name() function to ensure 99.99% accuracy
     async fn get_or_create_team(&self, team_name: &str) -> Result<Uuid> {
-        // STEP 1: Try to resolve to canonical name using database function
-        // This ensures variant names map to existing canonical names
-        let resolved: Option<Option<String>> = sqlx::query_scalar(
-            "SELECT resolve_team_name($1)"
-        )
-            .bind(team_name)
-            .fetch_optional(&self.db)
-            .await?;
+        // STEP 1: Resolve to an existing team ID (prefer those that already have ratings).
+        // We try multiple variants because The Odds API often includes mascots and
+        // abbreviations, while ratings use mascot-less canonical names.
+        let candidates = self.team_name_candidates(team_name);
+        let mut best_unrated: Option<(Uuid, String)> = None;
 
-        let canonical_name = match resolved.flatten() {
-            Some(name) if !name.is_empty() => name,
-            _ => self.normalize_team_name(team_name),
-        };
+        for cand in candidates {
+            if let Some((id, canonical, has_ratings)) = self.resolve_team_fuzzy(&cand).await? {
+                if has_ratings {
+                    // Found rated team: attach raw name as alias (if different) and return.
+                    if team_name.to_lowercase() != canonical.to_lowercase() {
+                        sqlx::query(
+                            r#"
+                            INSERT INTO team_aliases (team_id, alias, source)
+                            VALUES ($1, $2, 'the_odds_api')
+                            ON CONFLICT (alias, source) DO NOTHING
+                            "#
+                        )
+                        .bind(id)
+                        .bind(team_name)
+                        .execute(&self.db)
+                        .await?;
+                    }
+                    return Ok(id);
+                }
 
-        // STEP 2: Get team ID by canonical name (should exist if resolved)
-        let existing: Option<(Uuid,)> = sqlx::query_as(
-            "SELECT id FROM teams WHERE canonical_name = $1"
-        )
-            .bind(&canonical_name)
-            .fetch_optional(&self.db)
-            .await?;
+                // Keep the first unrated match as a fallback, but keep searching
+                // for a rated match on other candidate variants.
+                if best_unrated.is_none() {
+                    best_unrated = Some((id, canonical));
+                }
+            }
+        }
 
-        if let Some((id,)) = existing {
-            // Team exists - add alias if it's different from canonical
-            if team_name.to_lowercase() != canonical_name.to_lowercase() {
+        if let Some((id, canonical)) = best_unrated {
+            if team_name.to_lowercase() != canonical.to_lowercase() {
                 sqlx::query(
                     r#"
                     INSERT INTO team_aliases (team_id, alias, source)
@@ -793,23 +814,42 @@ impl OddsIngestionService {
                     ON CONFLICT (alias, source) DO NOTHING
                     "#
                 )
-                    .bind(id)
-                    .bind(team_name)
-                    .execute(&self.db)
-                    .await?;
+                .bind(id)
+                .bind(team_name)
+                .execute(&self.db)
+                .await?;
             }
             return Ok(id);
         }
 
-        // STEP 3: Create new team ONLY with normalized canonical name
+        // STEP 2: Create new team ONLY with normalized canonical name
+        let canonical_name = self.normalize_team_name(team_name);
         let team_id = Uuid::new_v4();
-        sqlx::query(
-            "INSERT INTO teams (id, canonical_name) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+        // IMPORTANT:
+        // If the insert conflicts (team already exists), DO NOT return the newly generated UUID.
+        // That UUID would not exist in `teams`, causing FK violations downstream.
+        let inserted: Option<(Uuid,)> = sqlx::query_as(
+            r#"
+            INSERT INTO teams (id, canonical_name)
+            VALUES ($1, $2)
+            ON CONFLICT (canonical_name) DO NOTHING
+            RETURNING id
+            "#
         )
-            .bind(team_id)
-            .bind(&canonical_name)
-            .execute(&self.db)
-            .await?;
+        .bind(team_id)
+        .bind(&canonical_name)
+        .fetch_optional(&self.db)
+        .await?;
+
+        let final_team_id = if let Some((id,)) = inserted {
+            id
+        } else {
+            let (id,): (Uuid,) = sqlx::query_as("SELECT id FROM teams WHERE canonical_name = $1")
+                .bind(&canonical_name)
+                .fetch_one(&self.db)
+                .await?;
+            id
+        };
 
         // STEP 4: Store original variant as alias
         sqlx::query(
@@ -819,40 +859,161 @@ impl OddsIngestionService {
             ON CONFLICT (alias, source) DO NOTHING
             "#
         )
-            .bind(team_id)
+            .bind(final_team_id)
             .bind(team_name)
             .execute(&self.db)
             .await?;
 
-        Ok(team_id)
+        Ok(final_team_id)
     }
 
     /// Normalize team name to canonical format
     /// This ensures consistent naming before creating new teams
     fn normalize_team_name(&self, name: &str) -> String {
-        let mut normalized = name.trim().to_string();
-        
-        // Common normalizations
-        let replacements = vec![
-            (" State", " St."),
-            ("Saint ", "St. "),
-            ("St ", "St. "),
-            ("University", "U"),
-            ("College", "Col."),
-            ("North Carolina", "N.C."),
-            ("South Carolina", "S.C."),
-            ("Northern ", "N. "),
-            ("Southern ", "S. "),
-            ("Eastern ", "E. "),
-            ("Western ", "W. "),
-            ("Central ", "C. "),
-        ];
-        
-        for (from, to) in replacements {
-            normalized = normalized.replace(from, to);
+        // IMPORTANT: keep canonicalization conservative to avoid creating duplicates
+        // that don't match Barttorvik canonical names (which breaks ratings joins).
+        self.normalize_lookup_name(name)
+    }
+
+    /// Generate a small set of lookup candidates for a team name.
+    /// Goal: maximize matches to existing seeded canonical names + aliases,
+    /// while avoiding "creative" abbreviations that cause duplicate team rows.
+    fn team_name_candidates(&self, team_name: &str) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+
+        let raw = team_name.trim().to_string();
+        if !raw.is_empty() {
+            out.push(raw.clone());
         }
-        
-        normalized.trim().to_string()
+
+        let cleaned = self.normalize_lookup_name(&raw);
+
+        // Helper to add a base string + expansions + mascot-stripped variants.
+        let mut add_variants = |s: &str, out: &mut Vec<String>| {
+            if s.trim().is_empty() {
+                return;
+            }
+            out.push(s.trim().to_string());
+            if let Some(expanded) = Self::expand_prefix_abbrev(s) {
+                out.push(expanded);
+            }
+
+            // Heuristic: Odds feeds often include mascot suffix; try dropping trailing words.
+            let parts: Vec<&str> = s.split_whitespace().collect();
+            if parts.len() >= 2 {
+                out.push(parts[..parts.len() - 1].join(" "));
+            }
+            if parts.len() >= 3 {
+                out.push(parts[..parts.len() - 2].join(" "));
+            }
+        };
+
+        if !cleaned.is_empty() {
+            // Always add variants even if cleaned == raw so we still generate mascot-stripped forms.
+            add_variants(&cleaned, &mut out);
+        }
+
+        // Common "State" -> "St." canonicalization used in our seeded team list.
+        let state_abbrev = cleaned.replace(" State", " St.");
+        if !state_abbrev.is_empty() && state_abbrev != cleaned {
+            add_variants(&state_abbrev, &mut out);
+        }
+
+        // De-dupe while preserving order
+        let mut seen = std::collections::HashSet::new();
+        out.retain(|s| seen.insert(s.to_lowercase()));
+        out
+    }
+
+    /// Normalize a team name for lookup:
+    /// - remove parenthetical suffixes (e.g. "(CA)")
+    /// - normalize quotes/dashes
+    /// - collapse whitespace
+    fn normalize_lookup_name(&self, name: &str) -> String {
+        let mut out = String::with_capacity(name.len());
+        let mut paren_depth: u32 = 0;
+
+        for ch in name.chars() {
+            match ch {
+                '(' => {
+                    paren_depth += 1;
+                    continue;
+                }
+                ')' => {
+                    if paren_depth > 0 {
+                        paren_depth -= 1;
+                    }
+                    continue;
+                }
+                _ if paren_depth > 0 => continue,
+
+                // Normalize curly quotes
+                '’' | '‘' => out.push('\''),
+
+                // Normalize dashes to spaces
+                '–' | '—' | '-' => out.push(' '),
+
+                // Drop periods to help match "St." vs "St"
+                '.' => continue,
+
+                _ => out.push(ch),
+            }
+        }
+
+        out.split_whitespace().collect::<Vec<_>>().join(" ").trim().to_string()
+    }
+
+    /// Expand common prefix abbreviations used in odds feeds:
+    /// - "E."/"E" -> "Eastern"
+    /// - "W."/"W" -> "Western"
+    /// - "N."/"N" -> "Northern"
+    /// - "S."/"S" -> "Southern"
+    /// - "C."/"C" -> "Central"
+    /// - "Mt."/"Mt" -> "Mount"
+    fn expand_prefix_abbrev(s: &str) -> Option<String> {
+        let mut parts = s.split_whitespace();
+        let first = parts.next()?;
+        let rest: Vec<&str> = parts.collect();
+        let expanded = match first {
+            "E" | "E." => "Eastern",
+            "W" | "W." => "Western",
+            "N" | "N." => "Northern",
+            "S" | "S." => "Southern",
+            "C" | "C." => "Central",
+            "Mt" | "Mt." => "Mount",
+            _ => return None,
+        };
+
+        if rest.is_empty() {
+            return None;
+        }
+        Some(format!("{} {}", expanded, rest.join(" ")))
+    }
+
+    /// Fuzzy resolution that ignores punctuation/spacing and checks both canonical names
+    /// and aliases, preferring teams that already have ratings.
+    async fn resolve_team_fuzzy(&self, input: &str) -> Result<Option<(Uuid, String, bool)>> {
+        let resolved: Option<(Uuid, String, bool)> = sqlx::query_as(
+            r#"
+            SELECT
+              t.id,
+              t.canonical_name,
+              EXISTS(SELECT 1 FROM team_ratings tr WHERE tr.team_id = t.id) AS has_ratings
+            FROM teams t
+            LEFT JOIN team_aliases ta ON t.id = ta.team_id
+            WHERE regexp_replace(lower(t.canonical_name), '[^a-z0-9]+', '', 'g')
+                    = regexp_replace(lower($1), '[^a-z0-9]+', '', 'g')
+               OR regexp_replace(lower(ta.alias), '[^a-z0-9]+', '', 'g')
+                    = regexp_replace(lower($1), '[^a-z0-9]+', '', 'g')
+            ORDER BY has_ratings DESC, t.canonical_name
+            LIMIT 1
+            "#
+        )
+        .bind(input)
+        .fetch_optional(&self.db)
+        .await?;
+
+        Ok(resolved)
     }
 
     /// Store snapshots in TimescaleDB
@@ -973,6 +1134,27 @@ impl OddsIngestionService {
         let events = self.fetch_events().await?;
         let mut snapshots = self.process_events(events.clone()).await?;
         let full_game_count = snapshots.len();
+
+        // If we're running in one-shot mode (manual trigger), keep it fast and
+        // reliable by skipping per-event H1/H2 requests (these can be slow and
+        // are often premium-gated). Full-game markets are enough for the CLI
+        // prediction run and avoids run_today.py timing out.
+        if self.config.run_once {
+            info!(
+                "RUN_ONCE=true: storing {} full-game snapshots (skipping H1/H2)",
+                full_game_count
+            );
+
+            let (store_result, publish_result) = tokio::join!(
+                self.store_snapshots(&snapshots),
+                self.publish_to_redis(&snapshots)
+            );
+
+            store_result?;
+            publish_result?;
+
+            return Ok(snapshots.len());
+        }
 
         // Step 2: Fetch first-half odds from the event-specific endpoint (premium)
         let event_ids: Vec<String> = events.iter().map(|e| e.id.clone()).collect();

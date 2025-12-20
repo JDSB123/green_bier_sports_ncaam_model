@@ -487,6 +487,20 @@ class PredictionEngine:
                 self.config.max_bet_units,
             )
 
+            # FIX: Calculate actual market probability from odds instead of hardcoding 0.5
+            # Standard -110 odds imply 52.38% probability (110/210)
+            # This accounts for the vig/juice in the line
+            if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+                # Use spread price if available, default to -110
+                spread_price = getattr(market_odds, 'spread_price', -110) or -110
+                market_prob = self._american_odds_to_prob(spread_price)
+            elif bet_type in (BetType.TOTAL, BetType.TOTAL_1H):
+                # Use over/under price, default to -110
+                over_price = getattr(market_odds, 'over_price', -110) or -110
+                market_prob = self._american_odds_to_prob(over_price)
+            else:
+                market_prob = 0.5  # Fallback for edge cases
+
             rec = BettingRecommendation(
                 game_id=prediction.game_id,
                 home_team=prediction.home_team,
@@ -501,7 +515,7 @@ class PredictionEngine:
                 confidence=final_confidence,
                 ev_percent=ev_percent,
                 implied_prob=confidence,
-                market_prob=0.5,  # Simplified, assuming -110 odds
+                market_prob=market_prob,
                 kelly_fraction=kelly,
                 recommended_units=round(recommended_units, 1),
                 bet_tier=bet_tier,

@@ -34,7 +34,12 @@ from app.models import TeamRatings, MarketOdds
 # Central Time Zone
 CST = ZoneInfo("America/Chicago")
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# NOTE: Azure CLI on Windows often runs with a legacy codepage and will crash
+# when it receives Unicode output (emoji/box-drawing). When FORCE_ASCII_OUTPUT=1,
+# we emit ASCII-only output by encoding with replacement.
+_force_ascii = os.getenv("FORCE_ASCII_OUTPUT", "").strip().lower() in {"1", "true", "yes"}
+_stdout_encoding = "ascii" if _force_ascii else "utf-8"
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding=_stdout_encoding, errors="replace")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION - Always uses container network
@@ -57,9 +62,18 @@ def _read_secret_file(file_path: str, secret_name: str) -> str:
             f"Container must have secrets mounted. Check docker-compose.yml secrets configuration."
         )
 
-DB_PASSWORD = _read_secret_file("/run/secrets/db_password", "db_password")
-REDIS_PASSWORD = _read_secret_file("/run/secrets/redis_password", "redis_password")
-DATABASE_URL = f"postgresql://ncaam:{DB_PASSWORD}@postgres:5432/ncaam"
+# Config sources:
+# - Docker Compose: secrets are mounted at /run/secrets/*
+# - Azure Container Apps: secrets are provided via env vars (no /run/secrets mount)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    DB_PASSWORD = _read_secret_file("/run/secrets/db_password", "db_password")
+    DATABASE_URL = f"postgresql://ncaam:{DB_PASSWORD}@postgres:5432/ncaam"
+
+REDIS_URL = os.getenv("REDIS_URL")
+if not REDIS_URL:
+    REDIS_PASSWORD = _read_secret_file("/run/secrets/redis_password", "redis_password")
+    REDIS_URL = f"redis://:{REDIS_PASSWORD}@redis:6379"
 
 # Model parameters (from config, but display here for clarity)
 HCA_SPREAD = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_SPREAD', 3.0))
@@ -118,19 +132,19 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     # Sync odds using existing Rust binary (proven first half/full game logic)
     print("  📈 Syncing odds from The Odds API (Rust binary)...")
     try:
-        # Get API key from Docker secret file - REQUIRED, NO fallbacks
-        odds_api_key = _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
-        
-        # Build Redis URL from secret (REQUIRED, no fallback)
-        redis_url = f"redis://:{REDIS_PASSWORD}@redis:6379"
+        # Get API key from env (Azure) or Docker secret file (Compose)
+        odds_api_key = os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
         
         result = subprocess.run(
             ["/app/bin/odds-ingestion"],
             env={
                 **os.environ,
                 "DATABASE_URL": DATABASE_URL,
-                "REDIS_URL": redis_url,
+                "REDIS_URL": REDIS_URL,
                 "THE_ODDS_API_KEY": odds_api_key,
+                # odds-ingestion starts a health server; the container's daemon already
+                # binds the default 8083, so use an ephemeral port for one-shot runs.
+                "HEALTH_PORT": "0",
                 "RUN_ONCE": "true",
             },
             capture_output=True,
@@ -184,7 +198,7 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
     
     query = text("""
-        -- Full-game odds: Pinnacle only (sharp lines)
+        -- Full-game odds: prefer Pinnacle, fallback Bovada, then any book
         WITH latest_odds AS (
             SELECT DISTINCT ON (game_id, market_type, period)
                 game_id,
@@ -198,12 +212,15 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
                 over_price,
                 under_price
             FROM odds_snapshots
-            WHERE bookmaker = 'pinnacle'
-              AND market_type IN ('spreads', 'totals', 'h2h')
+            WHERE market_type IN ('spreads', 'totals', 'h2h')
               AND period = 'full'
-            ORDER BY game_id, market_type, period, time DESC
+            ORDER BY
+              game_id, market_type, period,
+              (bookmaker = 'pinnacle') DESC,
+              (bookmaker = 'bovada') DESC,
+              time DESC
         ),
-        -- First half odds: Pinnacle/Bovada
+        -- First half odds: prefer Pinnacle/Bovada, then any book
         latest_odds_1h AS (
             SELECT DISTINCT ON (game_id, market_type, period)
                 game_id,
@@ -217,20 +234,26 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
                 over_price,
                 under_price
             FROM odds_snapshots
-            WHERE bookmaker IN ('pinnacle', 'bovada')
-              AND market_type IN ('spreads', 'totals', 'h2h')
+            WHERE market_type IN ('spreads', 'totals', 'h2h')
               AND period = '1h'
-            ORDER BY game_id, market_type, period, time DESC
+            ORDER BY
+              game_id, market_type, period,
+              (bookmaker = 'pinnacle') DESC,
+              (bookmaker = 'bovada') DESC,
+              time DESC
         ),
-        -- Latest ratings
+        -- Latest ratings (filtered by target date to prevent future data leakage)
+        -- FIX: Added WHERE clause to ensure we only use ratings available on game date
         latest_ratings AS (
             SELECT DISTINCT ON (team_id)
                 team_id,
                 adj_o,
                 adj_d,
                 tempo,
-                torvik_rank
+                torvik_rank,
+                rating_date
             FROM team_ratings
+            WHERE rating_date <= :target_date
             ORDER BY team_id, rating_date DESC
         )
         SELECT 
@@ -579,6 +602,11 @@ def main():
         metavar=("HOME", "AWAY"),
         help="Specific game matchup (e.g., --game 'Duke' 'UNC')"
     )
+    parser.add_argument(
+        "--debug-skips",
+        action="store_true",
+        help="Print skipped games and why (missing ratings vs missing odds)"
+    )
     
     args = parser.parse_args()
     
@@ -638,16 +666,41 @@ def main():
     all_picks = []
     games_processed = 0
     games_skipped = 0
+    skipped_reasons = []
     
     for game in games:
         # Validate ratings
         if not game.get("home_ratings") or not game.get("away_ratings"):
             games_skipped += 1
+            if args.debug_skips:
+                skipped_reasons.append(
+                    (
+                        game["away"],
+                        game["home"],
+                        "missing_ratings",
+                        bool(game.get("home_ratings")),
+                        bool(game.get("away_ratings")),
+                        game.get("spread"),
+                        game.get("total"),
+                    )
+                )
             continue
         
         # Validate odds
-        if not game.get("spread") and not game.get("total"):
+        if game.get("spread") is None and game.get("total") is None:
             games_skipped += 1
+            if args.debug_skips:
+                skipped_reasons.append(
+                    (
+                        game["away"],
+                        game["home"],
+                        "missing_odds",
+                        True,
+                        True,
+                        game.get("spread"),
+                        game.get("total"),
+                    )
+                )
             continue
         
         games_processed += 1
@@ -765,6 +818,12 @@ def main():
                 })
     
     print(f"✓ Processed {games_processed} games ({games_skipped} skipped - missing data)")
+    if args.debug_skips and skipped_reasons:
+        missing_ratings = sum(1 for r in skipped_reasons if r[2] == "missing_ratings")
+        missing_odds = sum(1 for r in skipped_reasons if r[2] == "missing_odds")
+        print(f"  - skipped breakdown: {missing_ratings} missing ratings, {missing_odds} missing odds")
+        for away, home, reason, has_home_r, has_away_r, spread, total in skipped_reasons[:30]:
+            print(f"  - SKIP ({reason}): {away} @ {home} | ratings(home={has_home_r}, away={has_away_r}) | spread={spread} total={total}")
     
     # Print executive summary table
     print_executive_table(all_picks, target_date)

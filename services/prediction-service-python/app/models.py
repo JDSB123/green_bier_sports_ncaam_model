@@ -139,17 +139,28 @@ class Prediction:
     market_total_1h: Optional[float] = None
 
     # Edges (model - market)
-    spread_edge: float = 0.0
+    # FIX: Added signed edges to preserve directional information
+    # Positive spread_edge_signed = model more negative = HOME value
+    # Negative spread_edge_signed = model more positive = AWAY value
+    spread_edge: float = 0.0           # Absolute value for threshold checks
+    spread_edge_signed: float = 0.0    # Signed value for direction
     total_edge: float = 0.0
+    total_edge_signed: float = 0.0     # Positive = OVER value, Negative = UNDER value
     spread_edge_1h: float = 0.0
+    spread_edge_1h_signed: float = 0.0
     total_edge_1h: float = 0.0
+    total_edge_1h_signed: float = 0.0
 
     # Model metadata
     model_version: str = "v5.0"
     created_at: datetime = field(default_factory=datetime.utcnow)
 
     def calculate_edges(self, market: MarketOdds) -> None:
-        """Calculate edges vs market odds."""
+        """Calculate edges vs market odds.
+
+        FIX: Now calculates both signed and unsigned edges.
+        Signed edges preserve directional information for pick determination.
+        """
         self.market_spread = market.spread
         self.market_total = market.total
         self.market_spread_1h = market.spread_1h
@@ -157,17 +168,24 @@ class Prediction:
 
         if market.spread is not None:
             # Edge = how much better our line is vs market
-            # If we predict -5 and market is -3, we have +2 edge on HOME
-            self.spread_edge = abs(self.predicted_spread - market.spread)
+            # If we predict -5 and market is -3, signed edge = -2 (HOME value)
+            # If we predict -3 and market is -5, signed edge = +2 (AWAY value)
+            self.spread_edge_signed = self.predicted_spread - market.spread
+            self.spread_edge = abs(self.spread_edge_signed)
 
         if market.total is not None:
-            self.total_edge = abs(self.predicted_total - market.total)
+            # Positive = model higher = OVER value
+            # Negative = model lower = UNDER value
+            self.total_edge_signed = self.predicted_total - market.total
+            self.total_edge = abs(self.total_edge_signed)
 
         if market.spread_1h is not None:
-            self.spread_edge_1h = abs(self.predicted_spread_1h - market.spread_1h)
+            self.spread_edge_1h_signed = self.predicted_spread_1h - market.spread_1h
+            self.spread_edge_1h = abs(self.spread_edge_1h_signed)
 
         if market.total_1h is not None:
-            self.total_edge_1h = abs(self.predicted_total_1h - market.total_1h)
+            self.total_edge_1h_signed = self.predicted_total_1h - market.total_1h
+            self.total_edge_1h = abs(self.total_edge_1h_signed)
 
 
 @dataclass

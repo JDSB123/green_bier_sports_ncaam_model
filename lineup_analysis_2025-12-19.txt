@@ -1,0 +1,83 @@
+==========================================================================================================
+  NCAA BASKETBALL PREDICTION ANALYSIS - FRIDAY, DECEMBER 19, 2025
+==========================================================================================================
+
+Service Status: ok | Version: 5.0.0-beta
+Service URL: https://ncaam-prediction.ashycliff-f98889a8.eastus.azurecontainerapps.io
+
+==========================================================================================================
+  TODAY'S LINEUP - MATCHUPS
+==========================================================================================================
+
+Time (CST)   Away Team               Home Team              Venue/Broadcast                             
+----------   ---------               ---------              ---------------                             
+04:00 PM CST South Dakota St (7-6)   Wisc Milwaukee (4-6)   @ FISERV FORUM - MILWAUKEE, WI              
+05:30 PM CST Seton Hall (10-1)       Providence (7-5)       -                                           
+06:00 PM CST Mount St Marys (3-8)    Drexel (4-7)           -                                           
+06:00 PM CST Eastern Michigan (6-5)  Akron (8-3)            -                                           
+06:30 PM CST Tulsa (10-1)            Western Kentucky (7-3) -                                           
+07:00 PM CST Villanova (8-2)         Wisconsin (7-3)        @ FISERV FORUM - MILWAUKEE, WI [FOX]        
+08:00 PM CST Belmont (11-1)          Cal Irvine (7-4)       -                                           
+08:30 PM CST Abilene Christian (7-4) BYU (0-0)              [TNT]                                       
+09:00 PM CST Cal Poly SLO (5-7)      UCLA (8-3)             -                                           
+09:00 PM CST San Diego (4-6)         UC San Diego (10-1)    -                                           
+09:00 PM CST Florida Atlantic (8-3)  St Marys CA (9-2)      -                                           
+10:30 PM CST Seattle (9-2)           Washington (7-3)       @ CLIMATE PLEDGE ARENA - SEATTLE, WA [ESPN2]
+
+==========================================================================================================
+  ANALYSIS STATUS
+==========================================================================================================
+
+To generate predictions, the system requires:
+  1. Games added to database with correct team name matching
+  2. Team ratings synced from Barttorvik (365 teams)
+  3. Odds synced from The Odds API (Pinnacle/Bovada)
+
+Once data is synced, predictions will be generated automatically.
+
+==========================================================================================================
+  GAME DETAILS
+==========================================================================================================
+
+1. 04:00 PM CST | South Dakota St (7-6) @ Wisc Milwaukee (4-6)
+   Venue: @ FISERV FORUM - MILWAUKEE, WI
+
+2. 05:30 PM CST | Seton Hall (10-1) @ Providence (7-5)
+
+3. 06:00 PM CST | Mount St Marys (3-8) @ Drexel (4-7)
+
+4. 06:00 PM CST | Eastern Michigan (6-5) @ Akron (8-3)
+
+5. 06:30 PM CST | Tulsa (10-1) @ Western Kentucky (7-3)
+
+6. 07:00 PM CST | Villanova (8-2) @ Wisconsin (7-3)
+   Venue: @ FISERV FORUM - MILWAUKEE, WI
+   Broadcast: FOX
+
+7. 08:00 PM CST | Belmont (11-1) @ Cal Irvine (7-4)
+
+8. 08:30 PM CST | Abilene Christian (7-4) @ BYU (0-0)
+   Broadcast: TNT
+
+9. 09:00 PM CST | Cal Poly SLO (5-7) @ UCLA (8-3)
+
+10. 09:00 PM CST | San Diego (4-6) @ UC San Diego (10-1)
+
+11. 09:00 PM CST | Florida Atlantic (8-3) @ St Marys CA (9-2)
+
+12. 10:30 PM CST | Seattle (9-2) @ Washington (7-3)
+    Venue: @ CLIMATE PLEDGE ARENA - SEATTLE, WA
+    Broadcast: ESPN2
+
+==========================================================================================================
+  SUMMARY
+==========================================================================================================
+
+Total Games: 12
+Time Range: 04:00 PM CST - 10:30 PM CST
+Date: Friday, December 19, 2025
+
+Games with Venue Info: 3
+Games with Broadcast Info: 3
+
+==========================================================================================================
