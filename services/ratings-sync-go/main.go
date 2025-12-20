@@ -58,6 +58,8 @@ type Config struct {
 	DatabaseURL string
 	Season      int
 	RunOnce     bool
+	BackfillFrom int // Optional: starting season year for backfill
+	BackfillTo   int // Optional: ending season year for backfill
 }
 
 // RatingsSync handles fetching and storing ratings
@@ -313,8 +315,37 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 			continue
 		}
 
-		// Insert or update rating with ALL Barttorvik metrics
-		_, err = tx.Exec(ctx, `
+			// Build raw payload JSON capturing metrics for audit/compatibility
+			rawPayload := map[string]any{
+				"rank": team.Rank,
+				"team": team.Team,
+				"conf": team.Conf,
+				"wins": team.Wins,
+				"losses": team.Losses,
+				"g": team.G,
+				"adjoe": team.AdjOE,
+				"adjde": team.AdjDE,
+				"barthag": team.Barthag,
+				"efg_o": team.EFG,
+				"efg_d": team.EFGD,
+				"tor": team.TOR,
+				"tord": team.TORD,
+				"orb": team.ORB,
+				"drb": team.DRB,
+				"ftr": team.FTR,
+				"ftrd": team.FTRD,
+				"2p_o": team.TwoP,
+				"2p_d": team.TwoPD,
+				"3p_o": team.ThreeP,
+				"3p_d": team.ThreePD,
+				"3pr": team.ThreePR,
+				"3prd": team.ThreePRD,
+				"adj_t": team.AdjTempo,
+				"wab": team.WAB,
+			}
+
+			// Insert or update rating with ALL Barttorvik metrics + raw payload
+			_, err = tx.Exec(ctx, `
 			INSERT INTO team_ratings (
 				team_id, rating_date, adj_o, adj_d, tempo, net_rating,
 				torvik_rank, wins, losses, games_played,
@@ -324,10 +355,13 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 				two_pt_pct, two_pt_pct_d, three_pt_pct, three_pt_pct_d,
 				three_pt_rate, three_pt_rate_d,
 				-- Quality metrics
-				barthag, wab
+					barthag, wab,
+					-- Raw payload for audit/compatibility
+					raw_barttorvik
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
 				$11, $12, $13, $14, $15, $16, $17, $18,
-				$19, $20, $21, $22, $23, $24, $25, $26)
+					$19, $20, $21, $22, $23, $24, $25, $26,
+					$27)
 			ON CONFLICT (team_id, rating_date) DO UPDATE SET
 				adj_o = EXCLUDED.adj_o,
 				adj_d = EXCLUDED.adj_d,
@@ -354,8 +388,10 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 				three_pt_rate = EXCLUDED.three_pt_rate,
 				three_pt_rate_d = EXCLUDED.three_pt_rate_d,
 				-- Quality metrics
-				barthag = EXCLUDED.barthag,
-				wab = EXCLUDED.wab
+					barthag = EXCLUDED.barthag,
+					wab = EXCLUDED.wab,
+					-- Raw payload
+					raw_barttorvik = EXCLUDED.raw_barttorvik
 		`, teamID, today, team.AdjOE, team.AdjDE, team.AdjTempo,
 			team.AdjOE-team.AdjDE, team.Rank, team.Wins, team.Losses, team.G,
 			// Four Factors
@@ -363,7 +399,9 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 			// Shooting breakdown
 			team.TwoP, team.TwoPD, team.ThreeP, team.ThreePD, team.ThreePR, team.ThreePRD,
 			// Quality metrics
-			team.Barthag, team.WAB)
+				team.Barthag, team.WAB,
+				// Raw payload
+				rawPayload)
 
 		if err != nil {
 			r.logger.Warn("Failed to store rating", zap.String("team", team.Team), zap.Error(err))
@@ -595,6 +633,8 @@ func main() {
 		DatabaseURL: databaseURL,
 		Season:      getCurrentSeason(),
 		RunOnce:     os.Getenv("RUN_ONCE") == "true",
+		BackfillFrom: 0,
+		BackfillTo:   0,
 	}
 
 	if config.DatabaseURL == "" {
@@ -622,6 +662,41 @@ func main() {
 
 	// Create sync service
 	sync := NewRatingsSync(db, logger, config)
+
+		// Optional backfill range: BACKFILL_SEASONS="2015-2025" or "2018"
+		if bf := os.Getenv("BACKFILL_SEASONS"); bf != "" {
+			parts := strings.Split(bf, "-")
+			if len(parts) == 2 {
+				if from, err := strconv.Atoi(strings.TrimSpace(parts[0])); err == nil {
+					config.BackfillFrom = from
+				}
+				if to, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil {
+					config.BackfillTo = to
+				}
+			} else if len(parts) == 1 {
+				if yr, err := strconv.Atoi(strings.TrimSpace(parts[0])); err == nil {
+					config.BackfillFrom = yr
+					config.BackfillTo = yr
+				}
+			}
+
+			if config.BackfillFrom != 0 && config.BackfillTo != 0 {
+				start := config.BackfillFrom
+				end := config.BackfillTo
+				if start > end {
+					start, end = end, start
+				}
+				for season := start; season <= end; season++ {
+					logger.Info("Backfill season", zap.Int("season", season))
+					sync.config.Season = season
+					if err := sync.Sync(ctx); err != nil {
+						logger.Error("Backfill sync failed", zap.Int("season", season), zap.Error(err))
+					}
+				}
+				logger.Info("Backfill completed", zap.Int("from", start), zap.Int("to", end))
+				return
+			}
+		}
 
 	// Run once mode
 	if config.RunOnce {

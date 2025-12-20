@@ -98,6 +98,16 @@ pub struct Config {
     pub poll_interval_seconds: u64,
     pub sport_key: String,
     pub health_port: u16,
+    pub regions: String,
+    pub odds_format: String,
+    pub markets_full: String,
+    pub markets_h1: String,
+    pub markets_h2: String,
+    pub bookmakers_h1: String,
+    pub bookmakers_h2: String,
+    pub enable_full: bool,
+    pub enable_h1: bool,
+    pub enable_h2: bool,
     /// If true, run once and exit (no polling loop)
     pub run_once: bool,
 }
@@ -160,14 +170,24 @@ impl Config {
                 .unwrap_or_else(|_| "30".to_string())
                 .parse()
                 .unwrap_or(30),
-            sport_key: "basketball_ncaab".to_string(),
+            sport_key: env::var("SPORT_KEY").unwrap_or_else(|_| "basketball_ncaab".to_string()),
             health_port: env::var("HEALTH_PORT")
                 .unwrap_or_else(|_| "8083".to_string())
                 .parse()
                 .unwrap_or(8083),
+            regions: env::var("REGIONS").unwrap_or_else(|_| "us".to_string()),
+            odds_format: env::var("ODDS_FORMAT").unwrap_or_else(|_| "american".to_string()),
+            markets_full: env::var("MARKETS_FULL").unwrap_or_else(|_| "spreads,totals,h2h".to_string()),
+            markets_h1: env::var("MARKETS_H1").unwrap_or_else(|_| "spreads_h1,totals_h1,h2h_h1".to_string()),
+            markets_h2: env::var("MARKETS_H2").unwrap_or_else(|_| "spreads_h2,totals_h2,h2h_h2".to_string()),
+            bookmakers_h1: env::var("BOOKMAKERS_H1").unwrap_or_else(|_| "bovada,pinnacle,circa,bookmaker".to_string()),
+            bookmakers_h2: env::var("BOOKMAKERS_H2").unwrap_or_else(|_| "draftkings,fanduel,pinnacle,bovada".to_string()),
             run_once: env::var("RUN_ONCE")
                 .unwrap_or_else(|_| "false".to_string())
                 .to_lowercase() == "true",
+            enable_full: env::var("ENABLE_FULL").map(|v| v.to_lowercase() == "true").unwrap_or(true),
+            enable_h1: env::var("ENABLE_H1").map(|v| v.to_lowercase() == "true").unwrap_or(true),
+            enable_h2: env::var("ENABLE_H2").map(|v| v.to_lowercase() == "true").unwrap_or(true),
         })
     }
 }
@@ -396,9 +416,9 @@ impl OddsIngestionService {
                 .get(&url)
                 .query(&[
                     ("apiKey", self.config.odds_api_key.as_str()),
-                    ("regions", "us"),
-                    ("markets", "spreads,totals,h2h"),
-                    ("oddsFormat", "american"),
+                    ("regions", self.config.regions.as_str()),
+                    ("markets", self.config.markets_full.as_str()),
+                    ("oddsFormat", self.config.odds_format.as_str()),
                 ])
                 .build()
                 .context("Failed to build events request")?;
@@ -474,6 +494,43 @@ impl OddsIngestionService {
         Ok(events)
     }
 
+    /// Fetch only event IDs using the events listing endpoint
+    /// Useful when running half-only pulls without fetching full-game markets
+    pub async fn fetch_event_ids(&self) -> Result<Vec<String>> {
+        // Wait for rate limit
+        self.rate_limiter.until_ready().await;
+
+        let url = format!(
+            "https://api.the-odds-api.com/v4/sports/{}/events",
+            self.config.sport_key
+        );
+
+        let req = self.http_client
+            .get(&url)
+            .query(&[("apiKey", self.config.odds_api_key.as_str())])
+            .build()
+            .context("Failed to build events list request")?;
+
+        let resp = self.http_client.execute(req).await?;
+        let status = resp.status();
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(anyhow::anyhow!("Events list error (status {}): {}", status, body));
+        }
+
+        let body = resp.text().await.context("Failed to read events list body")?;
+        let parsed: serde_json::Value = serde_json::from_str(&body)?;
+        let mut ids = Vec::new();
+        if let Some(arr) = parsed.as_array() {
+            for item in arr {
+                if let Some(id) = item.get("id").and_then(|v| v.as_str()) {
+                    ids.push(id.to_string());
+                }
+            }
+        }
+        Ok(ids)
+    }
+
     /// Fetch first-half odds for a specific event using the event odds endpoint
     /// Premium subscription required for alternate/period markets
     pub async fn fetch_event_h1_odds(&self, event_id: &str) -> Result<Option<OddsApiEvent>> {
@@ -494,10 +551,10 @@ impl OddsIngestionService {
                 .get(&url)
                 .query(&[
                     ("apiKey", self.config.odds_api_key.as_str()),
-                    ("regions", "us"),
-                    ("markets", "spreads_h1,totals_h1,h2h_h1"),
-                    ("bookmakers", "bovada,pinnacle,circa,bookmaker"),
-                    ("oddsFormat", "american"),
+                    ("regions", self.config.regions.as_str()),
+                    ("markets", self.config.markets_h1.as_str()),
+                    ("bookmakers", self.config.bookmakers_h1.as_str()),
+                    ("oddsFormat", self.config.odds_format.as_str()),
                 ])
                 .build()
                 .context("Failed to build H1 odds request")?;
@@ -598,10 +655,10 @@ impl OddsIngestionService {
             .get(&url)
             .query(&[
                 ("apiKey", &self.config.odds_api_key),
-                ("regions", &"us".to_string()),
-                ("markets", &"spreads_h2,totals_h2,h2h_h2".to_string()),
-                ("bookmakers", &"draftkings,fanduel,pinnacle,bovada".to_string()),
-                ("oddsFormat", &"american".to_string()),
+                ("regions", &self.config.regions),
+                ("markets", &self.config.markets_h2),
+                ("bookmakers", &self.config.bookmakers_h2),
+                ("oddsFormat", &self.config.odds_format),
             ])
             .send()
             .await
@@ -1220,19 +1277,47 @@ impl OddsIngestionService {
 
     /// Single poll iteration
     async fn poll_once(&self) -> Result<usize> {
-        // Step 1: Fetch full-game odds from the standard endpoint
-        let events = self.fetch_events().await?;
-        let mut snapshots = self.process_events(events.clone()).await?;
-        let full_game_count = snapshots.len();
+        // Step 1: Conditionally fetch full-game odds
+        let mut snapshots: Vec<OddsSnapshot> = Vec::new();
+        let mut event_ids: Vec<String> = Vec::new();
 
-        // If we're running in one-shot mode (manual trigger), keep it fast and
-        // reliable by skipping per-event H1/H2 requests (these can be slow and
-        // are often premium-gated). Full-game markets are enough for the CLI
-        // prediction run and avoids run_today.py timing out.
+        let mut full_game_count = 0usize;
+        if self.config.enable_full {
+            let events = self.fetch_events().await?;
+            event_ids = events.iter().map(|e| e.id.clone()).collect();
+            let s = self.process_events(events.clone()).await?;
+            full_game_count = s.len();
+            snapshots.extend(s);
+        } else {
+            // If we need half markets but skipped full, fetch event IDs via lighter endpoint
+            if self.config.enable_h1 || self.config.enable_h2 {
+                event_ids = self.fetch_event_ids().await?;
+            }
+        }
+
+        // In one-shot mode, run only the enabled segments and exit
         if self.config.run_once {
+            // Optional H1
+            let mut h1_count = 0usize;
+            if self.config.enable_h1 && !event_ids.is_empty() {
+                let h1_events = self.fetch_all_h1_odds(&event_ids).await?;
+                let h1_snapshots = self.process_events(h1_events).await?;
+                h1_count = h1_snapshots.len();
+                snapshots.extend(h1_snapshots);
+            }
+
+            // Optional H2
+            let mut h2_count = 0usize;
+            if self.config.enable_h2 && !event_ids.is_empty() {
+                let h2_events = self.fetch_all_h2_odds(&event_ids).await?;
+                let h2_snapshots = self.process_events(h2_events).await?;
+                h2_count = h2_snapshots.len();
+                snapshots.extend(h2_snapshots);
+            }
+
             info!(
-                "RUN_ONCE=true: storing {} full-game snapshots (skipping H1/H2)",
-                full_game_count
+                "RUN_ONCE=true: poll results: {} full-game + {} H1 + {} H2 = {} total",
+                full_game_count, h1_count, h2_count, snapshots.len()
             );
 
             let (store_result, publish_result) = tokio::join!(
@@ -1246,18 +1331,23 @@ impl OddsIngestionService {
             return Ok(snapshots.len());
         }
 
-        // Step 2: Fetch first-half odds from the event-specific endpoint (premium)
-        let event_ids: Vec<String> = events.iter().map(|e| e.id.clone()).collect();
-        let h1_events = self.fetch_all_h1_odds(&event_ids).await?;
-        let h1_snapshots = self.process_events(h1_events).await?;
-        let h1_count = h1_snapshots.len();
-        snapshots.extend(h1_snapshots);
+        // Step 2: Optional first-half odds
+        let mut h1_count = 0usize;
+        if self.config.enable_h1 && !event_ids.is_empty() {
+            let h1_events = self.fetch_all_h1_odds(&event_ids).await?;
+            let h1_snapshots = self.process_events(h1_events).await?;
+            h1_count = h1_snapshots.len();
+            snapshots.extend(h1_snapshots);
+        }
 
-        // Step 3: Fetch second-half odds from the event-specific endpoint
-        let h2_events = self.fetch_all_h2_odds(&event_ids).await?;
-        let h2_snapshots = self.process_events(h2_events).await?;
-        let h2_count = h2_snapshots.len();
-        snapshots.extend(h2_snapshots);
+        // Step 3: Optional second-half odds
+        let mut h2_count = 0usize;
+        if self.config.enable_h2 && !event_ids.is_empty() {
+            let h2_events = self.fetch_all_h2_odds(&event_ids).await?;
+            let h2_snapshots = self.process_events(h2_events).await?;
+            h2_count = h2_snapshots.len();
+            snapshots.extend(h2_snapshots);
+        }
 
         info!("Poll results: {} full-game + {} H1 + {} H2 = {} total snapshots", 
               full_game_count, h1_count, h2_count, snapshots.len());
