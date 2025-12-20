@@ -44,7 +44,7 @@ class ModelConfig(BaseSettings):
     )
     home_court_advantage_total_1h: float = Field(
         default=2.25,
-        description="First half HCA for totals (50% of full game)."
+        description="First half HCA base value for totals. NOTE: Multiplied by 0.1 in formula for ~0.2 pts actual impact."
     )
 
     # Legacy single HCA (deprecated, use spread/total specific)
