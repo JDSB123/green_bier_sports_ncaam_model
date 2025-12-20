@@ -179,6 +179,80 @@ services:
           memory: 512M
     restart: unless-stopped
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # MANUAL ODDS PULLS (NEVER AUTOMATED): Full-game then 1H
+  # Run these one at a time via `docker compose run --rm ...`
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  odds-full-once:
+    build:
+      context: ./services/odds-ingestion-rust
+      dockerfile: ./Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_odds_ingestion:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_odds_full_once
+    <<: [*common-env, *security-opts, *resource-limits]
+    secrets:
+      - db_password
+      - odds_api_key
+      - redis_password
+    environment:
+      SPORT: ${SPORT:-ncaam}
+      DB_USER: ${DB_USER:-${SPORT:-ncaam}}
+      DB_NAME: ${DB_NAME:-${SPORT:-ncaam}}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      # Odds config (full-game only)
+      RUN_ONCE: "true"
+      ENABLE_FULL: "true"
+      ENABLE_H1: "false"
+      ENABLE_H2: "false"
+      REGIONS: "us"
+      ODDS_FORMAT: "american"
+      MARKETS_FULL: "spreads,totals,h2h"
+    networks:
+      - ncaam_v6_backend
+      - ncaam_v6_data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # One-shot: container exits after storing/publishing
+    restart: "no"
+
+  odds-1h-once:
+    image: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_odds_ingestion:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_odds_h1_once
+    <<: [*common-env, *security-opts, *resource-limits]
+    secrets:
+      - db_password
+      - odds_api_key
+      - redis_password
+    environment:
+      SPORT: ${SPORT:-ncaam}
+      DB_USER: ${DB_USER:-${SPORT:-ncaam}}
+      DB_NAME: ${DB_NAME:-${SPORT:-ncaam}}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      # Odds config (first-half only)
+      RUN_ONCE: "true"
+      ENABLE_FULL: "false"
+      ENABLE_H1: "true"
+      ENABLE_H2: "false"
+      REGIONS: "us"
+      ODDS_FORMAT: "american"
+      MARKETS_H1: "spreads_h1,totals_h1,h2h_h1"
+      BOOKMAKERS_H1: "bovada,pinnacle,circa,bookmaker"
+    networks:
+      - ncaam_v6_backend
+      - ncaam_v6_data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   ncaam_v6_postgres_data:
     name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_postgres_data
