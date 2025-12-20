@@ -98,6 +98,13 @@ pub struct Config {
     pub poll_interval_seconds: u64,
     pub sport_key: String,
     pub health_port: u16,
+    pub regions: String,
+    pub odds_format: String,
+    pub markets_full: String,
+    pub markets_h1: String,
+    pub markets_h2: String,
+    pub bookmakers_h1: String,
+    pub bookmakers_h2: String,
     /// If true, run once and exit (no polling loop)
     pub run_once: bool,
 }
@@ -160,11 +167,18 @@ impl Config {
                 .unwrap_or_else(|_| "30".to_string())
                 .parse()
                 .unwrap_or(30),
-            sport_key: "basketball_ncaab".to_string(),
+            sport_key: env::var("SPORT_KEY").unwrap_or_else(|_| "basketball_ncaab".to_string()),
             health_port: env::var("HEALTH_PORT")
                 .unwrap_or_else(|_| "8083".to_string())
                 .parse()
                 .unwrap_or(8083),
+            regions: env::var("REGIONS").unwrap_or_else(|_| "us".to_string()),
+            odds_format: env::var("ODDS_FORMAT").unwrap_or_else(|_| "american".to_string()),
+            markets_full: env::var("MARKETS_FULL").unwrap_or_else(|_| "spreads,totals,h2h".to_string()),
+            markets_h1: env::var("MARKETS_H1").unwrap_or_else(|_| "spreads_h1,totals_h1,h2h_h1".to_string()),
+            markets_h2: env::var("MARKETS_H2").unwrap_or_else(|_| "spreads_h2,totals_h2,h2h_h2".to_string()),
+            bookmakers_h1: env::var("BOOKMAKERS_H1").unwrap_or_else(|_| "bovada,pinnacle,circa,bookmaker".to_string()),
+            bookmakers_h2: env::var("BOOKMAKERS_H2").unwrap_or_else(|_| "draftkings,fanduel,pinnacle,bovada".to_string()),
             run_once: env::var("RUN_ONCE")
                 .unwrap_or_else(|_| "false".to_string())
                 .to_lowercase() == "true",
@@ -396,9 +410,9 @@ impl OddsIngestionService {
                 .get(&url)
                 .query(&[
                     ("apiKey", self.config.odds_api_key.as_str()),
-                    ("regions", "us"),
-                    ("markets", "spreads,totals,h2h"),
-                    ("oddsFormat", "american"),
+                    ("regions", self.config.regions.as_str()),
+                    ("markets", self.config.markets_full.as_str()),
+                    ("oddsFormat", self.config.odds_format.as_str()),
                 ])
                 .build()
                 .context("Failed to build events request")?;
@@ -494,10 +508,10 @@ impl OddsIngestionService {
                 .get(&url)
                 .query(&[
                     ("apiKey", self.config.odds_api_key.as_str()),
-                    ("regions", "us"),
-                    ("markets", "spreads_h1,totals_h1,h2h_h1"),
-                    ("bookmakers", "bovada,pinnacle,circa,bookmaker"),
-                    ("oddsFormat", "american"),
+                    ("regions", self.config.regions.as_str()),
+                    ("markets", self.config.markets_h1.as_str()),
+                    ("bookmakers", self.config.bookmakers_h1.as_str()),
+                    ("oddsFormat", self.config.odds_format.as_str()),
                 ])
                 .build()
                 .context("Failed to build H1 odds request")?;
@@ -598,10 +612,10 @@ impl OddsIngestionService {
             .get(&url)
             .query(&[
                 ("apiKey", &self.config.odds_api_key),
-                ("regions", &"us".to_string()),
-                ("markets", &"spreads_h2,totals_h2,h2h_h2".to_string()),
-                ("bookmakers", &"draftkings,fanduel,pinnacle,bovada".to_string()),
-                ("oddsFormat", &"american".to_string()),
+                ("regions", &self.config.regions),
+                ("markets", &self.config.markets_h2),
+                ("bookmakers", &self.config.bookmakers_h2),
+                ("oddsFormat", &self.config.odds_format),
             ])
             .send()
             .await
