@@ -387,20 +387,72 @@ impl OddsIngestionService {
             self.config.sport_key
         );
 
-        let response = self.http_client
-            .get(&url)
-            .query(&[
-                ("apiKey", &self.config.odds_api_key),
-                ("regions", &"us".to_string()),
-                ("markets", &"spreads,totals,h2h".to_string()),
-                // NOTE: Do not restrict bookmakers for full-game markets.
-                // Restricting here causes many events to lack spreads/totals (and therefore
-                // be skipped by the model). We still *prefer* sharper books downstream.
-                ("oddsFormat", &"american".to_string()),
-            ])
-            .send()
-            .await
-            .context("Failed to fetch events")?;
+        // Retry loop for transient failures (network, 429, 5xx)
+        let mut attempt: u32 = 0;
+        let max_attempts: u32 = 5;
+        let response = loop {
+            // Build request each attempt
+            let req = self.http_client
+                .get(&url)
+                .query(&[
+                    ("apiKey", self.config.odds_api_key.as_str()),
+                    ("regions", "us"),
+                    ("markets", "spreads,totals,h2h"),
+                    ("oddsFormat", "american"),
+                ])
+                .build()
+                .context("Failed to build events request")?;
+
+            match self.http_client.execute(req.try_clone().expect("clone request")).await {
+                Ok(resp) => {
+                    let status = resp.status();
+                    if status.is_success() {
+                        break resp;
+                    }
+
+                    // Retry on 429 or 5xx
+                    if status.as_u16() == 429 || status.is_server_error() {
+                        attempt += 1;
+                        if attempt >= max_attempts {
+                            let body = resp.text().await.unwrap_or_default();
+                            return Err(anyhow::anyhow!(
+                                "Odds API error after {} attempts (status {}): {}",
+                                max_attempts,
+                                status,
+                                body
+                            ));
+                        }
+
+                        // Honor Retry-After header if present, else exponential backoff
+                        let mut delay = Duration::from_secs(2u64.pow(attempt));
+                        if let Some(ra) = resp.headers().get("Retry-After") {
+                            if let Ok(s) = ra.to_str() {
+                                if let Ok(secs) = s.parse::<u64>() {
+                                    delay = Duration::from_secs(secs);
+                                }
+                            }
+                        }
+                        warn!("Events request attempt {} failed with status {}. Retrying in {:?}...", attempt, status, delay);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+
+                    // Non-retryable status
+                    let body = resp.text().await.unwrap_or_default();
+                    return Err(anyhow::anyhow!("Odds API error (status {}): {}", status, body));
+                }
+                Err(e) => {
+                    attempt += 1;
+                    if attempt >= max_attempts {
+                        return Err(anyhow!("Failed to fetch events after {} attempts: {}", max_attempts, e));
+                    }
+                    let delay = Duration::from_secs(2u64.pow(attempt));
+                    warn!("Events request attempt {} failed: {}. Retrying in {:?}...", attempt, e, delay);
+                    tokio::time::sleep(delay).await;
+                    continue;
+                }
+            }
+        };
 
         // Log API usage from headers
         if let Some(remaining) = response.headers().get("x-requests-remaining") {
@@ -410,19 +462,10 @@ impl OddsIngestionService {
             );
         }
 
-        let status = response.status();
         let body = response
             .text()
             .await
             .context("Failed to read response body")?;
-
-        if !status.is_success() {
-            return Err(anyhow::anyhow!(
-                "Odds API error (status {}): {}",
-                status,
-                body
-            ));
-        }
 
         let events: Vec<OddsApiEvent> = serde_json::from_str(&body)
             .context("Failed to parse events")?;
@@ -443,32 +486,73 @@ impl OddsIngestionService {
             event_id
         );
 
-        // For 1H markets, include Bovada as they provide best NCAAB 1H coverage
-        // Keep pinnacle/circa/bookmaker for consistency where available
-        let response = self.http_client
-            .get(&url)
-            .query(&[
-                ("apiKey", &self.config.odds_api_key),
-                ("regions", &"us".to_string()),
-                ("markets", &"spreads_h1,totals_h1,h2h_h1".to_string()),
-                ("bookmakers", &"bovada,pinnacle,circa,bookmaker".to_string()),
-                ("oddsFormat", &"american".to_string()),
-            ])
-            .send()
-            .await
-            .context("Failed to fetch event H1 odds")?;
+        // Retry loop similar to full-game odds
+        let mut attempt: u32 = 0;
+        let max_attempts: u32 = 4;
+        let response = loop {
+            let req = self.http_client
+                .get(&url)
+                .query(&[
+                    ("apiKey", self.config.odds_api_key.as_str()),
+                    ("regions", "us"),
+                    ("markets", "spreads_h1,totals_h1,h2h_h1"),
+                    ("bookmakers", "bovada,pinnacle,circa,bookmaker"),
+                    ("oddsFormat", "american"),
+                ])
+                .build()
+                .context("Failed to build H1 odds request")?;
 
-        let status = response.status();
+            match self.http_client.execute(req.try_clone().expect("clone request")).await {
+                Ok(resp) => {
+                    let status = resp.status();
+                    if status.is_success() {
+                        break resp;
+                    }
+
+                    // Retry on 429 or 5xx; otherwise, H1 may simply be unavailable
+                    if status.as_u16() == 429 || status.is_server_error() {
+                        attempt += 1;
+                        if attempt >= max_attempts {
+                            let body = resp.text().await.unwrap_or_default();
+                            warn!("Event H1 odds unavailable for {} after {} attempts: {} - {}", event_id, max_attempts, status, body);
+                            return Ok(None);
+                        }
+                        let mut delay = Duration::from_secs(2u64.pow(attempt));
+                        if let Some(ra) = resp.headers().get("Retry-After") {
+                            if let Ok(s) = ra.to_str() {
+                                if let Ok(secs) = s.parse::<u64>() {
+                                    delay = Duration::from_secs(secs);
+                                }
+                            }
+                        }
+                        warn!("H1 odds request attempt {} failed with status {} for {}. Retrying in {:?}...", attempt, status, event_id, delay);
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+
+                    // Non-retryable: treat as unavailable
+                    let body = resp.text().await.unwrap_or_default();
+                    warn!("Event H1 odds unavailable for {}: {} - {}", event_id, status, body);
+                    return Ok(None);
+                }
+                Err(e) => {
+                    attempt += 1;
+                    if attempt >= max_attempts {
+                        warn!("Failed to fetch H1 odds for {} after {} attempts: {}", event_id, max_attempts, e);
+                        return Ok(None);
+                    }
+                    let delay = Duration::from_secs(2u64.pow(attempt));
+                    warn!("H1 odds request attempt {} failed for {}: {}. Retrying in {:?}...", attempt, event_id, e, delay);
+                    tokio::time::sleep(delay).await;
+                    continue;
+                }
+            }
+        };
+
         let body = response
             .text()
             .await
             .context("Failed to read H1 response body")?;
-
-        if !status.is_success() {
-            // Log but don't fail - 1H odds may not be available for all events
-            warn!("Event H1 odds unavailable for {}: {} - {}", event_id, status, body);
-            return Ok(None);
-        }
 
         let event: OddsApiEvent = serde_json::from_str(&body)
             .context("Failed to parse H1 event odds")?;

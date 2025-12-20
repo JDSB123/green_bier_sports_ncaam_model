@@ -16,6 +16,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"math/rand"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -89,16 +90,12 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 	// Set user agent to avoid blocking
 	req.Header.Set("User-Agent", "NCAAM-Ratings-Sync/5.0")
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	// Perform request with exponential backoff + jitter for transient failures
+	resp, err := doRequestWithRetry(ctx, req, 5)
 	if err != nil {
-		return nil, fmt.Errorf("fetching ratings: %w", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
 
 	// Barttorvik returns array-of-arrays, not array-of-objects
 	// Format: [[rank, team, conf, record, adjoe, adjoe_rank, adjde, adjde_rank, ...], ...]
@@ -172,6 +169,76 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 
 	r.logger.Info("Fetched ratings", zap.Int("team_count", len(teams)))
 	return teams, nil
+}
+
+// doRequestWithRetry executes an HTTP request with retries on transient errors.
+// Retries on network errors, 429 Too Many Requests, and 5xx status codes.
+func doRequestWithRetry(ctx context.Context, req *http.Request, maxAttempts int) (*http.Response, error) {
+	client := &http.Client{Timeout: 30 * time.Second}
+	var lastErr error
+
+	// Randomize jitter
+	rand.Seed(time.Now().UnixNano())
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		// Clone the request for each attempt (required by net/http)
+		attemptReq := req.Clone(ctx)
+
+		resp, err := client.Do(attemptReq)
+
+		// Success
+		if err == nil && resp != nil && resp.StatusCode == http.StatusOK {
+			return resp, nil
+		}
+
+		// Determine if we should retry
+		retry := false
+		if err != nil {
+			lastErr = err
+			retry = true
+		}
+		if resp != nil {
+			// Retry on rate limiting or server errors
+			if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+				retry = true
+			}
+		}
+
+		// If not retryable or we've exhausted attempts, return
+		if !retry || attempt == maxAttempts {
+			if err != nil {
+				return nil, fmt.Errorf("fetching ratings: %w", err)
+			}
+			if resp != nil {
+				return resp, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			}
+			return nil, fmt.Errorf("request failed with no response: %v", lastErr)
+		}
+
+		// Compute delay: exponential backoff with cap, honor Retry-After when provided
+		delay := time.Duration(1<<uint(attempt-1)) * time.Second // 1s,2s,4s,8s,16s
+		if resp != nil {
+			if ra := resp.Header.Get("Retry-After"); ra != "" {
+				if secs, parseErr := strconv.Atoi(ra); parseErr == nil {
+					delay = time.Duration(secs) * time.Second
+				}
+			}
+			// Close body before retrying to avoid leaks
+			resp.Body.Close()
+		}
+		// Add small jitter (0-250ms) to reduce thundering herd
+		jitter := time.Duration(rand.Intn(250)) * time.Millisecond
+
+		// Wait or abort if context cancelled
+		select {
+		case <-time.After(delay + jitter):
+			// continue to next attempt
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+
+	return nil, fmt.Errorf("all %d attempts failed: %v", maxAttempts, lastErr)
 }
 
 // Helper functions to safely convert interface{} to types

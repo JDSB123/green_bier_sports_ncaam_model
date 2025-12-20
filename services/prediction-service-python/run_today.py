@@ -175,6 +175,46 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     except Exception as e:
         print(f"  ⚠️  Odds sync error: {e}")
         odds_success = False
+
+    # Basic resilience: if either sync failed, attempt one quick retry for transient issues
+    if not (ratings_success and odds_success):
+        print("  🔁 One quick retry for transient sync issues...")
+        try:
+            # Retry ratings
+            if not ratings_success:
+                result = subprocess.run(
+                    ["/app/bin/ratings-sync"],
+                    env={
+                        **os.environ,
+                        "DATABASE_URL": DATABASE_URL,
+                        "RUN_ONCE": "true",
+                    },
+                    capture_output=True,
+                    text=True,
+                    timeout=90,
+                )
+                ratings_success = (result.returncode == 0)
+
+            # Retry odds
+            if not odds_success:
+                odds_api_key = os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
+                result = subprocess.run(
+                    ["/app/bin/odds-ingestion"],
+                    env={
+                        **os.environ,
+                        "DATABASE_URL": DATABASE_URL,
+                        "REDIS_URL": REDIS_URL,
+                        "THE_ODDS_API_KEY": odds_api_key,
+                        "HEALTH_PORT": "0",
+                        "RUN_ONCE": "true",
+                    },
+                    capture_output=True,
+                    text=True,
+                    timeout=90,
+                )
+                odds_success = (result.returncode == 0)
+        except Exception as e:
+            print(f"  ⚠️  Retry failed: {e}")
     
     print()
     if ratings_success and odds_success:
