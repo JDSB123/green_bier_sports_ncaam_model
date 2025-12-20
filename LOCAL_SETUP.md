@@ -29,8 +29,8 @@ Before you begin, ensure you have the following installed:
 ### Optional but Recommended
 
 - **PowerShell** (Windows users already have this)
-  - macOS/Linux: Install PowerShell Core from [here](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell)
-  - Or use bash/shell equivalents of the commands
+   - macOS/Linux: Install PowerShell Core from [here](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell)
+   - Or use bash/shell equivalents of the commands
 
 ## Step-by-Step Setup
 
@@ -135,13 +135,10 @@ Now you're ready to run predictions!
 
 **macOS/Linux:**
 ```bash
-# Make the script executable (first time only)
-chmod +x predict.bat
-
-# Create a bash equivalent or run with PowerShell
+# Option 1: Run with PowerShell Core (recommended if installed)
 pwsh predict.bat
 
-# OR manually run:
+# Option 2: Manually run the Docker commands
 docker compose run --rm odds-full-once
 docker compose run --rm odds-1h-once
 docker compose exec prediction-service python /app/src/predictor.py
@@ -267,10 +264,15 @@ These ports are chosen to avoid conflicts with other applications.
 
 **Cause**: Another application is using one of the required ports.
 
-**Solution**: Edit `docker-compose.yml` to change port mappings:
+**Solution**: Edit `docker-compose.yml` to change port mappings. For example, to change PostgreSQL from port 5450 to 5451:
 ```yaml
+# Find this line in docker-compose.yml under the postgres service:
 ports:
-  - "5451:5432"  # Change 5450 to 5451 for PostgreSQL
+  - "${POSTGRES_HOST_PORT:-5450}:5432"
+
+# Change it to:
+ports:
+  - "5451:5432"  # Changed from 5450 to 5451
 ```
 
 ### Services Won't Start or Are Unhealthy
