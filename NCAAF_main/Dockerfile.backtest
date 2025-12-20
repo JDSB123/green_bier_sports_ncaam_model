@@ -1,0 +1,211 @@
+# Self-Contained Backtest Container
+# Includes: PostgreSQL, Redis, Python ML Service, Backtest Scripts
+# All credentials and config included - ready to run backtests independently
+
+FROM postgres:16-alpine AS base
+
+# Install system dependencies
+RUN apk add --no-cache \
+        python3 \
+        py3-pip \
+        python3-dev \
+        build-base \
+        git \
+        ca-certificates \
+        wget \
+        curl \
+        redis \
+        supervisor \
+        bash \
+        postgresql-dev \
+        gcc \
+        musl-dev \
+        linux-headers \
+        cmake \
+        make
+
+# Create app directory
+WORKDIR /app
+
+# Stage 2: Install Python dependencies
+FROM base AS python-builder
+WORKDIR /app
+COPY ml_service/requirements.txt .
+RUN python3 -m venv /install && \
+    /install/bin/pip install --upgrade pip && \
+    /install/bin/pip install -r requirements.txt
+
+# Stage 3: Final backtest container
+FROM base AS production
+
+# Copy Python dependencies
+COPY --from=python-builder /install /usr/local
+
+# Copy application code
+COPY ml_service/main.py /app/
+COPY ml_service/src /app/src
+COPY ml_service/scripts /app/scripts
+COPY database/schema /app/database/schema
+
+# Copy ML models (if they exist)
+COPY ml_service/models /app/models
+
+# Create directories
+RUN mkdir -p /app/models /app/data /app/logs /etc/supervisor/conf.d /app/backtest_results
+
+# Create database initialization script
+RUN echo '#!/bin/sh' > /app/init-db.sh && \
+    echo 'set -e' >> /app/init-db.sh && \
+    echo 'DB_USER=${DATABASE_USER:-ncaaf_user}' >> /app/init-db.sh && \
+    echo 'DB_NAME=${DATABASE_NAME:-ncaaf_v5}' >> /app/init-db.sh && \
+    echo 'DB_PASSWORD=${DATABASE_PASSWORD}' >> /app/init-db.sh && \
+    echo 'if [ -z "$DB_PASSWORD" ]; then' >> /app/init-db.sh && \
+    echo '  echo "ERROR: DATABASE_PASSWORD environment variable must be set"' >> /app/init-db.sh && \
+    echo '  exit 1' >> /app/init-db.sh && \
+    echo 'fi' >> /app/init-db.sh && \
+    echo 'echo "Waiting for PostgreSQL to start..."' >> /app/init-db.sh && \
+    echo 'until pg_isready -U postgres; do sleep 1; done' >> /app/init-db.sh && \
+    echo 'echo "Creating database and user..."' >> /app/init-db.sh && \
+    echo 'psql -U postgres -c "CREATE USER \"$DB_USER\" WITH PASSWORD '\''$DB_PASSWORD'\'';" || true' >> /app/init-db.sh && \
+    echo 'psql -U postgres -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";" || true' >> /app/init-db.sh && \
+    echo 'echo "Running schema migrations..."' >> /app/init-db.sh && \
+    echo 'PGPASSWORD="$DB_PASSWORD" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f /app/database/schema/001_init.sql || echo "Schema may already exist"' >> /app/init-db.sh && \
+    echo 'echo "Database initialized"' >> /app/init-db.sh && \
+    chmod +x /app/init-db.sh
+
+# Create delayed database initialization script
+RUN echo '#!/bin/sh' > /app/init-db-delayed.sh && \
+    echo 'set -e' >> /app/init-db-delayed.sh && \
+    echo 'DB_USER=${DATABASE_USER:-ncaaf_user}' >> /app/init-db-delayed.sh && \
+    echo 'DB_NAME=${DATABASE_NAME:-ncaaf_v5}' >> /app/init-db-delayed.sh && \
+    echo 'DB_PASSWORD=${DATABASE_PASSWORD}' >> /app/init-db-delayed.sh && \
+    echo 'if [ -z "$DB_PASSWORD" ]; then' >> /app/init-db-delayed.sh && \
+    echo '  echo "ERROR: DATABASE_PASSWORD environment variable must be set"' >> /app/init-db-delayed.sh && \
+    echo '  exit 1' >> /app/init-db-delayed.sh && \
+    echo 'fi' >> /app/init-db-delayed.sh && \
+    echo 'echo "Waiting for PostgreSQL to be ready..."' >> /app/init-db-delayed.sh && \
+    echo 'for i in $(seq 1 30); do' >> /app/init-db-delayed.sh && \
+    echo '  if pg_isready -U postgres -h localhost > /dev/null 2>&1; then' >> /app/init-db-delayed.sh && \
+    echo '    echo "PostgreSQL is ready!"' >> /app/init-db-delayed.sh && \
+    echo '    break' >> /app/init-db-delayed.sh && \
+    echo '  fi' >> /app/init-db-delayed.sh && \
+    echo '  if [ $i -eq 30 ]; then' >> /app/init-db-delayed.sh && \
+    echo '    echo "ERROR: PostgreSQL did not start in time"' >> /app/init-db-delayed.sh && \
+    echo '    exit 1' >> /app/init-db-delayed.sh && \
+    echo '  fi' >> /app/init-db-delayed.sh && \
+    echo '  sleep 2' >> /app/init-db-delayed.sh && \
+    echo 'done' >> /app/init-db-delayed.sh && \
+    echo 'echo "Creating database and user..."' >> /app/init-db-delayed.sh && \
+    echo 'psql -U postgres -h localhost -c "CREATE USER \"$DB_USER\" WITH PASSWORD '\''$DB_PASSWORD'\'';" || true' >> /app/init-db-delayed.sh && \
+    echo 'psql -U postgres -h localhost -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";" || true' >> /app/init-db-delayed.sh && \
+    echo 'echo "Running schema migrations..."' >> /app/init-db-delayed.sh && \
+    echo 'PGPASSWORD="$DB_PASSWORD" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f /app/database/schema/001_init.sql || echo "Schema may already exist"' >> /app/init-db-delayed.sh && \
+    echo 'echo "Database initialized successfully"' >> /app/init-db-delayed.sh && \
+    chmod +x /app/init-db-delayed.sh
+
+# Create supervisor configuration
+RUN mkdir -p /etc/supervisor/conf.d && \
+    echo '[unix_http_server]' > /etc/supervisor/supervisord.conf && \
+    echo 'file=/var/run/supervisord.sock' >> /etc/supervisor/supervisord.conf && \
+    echo 'chmod=0700' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '[supervisord]' >> /etc/supervisor/supervisord.conf && \
+    echo 'nodaemon=true' >> /etc/supervisor/supervisord.conf && \
+    echo 'user=root' >> /etc/supervisor/supervisord.conf && \
+    echo 'logfile=/app/logs/supervisord.log' >> /etc/supervisor/supervisord.conf && \
+    echo 'pidfile=/var/run/supervisord.pid' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '[rpcinterface:supervisor]' >> /etc/supervisor/supervisord.conf && \
+    echo 'supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '[supervisorctl]' >> /etc/supervisor/supervisord.conf && \
+    echo 'serverurl=unix:///var/run/supervisord.sock' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '[include]' >> /etc/supervisor/supervisord.conf && \
+    echo 'files = /etc/supervisor/conf.d/*.conf' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '# Backtest Services' > /etc/supervisor/conf.d/backtest.conf && \
+    echo '' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo '[program:postgres]' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'command=/usr/local/bin/docker-entrypoint.sh postgres' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'stdin_logfile=/dev/stdin' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'stdin_logfile_maxbytes=0' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'user=postgres' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'priority=100' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'stderr_logfile=/app/logs/postgres.err.log' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'stdout_logfile=/app/logs/postgres.out.log' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo '' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo '[program:init_db]' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'command=/app/init-db-delayed.sh' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'autorestart=false' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'startretries=1' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'priority=150' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'startsecs=5' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'stderr_logfile=/app/logs/init_db.err.log' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'stdout_logfile=/app/logs/init_db.out.log' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo '' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo '[program:redis]' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'command=redis-server --bind 127.0.0.1 --port 6379' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'priority=200' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'stderr_logfile=/app/logs/redis.err.log' >> /etc/supervisor/conf.d/backtest.conf && \
+    echo 'stdout_logfile=/app/logs/redis.out.log' >> /etc/supervisor/conf.d/backtest.conf
+
+# Set PostgreSQL environment
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=${POSTGRES_INIT_PASSWORD:-postgres}
+ENV POSTGRES_DB=postgres
+
+# Create startup script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'set -e' >> /app/start.sh && \
+    echo 'echo "=== NCAAF Backtest Container Starting ==="' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Update supervisor config with runtime environment variables' >> /app/start.sh && \
+    echo 'DB_NAME=${DATABASE_NAME:-ncaaf_v5}' >> /app/start.sh && \
+    echo 'DB_USER=${DATABASE_USER:-ncaaf_user}' >> /app/start.sh && \
+    echo 'DB_PASSWORD=${DATABASE_PASSWORD}' >> /app/start.sh && \
+    echo 'REDIS_PASS=${REDIS_PASSWORD:-}' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Update Redis command with password if provided' >> /app/start.sh && \
+    echo 'if [ -n "$REDIS_PASS" ]; then' >> /app/start.sh && \
+    echo '  sed -i "s|command=redis-server --bind 127.0.0.1 --port 6379|command=redis-server --bind 127.0.0.1 --port 6379 --requirepass \"$REDIS_PASS\"|g" /etc/supervisor/conf.d/backtest.conf' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo 'echo "Starting supervisor to manage services..."' >> /app/start.sh && \
+    echo 'exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Create backtest entrypoint script
+RUN echo '#!/bin/sh' > /app/run-backtest.sh && \
+    echo 'set -e' >> /app/run-backtest.sh && \
+    echo 'echo "Waiting for database to be ready..."' >> /app/run-backtest.sh && \
+    echo 'for i in $(seq 1 60); do' >> /app/run-backtest.sh && \
+    echo '  if PGPASSWORD="${DATABASE_PASSWORD}" psql -h localhost -U "${DATABASE_USER:-ncaaf_user}" -d "${DATABASE_NAME:-ncaaf_v5}" -c "SELECT 1" > /dev/null 2>&1; then' >> /app/run-backtest.sh && \
+    echo '    echo "Database is ready!"' >> /app/run-backtest.sh && \
+    echo '    break' >> /app/run-backtest.sh && \
+    echo '  fi' >> /app/run-backtest.sh && \
+    echo '  if [ $i -eq 60 ]; then' >> /app/run-backtest.sh && \
+    echo '    echo "ERROR: Database did not become ready in time"' >> /app/run-backtest.sh && \
+    echo '    exit 1' >> /app/run-backtest.sh && \
+    echo '  fi' >> /app/run-backtest.sh && \
+    echo '  sleep 2' >> /app/run-backtest.sh && \
+    echo 'done' >> /app/run-backtest.sh && \
+    echo 'echo "Running backtest..."' >> /app/run-backtest.sh && \
+    echo 'python3 main.py backtest --start-date "${BACKTEST_START_DATE:-2024-09-01}" --end-date "${BACKTEST_END_DATE:-2024-12-17}"' >> /app/run-backtest.sh && \
+    chmod +x /app/run-backtest.sh
+
+# Expose ports (for debugging/access if needed)
+EXPOSE 5432 6379
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD pg_isready -U postgres || exit 1
+
+# Default command: start services and wait (for interactive use)
+# Override with docker-compose command to run backtest
+CMD ["/app/start.sh"]

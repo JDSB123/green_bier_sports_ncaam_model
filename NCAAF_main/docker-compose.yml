@@ -1,0 +1,60 @@
+services:
+  # Unified NCAAF v5.0 Container - All services in one
+  ncaaf_v5:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ncaaf_v5
+    environment:
+      # SportsDataIO API
+      - SPORTSDATA_API_KEY=${SPORTSDATA_API_KEY}
+      - SPORTSDATA_BASE_URL=${SPORTSDATA_BASE_URL:-https://api.sportsdata.io/v3/cfb}
+      - SPORTSDATA_TIMEOUT=${SPORTSDATA_TIMEOUT:-30s}
+      
+      # Database (internal PostgreSQL - localhost only)
+      - DATABASE_HOST=localhost
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DATABASE_NAME:-ncaaf_v5}
+      - DATABASE_USER=${DATABASE_USER:-ncaaf_user}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_SSL_MODE=${DATABASE_SSL_MODE:-disable}
+      
+      # Redis (internal - localhost only)
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+      
+      # Application
+      - APP_ENV=${APP_ENV:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - INGESTION_PORT=8080
+      - ML_SERVICE_PORT=8000
+      - WORKER_INTERVAL=${WORKER_INTERVAL:-300s}
+      - WEBHOOK_ENABLED=${WEBHOOK_ENABLED:-true}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - MODEL_PATH=/app/models
+    ports:
+      - "8001:8000"  # ML Service API (unique port, no conflicts)
+      - "8083:8080"  # Ingestion API (unique port, no conflicts)
+    volumes:
+      - ncaaf_data:/var/lib/postgresql/16/main
+      - ncaaf_models:/app/models
+      - ncaaf_logs:/app/logs
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  ncaaf_data:
+    driver: local
+  ncaaf_models:
+    driver: local
+  ncaaf_logs:
+    driver: local

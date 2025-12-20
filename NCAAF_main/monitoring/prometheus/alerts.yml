@@ -1,0 +1,219 @@
+groups:
+  - name: ncaaf_ingestion_alerts
+    interval: 30s
+    rules:
+      - alert: IngestionServiceDown
+        expr: up{job="ncaaf-ingestion"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: ingestion
+        annotations:
+          summary: "NCAAF Ingestion Service is down"
+          description: "The ingestion service has been down for more than 2 minutes"
+
+      - alert: HighAPIErrorRate
+        expr: rate(ncaaf_api_calls_total{status="error"}[5m]) / rate(ncaaf_api_calls_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: ingestion
+        annotations:
+          summary: "High API error rate detected"
+          description: "API error rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: ncaaf_db_connections_active / (ncaaf_db_connections_active + ncaaf_db_connections_idle) > 0.9
+        for: 3m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database connection pool near exhaustion"
+          description: "Connection pool utilization is {{ $value | humanizePercentage }}"
+
+      - alert: LowCacheHitRate
+        expr: rate(ncaaf_cache_hits_total[10m]) / (rate(ncaaf_cache_hits_total[10m]) + rate(ncaaf_cache_misses_total[10m])) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Cache hit rate is low"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 50%)"
+
+      - alert: SyncOperationsFailing
+        expr: rate(ncaaf_sync_operations_total{status="error"}[10m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: ingestion
+        annotations:
+          summary: "Data sync operations are failing"
+          description: "Sync error rate: {{ $value }} errors/sec"
+
+      - alert: NoActiveGamesButShouldBe
+        expr: ncaaf_active_games == 0 and hour() >= 12 and hour() <= 23 and day_of_week() > 4
+        for: 30m
+        labels:
+          severity: info
+          component: ingestion
+        annotations:
+          summary: "No active games detected during typical game time"
+          description: "Expected games on weekend afternoon/evening but none are active"
+
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(ncaaf_db_query_duration_seconds_bucket[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database queries are slow"
+          description: "P95 query latency is {{ $value | humanizeDuration }} (threshold: 1s)"
+
+  - name: ncaaf_ml_service_alerts
+    interval: 30s
+    rules:
+      - alert: MLServiceDown
+        expr: up{job="ncaaf-ml-service"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: ml_service
+        annotations:
+          summary: "NCAAF ML Service is down"
+          description: "The ML service has been down for more than 2 minutes"
+
+      - alert: MLModelsNotLoaded
+        expr: ncaaf_ml_models_loaded < 4
+        for: 5m
+        labels:
+          severity: critical
+          component: ml_service
+        annotations:
+          summary: "ML models not fully loaded"
+          description: "Only {{ $value }} models loaded (expected: 4)"
+
+      - alert: SlowPredictionGeneration
+        expr: histogram_quantile(0.95, rate(ncaaf_ml_prediction_duration_seconds_bucket[5m])) > 5.0
+        for: 10m
+        labels:
+          severity: warning
+          component: ml_service
+        annotations:
+          summary: "Prediction generation is slow"
+          description: "P95 prediction latency is {{ $value | humanizeDuration }} (threshold: 5s)"
+
+      - alert: LowPredictionConfidence
+        expr: histogram_quantile(0.50, rate(ncaaf_ml_prediction_confidence_bucket[1h])) < 0.5
+        for: 1h
+        labels:
+          severity: info
+          component: ml_service
+        annotations:
+          summary: "Model confidence is lower than expected"
+          description: "Median prediction confidence is {{ $value | humanizePercentage }}"
+
+      - alert: HighFeatureExtractionLatency
+        expr: histogram_quantile(0.95, rate(ncaaf_ml_feature_extraction_duration_seconds_bucket[5m])) > 2.0
+        for: 10m
+        labels:
+          severity: warning
+          component: ml_service
+        annotations:
+          summary: "Feature extraction is slow"
+          description: "P95 feature extraction latency is {{ $value | humanizeDuration }}"
+
+      - alert: HighMLErrorRate
+        expr: rate(ncaaf_ml_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: ml_service
+        annotations:
+          summary: "ML service error rate is elevated"
+          description: "Error rate: {{ $value }} errors/sec"
+
+      - alert: NoPredictionsGenerated
+        expr: rate(ncaaf_ml_predictions_total[1h]) == 0 and hour() >= 8 and hour() <= 22
+        for: 2h
+        labels:
+          severity: warning
+          component: ml_service
+        annotations:
+          summary: "No predictions being generated"
+          description: "No predictions generated in the last 2 hours during business hours"
+
+      - alert: APIResponseTimeHigh
+        expr: histogram_quantile(0.95, rate(ncaaf_ml_api_request_duration_seconds_bucket[5m])) > 10.0
+        for: 5m
+        labels:
+          severity: warning
+          component: ml_service
+        annotations:
+          summary: "API response times are high"
+          description: "P95 API latency is {{ $value | humanizeDuration }}"
+
+  - name: ncaaf_system_alerts
+    interval: 60s
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been unreachable for more than 1 minute"
+
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: postgres
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL has been unreachable for more than 1 minute"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} (threshold: 90%)"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Disk space is running low"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining"
+
+      - alert: TooManyRestarts
+        expr: changes(process_start_time_seconds[1h]) > 3
+        for: 1h
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Service restarting frequently"
+          description: "Service has restarted {{ $value }} times in the last hour"

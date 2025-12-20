@@ -1,0 +1,240 @@
+# Production-Ready NCAAF v5.0 Container
+# Self-contained: PostgreSQL, Redis, Go Ingestion, Python ML Service, API
+# All credentials and config included - ready to roll live with proven model
+
+FROM postgres:16-alpine AS base
+
+# Install system dependencies
+RUN apk add --no-cache \
+        python3 \
+        py3-pip \
+        python3-dev \
+        build-base \
+        go \
+        git \
+        ca-certificates \
+        wget \
+        curl \
+        redis \
+        supervisor \
+        bash \
+        postgresql-dev \
+        gcc \
+        musl-dev \
+        linux-headers \
+        cmake
+
+# Create app directory
+WORKDIR /app
+
+# Stage 2: Build Go ingestion service
+FROM base AS go-builder
+WORKDIR /build
+COPY ingestion/go.mod ingestion/go.sum* ./
+RUN go mod download
+COPY ingestion/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/ingestion-worker ./cmd/worker
+
+# Stage 3: Install Python dependencies
+FROM base AS python-builder
+WORKDIR /app
+COPY ml_service/requirements.txt .
+RUN python3 -m venv /install && \
+    /install/bin/pip install --upgrade pip && \
+    /install/bin/pip install -r requirements.txt
+
+# Stage 4: Final production container
+FROM base AS production
+
+# Copy Python dependencies
+COPY --from=python-builder /install /usr/local
+
+# Copy Go binary
+COPY --from=go-builder /out/ingestion-worker /app/bin/ingestion-worker
+RUN chmod +x /app/bin/ingestion-worker
+
+# Copy application code
+COPY ml_service/main.py /app/
+COPY ml_service/src /app/src
+COPY ml_service/scripts /app/scripts
+COPY ingestion/migrations /app/migrations
+COPY database/schema /app/database/schema
+
+# Copy ML models (production models - must be trained and proven)
+COPY ml_service/models /app/models
+
+# Create directories
+RUN mkdir -p /app/models /app/data /app/logs /etc/supervisor/conf.d
+
+# Create database initialization script
+RUN echo '#!/bin/sh' > /app/init-db.sh && \
+    echo 'set -e' >> /app/init-db.sh && \
+    echo 'DB_USER=${DATABASE_USER:-ncaaf_user}' >> /app/init-db.sh && \
+    echo 'DB_NAME=${DATABASE_NAME:-ncaaf_v5}' >> /app/init-db.sh && \
+    echo 'DB_PASSWORD=${DATABASE_PASSWORD}' >> /app/init-db.sh && \
+    echo 'if [ -z "$DB_PASSWORD" ]; then' >> /app/init-db.sh && \
+    echo '  echo "ERROR: DATABASE_PASSWORD environment variable must be set"' >> /app/init-db.sh && \
+    echo '  exit 1' >> /app/init-db.sh && \
+    echo 'fi' >> /app/init-db.sh && \
+    echo 'echo "Waiting for PostgreSQL to start..."' >> /app/init-db.sh && \
+    echo 'until pg_isready -U postgres; do sleep 1; done' >> /app/init-db.sh && \
+    echo 'echo "Creating database and user..."' >> /app/init-db.sh && \
+    echo 'psql -U postgres -c "CREATE USER \"$DB_USER\" WITH PASSWORD '\''$DB_PASSWORD'\'';" || true' >> /app/init-db.sh && \
+    echo 'psql -U postgres -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";" || true' >> /app/init-db.sh && \
+    echo 'echo "Running schema migrations..."' >> /app/init-db.sh && \
+    echo 'PGPASSWORD="$DB_PASSWORD" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f /app/database/schema/001_init.sql || echo "Schema may already exist"' >> /app/init-db.sh && \
+    echo 'echo "Database initialized"' >> /app/init-db.sh && \
+    chmod +x /app/init-db.sh
+
+# Create delayed database initialization script
+RUN echo '#!/bin/sh' > /app/init-db-delayed.sh && \
+    echo 'set -e' >> /app/init-db-delayed.sh && \
+    echo 'DB_USER=${DATABASE_USER:-ncaaf_user}' >> /app/init-db-delayed.sh && \
+    echo 'DB_NAME=${DATABASE_NAME:-ncaaf_v5}' >> /app/init-db-delayed.sh && \
+    echo 'DB_PASSWORD=${DATABASE_PASSWORD}' >> /app/init-db-delayed.sh && \
+    echo 'if [ -z "$DB_PASSWORD" ]; then' >> /app/init-db-delayed.sh && \
+    echo '  echo "ERROR: DATABASE_PASSWORD environment variable must be set"' >> /app/init-db-delayed.sh && \
+    echo '  exit 1' >> /app/init-db-delayed.sh && \
+    echo 'fi' >> /app/init-db-delayed.sh && \
+    echo 'echo "Waiting for PostgreSQL to be ready..."' >> /app/init-db-delayed.sh && \
+    echo 'for i in $(seq 1 30); do' >> /app/init-db-delayed.sh && \
+    echo '  if pg_isready -U postgres -h localhost > /dev/null 2>&1; then' >> /app/init-db-delayed.sh && \
+    echo '    echo "PostgreSQL is ready!"' >> /app/init-db-delayed.sh && \
+    echo '    break' >> /app/init-db-delayed.sh && \
+    echo '  fi' >> /app/init-db-delayed.sh && \
+    echo '  if [ $i -eq 30 ]; then' >> /app/init-db-delayed.sh && \
+    echo '    echo "ERROR: PostgreSQL did not start in time"' >> /app/init-db-delayed.sh && \
+    echo '    exit 1' >> /app/init-db-delayed.sh && \
+    echo '  fi' >> /app/init-db-delayed.sh && \
+    echo '  sleep 2' >> /app/init-db-delayed.sh && \
+    echo 'done' >> /app/init-db-delayed.sh && \
+    echo 'echo "Creating database and user..."' >> /app/init-db-delayed.sh && \
+    echo 'psql -U postgres -h localhost -c "CREATE USER \"$DB_USER\" WITH PASSWORD '\''$DB_PASSWORD'\'';" || true' >> /app/init-db-delayed.sh && \
+    echo 'psql -U postgres -h localhost -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";" || true' >> /app/init-db-delayed.sh && \
+    echo 'echo "Running schema migrations..."' >> /app/init-db-delayed.sh && \
+    echo 'PGPASSWORD="$DB_PASSWORD" psql -h localhost -U "$DB_USER" -d "$DB_NAME" -f /app/database/schema/001_init.sql || echo "Schema may already exist"' >> /app/init-db-delayed.sh && \
+    echo 'echo "Database initialized successfully"' >> /app/init-db-delayed.sh && \
+    chmod +x /app/init-db-delayed.sh
+
+# Create supervisor configuration
+RUN mkdir -p /etc/supervisor/conf.d && \
+    echo '[unix_http_server]' > /etc/supervisor/supervisord.conf && \
+    echo 'file=/var/run/supervisord.sock' >> /etc/supervisor/supervisord.conf && \
+    echo 'chmod=0700' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '[supervisord]' >> /etc/supervisor/supervisord.conf && \
+    echo 'nodaemon=true' >> /etc/supervisor/supervisord.conf && \
+    echo 'user=root' >> /etc/supervisor/supervisord.conf && \
+    echo 'logfile=/app/logs/supervisord.log' >> /etc/supervisor/supervisord.conf && \
+    echo 'pidfile=/var/run/supervisord.pid' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '[rpcinterface:supervisor]' >> /etc/supervisor/supervisord.conf && \
+    echo 'supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '[supervisorctl]' >> /etc/supervisor/supervisord.conf && \
+    echo 'serverurl=unix:///var/run/supervisord.sock' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '[include]' >> /etc/supervisor/supervisord.conf && \
+    echo 'files = /etc/supervisor/conf.d/*.conf' >> /etc/supervisor/supervisord.conf && \
+    echo '' >> /etc/supervisor/supervisord.conf && \
+    echo '# Production Services' > /etc/supervisor/conf.d/prod.conf && \
+    echo '' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '[program:postgres]' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'command=/usr/local/bin/docker-entrypoint.sh postgres' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stdin_logfile=/dev/stdin' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stdin_logfile_maxbytes=0' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'user=postgres' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'priority=100' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stderr_logfile=/app/logs/postgres.err.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stdout_logfile=/app/logs/postgres.out.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '[program:init_db]' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'command=/app/init-db-delayed.sh' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autorestart=false' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'startretries=1' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'priority=150' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'startsecs=5' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stderr_logfile=/app/logs/init_db.err.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stdout_logfile=/app/logs/init_db.out.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '[program:redis]' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'command=redis-server --bind 127.0.0.1 --port 6379' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'priority=200' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stderr_logfile=/app/logs/redis.err.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stdout_logfile=/app/logs/redis.out.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '[program:ml_service]' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'command=python3 -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'directory=/app' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'priority=300' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'startsecs=10' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'environment=DATABASE_HOST="localhost",DATABASE_PORT="5432",DATABASE_NAME="PLACEHOLDER_DB_NAME",DATABASE_USER="PLACEHOLDER_DB_USER",DATABASE_PASSWORD="PLACEHOLDER_DB_PASSWORD",REDIS_HOST="localhost",REDIS_PORT="6379",REDIS_PASSWORD="PLACEHOLDER_REDIS_PASSWORD"' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stderr_logfile=/app/logs/ml_service.err.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stdout_logfile=/app/logs/ml_service.out.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '' >> /etc/supervisor/conf.d/prod.conf && \
+    echo '[program:ingestion]' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'command=/app/bin/ingestion-worker' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'directory=/app' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'priority=400' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'startsecs=10' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'environment=DATABASE_HOST="localhost",DATABASE_PORT="5432",DATABASE_NAME="PLACEHOLDER_DB_NAME",DATABASE_USER="PLACEHOLDER_DB_USER",DATABASE_PASSWORD="PLACEHOLDER_DB_PASSWORD",REDIS_HOST="localhost",REDIS_PORT="6379",REDIS_PASSWORD="PLACEHOLDER_REDIS_PASSWORD",SPORTSDATA_API_KEY="PLACEHOLDER_API_KEY",SPORTSDATA_BASE_URL="PLACEHOLDER_BASE_URL",WORKER_INTERVAL="PLACEHOLDER_WORKER_INTERVAL"' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stderr_logfile=/app/logs/ingestion.err.log' >> /etc/supervisor/conf.d/prod.conf && \
+    echo 'stdout_logfile=/app/logs/ingestion.out.log' >> /etc/supervisor/conf.d/prod.conf
+
+# Set PostgreSQL environment
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=${POSTGRES_INIT_PASSWORD:-postgres}
+ENV POSTGRES_DB=postgres
+
+# Create startup script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'set -e' >> /app/start.sh && \
+    echo 'echo "=== NCAAF v5.0 Production Container Starting ==="' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Set defaults for environment variables' >> /app/start.sh && \
+    echo 'DB_HOST=${DATABASE_HOST:-localhost}' >> /app/start.sh && \
+    echo 'DB_PORT=${DATABASE_PORT:-5432}' >> /app/start.sh && \
+    echo 'DB_NAME=${DATABASE_NAME:-ncaaf_v5}' >> /app/start.sh && \
+    echo 'DB_USER=${DATABASE_USER:-ncaaf_user}' >> /app/start.sh && \
+    echo 'DB_PASSWORD=${DATABASE_PASSWORD}' >> /app/start.sh && \
+    echo 'REDIS_PASS=${REDIS_PASSWORD:-}' >> /app/start.sh && \
+    echo 'API_KEY=${SPORTSDATA_API_KEY}' >> /app/start.sh && \
+    echo 'API_BASE=${SPORTSDATA_BASE_URL:-https://api.sportsdata.io/v3/cfb}' >> /app/start.sh && \
+    echo 'WORKER_INT=${WORKER_INTERVAL:-300s}' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Update supervisor config with actual values' >> /app/start.sh && \
+    echo 'sed -i "s|PLACEHOLDER_DB_NAME|$DB_NAME|g" /etc/supervisor/conf.d/prod.conf' >> /app/start.sh && \
+    echo 'sed -i "s|PLACEHOLDER_DB_USER|$DB_USER|g" /etc/supervisor/conf.d/prod.conf' >> /app/start.sh && \
+    echo 'sed -i "s|PLACEHOLDER_DB_PASSWORD|$DB_PASSWORD|g" /etc/supervisor/conf.d/prod.conf' >> /app/start.sh && \
+    echo 'sed -i "s|PLACEHOLDER_REDIS_PASSWORD|$REDIS_PASS|g" /etc/supervisor/conf.d/prod.conf' >> /app/start.sh && \
+    echo 'sed -i "s|PLACEHOLDER_API_KEY|$API_KEY|g" /etc/supervisor/conf.d/prod.conf' >> /app/start.sh && \
+    echo 'sed -i "s|PLACEHOLDER_BASE_URL|$API_BASE|g" /etc/supervisor/conf.d/prod.conf' >> /app/start.sh && \
+    echo 'sed -i "s|PLACEHOLDER_WORKER_INTERVAL|$WORKER_INT|g" /etc/supervisor/conf.d/prod.conf' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Update Redis command with password if provided' >> /app/start.sh && \
+    echo 'if [ -n "$REDIS_PASS" ]; then' >> /app/start.sh && \
+    echo '  sed -i "s|command=redis-server --bind 127.0.0.1 --port 6379|command=redis-server --bind 127.0.0.1 --port 6379 --requirepass \"$REDIS_PASS\"|g" /etc/supervisor/conf.d/prod.conf' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo 'echo "Starting supervisor to manage all services..."' >> /app/start.sh && \
+    echo 'exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Expose ports
+EXPOSE 8000 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1
+
+# Run startup script
+CMD ["/app/start.sh"]

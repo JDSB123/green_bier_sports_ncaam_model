@@ -1,0 +1,55 @@
+================================================================================
+NCAAF MODEL ENHANCEMENT BACKTEST REPORT
+Generated: 2025-12-19T04:19:08.948120
+Period: 2024-09-01 to 2024-12-17
+================================================================================
+
+MODEL COMPARISON
+----------------------------------------
++---------------------+------------+------------+---------------+
+| Metric              | Baseline   |   Enhanced | Improvement   |
++=====================+============+============+===============+
+| Total Bets          | 0          |          0 | N/A           |
++---------------------+------------+------------+---------------+
+| Units Wagered       | 0.0        |          0 | N/A           |
++---------------------+------------+------------+---------------+
+| Total Return        | 0.0        |          0 | N/A           |
++---------------------+------------+------------+---------------+
+| ROI (%)             | 0.0        |          0 | N/A           |
++---------------------+------------+------------+---------------+
+| Win Rate (%)        | 0.0        |          0 | N/A           |
++---------------------+------------+------------+---------------+
+| MAE                 | 0.0        |          0 | N/A           |
++---------------------+------------+------------+---------------+
+| Sharpe Ratio        | 0.0        |          0 | N/A           |
++---------------------+------------+------------+---------------+
+| Avg Confidence      | nan        |        nan | +nan%         |
++---------------------+------------+------------+---------------+
+| Monte Carlo Acc (%) | N/A        |          0 | N/A           |
++---------------------+------------+------------+---------------+
+| Rev Line Hits       | N/A        |          0 | N/A           |
++---------------------+------------+------------+---------------+
+
+ROE OPTIMIZATION RESULTS
+----------------------------------------
+ROI Improvement: +0.00%
+This translates to $0.00 additional profit per $100 wagered
+
+KEY FINDINGS
+----------------------------------------
+
+================================================================================
+ENHANCEMENT DETAILS
+================================================================================
+
+IMPLEMENTED IMPROVEMENTS:
+1. Walk-Forward Validation - Prevents data leakage
+2. Line Movement Features - Sharp vs public money tracking
+3. Opponent-Adjusted Metrics - EPA and success rates
+4. Monte Carlo Simulation - Uncertainty quantification
+5. Ensemble Methods - Combined predictions for stability
+6. Havoc & Explosive Metrics - Advanced team tendencies
+7. Bias Detection - Corrects for ranked team overestimation
+8. Automated Retraining - Weekly model updates
+9. Performance Monitoring - Daily tracking and alerts
+10. Kelly Criterion Sizing - Optimal bet unit calculation

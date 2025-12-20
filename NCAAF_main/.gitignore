@@ -1,0 +1,78 @@
+# Go
+ingestion/bin/
+ingestion/vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+
+# Coverage artifacts (prevent accidental commit)
+ml_service/.coverage
+ml_service/htmlcov/
+ml_service/coverage.xml
+# Python
+ml_service/venv/
+ml_service/.venv/
+ml_service/__pycache__/
+ml_service/*.py[cod]
+ml_service/*$py.class
+ml_service/.pytest_cache/
+ml_service/.mypy_cache/
+ml_service/.ruff_cache/
+ml_service/dist/
+ml_service/build/
+ml_service/*.egg-info/
+
+# Models (large files, should use Git LFS or external storage)
+ml_service/models/*.pkl
+ml_service/models/*.joblib
+ml_service/models/*.h5
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+ingestion/logs/
+ml_service/logs/
+
+# Data
+data/
+raw_data/
+processed_data/
+cache/
+*.csv
+*.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+test_*.py
+
+# Environment files (production secrets)
+.env.production
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db

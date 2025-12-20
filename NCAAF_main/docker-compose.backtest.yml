@@ -1,0 +1,68 @@
+version: '3.8'
+
+# Self-Contained Backtest Container
+# Usage: docker-compose -f docker-compose.backtest.yml up -d
+#        docker-compose -f docker-compose.backtest.yml exec backtest /app/run-backtest.sh
+# Or:    docker-compose -f docker-compose.backtest.yml run --rm backtest python3 main.py backtest --start-date 2024-09-01 --end-date 2024-12-17
+
+services:
+  backtest:
+    build:
+      context: .
+      dockerfile: Dockerfile.backtest
+    container_name: ncaaf_backtest
+    environment:
+      # Database (internal PostgreSQL - localhost only)
+      - DATABASE_HOST=localhost
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DATABASE_NAME:-ncaaf_v5}
+      - DATABASE_USER=${DATABASE_USER:-ncaaf_user}
+      # IMPORTANT: Must match the password stored in the Postgres data volume
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_SSL_MODE=disable
+      
+      # Redis (internal - localhost only)
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+      
+      # Backtest configuration
+      - BACKTEST_START_DATE=${BACKTEST_START_DATE:-2024-09-01}
+      - BACKTEST_END_DATE=${BACKTEST_END_DATE:-2024-12-17}
+      
+      # Application
+      - APP_ENV=backtest
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MODEL_PATH=/app/models
+      
+      # PostgreSQL initialization
+      - POSTGRES_INIT_PASSWORD=${POSTGRES_INIT_PASSWORD:-postgres}
+    volumes:
+      # Reuse existing NCAAF Postgres + model volumes so backtests run immediately
+      # NOTE: postgres image defaults to /var/lib/postgresql/data; mount there to avoid an anonymous extra volume
+      - ncaaf_data:/var/lib/postgresql/data
+      - ncaaf_models:/app/models
+      - backtest_logs:/app/logs
+      - backtest_results:/app/backtest_results
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  # These are existing volumes created by prior NCAAF runs (kept even after removing containers)
+  ncaaf_data:
+    external: true
+    # NOTE: Actual Postgres PGDATA volume used by prior runs
+    name: ncaaf_v50_beta_postgres_data
+  ncaaf_models:
+    external: true
+    name: ncaaf_v50_beta_ncaaf_models
+  backtest_logs:
+    driver: local
+  backtest_results:
+    driver: local

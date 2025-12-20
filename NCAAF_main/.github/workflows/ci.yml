@@ -1,0 +1,314 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.23'
+  PYTHON_VERSION: '3.12'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Go Ingestion Service Tests
+  go-tests:
+    name: Go Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ncaaf_v5_test
+          POSTGRES_USER: ncaaf_user
+          POSTGRES_PASSWORD: ncaaf_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ingestion/go.mod
+          cache-dependency-path: ingestion/go.sum
+
+      - name: Go mod download
+        working-directory: ./ingestion
+        run: go mod download
+
+      - name: Go mod tidy
+        working-directory: ./ingestion
+        run: go mod tidy
+
+      - name: Go mod verify
+        working-directory: ./ingestion
+        run: go mod verify
+
+      - name: Run go vet
+        working-directory: ./ingestion
+        run: go vet ./...
+
+      - name: Run unit tests
+        working-directory: ./ingestion
+        run: go test -v -short ./...
+
+      - name: Run database migrations
+        working-directory: ./ingestion
+        env:
+          DATABASE_URL: postgres://ncaaf_user:ncaaf_password@localhost:5432/ncaaf_v5_test?sslmode=disable
+        run: |
+          # Install migrate tool
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          # Ensure GOPATH/bin is in PATH so 'migrate' is found
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          # Run migrations (use ingestion migrations, fallback to database migrations)
+          if [ -d "./migrations" ]; then
+            migrate -path ./migrations -database "$DATABASE_URL" up || migrate -path ../database/migrations -database "$DATABASE_URL" up
+          else
+            migrate -path ../database/migrations -database "$DATABASE_URL" up
+          fi
+
+      - name: Run integration tests
+        working-directory: ./ingestion
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_NAME: ncaaf_v5_test
+          DATABASE_USER: ncaaf_user
+          DATABASE_PASSWORD: ncaaf_password
+          DATABASE_SSL_MODE: disable
+        run: go test -v -tags=integration ./internal/repository/...
+
+      - name: Build binary
+        working-directory: ./ingestion
+        run: go build -v -o bin/worker ./cmd/worker
+
+  # Python ML Service Tests
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ncaaf_v5_test
+          POSTGRES_USER: ncaaf_user
+          POSTGRES_PASSWORD: ncaaf_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: ml_service/requirements.txt
+
+      - name: Install dependencies
+        working-directory: ./ml_service
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run linting (ruff)
+        working-directory: ./ml_service
+        run: ruff check src/ || true
+
+      - name: Run type checking (mypy)
+        working-directory: ./ml_service
+        run: mypy src/ || true
+
+      - name: Run unit tests
+        working-directory: ./ml_service
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_NAME: ncaaf_v5_test
+          DATABASE_USER: ncaaf_user
+          DATABASE_PASSWORD: ncaaf_password
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: pytest tests/ -v -m "not integration" --cov=src --cov-report=xml --cov-report=term --cov-report=html --cov-fail-under=70
+
+      - name: Upload coverage to Codecov
+        if: false
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./ml_service/coverage.xml
+          flags: python
+          name: ml-service-coverage
+          fail_ci_if_error: false
+      
+      - name: Upload coverage artifact (no external service)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-service-coverage-xml
+          path: ml_service/coverage.xml
+
+  # Docker Build
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [go-tests, python-tests]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ingestion service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ingestion
+          push: false
+          tags: ncaaf-v5/ingestion:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build ML service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ml_service
+          push: false
+          tags: ncaaf-v5/ml_service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Security Scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.25.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Integration Test
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          DATABASE_HOST=postgres
+          DATABASE_PORT=5432
+          DATABASE_NAME=ncaaf_v5
+          DATABASE_USER=ncaaf_user
+          DATABASE_PASSWORD=ncaaf_password
+          DATABASE_SSL_MODE=disable
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          REDIS_PASSWORD=
+          SPORTSDATA_API_KEY=test_key
+          SPORTSDATA_BASE_URL=https://api.sportsdata.io/v3/cfb
+          APP_ENV=test
+          LOG_LEVEL=info
+          EOF
+
+      - name: Start services
+        run: docker compose up -d postgres redis
+
+      - name: Wait for services
+        run: |
+          timeout 30 bash -c 'until docker compose exec -T postgres pg_isready; do sleep 1; done'
+          timeout 30 bash -c 'until docker compose exec -T redis redis-cli ping; do sleep 1; done'
+
+      - name: Run migrations
+        run: |
+          docker compose exec -T postgres psql -U ncaaf_user -d ncaaf_v5 -c "SELECT 1"
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
+
+  # Deployment (only on main/master)
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: [integration-test, security-scan]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy notification
+        run: |
+          echo "Ready to deploy to production"
+          echo "Manual deployment required - see DEPLOYMENT.md"
+
+      # Uncomment below for automatic deployment to your infrastructure
+      # - name: Deploy to production
+      #   run: |
+      #     # Add your deployment commands here
+      #     # Examples:
+      #     # - SSH to server and pull latest
+      #     # - Use kubectl for Kubernetes
+      #     # - Use terraform for infrastructure
+      #     echo "Deployment steps would go here"

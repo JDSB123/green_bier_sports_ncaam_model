@@ -1,0 +1,10 @@
+Enhanced Model Metrics (with ROE Optimizations)
+===========================================
+Training samples: 792
+Test samples: 199
+Spread MAE: 8.04
+Total MAE: 10.33
+ATS Accuracy (all picks): 88.4%
+ATS Accuracy (top 20% confidence): 100.0%
+High confidence picks: 40
+ROE Improvement vs baseline: +39.0%

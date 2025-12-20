@@ -1,0 +1,7 @@
+Baseline Model Metrics
+=====================
+Training samples: 792
+Test samples: 199
+Spread MAE: 10.27
+Total MAE: 11.30
+ATS Accuracy: 80.4%

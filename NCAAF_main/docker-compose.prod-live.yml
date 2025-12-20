@@ -1,0 +1,88 @@
+version: '3.8'
+
+# Production-Ready Live Container
+# Self-contained: PostgreSQL, Redis, Go Ingestion, Python ML Service, API
+# All credentials and config included - ready to roll live with proven model
+#
+# Usage:
+#   1. Ensure you have a proven model trained and placed in ml_service/models/
+#   2. Set all required environment variables in .env file
+#   3. docker-compose -f docker-compose.prod-live.yml up -d
+#   4. Monitor: docker-compose -f docker-compose.prod-live.yml logs -f
+
+services:
+  ncaaf_prod_live:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: ncaaf_prod_live
+    environment:
+      # SportsDataIO API
+      - SPORTSDATA_API_KEY=${SPORTSDATA_API_KEY}
+      - SPORTSDATA_BASE_URL=${SPORTSDATA_BASE_URL:-https://api.sportsdata.io/v3/cfb}
+      - SPORTSDATA_TIMEOUT=${SPORTSDATA_TIMEOUT:-30s}
+      
+      # Database (internal PostgreSQL - localhost only)
+      - DATABASE_HOST=localhost
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DATABASE_NAME:-ncaaf_v5}
+      - DATABASE_USER=${DATABASE_USER:-ncaaf_user}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_SSL_MODE=${DATABASE_SSL_MODE:-disable}
+      
+      # Redis (internal - localhost only)
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=0
+      
+      # Application
+      - APP_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - INGESTION_PORT=8080
+      - ML_SERVICE_PORT=8000
+      - WORKER_INTERVAL=${WORKER_INTERVAL:-300s}
+      - WEBHOOK_ENABLED=${WEBHOOK_ENABLED:-true}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - MODEL_PATH=/app/models
+      
+      # PostgreSQL initialization
+      - POSTGRES_INIT_PASSWORD=${POSTGRES_INIT_PASSWORD:-postgres}
+    ports:
+      - "${ML_SERVICE_PORT:-8001}:8000"  # ML Service API
+      - "${INGESTION_PORT:-8083}:8080"   # Ingestion API
+    volumes:
+      # postgres image defaults to /var/lib/postgresql/data
+      - ncaaf_prod_data:/var/lib/postgresql/data
+      - ncaaf_prod_models:/app/models
+      - ncaaf_prod_logs:/app/logs
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  ncaaf_prod_data:
+    driver: local
+  ncaaf_prod_models:
+    driver: local
+  ncaaf_prod_logs:
+    driver: local

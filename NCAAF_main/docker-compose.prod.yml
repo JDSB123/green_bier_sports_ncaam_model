@@ -1,0 +1,232 @@
+version: '3.8'
+
+# Production Docker Compose Configuration
+# DO NOT use this in development - use docker-compose.yml instead
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ncaaf_v5_postgres_prod
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-ncaaf_v5}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8"
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./database/schema:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ncaaf_network_prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ncaaf_v5_redis_prod
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ncaaf_network_prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Go Data Ingestion Service
+  ingestion:
+    build:
+      context: ./ingestion
+      dockerfile: Dockerfile
+      target: production
+    image: ncaaf-v5/ingestion:${VERSION:-latest}
+    container_name: ncaaf_v5_ingestion_prod
+    environment:
+      # SportsDataIO API
+      - SPORTSDATA_API_KEY=${SPORTSDATA_API_KEY}
+      - SPORTSDATA_BASE_URL=${SPORTSDATA_BASE_URL:-https://api.sportsdata.io/v3/cfb}
+      - SPORTSDATA_TIMEOUT=${SPORTSDATA_TIMEOUT:-30}
+
+      # Database
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DATABASE_NAME:-ncaaf_v5}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_SSL_MODE=${DATABASE_SSL_MODE:-require}
+
+      # Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB:-0}
+
+      # Application
+      - APP_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - INGESTION_PORT=${INGESTION_PORT:-8080}
+
+      # Scheduler
+      - WORKER_INTERVAL=${WORKER_INTERVAL:-60}
+      - NIGHTLY_REFRESH_CRON=${NIGHTLY_REFRESH_CRON:-0 2 * * *}
+      - ENABLE_SCHEDULER=${ENABLE_SCHEDULER:-true}
+      - INITIAL_SYNC_ENABLED=${INITIAL_SYNC_ENABLED:-true}
+
+      # Features
+      - ENABLE_LINE_MOVEMENT_TRACKING=${ENABLE_LINE_MOVEMENT_TRACKING:-true}
+      - ENABLE_CACHING=${ENABLE_CACHING:-true}
+      - WEBHOOK_ENABLED=${WEBHOOK_ENABLED:-true}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+
+    ports:
+      - "${INGESTION_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ncaaf_network_prod
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      replicas: 1
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Python ML Service
+  ml_service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+      target: production
+    image: ncaaf-v5/ml-service:${VERSION:-latest}
+    container_name: ncaaf_v5_ml_service_prod
+    environment:
+      # Database
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DATABASE_NAME:-ncaaf_v5}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_SSL_MODE=${DATABASE_SSL_MODE:-require}
+
+      # Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+      # Application
+      - ML_SERVICE_PORT=${ML_SERVICE_PORT:-8000}
+      - MODEL_PATH=${MODEL_PATH:-/app/models}
+      - APP_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+    ports:
+      - "${ML_SERVICE_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ncaaf_network_prod
+    volumes:
+      - ml_models_prod:/app/models:ro  # Read-only trained models
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+      replicas: 1
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  ncaaf_network_prod:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
+  ml_models_prod:
+    driver: local

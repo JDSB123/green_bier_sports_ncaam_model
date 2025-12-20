@@ -1,0 +1,640 @@
+name: Daily Model Performance Monitor
+
+on:
+  schedule:
+    # Run every day at 8 AM EST (1 PM UTC) during season
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      days_back:
+        description: 'Days to look back for performance'
+        required: false
+        type: number
+        default: 7
+      alert_threshold:
+        description: 'Performance degradation threshold (%)'
+        required: false
+        type: number
+        default: 15
+
+# ==============================================================================
+# SINGLE SOURCE OF TRUTH: All Python operations run inside Docker containers
+# ==============================================================================
+
+env:
+  ALERT_THRESHOLD: ${{ github.event.inputs.alert_threshold || 15 }}
+  DAYS_BACK: ${{ github.event.inputs.days_back || 7 }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+jobs:
+  check-season:
+    name: Check if monitoring needed
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+      current_week: ${{ steps.check.outputs.current_week }}
+
+    steps:
+      - name: Check date and season
+        id: check
+        run: |
+          # Check if we're in college football season (Sept-Jan)
+          MONTH=$(date +%m)
+          DAY_OF_WEEK=$(date +%u)
+
+          if [ $MONTH -ge 9 ] || [ $MONTH -le 1 ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+
+            # Calculate current week of season (simplified)
+            if [ $MONTH -ge 9 ]; then
+              WEEK=$(($(date +%U) - 35))  # Approximate week calculation
+            else
+              WEEK=$(($(date +%U) + 17))  # January weeks
+            fi
+
+            echo "current_week=$WEEK" >> $GITHUB_OUTPUT
+            echo "In season - Week $WEEK - will monitor performance"
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "Off season - skipping monitoring"
+          fi
+
+  fetch-predictions:
+    name: Fetch Recent Predictions (via Docker)
+    needs: check-season
+    if: needs.check-season.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env file for Docker
+        run: |
+          cat > .env << EOF
+          DATABASE_HOST=postgres
+          DATABASE_PORT=5432
+          DATABASE_NAME=ncaaf_v5
+          DATABASE_USER=${{ secrets.DB_USER || 'ncaaf_user' }}
+          DATABASE_PASSWORD=${{ secrets.DB_PASSWORD || 'ncaaf_password' }}
+          DATABASE_SSL_MODE=disable
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          DAYS_BACK=${{ env.DAYS_BACK }}
+          APP_ENV=production
+          EOF
+
+      - name: Start services
+        run: docker compose up -d postgres redis
+
+      - name: Wait for PostgreSQL
+        run: |
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U ${{ secrets.DB_USER || 'ncaaf_user' }}; do sleep 2; done'
+
+      - name: Build ML service image
+        run: docker compose build ml_service
+
+      - name: Fetch predictions via Docker container
+        run: |
+          docker compose run --rm -e DAYS_BACK=${{ env.DAYS_BACK }} ml_service python -c "
+          import os
+          import json
+          import pandas as pd
+          from datetime import datetime, timedelta
+          from src.db.database import Database
+
+          db = Database()
+          db.connect()
+
+          days_back = int(os.environ.get('DAYS_BACK', 7))
+          cutoff_date = datetime.now() - timedelta(days=days_back)
+
+          query = '''
+              SELECT
+                  p.id as prediction_id,
+                  p.game_id,
+                  p.predicted_margin,
+                  p.predicted_total,
+                  p.confidence_score,
+                  p.recommend_bet,
+                  p.recommended_bet_type,
+                  p.recommended_side,
+                  p.recommended_units,
+                  p.created_at as prediction_time,
+                  g.home_score,
+                  g.away_score,
+                  (g.home_score - g.away_score) as actual_margin,
+                  (g.home_score + g.away_score) as actual_total,
+                  g.status,
+                  o.spread_home as market_spread,
+                  o.total_over as market_total
+              FROM predictions p
+              JOIN games g ON p.game_id = g.id
+              LEFT JOIN (
+                  SELECT DISTINCT ON (game_id)
+                      game_id,
+                      spread_home,
+                      total_over
+                  FROM odds
+                  WHERE sportsbook_id = 1105
+                  ORDER BY game_id, created_at DESC
+              ) o ON g.id = o.game_id
+              WHERE p.created_at >= %s
+                AND g.status IN ('Final', 'F/OT')
+              ORDER BY p.created_at DESC
+          '''
+
+          with db.get_connection() as conn:
+              with conn.cursor() as cur:
+                  cur.execute(query, (cutoff_date,))
+                  results = cur.fetchall()
+                  columns = [desc[0] for desc in cur.description]
+
+          df = pd.DataFrame(results, columns=columns)
+          df.to_csv('/app/predictions_results.csv', index=False)
+          print(f'Fetched {len(df)} predictions from last {days_back} days')
+          print(f'Games with recommendations: {df[\"recommend_bet\"].sum() if len(df) > 0 else 0}')
+          db.close()
+          "
+
+      - name: Copy results from container
+        run: |
+          docker compose run --rm -v $(pwd):/output ml_service cp /app/predictions_results.csv /output/ 2>/dev/null || echo "No predictions file generated"
+          if [ ! -f predictions_results.csv ]; then
+            echo "prediction_id,game_id,predicted_margin,predicted_total,confidence_score,recommend_bet,recommended_bet_type,recommended_side,recommended_units,prediction_time,home_score,away_score,actual_margin,actual_total,status,market_spread,market_total" > predictions_results.csv
+          fi
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
+
+      - name: Upload predictions data
+        uses: actions/upload-artifact@v4
+        with:
+          name: predictions-data
+          path: predictions_results.csv
+
+  analyze-performance:
+    name: Analyze Model Performance (via Docker)
+    needs: fetch-predictions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      mae: ${{ steps.analyze.outputs.mae }}
+      roi: ${{ steps.analyze.outputs.roi }}
+      win_rate: ${{ steps.analyze.outputs.win_rate }}
+      sharpe: ${{ steps.analyze.outputs.sharpe }}
+      degradation: ${{ steps.analyze.outputs.degradation }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download predictions data
+        uses: actions/download-artifact@v4
+        with:
+          name: predictions-data
+
+      - name: Create analysis script
+        run: |
+          cat > analyze_performance.py << 'SCRIPT'
+          import pandas as pd
+          import numpy as np
+          import json
+          import os
+          import sys
+
+          # Load data
+          csv_path = '/data/predictions_results.csv' if os.path.exists('/data/predictions_results.csv') else 'predictions_results.csv'
+          df = pd.read_csv(csv_path)
+
+          if len(df) == 0:
+              print("No predictions to analyze")
+              # Output default values
+              with open('/data/metrics.txt', 'w') as f:
+                  f.write("mae=0\nroi=0\nwin_rate=0\nsharpe=0\ndegradation=0\n")
+              sys.exit(0)
+
+          metrics = {}
+
+          # Mean Absolute Error
+          mae_margin = np.abs(df['predicted_margin'] - df['actual_margin']).mean()
+          mae_total = np.abs(df['predicted_total'] - df['actual_total']).mean()
+          metrics['mae'] = round((mae_margin + mae_total) / 2, 2)
+
+          # ROI calculation for recommended bets
+          recommended = df[df['recommend_bet'] == True]
+
+          if len(recommended) > 0:
+              total_units_bet = recommended['recommended_units'].sum()
+              total_return = 0
+              wins = 0
+
+              for _, game in recommended.iterrows():
+                  if game['recommended_bet_type'] == 'spread':
+                      if game['recommended_side'] == 'home':
+                          won = game['actual_margin'] < game['market_spread']
+                      else:
+                          won = game['actual_margin'] > -game['market_spread']
+
+                      if won:
+                          total_return += game['recommended_units'] * 0.91
+                          wins += 1
+                      else:
+                          total_return -= game['recommended_units']
+
+                  elif game['recommended_bet_type'] == 'total':
+                      if game['recommended_side'] == 'over':
+                          won = game['actual_total'] > game['market_total']
+                      else:
+                          won = game['actual_total'] < game['market_total']
+
+                      if won:
+                          total_return += game['recommended_units'] * 0.91
+                          wins += 1
+                      else:
+                          total_return -= game['recommended_units']
+
+              metrics['roi'] = round((total_return / max(total_units_bet, 1)) * 100, 2)
+              metrics['win_rate'] = round((wins / len(recommended)) * 100, 2)
+              returns_per_bet = total_return / len(recommended)
+              metrics['sharpe'] = round(returns_per_bet / max(np.std([0.91, -1]), 0.1), 2)
+          else:
+              metrics['roi'] = 0
+              metrics['win_rate'] = 0
+              metrics['sharpe'] = 0
+
+          baseline_mae = 9.5
+          degradation = ((metrics['mae'] - baseline_mae) / baseline_mae) * 100
+          metrics['degradation'] = round(degradation, 2)
+
+          # Write metrics for GitHub Actions
+          with open('/data/metrics.txt', 'w') as f:
+              for key, value in metrics.items():
+                  f.write(f"{key}={value}\n")
+
+          # Generate report
+          report = {
+              'timestamp': pd.Timestamp.now().isoformat(),
+              'period': f"Last {os.environ.get('DAYS_BACK', 7)} days",
+              'total_predictions': len(df),
+              'recommended_bets': len(recommended) if 'recommended' in dir() else 0,
+              'metrics': metrics,
+          }
+
+          with open('/data/performance_report.json', 'w') as f:
+              json.dump(report, f, indent=2, default=str)
+
+          print(f"MAE: {metrics['mae']}")
+          print(f"ROI: {metrics['roi']}%")
+          print(f"Win Rate: {metrics['win_rate']}%")
+          print(f"Sharpe: {metrics['sharpe']}")
+          print(f"Degradation: {metrics['degradation']}%")
+          SCRIPT
+
+      - name: Build ML service image
+        run: docker compose build ml_service
+
+      - name: Analyze performance via Docker
+        id: analyze
+        run: |
+          # Run analysis inside Docker container
+          docker compose run --rm \
+            -v $(pwd):/data \
+            -e DAYS_BACK=${{ env.DAYS_BACK }} \
+            ml_service python /data/analyze_performance.py
+
+          # Read metrics back into GitHub Actions outputs
+          if [ -f metrics.txt ]; then
+            cat metrics.txt >> $GITHUB_OUTPUT
+          else
+            echo "mae=0" >> $GITHUB_OUTPUT
+            echo "roi=0" >> $GITHUB_OUTPUT
+            echo "win_rate=0" >> $GITHUB_OUTPUT
+            echo "sharpe=0" >> $GITHUB_OUTPUT
+            echo "degradation=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance_report.json
+
+  check-degradation:
+    name: Check for Model Degradation
+    needs: analyze-performance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Evaluate degradation
+        id: evaluate
+        run: |
+          DEGRADATION=${{ needs.analyze-performance.outputs.degradation }}
+          THRESHOLD=${{ env.ALERT_THRESHOLD }}
+
+          echo "Model degradation: ${DEGRADATION}%"
+          echo "Alert threshold: ${THRESHOLD}%"
+
+          # Use awk for floating point comparison (bc not always available)
+          if awk "BEGIN {exit !($DEGRADATION > $THRESHOLD)}"; then
+            echo "alert_needed=true" >> $GITHUB_OUTPUT
+            echo "⚠️ ALERT: Model performance degraded by ${DEGRADATION}%"
+          else
+            echo "alert_needed=false" >> $GITHUB_OUTPUT
+            echo "✅ Model performance within acceptable range"
+          fi
+
+  generate-report:
+    name: Generate Performance Dashboard
+    needs: [analyze-performance, check-degradation]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download performance report
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-report
+
+      - name: Generate HTML dashboard
+        run: |
+          cat > dashboard.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>NCAAF Model Performance Dashboard</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+                  .header { background: #333; color: white; padding: 20px; border-radius: 5px; }
+                  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+                  .metric { background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                  .metric h3 { margin: 0 0 10px 0; color: #666; font-size: 14px; }
+                  .metric .value { font-size: 32px; font-weight: bold; }
+                  .metric.good .value { color: #27ae60; }
+                  .metric.warning .value { color: #f39c12; }
+                  .metric.bad .value { color: #e74c3c; }
+                  .chart { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>NCAAF Model Performance Dashboard</h1>
+                  <p>Generated: $(date)</p>
+              </div>
+
+              <div class="metrics">
+                  <div class="metric good">
+                      <h3>Mean Absolute Error</h3>
+                      <div class="value">${{ needs.analyze-performance.outputs.mae }}</div>
+                  </div>
+
+                  <div class="metric good">
+                      <h3>Return on Investment</h3>
+                      <div class="value">${{ needs.analyze-performance.outputs.roi }}%</div>
+                  </div>
+
+                  <div class="metric good">
+                      <h3>Win Rate</h3>
+                      <div class="value">${{ needs.analyze-performance.outputs.win_rate }}%</div>
+                  </div>
+
+                  <div class="metric good">
+                      <h3>Sharpe Ratio</h3>
+                      <div class="value">${{ needs.analyze-performance.outputs.sharpe }}</div>
+                  </div>
+              </div>
+
+              <div class="chart">
+                  <h2>Performance Trend</h2>
+                  <p>Detailed performance analysis available in the full report.</p>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-dashboard
+          path: dashboard.html
+
+  send-alerts:
+    name: Send Alerts
+    needs: [analyze-performance, check-degradation]
+    if: needs.check-degradation.outputs.alert_needed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Slack alert
+        if: env.SLACK_WEBHOOK != ''
+        run: |
+          curl -X POST ${{ env.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "⚠️ NCAAF Model Performance Alert",
+              "attachments": [{
+                "color": "warning",
+                "fields": [
+                  {
+                    "title": "Performance Degradation Detected",
+                    "value": "Model performance has degraded by ${{ needs.analyze-performance.outputs.degradation }}%",
+                    "short": false
+                  },
+                  {
+                    "title": "Current MAE",
+                    "value": "${{ needs.analyze-performance.outputs.mae }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Current ROI",
+                    "value": "${{ needs.analyze-performance.outputs.roi }}%",
+                    "short": true
+                  },
+                  {
+                    "title": "Win Rate",
+                    "value": "${{ needs.analyze-performance.outputs.win_rate }}%",
+                    "short": true
+                  },
+                  {
+                    "title": "Sharpe Ratio",
+                    "value": "${{ needs.analyze-performance.outputs.sharpe }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Action Required",
+                    "value": "Review model performance and consider retraining",
+                    "short": false
+                  }
+                ]
+              }]
+            }'
+
+      - name: Send Discord alert
+        if: env.DISCORD_WEBHOOK != ''
+        run: |
+          curl -X POST ${{ env.DISCORD_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "content": "⚠️ **NCAAF Model Performance Alert**",
+              "embeds": [{
+                "title": "Performance Degradation Detected",
+                "description": "Model performance has degraded by ${{ needs.analyze-performance.outputs.degradation }}%",
+                "color": 15844367,
+                "fields": [
+                  {
+                    "name": "MAE",
+                    "value": "${{ needs.analyze-performance.outputs.mae }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "ROI",
+                    "value": "${{ needs.analyze-performance.outputs.roi }}%",
+                    "inline": true
+                  },
+                  {
+                    "name": "Win Rate",
+                    "value": "${{ needs.analyze-performance.outputs.win_rate }}%",
+                    "inline": true
+                  }
+                ],
+                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'"
+              }]
+            }'
+
+      - name: Create GitHub issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Model Performance Alert - ${new Date().toISOString().split('T')[0]}`,
+              body: `## ⚠️ Model Performance Degradation Detected
+
+              The NCAAF model performance has degraded beyond the acceptable threshold.
+
+              ### Current Metrics
+              - **MAE:** ${{ needs.analyze-performance.outputs.mae }}
+              - **ROI:** ${{ needs.analyze-performance.outputs.roi }}%
+              - **Win Rate:** ${{ needs.analyze-performance.outputs.win_rate }}%
+              - **Sharpe Ratio:** ${{ needs.analyze-performance.outputs.sharpe }}
+              - **Degradation:** ${{ needs.analyze-performance.outputs.degradation }}%
+
+              ### Recommended Actions
+              1. Review recent predictions and identify failure patterns
+              2. Check for data quality issues
+              3. Consider triggering model retraining
+              4. Analyze feature importance changes
+              5. Review recent games for unusual patterns
+
+              **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['bug', 'ml-models', 'performance', 'automated']
+            })
+
+  update-metrics:
+    name: Update Metrics Database (via Docker)
+    needs: analyze-performance
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download performance report
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-report
+
+      - name: Create .env file for Docker
+        run: |
+          cat > .env << EOF
+          DATABASE_HOST=postgres
+          DATABASE_PORT=5432
+          DATABASE_NAME=ncaaf_v5
+          DATABASE_USER=${{ secrets.DB_USER || 'ncaaf_user' }}
+          DATABASE_PASSWORD=${{ secrets.DB_PASSWORD || 'ncaaf_password' }}
+          DATABASE_SSL_MODE=disable
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          MAE=${{ needs.analyze-performance.outputs.mae }}
+          ROI=${{ needs.analyze-performance.outputs.roi }}
+          WIN_RATE=${{ needs.analyze-performance.outputs.win_rate }}
+          SHARPE=${{ needs.analyze-performance.outputs.sharpe }}
+          DEGRADATION=${{ needs.analyze-performance.outputs.degradation }}
+          DAYS_BACK=${{ env.DAYS_BACK }}
+          APP_ENV=production
+          EOF
+
+      - name: Start services
+        run: docker compose up -d postgres redis
+
+      - name: Wait for PostgreSQL
+        run: |
+          timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U ${{ secrets.DB_USER || 'ncaaf_user' }}; do sleep 2; done'
+
+      - name: Build ML service image
+        run: docker compose build ml_service
+
+      - name: Update performance metrics via Docker
+        run: |
+          docker compose run --rm \
+            -e MAE=${{ needs.analyze-performance.outputs.mae }} \
+            -e ROI=${{ needs.analyze-performance.outputs.roi }} \
+            -e WIN_RATE=${{ needs.analyze-performance.outputs.win_rate }} \
+            -e SHARPE=${{ needs.analyze-performance.outputs.sharpe }} \
+            -e DEGRADATION=${{ needs.analyze-performance.outputs.degradation }} \
+            -e DAYS_BACK=${{ env.DAYS_BACK }} \
+            ml_service python -c "
+          import os
+          from datetime import datetime
+          from src.db.database import Database
+
+          db = Database()
+          db.connect()
+
+          with db.get_connection() as conn:
+              with conn.cursor() as cur:
+                  # Create table if not exists
+                  cur.execute('''
+                      CREATE TABLE IF NOT EXISTS model_performance_metrics (
+                          id SERIAL PRIMARY KEY,
+                          timestamp TIMESTAMP NOT NULL,
+                          mae FLOAT,
+                          roi FLOAT,
+                          win_rate FLOAT,
+                          sharpe_ratio FLOAT,
+                          degradation FLOAT,
+                          period_days INTEGER,
+                          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                      )
+                  ''')
+
+                  # Insert metrics
+                  mae = float(os.environ.get('MAE', '0'))
+                  roi = float(os.environ.get('ROI', '0'))
+                  win_rate = float(os.environ.get('WIN_RATE', '0'))
+                  sharpe = float(os.environ.get('SHARPE', '0'))
+                  degradation = float(os.environ.get('DEGRADATION', '0'))
+                  days_back = int(os.environ.get('DAYS_BACK', 7))
+
+                  cur.execute('''
+                      INSERT INTO model_performance_metrics
+                      (timestamp, mae, roi, win_rate, sharpe_ratio, degradation, period_days)
+                      VALUES (%s, %s, %s, %s, %s, %s, %s)
+                  ''', (datetime.now(), mae, roi, win_rate, sharpe, degradation, days_back))
+
+              conn.commit()
+
+          db.close()
+          print('Metrics updated successfully')
+          "
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
