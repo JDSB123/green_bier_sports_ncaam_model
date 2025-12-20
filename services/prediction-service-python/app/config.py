@@ -1,5 +1,5 @@
 """
-Configuration for NCAA Basketball Prediction Service v5.0
+Configuration for NCAA Basketball Prediction Service v6.0
 
 Key differences from v4.0:
 - Simplified formulas (no interaction terms)

@@ -66,13 +66,13 @@ POSTGRES_HOST_PORT=5451 REDIS_HOST_PORT=6391 PREDICTION_HOST_PORT=8093 docker co
 
 ### Changing Azure Location
 
-**Before running deploy.sh:**
+**Before running enterprise-deploy.sh:**
 ```bash
 export AZURE_LOCATION="westus2"
-./azure/deploy.sh
+./azure/enterprise-deploy.sh
 ```
 
-**Or edit deploy.sh:**
+**Or edit enterprise-deploy.sh:**
 ```bash
 LOCATION="${AZURE_LOCATION:-westus2}"
 ```
@@ -117,7 +117,7 @@ export AZURE_CONTAINER_APP_ENV="my-env"
 export AZURE_POSTGRES_NAME="my-postgres"
 export AZURE_REDIS_NAME="my-redis"
 export AZURE_PREDICTION_NAME="my-prediction"
-./azure/deploy.sh
+./azure/enterprise-deploy.sh
 ```
 
 ---
@@ -176,7 +176,7 @@ export AZURE_KEY_VAULT_NAME="ncaam-prod-secrets"
 export AZURE_CONTAINER_APP_ENV="ncaam-prod-env"
 
 # Deploy
-./azure/deploy.sh
+./azure/enterprise-deploy.sh
 ```
 
 ---
@@ -271,18 +271,18 @@ docker compose up -d
 
 ### Azure Resource Name Conflict
 
-**Error:** `The resource name 'ncaam-v5-rg' is already taken`
+**Error:** `The resource name 'greenbier-enterprise-rg' is already taken`
 
 **Solution:**
 ```bash
 # Use different name
-export AZURE_RESOURCE_GROUP="ncaam-v5-rg-$(date +%s)"
-./azure/deploy.sh
+export AZURE_RESOURCE_GROUP="greenbier-enterprise-rg-$(date +%s)"
+./azure/enterprise-deploy.sh
 ```
 
 ### Container Name Conflict
 
-**Error:** `Conflict. The container name "/ncaam_v5_1_postgres" is already in use`
+**Error:** `Conflict. The container name "/ncaam_v6_model_postgres" is already in use`
 
 **Solution:**
 ```bash
@@ -299,7 +299,7 @@ docker compose up -d
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `COMPOSE_PROJECT_NAME` | `ncaam_v5_1_model_final` | Project name (affects all resource names) |
+| `COMPOSE_PROJECT_NAME` | `ncaam_v6_model_final` | Project name (affects all resource names) |
 | `POSTGRES_HOST_PORT` | `5450` | PostgreSQL host port |
 | `REDIS_HOST_PORT` | `6390` | Redis host port |
 | `PREDICTION_HOST_PORT` | `8092` | Prediction API host port |
@@ -311,14 +311,14 @@ docker compose up -d
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `AZURE_LOCATION` | `eastus` | Azure region |
-| `AZURE_RESOURCE_GROUP` | `ncaam-v5-rg` | Resource group name |
-| `AZURE_ACR_NAME` | `ncaamv5registry` | Container registry name |
-| `AZURE_KEY_VAULT_NAME` | `ncaam-v5-secrets` | Key Vault name |
-| `AZURE_CONTAINER_APP_ENV` | `ncaam-v5-env` | Container Apps environment |
+| `AZURE_RESOURCE_GROUP` | `greenbier-enterprise-rg` | Resource group name |
+| `AZURE_ACR_NAME` | `greenbieracr` | Container registry name |
+| `AZURE_KEY_VAULT_NAME` | `greenbier-keyvault` | Key Vault name |
+| `AZURE_CONTAINER_APP_ENV` | `greenbier-ncaam-env` | Container Apps environment |
 | `AZURE_POSTGRES_NAME` | `ncaam-postgres` | PostgreSQL container name |
 | `AZURE_REDIS_NAME` | `ncaam-redis` | Redis container name |
 | `AZURE_PREDICTION_NAME` | `ncaam-prediction` | Prediction service name |
-| `IMAGE_TAG` | `v5.1` | Container image tag |
+| `IMAGE_TAG` | `v6.0` | Container image tag |
 
 ---
 
@@ -341,4 +341,4 @@ docker compose up -d
 ---
 
 **Last Updated:** December 19, 2025  
-**Version:** v5.1 FINAL
+**Version:** v6.0 ENTERPRISE

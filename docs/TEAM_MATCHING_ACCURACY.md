@@ -119,7 +119,7 @@ Tracks every team name resolution attempt:
 
 ### Verification Script
 ```bash
-docker exec ncaam_v5_1_prediction python /app/database/seeds/verify_team_matching.py
+docker exec ncaam_v6_model_prediction python /app/database/seeds/verify_team_matching.py
 ```
 
 **Output**:

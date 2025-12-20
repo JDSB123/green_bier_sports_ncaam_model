@@ -1,37 +1,37 @@
 # Azure Deployment Status
 
 **Date:** December 19, 2025  
-**Status:** ✅ DEPLOYED TO AZURE
+**Status:** ✅ DEPLOYED TO AZURE (Enterprise)
 
 ---
 
 ## 🎯 Deployment Summary
 
-**All containers successfully deployed to Azure Container Apps!**
+All NCAAM containers are deployed to the enterprise Azure Container Apps environment.
 
 ---
 
 ## 📊 Azure Resources Created
 
 ### Resource Group
-- **Name:** `ncaam-v5-rg`
+- **Name:** `greenbier-enterprise-rg`
 - **Location:** `eastus`
 - **Subscription:** Azure Green Bier Capital
 
 ### Container Registry
-- **Name:** `ncaamv5registry`
-- **URL:** `ncaamv5registry.azurecr.io`
-- **Image:** `ncaam-prediction:v5.1` (pushed successfully)
+- **Name:** `greenbieracr`
+- **URL:** `greenbieracr.azurecr.io`
+- **Image:** `ncaam-prediction:v6.0`
 
 ### Key Vault
-- **Name:** `ncaam-v5-secrets`
+- **Name:** `greenbier-keyvault`
 - **Secrets Stored:**
   - `db-password` ✅
   - `redis-password` ✅
   - `odds-api-key` ✅
 
 ### Container Apps Environment
-- **Name:** `ncaam-v5-env`
+- **Name:** `greenbier-ncaam-env`
 - **Status:** Running
 
 ---
@@ -48,10 +48,14 @@
 
 ## 🌐 Access URLs
 
-### Prediction Service
-- **URL:** `https://ncaam-prediction.ashycliff-f98889a8.eastus.azurecontainerapps.io`
-- **Health Endpoint:** `https://ncaam-prediction.ashycliff-f98889a8.eastus.azurecontainerapps.io/health`
-- **Port:** 8082 (internal)
+```bash
+az containerapp show \
+  --name ncaam-prediction \
+  --resource-group greenbier-enterprise-rg \
+  --query properties.configuration.ingress.fqdn -o tsv
+```
+
+Use the returned FQDN for `https://<fqdn>/health`.
 
 ---
 
@@ -59,40 +63,32 @@
 
 ### 1. Run Database Migrations
 
-**Option A: Via Azure Portal**
-- Navigate to Container Apps → `ncaam-postgres`
-- Use Console/Exec to run migrations
-
-**Option B: Via Azure CLI**
 ```bash
-# Connect to PostgreSQL container
 az containerapp exec \
   --name ncaam-postgres \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --command "psql -U ncaam -d ncaam"
 
-# Then run migrations manually
-```
-
-**Option C: Copy migrations and run**
-```bash
-# Copy migration files to container
-# Then execute via exec
+\i /migrations/001_initial_schema.sql
 ```
 
 ### 2. Test Health Endpoint
 
 ```bash
-curl https://ncaam-prediction.ashycliff-f98889a8.eastus.azurecontainerapps.io/health
+FQDN=$(az containerapp show \
+  --name ncaam-prediction \
+  --resource-group greenbier-enterprise-rg \
+  --query properties.configuration.ingress.fqdn -o tsv)
+
+
 ```
 
 ### 3. Execute Predictions
 
 ```bash
-# Execute run_today.py in container
 az containerapp exec \
   --name ncaam-prediction \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --command "python /app/run_today.py"
 ```
 
@@ -102,29 +98,15 @@ az containerapp exec \
 
 ### Check Container Logs
 ```bash
-# PostgreSQL logs
-az containerapp logs show \
-  --name ncaam-postgres \
-  --resource-group ncaam-v5-rg \
-  --follow
-
-# Redis logs
-az containerapp logs show \
-  --name ncaam-redis \
-  --resource-group ncaam-v5-rg \
-  --follow
-
-# Prediction service logs
-az containerapp logs show \
-  --name ncaam-prediction \
-  --resource-group ncaam-v5-rg \
-  --follow
+az containerapp logs show --name ncaam-postgres --resource-group greenbier-enterprise-rg --follow
+az containerapp logs show --name ncaam-redis --resource-group greenbier-enterprise-rg --follow
+az containerapp logs show --name ncaam-prediction --resource-group greenbier-enterprise-rg --follow
 ```
 
 ### Check Container Status
 ```bash
 az containerapp list \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --query "[].{Name:name, Status:properties.runningStatus}" \
   -o table
 ```
@@ -133,7 +115,7 @@ az containerapp list \
 ```bash
 az containerapp update \
   --name ncaam-prediction \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --set-env-vars "KEY=value"
 ```
 
@@ -141,21 +123,17 @@ az containerapp update \
 
 ## 🔐 Key Vault Access
 
-**Note:** Key Vault uses RBAC authorization. If you need to access secrets:
-
 ```bash
-# Grant yourself permissions (if needed)
 az role assignment create \
   --role "Key Vault Secrets Officer" \
   --assignee $(az ad signed-in-user show --query id -o tsv) \
-  --scope "/subscriptions/3a1a4a94-45a5-4f7c-8ada-97978221052c/resourceGroups/ncaam-v5-rg/providers/Microsoft.KeyVault/vaults/ncaam-v5-secrets"
+  --scope "/subscriptions/3a1a4a94-45a5-4f7c-8ada-97978221052c/resourceGroups/greenbier-enterprise-rg/providers/Microsoft.KeyVault/vaults/greenbier-keyvault"
 ```
 
 ---
 
 ## 📊 Resource Costs
 
-**Estimated Monthly Cost:**
 - Container Apps Environment: ~$73/month
 - PostgreSQL Container (1 CPU, 2GB): ~$15/month
 - Redis Container (0.5 CPU, 1GB): ~$10/month
@@ -190,7 +168,7 @@ az role assignment create \
 ```bash
 az containerapp show \
   --name ncaam-prediction \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --query "properties.configuration.ingress.fqdn" \
   -o tsv
 ```
@@ -199,7 +177,7 @@ az containerapp show \
 ```bash
 az containerapp logs show \
   --name ncaam-prediction \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --follow
 ```
 
@@ -207,10 +185,11 @@ az containerapp logs show \
 ```bash
 az containerapp revision restart \
   --name ncaam-prediction \
-  --resource-group ncaam-v5-rg
+  --resource-group greenbier-enterprise-rg
 ```
 
 ---
 
 **Last Updated:** December 19, 2025  
 **Deployment Status:** ✅ COMPLETE
+  -o tsv

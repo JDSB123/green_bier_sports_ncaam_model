@@ -1,4 +1,4 @@
-//! NCAA Basketball Odds Ingestion Service v5.0
+//! NCAA Basketball Odds Ingestion Service v6.0
 //!
 //! Real-time odds streaming from The Odds API with sub-10ms latency.
 //! Publishes to Redis Streams and stores in TimescaleDB.
@@ -1233,7 +1233,7 @@ async fn main() -> Result<()> {
         )
         .init();
 
-    info!("NCAA Basketball Odds Ingestion Service v5.0");
+    info!("NCAA Basketball Odds Ingestion Service v6.0");
 
     let config = Config::from_env()?;
     let health_port = config.health_port;

@@ -1,4 +1,4 @@
-# NCAAM v5.1 Model FINAL - Complete Self-Contained Stack
+# NCAAM v6.0 Model FINAL - Complete Self-Contained Stack
 
 ## ✅ **100% Self-Contained - NO Local Dependencies**
 
@@ -11,7 +11,7 @@ This system is **fully containerized** with **ZERO fallbacks** to local files, e
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    DOCKER COMPOSE PROJECT                                    │
-│                    ncaam_v5_1_model_final                                   │
+│                    ncaam_v6_model                                           │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                     ┌───────────────┼───────────────┐
@@ -45,13 +45,13 @@ This system is **fully containerized** with **ZERO fallbacks** to local files, e
 ## 📦 **Container Services**
 
 ### 1. **PostgreSQL (TimescaleDB)**
-- **Container:** `ncaam_v5_1_postgres`
+- **Container:** `ncaam_v6_model_postgres`
 - **Image:** `timescale/timescaledb:latest-pg15`
 - **Port:** `5450:5432`
-- **Volume:** `ncaam_v5_1_postgres_data` (persistent)
+- **Volume:** `ncaam_v6_model_postgres_data` (persistent)
 - **Secrets:** `db_password` → `/run/secrets/db_password`
 - **Migrations:** Auto-runs from `./database/migrations/` on first init
-- **Network:** `ncaam_v5_1_data`
+- **Network:** `ncaam_v6_model_data`
 
 **What's Inside:**
 - ✅ **447 teams** (canonical names)
@@ -61,23 +61,23 @@ This system is **fully containerized** with **ZERO fallbacks** to local files, e
 - ✅ **Audit table** (`team_resolution_audit`)
 
 ### 2. **Redis**
-- **Container:** `ncaam_v5_1_redis`
+- **Container:** `ncaam_v6_model_redis`
 - **Image:** `redis:7-alpine`
 - **Port:** `6390:6379`
 - **Secrets:** `redis_password` → `/run/secrets/redis_password`
-- **Network:** `ncaam_v5_1_data`
+- **Network:** `ncaam_v6_model_data`
 
 **Purpose:** Fast caching for odds snapshots and team lookups
 
 ### 3. **Prediction Service**
-- **Container:** `ncaam_v5_1_prediction`
-- **Image:** `ncaam_v5_1_prediction:latest` (built from Dockerfile.hardened)
+- **Container:** `ncaam_v6_model_prediction`
+- **Image:** `ncaam_v6_model_prediction:latest` (built from Dockerfile.hardened)
 - **Port:** `8092:8082`
 - **Secrets:** 
   - `db_password` → `/run/secrets/db_password`
   - `redis_password` → `/run/secrets/redis_password`
   - `odds_api_key` → `/run/secrets/odds_api_key`
-- **Network:** `ncaam_v5_1_backend`, `ncaam_v5_1_data`
+- **Network:** `ncaam_v6_model_backend`, `ncaam_v6_model_data`
 
 **What's Inside:**
 - ✅ **Python 3.12** (prediction engine)

@@ -1,10 +1,10 @@
 # Azure Deployment Files
 
-This directory contains Azure-specific deployment scripts and configurations.
+This directory contains Azure-specific deployment scripts and configurations for the enterprise NCAAM stack.
 
 ## Files
 
-- `deploy.sh` - Automated deployment script for Azure Container Apps
+- `enterprise-deploy.sh` - Enterprise Azure Container Apps deployment (greenbier-enterprise-rg)
 - `README.md` - This file
 
 ## Quick Start
@@ -24,57 +24,49 @@ This directory contains Azure-specific deployment scripts and configurations.
    - `redis_password.txt`
    - `odds_api_key.txt`
 
-### Deployment
-
-**Option 1: Automated Script (Linux/Mac/WSL)**
+### Deployment (Enterprise)
 ```bash
-chmod +x azure/deploy.sh
-./azure/deploy.sh
+chmod +x azure/enterprise-deploy.sh
+./azure/enterprise-deploy.sh            # NCAAM (default)
+# ./azure/enterprise-deploy.sh --sport nfl  # Future sports
 ```
 
-**Option 2: Manual Steps**
-Follow the guide in `../docs/AZURE_MIGRATION.md`
-
-## Configuration
-
-Edit `deploy.sh` to customize:
-- Resource group name
-- Location/region
-- Container names
-- Resource sizes
+Enterprise defaults:
+- Resource group: `greenbier-enterprise-rg`
+- Registry: `greenbieracr`
+- Key Vault: `greenbier-keyvault`
+- Container Apps env: `greenbier-ncaam-env`
+- Services: `ncaam-postgres`, `ncaam-redis`, `ncaam-prediction`
+- Image tag: `v6.0`
 
 ## Post-Deployment
 
 1. **Run Database Migrations:**
    ```bash
-   # Connect to PostgreSQL container
    az containerapp exec \
      --name ncaam-postgres \
-     --resource-group ncaam-v5-rg \
+     --resource-group greenbier-enterprise-rg \
      --command "psql -U ncaam -d ncaam"
-   
-   # Run migrations
+
+   # Run migrations inside psql
    \i /migrations/001_initial_schema.sql
    ```
 
 2. **Test Prediction Service:**
    ```bash
-   # Get service URL
    URL=$(az containerapp show \
      --name ncaam-prediction \
-     --resource-group ncaam-v5-rg \
+     --resource-group greenbier-enterprise-rg \
      --query properties.configuration.ingress.fqdn -o tsv)
-   
-   # Test health endpoint
+
    curl https://$URL/health
    ```
 
 3. **Run Predictions:**
    ```bash
-   # Execute run_today.py in container
    az containerapp exec \
      --name ncaam-prediction \
-     --resource-group ncaam-v5-rg \
+     --resource-group greenbier-enterprise-rg \
      --command "python /app/run_today.py"
    ```
 
@@ -82,15 +74,15 @@ Edit `deploy.sh` to customize:
 
 To remove all Azure resources:
 ```bash
-az group delete --name ncaam-v5-rg --yes --no-wait
+az group delete --name greenbier-enterprise-rg --yes --no-wait
 ```
 
 ## Troubleshooting
 
 ### Container won't start
-- Check logs: `az containerapp logs show --name ncaam-prediction --resource-group ncaam-v5-rg`
+- Check logs: `az containerapp logs show --name ncaam-prediction --resource-group greenbier-enterprise-rg`
 - Verify secrets in Key Vault
-- Check container registry authentication
+- Check container registry authentication (greenbieracr)
 
 ### Database connection issues
 - Verify PostgreSQL container is running
@@ -98,10 +90,10 @@ az group delete --name ncaam-v5-rg --yes --no-wait
 - Ensure network connectivity between containers
 
 ### Image pull errors
-- Verify ACR login: `az acr login --name ncaamv5registry`
-- Check image exists: `az acr repository list --name ncaamv5registry`
+- Verify ACR login: `az acr login --name greenbieracr`
+- Check image exists: `az acr repository list --name greenbieracr`
 - Verify registry credentials in container app
 
 ## Support
 
-See `../docs/AZURE_MIGRATION.md` for detailed migration guide.
+See `../docs/AZURE_MIGRATION.md` for the detailed enterprise guide.

@@ -632,7 +632,7 @@ def main():
     print()
     print("╔" + "═" * 118 + "╗")
     print("║" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "║")
-    print("║" + f"  Model: v5.0 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
+    print("║" + f"  Model: v6.0 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
     print("╚" + "═" * 118 + "╝")
     print()
     

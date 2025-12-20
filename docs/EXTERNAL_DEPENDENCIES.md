@@ -1,4 +1,4 @@
-# External Dependencies - NCAA Basketball v5.1
+# External Dependencies - NCAA Basketball v6.0
 
 **Date:** December 19, 2025  
 **Purpose:** Document all external dependencies required for the system
@@ -310,4 +310,4 @@ Before deployment, ensure:
 ---
 
 **Last Updated:** December 19, 2025  
-**Version:** v5.1 FINAL
+**Version:** v6.0 FINAL

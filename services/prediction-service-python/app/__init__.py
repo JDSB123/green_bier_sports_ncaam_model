@@ -1,3 +1,3 @@
-"""NCAA Basketball Prediction Service v5.0"""
+"""NCAA Basketball Prediction Service v6.0"""
 
-__version__ = "5.0.0-beta"
+__version__ = "6.0.0"

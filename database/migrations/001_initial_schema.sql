@@ -1,4 +1,4 @@
--- NCAA Basketball Prediction System v5.0
+-- NCAA Basketball Prediction System v6.0
 -- Initial Database Schema
 -- PostgreSQL 15 + TimescaleDB
 

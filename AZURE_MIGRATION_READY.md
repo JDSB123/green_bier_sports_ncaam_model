@@ -28,7 +28,7 @@
 - [x] `AZURE_PACKAGE_SUMMARY.md` - Package overview
 
 ### Deployment Scripts
-- [x] `azure/deploy.sh` - Automated deployment script
+- [x] `azure/enterprise-deploy.sh` - Enterprise deployment script
 - [x] `azure/README.md` - Azure quick start
 - [x] `config.example` - Configuration template
 
@@ -57,15 +57,15 @@ python ensure_secrets.py
 ```bash
 # Set custom Azure location/resource names
 export AZURE_LOCATION="westus2"
-export AZURE_RESOURCE_GROUP="ncaam-prod-rg"
-export AZURE_ACR_NAME="ncaamprodregistry"
+export AZURE_RESOURCE_GROUP="greenbier-enterprise-rg"
+export AZURE_ACR_NAME="greenbieracr"
 ```
 
 ### Step 3: Deploy
 ```bash
 # Automated deployment
-chmod +x azure/deploy.sh
-./azure/deploy.sh
+chmod +x azure/enterprise-deploy.sh
+./azure/enterprise-deploy.sh
 
 # OR follow manual steps in docs/AZURE_MIGRATION.md
 ```
@@ -82,7 +82,7 @@ chmod +x azure/deploy.sh
 - **Dependencies:** `docs/EXTERNAL_DEPENDENCIES.md`
 
 ### Scripts
-- **Deploy:** `azure/deploy.sh`
+- **Deploy:** `azure/enterprise-deploy.sh`
 - **Secrets:** `ensure_secrets.py`
 - **Predictions:** `predict.bat`
 
@@ -121,9 +121,9 @@ export PREDICTION_HOST_PORT=8093
 ### Azure Resources
 ```bash
 export AZURE_LOCATION="westus2"
-export AZURE_RESOURCE_GROUP="ncaam-prod-rg"
-export AZURE_ACR_NAME="ncaamprodregistry"
-export AZURE_KEY_VAULT_NAME="ncaam-prod-secrets"
+export AZURE_RESOURCE_GROUP="greenbier-enterprise-rg"
+export AZURE_ACR_NAME="greenbieracr"
+export AZURE_KEY_VAULT_NAME="greenbier-keyvault"
 ```
 
 ### Project Name
@@ -160,7 +160,7 @@ export COMPOSE_PROJECT_NAME="ncaam_custom"
 
 ### Option 1: Automated (Recommended)
 ```bash
-./azure/deploy.sh
+./azure/enterprise-deploy.sh
 ```
 - Creates all Azure resources
 - Builds and pushes images
@@ -227,9 +227,9 @@ git status
 - ✅ Dependencies documented
 - ✅ No conflicts (ports/locations configurable)
 
-**Next Step:** Follow `docs/AZURE_MIGRATION.md` or run `./azure/deploy.sh`
+**Next Step:** Follow `docs/AZURE_MIGRATION.md` or run `./azure/enterprise-deploy.sh`
 
 ---
 
 **Last Updated:** December 19, 2025  
-**Version:** v5.1 FINAL - Azure Ready
+**Version:** v6.0 ENTERPRISE - Azure Ready

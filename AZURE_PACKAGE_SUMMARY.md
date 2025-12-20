@@ -1,7 +1,7 @@
 # Azure Migration Package - Summary
 
 **Date:** December 19, 2025  
-**Status:** ✅ Ready for Azure Migration
+**Status:** ✅ Ready for Azure Migration (Enterprise)
 
 ---
 
@@ -25,14 +25,12 @@ This repository is now **fully prepared** for Azure migration with:
   - Quality assurance checklist
 
 ### ✅ Deployment Scripts
-- **`azure/deploy.sh`** - Automated deployment script
-  - Creates all Azure resources
-  - Builds and pushes container images
-  - Configures secrets in Key Vault
-  - Deploys all containers
-  - Ready to run (bash script)
+- **`azure/enterprise-deploy.sh`** - Enterprise deployment script
+   - Creates shared RG/ACR/Key Vault for all sports
+   - Builds and pushes container images
+   - Deploys NCAAM services into `greenbier-ncaam-env`
 
-- **`azure/README.md`** - Quick start guide for Azure deployment
+- **`azure/README.md`** - Quick start guide for the enterprise deployment
 
 ### ✅ Migration Checklist
 - **`MIGRATION_CHECKLIST.md`** - Comprehensive checklist
@@ -59,13 +57,10 @@ az account set --subscription "Your Subscription"
 ls secrets/*.txt
 ```
 
-### 2. Automated Deployment
+### 2. Automated Deployment (Enterprise)
 ```bash
-# Make script executable
-chmod +x azure/deploy.sh
-
-# Run deployment
-./azure/deploy.sh
+chmod +x azure/enterprise-deploy.sh
+./azure/enterprise-deploy.sh
 ```
 
 ### 3. Manual Deployment
@@ -77,10 +72,10 @@ Follow the step-by-step guide in `docs/AZURE_MIGRATION.md`
 
 | Resource | Type | Purpose |
 |----------|------|---------|
-| `ncaam-v5-rg` | Resource Group | Container for all resources |
-| `ncaamv5registry` | Container Registry | Stores Docker images |
-| `ncaam-v5-secrets` | Key Vault | Stores all secrets |
-| `ncaam-v5-env` | Container Apps Environment | Container runtime |
+| `greenbier-enterprise-rg` | Resource Group | Enterprise container for all resources |
+| `greenbieracr` | Container Registry | Stores Docker images |
+| `greenbier-keyvault` | Key Vault | Stores all secrets |
+| `greenbier-ncaam-env` | Container Apps Environment | Container runtime |
 | `ncaam-postgres` | Container App | PostgreSQL database |
 | `ncaam-redis` | Container App | Redis cache |
 | `ncaam-prediction` | Container App | Prediction service |
@@ -192,7 +187,7 @@ Before starting migration:
    - Verify secrets are correct
 
 4. **Run Deployment**
-   - Use automated script: `./azure/deploy.sh`
+   - Use automated script: `./azure/enterprise-deploy.sh`
    - Or follow manual steps in migration guide
 
 5. **Test & Verify**
@@ -208,7 +203,7 @@ Before starting migration:
 ### Common Issues
 
 **Container won't start:**
-- Check logs: `az containerapp logs show --name ncaam-prediction --resource-group ncaam-v5-rg`
+- Check logs: `az containerapp logs show --name ncaam-prediction --resource-group greenbier-enterprise-rg`
 - Verify secrets in Key Vault
 - Check container registry authentication
 
@@ -218,7 +213,7 @@ Before starting migration:
 - Ensure network connectivity
 
 **Image pull errors:**
-- Verify ACR login: `az acr login --name ncaamv5registry`
+- Verify ACR login: `az acr login --name greenbieracr`
 - Check image exists in registry
 - Verify registry credentials
 
@@ -263,4 +258,4 @@ The system is **fully prepared** for Azure migration. All documentation, scripts
 ---
 
 **Last Updated:** December 19, 2025  
-**Version:** v5.1 FINAL - Azure Ready
+**Version:** v6.0 ENTERPRISE - Azure Ready

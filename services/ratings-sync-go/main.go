@@ -1,4 +1,4 @@
-// NCAA Basketball Ratings Sync Service v5.0
+// NCAA Basketball Ratings Sync Service v6.0
 //
 // Fetches daily team ratings from Barttorvik and stores in PostgreSQL.
 // Runs as a cron job (daily at 6 AM ET) or on-demand.

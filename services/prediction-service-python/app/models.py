@@ -1,5 +1,5 @@
 """
-Domain models for NCAA Basketball Prediction Service v5.0.
+Domain models for NCAA Basketball Prediction Service v6.0.
 
 Clean, simple data structures focused on what matters for profitable predictions.
 """
@@ -152,7 +152,7 @@ class Prediction:
     total_edge_1h_signed: float = 0.0
 
     # Model metadata
-    model_version: str = "v5.0"
+    model_version: str = "v6.0"
     created_at: datetime = field(default_factory=datetime.utcnow)
 
     def calculate_edges(self, market: MarketOdds) -> None:
@@ -227,7 +227,7 @@ class BettingRecommendation:
     is_sharp_aligned: bool = True   # Are we aligned with sharp movement?
 
     # Metadata
-    model_version: str = "v5.0"
+    model_version: str = "v6.0"
     created_at: datetime = field(default_factory=datetime.utcnow)
 
     @property

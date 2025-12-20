@@ -1,7 +1,7 @@
-# Azure Migration Guide - NCAA Basketball v5.1
+# Azure Migration Guide - NCAA Basketball v6.0 (Enterprise)
 
 **Date:** December 19, 2025  
-**Target:** Azure Container Instances / Azure Container Apps
+**Target:** Azure Container Instances / Azure Container Apps (greenbier-enterprise-rg)
 
 ---
 
@@ -52,8 +52,8 @@ secrets/
 **Create Key Vault:**
 ```bash
 az keyvault create \
-  --name ncaam-v5-secrets \
-  --resource-group ncaam-v5-rg \
+  --name greenbier-keyvault \
+  --resource-group greenbier-enterprise-rg \
   --location eastus
 ```
 
@@ -61,19 +61,19 @@ az keyvault create \
 ```bash
 # Database password
 az keyvault secret set \
-  --vault-name ncaam-v5-secrets \
+  --vault-name greenbier-keyvault \
   --name db-password \
   --value "$(cat secrets/db_password.txt)"
 
 # Redis password
 az keyvault secret set \
-  --vault-name ncaam-v5-secrets \
+  --vault-name greenbier-keyvault \
   --name redis-password \
   --value "$(cat secrets/redis_password.txt)"
 
 # Odds API key
 az keyvault secret set \
-  --vault-name ncaam-v5-secrets \
+  --vault-name greenbier-keyvault \
   --name odds-api-key \
   --value "$(cat secrets/odds_api_key.txt)"
 ```
@@ -91,7 +91,7 @@ az keyvault secret set \
 
 **1. Login to ACR:**
 ```bash
-az acr login --name ncaamv5registry
+az acr login --name greenbieracr
 ```
 
 **2. Build and Push:**
@@ -99,11 +99,11 @@ az acr login --name ncaamv5registry
 # Build prediction service (includes Go/Rust binaries)
 docker build \
   -f services/prediction-service-python/Dockerfile.hardened \
-  -t ncaamv5registry.azurecr.io/ncaam-prediction:v5.1 \
+    -t greenbieracr.azurecr.io/ncaam-prediction:v6.0 \
   .
 
 # Push to ACR
-docker push ncaamv5registry.azurecr.io/ncaam-prediction:v5.1
+docker push greenbieracr.azurecr.io/ncaam-prediction:v6.0
 ```
 
 **3. Tag and Push Base Images (if needed):**
@@ -121,11 +121,11 @@ docker push ncaamv5registry.azurecr.io/ncaam-prediction:v5.1
 **Create Database:**
 ```bash
 az postgres flexible-server create \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --name ncaam-db \
   --location eastus \
   --admin-user ncaam \
-  --admin-password "$(az keyvault secret show --vault-name ncaam-v5-secrets --name db-password --query value -o tsv)" \
+  --admin-password "$(az keyvault secret show --vault-name greenbier-keyvault --name db-password --query value -o tsv)" \
   --sku-name Standard_B2s \
   --tier Burstable \
   --version 15 \
@@ -157,7 +157,7 @@ Use the existing `docker-compose.yml` PostgreSQL container in ACI.
 **Create Redis Cache:**
 ```bash
 az redis create \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --name ncaam-redis \
   --location eastus \
   --sku Basic \
@@ -167,7 +167,7 @@ az redis create \
 **Get Connection String:**
 ```bash
 az redis list-keys \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --name ncaam-redis
 ```
 
@@ -184,8 +184,8 @@ Use the existing `docker-compose.yml` Redis container in ACI.
 **1. Create Container Apps Environment:**
 ```bash
 az containerapp env create \
-  --name ncaam-v5-env \
-  --resource-group ncaam-v5-rg \
+  --name greenbier-ncaam-env \
+  --resource-group greenbier-enterprise-rg \
   --location eastus
 ```
 
@@ -193,8 +193,8 @@ az containerapp env create \
 ```bash
 az containerapp create \
   --name ncaam-postgres \
-  --resource-group ncaam-v5-rg \
-  --environment ncaam-v5-env \
+  --resource-group greenbier-enterprise-rg \
+  --environment greenbier-ncaam-env \
   --image timescale/timescaledb:latest-pg15 \
   --cpu 1.0 \
   --memory 2.0Gi \
@@ -210,8 +210,8 @@ az containerapp create \
 ```bash
 az containerapp create \
   --name ncaam-redis \
-  --resource-group ncaam-v5-rg \
-  --environment ncaam-v5-env \
+  --resource-group greenbier-enterprise-rg \
+  --environment greenbier-ncaam-env \
   --image redis:7-alpine \
   --cpu 0.5 \
   --memory 0.5Gi \
@@ -225,14 +225,14 @@ az containerapp create \
 ```bash
 az containerapp create \
   --name ncaam-prediction \
-  --resource-group ncaam-v5-rg \
-  --environment ncaam-v5-env \
-  --image ncaamv5registry.azurecr.io/ncaam-prediction:v5.1 \
+  --resource-group greenbier-enterprise-rg \
+  --environment greenbier-ncaam-env \
+  --image greenbieracr.azurecr.io/ncaam-prediction:v6.0 \
   --cpu 1.0 \
   --memory 1.0Gi \
   --min-replicas 1 \
   --max-replicas 1 \
-  --registry-server ncaamv5registry.azurecr.io \
+  --registry-server greenbieracr.azurecr.io \
   --env-vars \
     DATABASE_URL=postgresql://ncaam:secretref:db-password@ncaam-postgres:5432/ncaam \
     REDIS_URL=redis://:secretref:redis-password@ncaam-redis:6379 \
@@ -247,7 +247,7 @@ az containerapp create \
 
 **1. Create Resource Group:**
 ```bash
-az group create --name ncaam-v5-rg --location eastus
+az group create --name greenbier-enterprise-rg --location eastus
 ```
 
 **2. Deploy with docker-compose (Azure Container Instances):**
@@ -260,7 +260,7 @@ az group create --name ncaam-v5-rg --location eastus
 ```bash
 # PostgreSQL
 az container create \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --name ncaam-postgres \
   --image timescale/timescaledb:latest-pg15 \
   --cpu 2 \
@@ -273,7 +273,7 @@ az container create \
 
 # Redis
 az container create \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --name ncaam-redis \
   --image redis:7-alpine \
   --cpu 0.5 \
@@ -282,17 +282,17 @@ az container create \
 
 # Prediction Service
 az container create \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --name ncaam-prediction \
-  --image ncaamv5registry.azurecr.io/ncaam-prediction:v5.1 \
+  --image greenbieracr.azurecr.io/ncaam-prediction:v6.0 \
   --cpu 1 \
   --memory 1 \
   --environment-variables \
     DATABASE_URL="postgresql://ncaam:$DB_PASSWORD@ncaam-postgres:5432/ncaam" \
     REDIS_URL="redis://:$REDIS_PASSWORD@ncaam-redis:6379" \
     THE_ODDS_API_KEY="$ODDS_API_KEY" \
-  --registry-login-server ncaamv5registry.azurecr.io \
-  --registry-username ncaamv5registry \
+  --registry-login-server greenbieracr.azurecr.io \
+  --registry-username greenbieracr \
   --registry-password "$ACR_PASSWORD" \
   --ports 8082
 ```
@@ -320,7 +320,7 @@ from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 
 credential = DefaultAzureCredential()
-client = SecretClient(vault_url="https://ncaam-v5-secrets.vault.azure.net/", credential=credential)
+client = SecretClient(vault_url="https://greenbier-keyvault.vault.azure.net/", credential=credential)
 DB_PASSWORD = client.get_secret("db-password").value
 ```
 
@@ -374,7 +374,7 @@ DB_PASSWORD = client.get_secret("db-password").value
 **Enable Container Insights:**
 ```bash
 az monitor log-analytics workspace create \
-  --resource-group ncaam-v5-rg \
+  --resource-group greenbier-enterprise-rg \
   --workspace-name ncaam-logs
 ```
 
@@ -453,4 +453,4 @@ az monitor log-analytics workspace create \
 ---
 
 **Last Updated:** December 19, 2025  
-**Version:** v5.1 FINAL
+**Version:** v6.0 ENTERPRISE

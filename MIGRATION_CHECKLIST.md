@@ -1,6 +1,6 @@
 # Azure Migration Checklist
 
-**Project:** NCAA Basketball v5.1 Prediction System  
+**Project:** NCAA Basketball v6.0 Prediction System  
 **Target:** Azure Container Apps  
 **Date:** December 19, 2025
 
@@ -28,18 +28,18 @@
 ## Infrastructure Setup
 
 ### Resource Group
-- [ ] Create resource group: `ncaam-v5-rg`
+- [ ] Create resource group: `greenbier-enterprise-rg`
 - [ ] Set location: `eastus` (or preferred region)
 
 ### Azure Container Registry (ACR)
-- [ ] Create ACR: `ncaamv5registry`
+- [ ] Create ACR: `greenbieracr`
 - [ ] Enable admin user
-- [ ] Login to ACR: `az acr login --name ncaamv5registry`
+- [ ] Login to ACR: `az acr login --name greenbieracr`
 - [ ] Build and push prediction service image
 - [ ] Verify image in ACR
 
 ### Azure Key Vault
-- [ ] Create Key Vault: `ncaam-v5-secrets`
+- [ ] Create Key Vault: `greenbier-keyvault`
 - [ ] Store `db-password` secret
 - [ ] Store `redis-password` secret
 - [ ] Store `odds-api-key` secret
@@ -63,7 +63,7 @@
 ## Container Apps Deployment
 
 ### Environment
-- [ ] Create Container Apps environment: `ncaam-v5-env`
+- [ ] Create Container Apps environment: `greenbier-ncaam-env`
 - [ ] Configure networking (internal/external)
 - [ ] Set up Log Analytics workspace
 

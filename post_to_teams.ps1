@@ -1,12 +1,23 @@
 $webhookUrl = "https://greenbiercapital.webhook.office.com/webhookb2/6d55cb22-b8b0-43a4-8ec1-f5df8a966856@18ee0910-417d-4a81-a3f5-7945bdbd5a78/IncomingWebhook/c4bfae73ea2c4a1fa43541853c8ae09a/c30a04d7-4015-49cf-9fb9-f4735f413e33/V2PLKEtg95VC-EsDSS00BAojeMMFQwGBk86CIh8y8gu8Q1"
 
 # Using dashboard color scheme: Primary green #008f58
+$resourceGroup = "greenbier-enterprise-rg"
+$registry = "greenbieracr.azurecr.io"
+$keyVault = "greenbier-keyvault"
+$containerEnv = "greenbier-ncaam-env"
+
+$predictionFqdn = try {
+    az containerapp show --name ncaam-prediction --resource-group $resourceGroup --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
+} catch {
+    "(set FQDN manually)"
+}
+
 $jsonBody = @{
     "@type" = "MessageCard"
     "@context" = "https://schema.org/extensions"
-    "summary" = "NCAA Basketball v5.1 - Azure Deployment Complete"
+    "summary" = "NCAA Basketball v6.0 - Azure Deployment Complete"
     "themeColor" = "008f58"
-    "title" = "Azure Deployment Complete - NCAA Basketball v5.1"
+    "title" = "Azure Deployment Complete - NCAA Basketball v6.0"
     "sections" = @(
         @{
             "activityTitle" = "All containers successfully deployed to Azure"
@@ -15,19 +26,19 @@ $jsonBody = @{
             "facts" = @(
                 @{
                     "name" = "Resource Group"
-                    "value" = "ncaam-v5-rg"
+                    "value" = $resourceGroup
                 },
                 @{
                     "name" = "Container Registry"
-                    "value" = "ncaamv5registry.azurecr.io"
+                    "value" = $registry
                 },
                 @{
                     "name" = "Key Vault"
-                    "value" = "ncaam-v5-secrets"
+                    "value" = $keyVault
                 },
                 @{
                     "name" = "Container Apps Environment"
-                    "value" = "ncaam-v5-env"
+                    "value" = $containerEnv
                 }
             )
         },
@@ -55,7 +66,7 @@ $jsonBody = @{
             "facts" = @(
                 @{
                     "name" = "Prediction Service URL"
-                    "value" = "https://ncaam-prediction.ashycliff-f98889a8.eastus.azurecontainerapps.io"
+                    "value" = if ($predictionFqdn) { "https://$predictionFqdn" } else { "(set FQDN manually)" }
                 },
                 @{
                     "name" = "Health Check Status"
@@ -76,7 +87,7 @@ $jsonBody = @{
             "targets" = @(
                 @{
                     "os" = "default"
-                    "uri" = "https://portal.azure.com/#@greenbiercapital.onmicrosoft.com/resource/subscriptions/3a1a4a94-45a5-4f7c-8ada-97978221052c/resourceGroups/ncaam-v5-rg"
+                    "uri" = "https://portal.azure.com/#@greenbiercapital.onmicrosoft.com/resource/subscriptions/3a1a4a94-45a5-4f7c-8ada-97978221052c/resourceGroups/greenbier-enterprise-rg"
                 }
             )
         }

@@ -1,4 +1,4 @@
-# NCAA Basketball Prediction Service v5.0
+# NCAA Basketball Prediction Service v6.0
 # Python 3.12+
 
 # Web framework

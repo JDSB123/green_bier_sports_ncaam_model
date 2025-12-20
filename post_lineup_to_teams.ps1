@@ -1,6 +1,12 @@
 # Post NCAA lineup analysis to Teams
 $webhookUrl = "https://greenbiercapital.webhook.office.com/webhookb2/6d55cb22-b8b0-43a4-8ec1-f5df8a966856@18ee0910-417d-4a81-a3f5-7945bdbd5a78/IncomingWebhook/c4bfae73ea2c4a1fa43541853c8ae09a/c30a04d7-4015-49cf-9fb9-f4735f413e33/V2PLKEtg95VC-EsDSS00BAojeMMFQwGBk86CIh8y8gu8Q1"
-$serviceUrl = "https://ncaam-prediction.ashycliff-f98889a8.eastus.azurecontainerapps.io"
+$resourceGroup = "greenbier-enterprise-rg"
+$serviceUrl = try {
+    $fqdn = az containerapp show --name ncaam-prediction --resource-group $resourceGroup --query "properties.configuration.ingress.fqdn" -o tsv 2>$null
+    if ($fqdn) { "https://$fqdn" } else { "" }
+} catch {
+    ""
+}
 
 # Matchups from images (Friday, December 19, 2025)
 $matchups = @(
@@ -20,8 +26,12 @@ $matchups = @(
 
 # Check service health
 try {
-    $health = Invoke-RestMethod -Uri "$serviceUrl/health" -Method Get -TimeoutSec 5
-    $serviceStatus = "$($health.status) | Version: $($health.version)"
+    if ($serviceUrl) {
+        $health = Invoke-RestMethod -Uri "$serviceUrl/health" -Method Get -TimeoutSec 5
+        $serviceStatus = "$($health.status) | Version: $($health.version)"
+    } else {
+        $serviceStatus = "Unavailable: prediction service FQDN not resolved"
+    }
 } catch {
     $serviceStatus = "Unavailable: $($_.Exception.Message)"
 }
@@ -60,7 +70,7 @@ $jsonBody = @{
         @{
             "title" = "Analysis Status"
             "startGroup" = $true
-            "text" = "**To generate predictions:**`n• Games need to be in database with correct team name matching`n• Team ratings synced from Barttorvik (365 teams)`n• Odds synced from The Odds API (Pinnacle/Bovada)`n`n**Service URL:** $serviceUrl"
+            "text" = "**To generate predictions:**`n• Games need to be in database with correct team name matching`n• Team ratings synced from Barttorvik (365 teams)`n• Odds synced from The Odds API (Pinnacle/Bovada)`n`n**Service URL:** $(if ($serviceUrl) { $serviceUrl } else { 'Resolve via az containerapp show' })"
         }
     )
     "potentialAction" = @(
@@ -70,7 +80,7 @@ $jsonBody = @{
             "targets" = @(
                 @{
                     "os" = "default"
-                    "uri" = "https://portal.azure.com/#@greenbiercapital.onmicrosoft.com/resource/subscriptions/3a1a4a94-45a5-4f7c-8ada-97978221052c/resourceGroups/ncaam-v5-rg"
+                    "uri" = "https://portal.azure.com/#@greenbiercapital.onmicrosoft.com/resource/subscriptions/3a1a4a94-45a5-4f7c-8ada-97978221052c/resourceGroups/greenbier-enterprise-rg"
                 }
             )
         }

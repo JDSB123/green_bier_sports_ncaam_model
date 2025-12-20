@@ -21,6 +21,6 @@ COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ncaam_v6_model_final}
 
 # Azure Configuration (for deployment scripts)
 AZURE_LOCATION=${AZURE_LOCATION:-eastus}
-AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:-ncaam-v5-rg}
-AZURE_ACR_NAME=${AZURE_ACR_NAME:-ncaamv5registry}
-AZURE_KEY_VAULT_NAME=${AZURE_KEY_VAULT_NAME:-ncaam-v5-secrets}
+AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:-greenbier-enterprise-rg}
+AZURE_ACR_NAME=${AZURE_ACR_NAME:-greenbieracr}
+AZURE_KEY_VAULT_NAME=${AZURE_KEY_VAULT_NAME:-greenbier-keyvault}

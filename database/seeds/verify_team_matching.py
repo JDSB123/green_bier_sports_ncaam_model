@@ -4,7 +4,7 @@ Team Matching & Home/Away Verification Script
 Validates absolute accuracy across all ingestion sources.
 
 Run inside Docker:
-    docker exec ncaam_v5_1_prediction python /app/database/seeds/verify_team_matching.py
+    docker exec ncaam_v6_model_prediction python /app/database/seeds/verify_team_matching.py
 """
 
 import os
