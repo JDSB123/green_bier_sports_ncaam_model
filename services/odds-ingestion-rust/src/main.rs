@@ -110,6 +110,8 @@ pub struct Config {
     pub enable_h2: bool,
     /// If true, run once and exit (no polling loop)
     pub run_once: bool,
+    /// API rate limit (requests per minute). Default: 30
+    pub rate_limit_per_minute: u32,
 }
 
 impl Config {
@@ -130,7 +132,7 @@ impl Config {
         if key_lower.contains("change_me") 
             || key_lower.contains("your_") 
             || key_lower.starts_with("sample")
-            || key_lower == "4a0b80471d1ebeeb74c358fa0fcc4a2" {
+            || key_lower == "4a0b80471d1ebeeb74c358fa0fcc4a27" {
             return Err(anyhow!(
                 "THE_ODDS_API_KEY appears to be a placeholder value; replace with your real key"
             ));
@@ -188,6 +190,10 @@ impl Config {
             enable_full: env::var("ENABLE_FULL").map(|v| v.to_lowercase() == "true").unwrap_or(true),
             enable_h1: env::var("ENABLE_H1").map(|v| v.to_lowercase() == "true").unwrap_or(true),
             enable_h2: env::var("ENABLE_H2").map(|v| v.to_lowercase() == "true").unwrap_or(true),
+            rate_limit_per_minute: env::var("RATE_LIMIT_PER_MINUTE")
+                .unwrap_or_else(|_| "30".to_string())
+                .parse()
+                .unwrap_or(30),
         })
     }
 }
@@ -318,8 +324,11 @@ impl OddsIngestionService {
         // Connect to Redis with retry
         let redis = Self::connect_redis_with_retry(&config.redis_url, 5).await?;
 
-        // Rate limiter: 45 requests per minute (The Odds API limit)
-        let rate_limiter = RateLimiter::direct(Quota::per_minute(NonZeroU32::new(45).unwrap()));
+        // Rate limiter: configurable requests per minute (default: 30)
+        let rate_limit = NonZeroU32::new(config.rate_limit_per_minute)
+            .unwrap_or(NonZeroU32::new(30).unwrap());
+        let rate_limiter = RateLimiter::direct(Quota::per_minute(rate_limit));
+        info!("Rate limiter configured: {} requests/minute", config.rate_limit_per_minute);
 
         // HTTP client with timeouts
         let http_client = reqwest::Client::builder()
@@ -802,6 +811,19 @@ impl OddsIngestionService {
                     }
                 }
                 _ => {}
+            }
+        }
+
+        // Validate spread data: home + away should sum to ~0
+        if market_type == "spreads" {
+            if let (Some(h), Some(a)) = (snapshot.home_line, snapshot.away_line) {
+                let sum = h + a;
+                if sum.abs() > 0.5 {
+                    warn!(
+                        "Spread validation warning: home_line ({}) + away_line ({}) = {} (expected ~0)",
+                        h, a, sum
+                    );
+                }
             }
         }
 
