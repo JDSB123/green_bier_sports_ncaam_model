@@ -59,8 +59,10 @@ services:
     secrets:
       - db_password
     environment:
-      POSTGRES_DB: ncaam
-      POSTGRES_USER: ncaam
+      # Sport-parameterized database (enables multi-sport deployment)
+      SPORT: ${SPORT:-ncaam}
+      POSTGRES_DB: ${DB_NAME:-${SPORT:-ncaam}}
+      POSTGRES_USER: ${DB_USER:-${SPORT:-ncaam}}
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_INITDB_ARGS: "--auth-local=md5 --auth-host=scram-sha-256"
     volumes:
@@ -81,7 +83,7 @@ services:
       - SETGID
       - SETUID
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ncaam"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-${SPORT:-ncaam}}"]
       <<: *healthcheck-defaults
     deploy:
       resources:
@@ -135,6 +137,12 @@ services:
       - odds_api_key
       - redis_password
     environment:
+      # Sport-parameterized configuration (enables multi-sport deployment)
+      SPORT: ${SPORT:-ncaam}
+      DB_USER: ${DB_USER:-${SPORT:-ncaam}}
+      DB_NAME: ${DB_NAME:-${SPORT:-ncaam}}
+      DB_HOST: postgres
+      DB_PORT: "5432"
       # All secrets read from /run/secrets/* files - NO ENV VAR FALLBACKS
       THE_ODDS_API_KEY_FILE: /run/secrets/odds_api_key
       DB_PASSWORD_FILE: /run/secrets/db_password

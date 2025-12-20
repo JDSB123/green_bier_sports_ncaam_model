@@ -494,11 +494,34 @@ func main() {
 	// Parse config
 	// - Docker Compose: DATABASE_URL is not set; we build it from /run/secrets/db_password
 	// - Azure Container Apps: DATABASE_URL is set via env vars; no /run/secrets mount exists
+
+	// Sport-parameterized database configuration (enables multi-sport deployment)
+	sport := os.Getenv("SPORT")
+	if sport == "" {
+		sport = "ncaam"
+	}
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		dbUser = sport
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = sport
+	}
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "postgres"
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		// Read database password from Docker secret file - REQUIRED in Docker Compose
 		dbPassword := readSecretFile("/run/secrets/db_password", "db_password")
-		databaseURL = fmt.Sprintf("postgresql://ncaam:%s@postgres:5432/ncaam", dbPassword)
+		databaseURL = fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 	}
 
 	config := Config{

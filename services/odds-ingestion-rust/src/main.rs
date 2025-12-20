@@ -126,13 +126,19 @@ impl Config {
             ));
         }
 
-        // Database URL
+        // Database URL - sport-parameterized for multi-sport deployment
+        let sport = env::var("SPORT").unwrap_or_else(|_| "ncaam".to_string());
+        let db_user = env::var("DB_USER").unwrap_or_else(|_| sport.clone());
+        let db_name = env::var("DB_NAME").unwrap_or_else(|_| sport.clone());
+        let db_host = env::var("DB_HOST").unwrap_or_else(|_| "postgres".to_string());
+        let db_port = env::var("DB_PORT").unwrap_or_else(|_| "5432".to_string());
+
         let database_url = match env::var("DATABASE_URL") {
             Ok(v) if !v.trim().is_empty() => v,
             Ok(_) => return Err(anyhow!("DATABASE_URL is set but empty")),
             Err(_) => {
                 let db_password = read_secret_file("/run/secrets/db_password", "db_password")?;
-                format!("postgresql://ncaam:{}@postgres:5432/ncaam", db_password)
+                format!("postgresql://{}:{}@{}:{}/{}", db_user, db_password, db_host, db_port, db_name)
             }
         };
 

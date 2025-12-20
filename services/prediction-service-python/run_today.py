@@ -65,10 +65,18 @@ def _read_secret_file(file_path: str, secret_name: str) -> str:
 # Config sources:
 # - Docker Compose: secrets are mounted at /run/secrets/*
 # - Azure Container Apps: secrets are provided via env vars (no /run/secrets mount)
+
+# Sport-parameterized database configuration (enables multi-sport deployment)
+SPORT = os.getenv("SPORT", "ncaam")
+DB_USER = os.getenv("DB_USER", SPORT)
+DB_NAME = os.getenv("DB_NAME", SPORT)
+DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_PORT = os.getenv("DB_PORT", "5432")
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     DB_PASSWORD = _read_secret_file("/run/secrets/db_password", "db_password")
-    DATABASE_URL = f"postgresql://ncaam:{DB_PASSWORD}@postgres:5432/ncaam"
+    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 REDIS_URL = os.getenv("REDIS_URL")
 if not REDIS_URL:

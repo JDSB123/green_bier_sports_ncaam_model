@@ -57,24 +57,83 @@ echo "╚═══════════════════════�
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# SPORT-SPECIFIC CONFIGURATION (from port_allocator.py)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Sport port allocation - prevents conflicts across multiple sports
+case $SPORT in
+    ncaam)
+        SPORT_OFFSET=0
+        DB_USER="ncaam"
+        DB_NAME="ncaam"
+        ;;
+    nfl)
+        SPORT_OFFSET=1
+        DB_USER="nfl"
+        DB_NAME="nfl"
+        ;;
+    nba)
+        SPORT_OFFSET=2
+        DB_USER="nba"
+        DB_NAME="nba"
+        ;;
+    mlb)
+        SPORT_OFFSET=3
+        DB_USER="mlb"
+        DB_NAME="mlb"
+        ;;
+    nhl)
+        SPORT_OFFSET=4
+        DB_USER="nhl"
+        DB_NAME="nhl"
+        ;;
+    *)
+        # Dynamic allocation for unknown sports
+        SPORT_OFFSET=$(($(echo -n "$SPORT" | cksum | cut -d' ' -f1) % 100 + 10))
+        DB_USER="$SPORT"
+        DB_NAME="$SPORT"
+        ;;
+esac
+
+echo "  Sport Config:    DB_USER=$DB_USER, DB_NAME=$DB_NAME, offset=$SPORT_OFFSET"
+echo ""
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PRE-FLIGHT CHECKS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# Run Python pre-deploy checks if available
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/pre_deploy_check.py" ]; then
+    echo "Running pre-deployment validation..."
+    if python3 "$SCRIPT_DIR/pre_deploy_check.py" "$SPORT" --target azure; then
+        echo "Pre-deployment checks passed"
+    else
+        echo "Pre-deployment checks FAILED. Fix errors before continuing."
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+    echo ""
+fi
+
 # Check Azure CLI
 if ! command -v az &> /dev/null; then
-    echo "❌ Azure CLI not found. Install: https://docs.microsoft.com/cli/azure/install-azure-cli"
+    echo "Azure CLI not found. Install: https://docs.microsoft.com/cli/azure/install-azure-cli"
     exit 1
 fi
 
 # Login check
-echo "📋 Checking Azure login..."
+echo "Checking Azure login..."
 az account show &> /dev/null || {
-    echo "⚠️  Not logged in. Running az login..."
+    echo "Not logged in. Running az login..."
     az login
 }
 
 SUBSCRIPTION=$(az account show --query name -o tsv)
-echo "✓ Logged in to subscription: $SUBSCRIPTION"
+echo "Logged in to subscription: $SUBSCRIPTION"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
