@@ -1,13 +1,14 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NCAA Basketball v5.1 - PRODUCTION FINAL (Self-Contained)
+# GREEN BIER SPORT VENTURES - NCAAM v6.0 FINAL
 # ═══════════════════════════════════════════════════════════════════════════════
-# SINGLE SOURCE OF TRUTH: 3 essential containers only
-# - postgres: Database with team ratings, aliases, odds
-# - redis: Caching layer  
-# - prediction-service: THE model API (port 8092) - includes Go/Rust binaries
+# Enterprise-ready sports prediction model with:
+# - Dynamic port allocation (no conflicts with other sports)
+# - Sport-parameterized database (multi-sport capable)
+# - 6 independent market predictions (Spread/ML/Total x FG/1H)
+# - Self-contained Docker secrets (no .env dependencies)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-name: ${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}
+name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # DOCKER SECRETS - ALL SECRETS FROM FILES (NO ENV VAR FALLBACKS)
@@ -54,7 +55,7 @@ services:
 
   postgres:
     image: timescale/timescaledb:latest-pg15
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}_postgres
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_postgres
     <<: *common-env
     secrets:
       - db_password
@@ -66,10 +67,10 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_INITDB_ARGS: "--auth-local=md5 --auth-host=scram-sha-256"
     volumes:
-      - ncaam_v5_1_postgres_data:/var/lib/postgresql/data:rw
+      - ncaam_v6_postgres_data:/var/lib/postgresql/data:rw
       - ./database/migrations:/docker-entrypoint-initdb.d:ro
     networks:
-      - ncaam_v5_1_data
+      - ncaam_v6_data
     ports:
       - "${POSTGRES_HOST_PORT:-5450}:5432"
     security_opt:
@@ -97,7 +98,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}_redis
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_redis
     <<: [*resource-limits, *security-opts]
     secrets:
       - redis_password
@@ -109,7 +110,7 @@ services:
       --stop-writes-on-bgsave-error no
       --requirepass $$(cat /run/secrets/redis_password)"
     networks:
-      - ncaam_v5_1_data
+      - ncaam_v6_data
     ports:
       - "${REDIS_HOST_PORT:-6390}:6379"
     tmpfs:
@@ -129,8 +130,8 @@ services:
     build:
       context: .
       dockerfile: ./services/prediction-service-python/Dockerfile.hardened
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}_prediction:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}_prediction
+    image: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_prediction:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
       - db_password
@@ -152,8 +153,8 @@ services:
       MODEL__HOME_COURT_ADVANTAGE_SPREAD: 3.0
       MODEL__HOME_COURT_ADVANTAGE_TOTAL: 4.5
     networks:
-      - ncaam_v5_1_backend
-      - ncaam_v5_1_data
+      - ncaam_v6_backend
+      - ncaam_v6_data
     ports:
       - "${PREDICTION_HOST_PORT:-8092}:8082"
     cap_add:
@@ -179,19 +180,19 @@ services:
     restart: unless-stopped
 
 volumes:
-  ncaam_v5_1_postgres_data:
-    name: ${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}_postgres_data
+  ncaam_v6_postgres_data:
+    name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_postgres_data
 
 networks:
-  ncaam_v5_1_backend:
-    name: ${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}_backend
+  ncaam_v6_backend:
+    name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_backend
     driver: bridge
     ipam:
       config:
         - subnet: ${NETWORK_BACKEND_SUBNET:-10.51.2.0/24}
 
-  ncaam_v5_1_data:
-    name: ${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}_data
+  ncaam_v6_data:
+    name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_data
     driver: bridge
     ipam:
       config:

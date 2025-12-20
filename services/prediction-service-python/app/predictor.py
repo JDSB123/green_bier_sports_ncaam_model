@@ -1,5 +1,5 @@
 """
-NCAA Basketball Prediction Engine v5.1 - MODULAR
+Green Bier Sport Ventures - NCAAM Prediction Engine v6.0
 
 SINGLE SOURCE OF TRUTH: All predictions flow through this containerized service.
 

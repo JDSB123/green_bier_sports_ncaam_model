@@ -1,4 +1,4 @@
-# Configuration Template for NCAA Basketball v5.1
+# Configuration Template for NCAA Basketball v6.0
 # Copy this file to .env (if using env vars) or set these as environment variables
 # NOTE: This project uses Docker secrets by default, but these env vars can override ports/locations
 
@@ -17,7 +17,7 @@ NETWORK_BACKEND_SUBNET=${NETWORK_BACKEND_SUBNET:-10.51.2.0/24}
 NETWORK_DATA_SUBNET=${NETWORK_DATA_SUBNET:-10.51.3.0/24}
 
 # Project Name (affects container names, volume names, network names)
-COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ncaam_v5_1_model_final}
+COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ncaam_v6_model_final}
 
 # Azure Configuration (for deployment scripts)
 AZURE_LOCATION=${AZURE_LOCATION:-eastus}

@@ -1,21 +1,21 @@
 #!/bin/bash
-# Azure Deployment Script for NCAA Basketball v5.1
+# Azure Deployment Script for NCAA Basketball v6.0
 # This script automates the deployment to Azure Container Apps
 
 set -e
 
 # Configuration (can be overridden via environment variables)
-RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-ncaam-v5-rg}"
+RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-ncaam-v6-rg}"
 LOCATION="${AZURE_LOCATION:-eastus}"
 ACR_NAME="${AZURE_ACR_NAME:-ncaamv5registry}"
-KEY_VAULT_NAME="${AZURE_KEY_VAULT_NAME:-ncaam-v5-secrets}"
-CONTAINER_APP_ENV="${AZURE_CONTAINER_APP_ENV:-ncaam-v5-env}"
+KEY_VAULT_NAME="${AZURE_KEY_VAULT_NAME:-ncaam-v6-secrets}"
+CONTAINER_APP_ENV="${AZURE_CONTAINER_APP_ENV:-ncaam-v6-env}"
 POSTGRES_NAME="${AZURE_POSTGRES_NAME:-ncaam-postgres}"
 REDIS_NAME="${AZURE_REDIS_NAME:-ncaam-redis}"
 PREDICTION_NAME="${AZURE_PREDICTION_NAME:-ncaam-prediction}"
-IMAGE_TAG="${IMAGE_TAG:-v5.1}"
+IMAGE_TAG="${IMAGE_TAG:-v6.0}"
 
-echo "🚀 Starting Azure Deployment for NCAA Basketball v5.1"
+echo "🚀 Starting Azure Deployment for NCAA Basketball v6.0"
 echo "=================================================="
 
 # Check Azure CLI

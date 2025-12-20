@@ -44,7 +44,7 @@ CONTAINER_APP_ENV="${ENTERPRISE_NAME}-${SPORT}-env"
 POSTGRES_NAME="${SPORT}-postgres"
 REDIS_NAME="${SPORT}-redis"
 PREDICTION_NAME="${SPORT}-prediction"
-IMAGE_TAG="${IMAGE_TAG:-v5.1}"
+IMAGE_TAG="${IMAGE_TAG:-v6.0}"
 
 echo "╔═══════════════════════════════════════════════════════════════════════════════╗"
 echo "║  GREEN BIER SPORT VENTURES - Enterprise Azure Deployment                      ║"
