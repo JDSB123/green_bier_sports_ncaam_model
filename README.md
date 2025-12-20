@@ -70,6 +70,12 @@ That's it. One command. Everything runs inside the container.
 - Minimum Spread Edge: 2.5 pts
 - Minimum Total Edge: 3.0 pts
 
+## Data Sources
+
+- **Bart Torvik API:** Team efficiency ratings and Four Factors metrics
+  - For complete field reference, see [`docs/BARTTORVIK_FIELDS.md`](docs/BARTTORVIK_FIELDS.md)
+- **The Odds API:** Live betting odds for edge calculation
+
 ## Container Status
 
 This is the **FINAL** production container. Do not modify unless creating a new version.
