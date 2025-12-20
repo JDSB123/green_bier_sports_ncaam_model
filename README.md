@@ -1,5 +1,15 @@
 # NCAA Basketball v6.0 - PRODUCTION FINAL
 
+## 🚀 New to This Repo?
+
+**[📖 Click here for complete local setup instructions](LOCAL_SETUP.md)**
+
+The Local Setup Guide includes:
+- Prerequisites and required software
+- Step-by-step installation walkthrough
+- Troubleshooting common issues
+- Detailed explanations of all commands
+
 ## Single Point of Entry
 
 ```powershell
@@ -84,4 +94,15 @@ This is the **FINAL** production container. Do not modify unless creating a new 
 - ✅ Full control: You decide when to run predictions
 
 To run predictions, execute `.\predict.bat` manually when you want fresh data and recommendations.
+
+## Quick Reference
+
+### First Time Setup
+1. Clone repo: `git clone https://github.com/JDSB123/green_bier_sports_ncaam_model.git`
+2. Run: `python ensure_secrets.py`
+3. Create: `secrets/odds_api_key.txt` with your API key
+4. Build: `docker compose build`
+5. Run: `.\predict.bat`
+
+**Need help?** See the complete [Local Setup Guide](LOCAL_SETUP.md) for detailed instructions, prerequisites, and troubleshooting.
 
