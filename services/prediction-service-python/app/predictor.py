@@ -213,7 +213,8 @@ class BarttorkvikPredictor:
         home_score_base = home_ratings.adj_o * avg_tempo / 100.0
         away_score_base = away_ratings.adj_o * avg_tempo / 100.0
 
-        hca_for_total = 0.0 if is_neutral else self.hca_total
+        # Legacy multiplier: 4.5 input -> 0.9 effective
+        hca_for_total = 0.0 if is_neutral else (self.hca_total * 0.2)
         # Apply situational adjustment (tired teams = lower total)
         total = home_score_base + away_score_base + hca_for_total + situational_total_adj
 

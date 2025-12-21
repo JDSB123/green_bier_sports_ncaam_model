@@ -46,10 +46,11 @@ class ModelConfig(BaseSettings):
     )
 
     # TOTAL HCA - Points added to total score prediction
-    # NOTE: These are the ACTUAL values applied (previously had hidden 0.2/0.1 multipliers)
+    # NOTE: This value is multiplied by 0.2 internally (Legacy compatibility)
+    # Default 4.5 * 0.2 = 0.9 points effective HCA
     home_court_advantage_total: float = Field(
-        default=0.9,
-        description="Points added to total prediction. Applied directly. (Was 4.5*0.2)"
+        default=4.5,
+        description="Base HCA for totals. Multiplied by 0.2 internally."
     )
     home_court_advantage_total_1h: float = Field(
         default=0.225,
