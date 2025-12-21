@@ -136,20 +136,30 @@ class BarttorkvikPredictor:
         )
         # ML Model Integration
         self.ml_model = LinearRegression()
+        self.ml_ready = False
         # TODO: Train on historical data from testing/data/kaggle
         self._train_ml_model()
 
     def _train_ml_model(self):
         import pandas as pd
+        import os
         # Placeholder: Load and train on historical data
         # Assume data in testing/data/kaggle
         try:
-            df = pd.read_csv('testing/data/kaggle/scores.csv')  # Adjust filename as per actual
+            # Check if file exists first to avoid noise
+            data_path = 'testing/data/kaggle/scores.csv'
+            if not os.path.exists(data_path):
+                self.logger.warning(f"ML training skipped: {data_path} not found")
+                return
+
+            df = pd.read_csv(data_path)  # Adjust filename as per actual
             X = df[['home_adj_o', 'away_adj_o', 'home_adj_d', 'away_adj_d', 'tempo']]
             y = df['home_score - away_score']  # Actual spread
             self.ml_model.fit(X, y)
+            self.ml_ready = True
+            self.logger.info("ML model trained successfully")
         except Exception as e:
-            print(f"ML training failed: {e}")
+            self.logger.warning(f"ML training failed: {e}")
             # Fallback to no ML
 
     def predict(
@@ -243,10 +253,14 @@ class BarttorkvikPredictor:
         spread = -(raw_margin + hca_for_spread + situational_spread_adj + matchup_adj)
 
         # ML adjustment (blend with rule-based)
-        features = [home_ratings.adj_o, away_ratings.adj_o, home_ratings.adj_d, away_ratings.adj_d, avg_tempo]
-        ml_spread = self.ml_model.predict([features])[0]
-        spread = (spread + ml_spread) / 2  # Simple average blend
-
+        if self.ml_ready:
+            features = [home_ratings.adj_o, away_ratings.adj_o, home_ratings.adj_d, away_ratings.adj_d, avg_tempo]
+            try:
+                ml_spread = self.ml_model.predict([features])[0]
+                spread = (spread + ml_spread) / 2  # Simple average blend
+            except Exception as e:
+                self.logger.error(f"ML prediction failed: {e}")
+        
         # Derive final scores from spread and total for consistency
         # (This ensures spread/total match the individual team scores exactly)
         home_score = (total - spread) / 2
