@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NCAAM v6.2 - Azure Container Apps Deployment
+// NCAAM v6.3 - Azure Container Apps Deployment
 // ═══════════════════════════════════════════════════════════════════════════════
 // Deploys:
 // - Azure Container Registry (ACR)
@@ -38,7 +38,7 @@ param redisPassword string
 param oddsApiKey string
 
 @description('Container image tag')
-param imageTag string = 'v6.2.0'
+param imageTag string = 'v6.3.0'
 
 // ─────────────────────────────────────────────────────────────────────────────────
 // VARIABLES

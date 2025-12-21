@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NCAAM v6.2 - Azure Deployment Script
+# NCAAM v6.3 - Azure Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════════
 # Usage:
 #   .\deploy.ps1 -Environment prod -OddsApiKey "YOUR_ACTUAL_KEY"
@@ -28,7 +28,7 @@ param(
     [switch]$SkipBuild,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v6.2.0',
+    [string]$ImageTag = 'v6.3.0',
 
     [Parameter(Mandatory=$false)]
     [switch]$EnterpriseMode = $true
@@ -65,7 +65,7 @@ $acrName = ($resourcePrefix -replace '-', '') + 'acr'
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  NCAAM v6.2 - Azure Deployment" -ForegroundColor Cyan
+Write-Host "  NCAAM v6.3 - Azure Deployment" -ForegroundColor Cyan
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Environment:    $Environment" -ForegroundColor Yellow
