@@ -21,8 +21,8 @@
 Your current polling frequency **EXCEEDS your monthly quota by 4,320 requests!**
 
 ```
-Current Configuration:
-- Poll Interval: Every 30 seconds
+Legacy Polling Configuration (polling-enabled; **NOT** the manual-only default):
+- Poll Interval: 30 seconds
 - Requests/hour: 120 (30s × 60 min)
 - Requests/day: 2,880 (120 × 24 hours)
 - Requests/month (30 days): 86,400

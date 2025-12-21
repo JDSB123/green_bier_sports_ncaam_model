@@ -18,12 +18,6 @@ import zipfile
 from pathlib import Path
 from typing import Iterable
 
-# Optional dependency; only used to load a local .env file if present.
-try:  # pragma: no cover - optional helper
-    from dotenv import load_dotenv
-except ImportError:  # pragma: no cover - optional helper
-    load_dotenv = None  # type: ignore
-
 KAGGLE_COMPETITION = "march-machine-learning-mania-2025"
 REQUIRED_FILES: tuple[str, ...] = (
     "MRegularSeasonCompactResults.csv",
@@ -44,14 +38,6 @@ def _print_header() -> None:
     print(" Kaggle Dataset Downloader (Testing Branch)")
     print("=" * 72)
     print()
-
-
-def _load_env_file() -> None:
-    """Load a .env file when python-dotenv is available."""
-    if load_dotenv is not None:
-        env_path = ROOT_DIR / ".env"
-        if env_path.exists():
-            load_dotenv(env_path)
 
 
 def _ensure_username_key() -> bool:
@@ -170,7 +156,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     _print_header()
-    _load_env_file()
 
     if not _ensure_username_key():
         print("[ERROR] Kaggle credentials not found.")
