@@ -1,7 +1,8 @@
 // NCAA Basketball Ratings Sync Service v6.0
 //
 // Fetches daily team ratings from Barttorvik and stores in PostgreSQL.
-// Runs as a cron job (daily at 6 AM ET) or on-demand.
+// MANUAL-ONLY: Runs once and exits. User triggers via run_today.py when they want fresh picks.
+// No automation, no cron, no continuous polling.
 package main
 
 import (
@@ -12,15 +13,12 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
 
@@ -654,7 +652,9 @@ func main() {
 	config := Config{
 		DatabaseURL:  databaseURL,
 		Season:       getCurrentSeason(),
-		RunOnce:      os.Getenv("RUN_ONCE") == "true",
+		// MANUAL-ONLY: Default to run once and exit (no cron automation)
+		// User triggers via run_today.py when they want fresh picks
+		RunOnce:      os.Getenv("RUN_ONCE") != "false", // Default true, only false if explicitly set
 		BackfillFrom: 0,
 		BackfillTo:   0,
 	}
@@ -720,52 +720,14 @@ func main() {
 		}
 	}
 
-	// Run once mode
-	if config.RunOnce {
-		if err := sync.Sync(ctx); err != nil {
-			logger.Fatal("Sync failed", zap.Error(err))
-		}
-		logger.Info("Single sync completed successfully")
-		return
+	// MANUAL-ONLY MODE: Always run once and exit (no cron automation)
+	// User triggers via run_today.py when they want fresh picks
+	if !config.RunOnce {
+		logger.Fatal("RUN_ONCE=false is not supported. This service is manual-only. Use RUN_ONCE=true for manual runs.")
 	}
 
-	// Cron mode - run daily at 6 AM ET
-	// FIX: Use LoadLocation instead of FixedZone to properly handle EDT/EST transitions
-	// FixedZone was hardcoded to -5 hours (EST), causing runs to be 1 hour late during daylight savings
-	easternTime, err := time.LoadLocation("America/New_York")
-	if err != nil {
-		// Fallback to EST if timezone data unavailable (shouldn't happen in container)
-		logger.Warn("Failed to load America/New_York timezone, falling back to EST", zap.Error(err))
-		easternTime = time.FixedZone("EST", -5*60*60)
+	if err := sync.Sync(ctx); err != nil {
+		logger.Fatal("Sync failed", zap.Error(err))
 	}
-	c := cron.New(cron.WithLocation(easternTime))
-	c.AddFunc("0 6 * * *", func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-
-		if err := sync.Sync(ctx); err != nil {
-			logger.Error("Scheduled sync failed", zap.Error(err))
-		}
-	})
-
-	// Also run immediately on startup
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-
-		if err := sync.Sync(ctx); err != nil {
-			logger.Error("Initial sync failed", zap.Error(err))
-		}
-	}()
-
-	c.Start()
-	logger.Info("Cron scheduler started, next run at 6 AM ET")
-
-	// Wait for shutdown signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
-
-	logger.Info("Shutting down...")
-	c.Stop()
+	logger.Info("Manual sync completed successfully")
 }

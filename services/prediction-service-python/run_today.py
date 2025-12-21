@@ -853,15 +853,6 @@ def print_executive_table(all_picks: list, target_date) -> None:
     print()
 
 
-def format_odds(odds: Optional[int]) -> str:
-    """Format odds for display."""
-    if odds is None:
-        return "N/A"
-    if odds > 0:
-        return f"+{odds}"
-    return str(odds)
-
-
 def format_team_display(team: str, record: Optional[str] = None, rank: Optional[int] = None) -> str:
     """Format team name with optional record and rank."""
     parts = [team]

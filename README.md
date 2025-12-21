@@ -25,9 +25,9 @@ That's it. One command. Everything runs inside the container.
    
 2. **Manually create** `secrets/odds_api_key.txt` with your API key:
    ```
-   4a0b80471d1ebeeb74c358fa0fcc4a27
+   YOUR_API_KEY_HERE
    ```
-   (Replace with your actual API key)
+   (Replace with your actual API key from The Odds API)
 
 3. Build the container: `docker compose build`
 4. Run: `.\predict.bat`
@@ -82,12 +82,18 @@ This is the **FINAL** production container. Do not modify unless creating a new 
 
 ## Manual-Only Operation
 
-**All operations are user-initiated only. No automatic GitHub Actions or scheduled workflows.**
+**ALL operations are user-initiated only. ZERO automation.**
 
 - ✅ No `.github/workflows/` directory exists
+- ✅ No GitHub Actions or CI/CD pipelines
+- ✅ No cron jobs or scheduled tasks
+- ✅ No continuous polling loops
+- ✅ No automated triggers
 - ✅ All data fetches are manual via `.\predict.bat`
-- ✅ No automatic triggers, cron jobs, or CI/CD pipelines
-- ✅ Full control: You decide when to run predictions
+- ✅ Services run once and exit (RUN_ONCE=true always)
 
-To run predictions, execute `.\predict.bat` manually when you want fresh data and recommendations.
+**To get fresh picks:**
+1. Execute `.\predict.bat` manually when you want fresh data and recommendations
+2. System syncs ratings and odds once, runs predictions, and exits
+3. You have full control - nothing runs automatically
 

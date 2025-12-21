@@ -148,10 +148,10 @@ services:
       THE_ODDS_API_KEY_FILE: /run/secrets/odds_api_key
       DB_PASSWORD_FILE: /run/secrets/db_password
       REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      # Model configuration
-      POLL_INTERVAL_SECONDS: 30
-      MODEL__HOME_COURT_ADVANTAGE_SPREAD: 3.0
-      MODEL__HOME_COURT_ADVANTAGE_TOTAL: 4.5
+      # Model configuration (matches config.py defaults - single source of truth)
+      # NOTE: POLL_INTERVAL_SECONDS is not used (manual-only mode, no polling)
+      MODEL__HOME_COURT_ADVANTAGE_SPREAD: 3.2
+      MODEL__HOME_COURT_ADVANTAGE_TOTAL: 0.0
     networks:
       - ncaam_v6_backend
       - ncaam_v6_data
@@ -202,8 +202,9 @@ services:
       DB_NAME: ${DB_NAME:-${SPORT:-ncaam}}
       DB_HOST: postgres
       DB_PORT: "5432"
-      # Run sync on startup and exit (cron mode for production)
-      RUN_ONCE: "${RATINGS_RUN_ONCE:-false}"
+      # MANUAL-ONLY: Run once and exit (no automation)
+      # User triggers via run_today.py when they want fresh picks
+      RUN_ONCE: "${RATINGS_RUN_ONCE:-true}"
     networks:
       - ncaam_v6_data
     depends_on:

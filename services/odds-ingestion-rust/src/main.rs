@@ -183,8 +183,10 @@ impl Config {
             markets_h2: env::var("MARKETS_H2").unwrap_or_else(|_| "spreads_h2,totals_h2,h2h_h2".to_string()),
             bookmakers_h1: env::var("BOOKMAKERS_H1").unwrap_or_else(|_| "bovada,pinnacle,circa,bookmaker".to_string()),
             bookmakers_h2: env::var("BOOKMAKERS_H2").unwrap_or_else(|_| "draftkings,fanduel,pinnacle,bovada".to_string()),
+            // MANUAL-ONLY: Always run once and exit (no continuous polling)
+            // User triggers via run_today.py when they want fresh picks
             run_once: env::var("RUN_ONCE")
-                .unwrap_or_else(|_| "false".to_string())
+                .unwrap_or_else(|_| "true".to_string())
                 .to_lowercase() == "true",
             enable_full: env::var("ENABLE_FULL").map(|v| v.to_lowercase() == "true").unwrap_or(true),
             enable_h1: env::var("ENABLE_H1").map(|v| v.to_lowercase() == "true").unwrap_or(true),
@@ -211,6 +213,56 @@ fn read_secret_file(file_path: &str, secret_name: &str) -> Result<String> {
 #[derive(Clone)]
 pub struct GameCache {
     inner: Arc<RwLock<HashMap<String, Uuid>>>,
+}
+
+/// Track seen event IDs to enable event-driven polling
+/// Only fetch odds for new/changed events to reduce API calls
+#[derive(Clone)]
+pub struct EventTracker {
+    inner: Arc<RwLock<HashMap<String, DateTime<Utc>>>>,
+}
+
+impl EventTracker {
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+    
+    /// Get list of new event IDs (not seen before or seen > 5 minutes ago)
+    /// Returns (new_ids, all_ids)
+    pub async fn filter_new_events(&self, event_ids: &[String]) -> (Vec<String>, Vec<String>) {
+        let mut cache = self.inner.write().await;
+        let now = Utc::now();
+        let threshold = Duration::from_secs(300); // 5 minutes
+        
+        let mut new_ids = Vec::new();
+        let all_ids = event_ids.to_vec();
+        
+        for id in event_ids {
+            let is_new = match cache.get(id) {
+                None => true,
+                Some(&last_seen) => {
+                    let age = now.signed_duration_since(last_seen);
+                    age > chrono::Duration::from_std(threshold).unwrap_or(chrono::Duration::zero())
+                }
+            };
+            
+            if is_new {
+                new_ids.push(id.clone());
+                cache.insert(id.clone(), now);
+            }
+        }
+        
+        (new_ids, all_ids)
+    }
+    
+    /// Cleanup old entries (keep only last 24 hours)
+    pub async fn cleanup(&self) {
+        let mut cache = self.inner.write().await;
+        let cutoff = Utc::now() - chrono::Duration::hours(24);
+        cache.retain(|_, timestamp| *timestamp > cutoff);
+    }
 }
 
 impl GameCache {
@@ -311,6 +363,7 @@ pub struct OddsIngestionService {
     redis: redis::aio::ConnectionManager,
     rate_limiter: RateLimiter<governor::state::NotKeyed, governor::state::InMemoryState, governor::clock::DefaultClock>,
     game_cache: GameCache,
+    event_tracker: EventTracker,
     http_client: reqwest::Client,
     health: HealthState,
 }
@@ -343,6 +396,7 @@ impl OddsIngestionService {
             redis,
             rate_limiter,
             game_cache: GameCache::new(),
+            event_tracker: EventTracker::new(),
             http_client,
             health: HealthState::new(),
         })
@@ -405,7 +459,74 @@ impl OddsIngestionService {
         }
     }
 
-    /// Fetch events from The Odds API
+    /// Fetch odds for a specific event ID (event-driven polling)
+    pub async fn fetch_event_odds(&self, event_id: &str) -> Result<Option<OddsApiEvent>> {
+        // Wait for rate limit
+        self.rate_limiter.until_ready().await;
+
+        let url = format!(
+            "https://api.the-odds-api.com/v4/sports/{}/events/{}/odds",
+            self.config.sport_key,
+            event_id
+        );
+
+        let mut attempt: u32 = 0;
+        let max_attempts: u32 = 3;
+        let response = loop {
+            let req = self.http_client
+                .get(&url)
+                .query(&[
+                    ("apiKey", self.config.odds_api_key.as_str()),
+                    ("regions", self.config.regions.as_str()),
+                    ("markets", self.config.markets_full.as_str()),
+                    ("oddsFormat", self.config.odds_format.as_str()),
+                ])
+                .build()
+                .context("Failed to build event odds request")?;
+
+            match self.http_client.execute(req.try_clone().expect("clone request")).await {
+                Ok(resp) => {
+                    let status = resp.status();
+                    if status.is_success() {
+                        break resp;
+                    }
+                    if status.as_u16() == 429 || status.is_server_error() {
+                        attempt += 1;
+                        if attempt >= max_attempts {
+                            warn!("Event odds unavailable for {} after {} attempts: {}", event_id, max_attempts, status);
+                            return Ok(None);
+                        }
+                        let mut delay = Duration::from_secs(2u64.pow(attempt));
+                        if let Some(ra) = resp.headers().get("Retry-After") {
+                            if let Ok(s) = ra.to_str() {
+                                if let Ok(secs) = s.parse::<u64>() {
+                                    delay = Duration::from_secs(secs);
+                                }
+                            }
+                        }
+                        tokio::time::sleep(delay).await;
+                        continue;
+                    }
+                    return Ok(None);
+                }
+                Err(e) => {
+                    attempt += 1;
+                    if attempt >= max_attempts {
+                        warn!("Failed to fetch event odds for {}: {}", event_id, e);
+                        return Ok(None);
+                    }
+                    tokio::time::sleep(Duration::from_secs(2u64.pow(attempt))).await;
+                    continue;
+                }
+            }
+        };
+
+        let body = response.text().await.context("Failed to read response body")?;
+        let event: OddsApiEvent = serde_json::from_str(&body).context("Failed to parse event odds")?;
+        Ok(Some(event))
+    }
+
+    /// Fetch events from The Odds API (full list with odds)
     pub async fn fetch_events(&self) -> Result<Vec<OddsApiEvent>> {
         // Wait for rate limit
         self.rate_limiter.until_ready().await;
@@ -1267,10 +1388,12 @@ impl OddsIngestionService {
 
         // Periodic cache cleanup
         let game_cache = self.game_cache.clone();
+        let event_tracker = self.event_tracker.clone();
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(3600)).await;
                 game_cache.cleanup(10000).await;
+                event_tracker.cleanup().await;
             }
         });
 
@@ -1296,28 +1419,51 @@ impl OddsIngestionService {
         }
     }
 
-    /// Single poll iteration
+    /// Single poll iteration with event-driven polling
     async fn poll_once(&self) -> Result<usize> {
-        // Step 1: Conditionally fetch full-game odds
+        // Step 1: Fetch event list (lightweight - no odds data)
+        let all_event_ids = self.fetch_event_ids().await?;
+        info!("Found {} total events", all_event_ids.len());
+        
+        // Step 2: Filter to only new/changed events (event-driven)
+        let (new_event_ids, _) = self.event_tracker.filter_new_events(&all_event_ids).await;
+        info!("Fetching odds for {} new/changed events ({}% of total)", 
+              new_event_ids.len(), 
+              if all_event_ids.is_empty() { 0 } else { (new_event_ids.len() * 100) / all_event_ids.len() });
+        
         let mut snapshots: Vec<OddsSnapshot> = Vec::new();
         let mut event_ids: Vec<String> = Vec::new();
-
         let mut full_game_count = 0usize;
-        if self.config.enable_full {
-            let events = self.fetch_events().await?;
-            event_ids = events.iter().map(|e| e.id.clone()).collect();
-            let s = self.process_events(events.clone()).await?;
+
+        // Step 3: Fetch full-game odds ONLY for new/changed events
+        if self.config.enable_full && !new_event_ids.is_empty() {
+            let mut events = Vec::new();
+            for event_id in &new_event_ids {
+                if let Ok(Some(event)) = self.fetch_event_odds(event_id).await {
+                    events.push(event);
+                }
+            }
+            event_ids = new_event_ids.clone();
+            let s = self.process_events(events).await?;
             full_game_count = s.len();
             snapshots.extend(s);
+        } else if !self.config.enable_full {
+            // If full-game disabled, use all event IDs for half markets
+            event_ids = all_event_ids;
         } else {
-            // If we need half markets but skipped full, fetch event IDs via lighter endpoint
-            if self.config.enable_h1 || self.config.enable_h2 {
-                event_ids = self.fetch_event_ids().await?;
-            }
+            // No new events
+            event_ids = all_event_ids;
         }
 
-        // In one-shot mode, run only the enabled segments and exit
+        // In one-shot mode, use all events (no event-driven filtering for one-shot)
         if self.config.run_once {
+            // For one-shot, if full-game was disabled, we may need to fetch event IDs
+            if !self.config.enable_full && event_ids.is_empty() {
+                if self.config.enable_h1 || self.config.enable_h2 {
+                    event_ids = self.fetch_event_ids().await?;
+                }
+            }
+            
             // Optional H1
             let mut h1_count = 0usize;
             if self.config.enable_h1 && !event_ids.is_empty() {
@@ -1451,33 +1597,21 @@ async fn main() -> Result<()> {
         axum::serve(listener, app).await.unwrap();
     });
 
-    // Check if running in one-shot mode (manual trigger)
-    if run_once {
-        info!("Running in one-shot mode (RUN_ONCE=true)");
-        match service.poll_once().await {
-            Ok(count) => {
-                info!("One-shot sync completed: {} snapshots stored", count);
-            }
-            Err(e) => {
-                error!("One-shot sync failed: {:?}", e);
-                return Err(e);
-            }
-        }
-        return Ok(());
+    // MANUAL-ONLY MODE: Always run once and exit
+    // No continuous polling - user triggers via run_today.py when they want fresh picks
+    if !run_once {
+        error!("RUN_ONCE=false is not supported. This service is manual-only.");
+        return Err(anyhow!("Automated polling is disabled. Use RUN_ONCE=true for manual runs."));
     }
 
-    // Handle shutdown gracefully (continuous mode)
-    let ctrl_c = tokio::signal::ctrl_c();
-    tokio::pin!(ctrl_c);
-
-    tokio::select! {
-        result = service.run() => {
-            if let Err(e) = result {
-                error!("Service error: {:?}", e);
-            }
+    info!("Running in manual mode (RUN_ONCE=true) - will sync once and exit");
+    match service.poll_once().await {
+        Ok(count) => {
+            info!("Manual sync completed: {} snapshots stored", count);
         }
-        _ = ctrl_c => {
-            info!("Shutting down...");
+        Err(e) => {
+            error!("Manual sync failed: {:?}", e);
+            return Err(e);
         }
     }
 
