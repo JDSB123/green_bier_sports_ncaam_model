@@ -1,7 +1,12 @@
 """
-Green Bier Sports - NCAAM Prediction Engine v6.1
+Green Bier Sports - NCAAM Prediction Engine v6.2
 
 SINGLE SOURCE OF TRUTH: All predictions flow through this service.
+
+v6.2 CHANGES (2024-12-20):
+- NEW: Situational adjustments (rest days, back-to-back detection)
+- NEW: Dynamic variance modeling (3PR + tempo differential)
+- NEW: Enhanced 1H predictions (EFG-based dynamic factors)
 
 v6.1 CHANGES (2024-12-20):
 - FIXED: Total formula was inflating by 15-20 pts (multiplicative error)
@@ -16,17 +21,17 @@ HCA Values (from config.py - applied directly):
 - First Half Totals: 0.225 points
 
 Core Formulas:
-- Spread = -((Home_Net - Away_Net)/2 + HCA)
-- Total = (Home_AdjO + Away_AdjO) * AvgTempo / 100 + HCA_total
-- 1H Spread = -(raw_margin * 0.5 + HCA_1h)
-- 1H Total = 48% tempo calculation + HCA_total_1h
-- Moneylines: Normal CDF conversion (sigma=11)
+- Spread = -((Home_Net - Away_Net)/2 + HCA + Situational_Adj)
+- Total = (Home_AdjO + Away_AdjO) * AvgTempo / 100 + HCA_total + Situational_Adj
+- 1H Spread = -(raw_margin * margin_scale + HCA_1h)  [dynamic margin_scale]
+- 1H Total = tempo_factor calculation + HCA_total_1h  [dynamic tempo_factor]
+- Moneylines: Normal CDF conversion (dynamic sigma based on 3PR/tempo)
 
 All 6 markets: FG Spread/Total/ML, 1H Spread/Total/ML
 """
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
@@ -41,6 +46,9 @@ from app.models import (
     Prediction,
     TeamRatings,
 )
+from app.situational import SituationalAdjuster, SituationalAdjustment, RestInfo
+from app.variance import DynamicVarianceCalculator, VarianceFactors
+from app.first_half import EnhancedFirstHalfCalculator, FirstHalfFactors
 
 
 @dataclass
@@ -61,35 +69,68 @@ class PredictorOutput:
     home_ml_1h: int
     away_ml_1h: int
 
+    # Enhancement tracking (v6.2)
+    variance: float = 11.0  # Dynamic sigma used
+    variance_1h: float = 12.65  # 1H variance
+    situational_adj: Optional[SituationalAdjustment] = None
+    first_half_factors: Optional[FirstHalfFactors] = None
+
 
 class BarttorkvikPredictor:
     """
-    Simplified Barttorvik efficiency-based predictor.
+    Simplified Barttorvik efficiency-based predictor with v6.2 enhancements.
 
     Core Formula:
-        Spread = Home_NetRtg - Away_NetRtg + HCA
+        Spread = Home_NetRtg - Away_NetRtg + HCA + Situational_Adj
 
     Where:
         NetRtg = AdjO - AdjD
 
-    This is the fundamental efficiency model. No interaction terms,
-    no mismatch amplification - just clean, interpretable math.
+    This is the fundamental efficiency model with situational adjustments,
+    dynamic variance, and enhanced 1H predictions.
     """
 
     def __init__(self):
         self.config = settings.model
         # MODULAR HCA - loaded from config.py (single source of truth)
-        # Optimized 2024-12-17: Spreads=3.0 (16.57% ROI), Totals with HCA=4.5 (34.10% ROI)
         self.hca_spread = self.config.home_court_advantage_spread
         self.hca_total = self.config.home_court_advantage_total
         self.hca_spread_1h = self.config.home_court_advantage_spread_1h
         self.hca_total_1h = self.config.home_court_advantage_total_1h
+
+        # v6.2 Enhancement calculators
+        self.situational = SituationalAdjuster(
+            b2b_penalty=self.config.b2b_penalty,
+            one_day_penalty=self.config.one_day_rest_penalty,
+            rest_diff_factor=self.config.rest_differential_factor,
+            max_rest_diff_adj=self.config.max_rest_differential_adj,
+            enabled=self.config.situational_enabled,
+        )
+
+        self.variance_calc = DynamicVarianceCalculator(
+            base_sigma=self.config.base_sigma,
+            three_pt_variance_factor=self.config.three_pt_variance_factor,
+            pace_variance_factor=self.config.pace_variance_factor,
+            min_sigma=self.config.min_sigma,
+            max_sigma=self.config.max_sigma,
+            enabled=self.config.dynamic_variance_enabled,
+        )
+
+        self.first_half_calc = EnhancedFirstHalfCalculator(
+            base_tempo_factor=self.config.first_half_base_tempo_factor,
+            base_margin_scale=self.config.first_half_base_margin_scale,
+            efg_tempo_adjustment=self.config.efg_tempo_adjustment,
+            efg_margin_adjustment=self.config.efg_margin_adjustment,
+            enabled=self.config.enhanced_1h_enabled,
+        )
 
     def predict(
         self,
         home_ratings: TeamRatings,
         away_ratings: TeamRatings,
         is_neutral: bool = False,
+        home_rest: Optional[RestInfo] = None,
+        away_rest: Optional[RestInfo] = None,
     ) -> PredictorOutput:
         """
         Generate predictions for a matchup.
@@ -98,84 +139,99 @@ class BarttorkvikPredictor:
             home_ratings: Barttorvik ratings for home team
             away_ratings: Barttorvik ratings for away team
             is_neutral: True if neutral site game
+            home_rest: Rest info for home team (optional, for situational adjustments)
+            away_rest: Rest info for away team (optional, for situational adjustments)
 
         Returns:
             PredictorOutput with all predictions
         """
         # ─────────────────────────────────────────────────────────────────────
-        # SCORE PREDICTIONS - CORRECTED FORMULA (v6.1)
+        # v6.2 ENHANCEMENTS - Situational, Variance, 1H Factors
         # ─────────────────────────────────────────────────────────────────────
-        #
-        # SPREAD: Net rating difference approach
-        #   Net Rating = AdjO - AdjD (points per 100 poss vs avg D1 team)
-        #   Raw Margin = (Home_Net - Away_Net) / 2
-        #   Spread = -(Raw_Margin + HCA)
-        #
-        # TOTAL: Simple efficiency approach
-        #   Points = AdjO * Tempo / 100 (expected pts vs average defense)
-        #   Total = Home_Pts + Away_Pts + HCA_total
-        #
-        # NOTE: The old multiplicative formula (AdjO * OppAdjD / 100) inflated
-        # totals by 15-20 points because it compounds values above 100.
-        #
+
+        # 1. Calculate situational adjustment (rest days, B2B)
+        sit_adj = None
+        situational_spread_adj = 0.0
+        situational_total_adj = 0.0
+        if home_rest and away_rest:
+            sit_adj = self.situational.compute_adjustment(home_rest, away_rest)
+            situational_spread_adj = sit_adj.spread_adjustment
+            situational_total_adj = sit_adj.total_adjustment
+
+        # 2. Calculate dynamic variance
+        variance_factors = self.variance_calc.calculate_game_variance(
+            home_three_pt_rate=home_ratings.three_pt_rate,
+            away_three_pt_rate=away_ratings.three_pt_rate,
+            home_tempo=home_ratings.tempo,
+            away_tempo=away_ratings.tempo,
+        )
+        game_sigma = variance_factors.sigma
+        h1_sigma = self.variance_calc.calculate_1h_variance(
+            variance_factors, self.config.variance_1h_multiplier
+        )
+
+        # 3. Calculate dynamic 1H factors
+        h1_factors = self.first_half_calc.calculate_factors(
+            home_efg=home_ratings.efg,
+            away_efg=away_ratings.efg,
+            home_tempo=home_ratings.tempo,
+            away_tempo=away_ratings.tempo,
+        )
+
+        # ─────────────────────────────────────────────────────────────────────
+        # SCORE PREDICTIONS - CORRECTED FORMULA (v6.1) + SITUATIONAL (v6.2)
+        # ─────────────────────────────────────────────────────────────────────
         avg_tempo = (home_ratings.tempo + away_ratings.tempo) / 2
 
         # ─────────────────────────────────────────────────────────────────────
-        # SPREAD CALCULATION - Net Rating Difference
+        # SPREAD CALCULATION - Net Rating Difference + Situational
         # ─────────────────────────────────────────────────────────────────────
         home_net = home_ratings.adj_o - home_ratings.adj_d
         away_net = away_ratings.adj_o - away_ratings.adj_d
 
         # Raw margin from net rating difference
-        # Divide by 2 because net ratings are differential from D1 average
         raw_margin = (home_net - away_net) / 2
 
         hca_for_spread = 0.0 if is_neutral else self.hca_spread
-        spread = -(raw_margin + hca_for_spread)
+        # Apply situational adjustment (positive = helps home)
+        spread = -(raw_margin + hca_for_spread + situational_spread_adj)
 
         # ─────────────────────────────────────────────────────────────────────
-        # TOTAL CALCULATION - Simple Efficiency
+        # TOTAL CALCULATION - Simple Efficiency + Situational
         # ─────────────────────────────────────────────────────────────────────
-        # Each team's expected points = their AdjO * game tempo / 100
-        # This assumes they face an average (100 efficiency) defense
         home_score_base = home_ratings.adj_o * avg_tempo / 100.0
         away_score_base = away_ratings.adj_o * avg_tempo / 100.0
 
         hca_for_total = 0.0 if is_neutral else self.hca_total
-        total = home_score_base + away_score_base + hca_for_total
+        # Apply situational adjustment (tired teams = lower total)
+        total = home_score_base + away_score_base + hca_for_total + situational_total_adj
 
         # Derive final scores from spread and total
         home_score = (total - spread) / 2
         away_score = (total + spread) / 2
 
         # ─────────────────────────────────────────────────────────────────────
-        # FIRST HALF PREDICTIONS - INDEPENDENT CALCULATION
+        # FIRST HALF PREDICTIONS - ENHANCED (v6.2)
         # ─────────────────────────────────────────────────────────────────────
-        # First half markets are separate from full game - calculate independently
-        # using the same corrected formulas but with 1H-specific parameters
-        #
-        # 1H typically uses ~48% of possessions (slightly less than 50%)
-        # 1H HCA is roughly 50% of full game HCA
+        # Use dynamic factors based on EFG differential
 
         hca_spread_1h = 0.0 if is_neutral else self.hca_spread_1h
         hca_total_1h = 0.0 if is_neutral else self.hca_total_1h
 
-        # 1H Spread: Scale margin to half game
-        # Margin should be ~50% of full game margin (less time for skill to show)
-        spread_1h = -(raw_margin * 0.5 + hca_spread_1h)
+        # 1H Spread: Use dynamic margin scale
+        spread_1h = -(raw_margin * h1_factors.margin_scale + hca_spread_1h)
 
-        # 1H Total: ~48% of full game tempo, independent calculation
-        first_half_tempo_pct = 0.48
-        home_score_1h = home_ratings.adj_o * avg_tempo * first_half_tempo_pct / 100.0
-        away_score_1h = away_ratings.adj_o * avg_tempo * first_half_tempo_pct / 100.0
+        # 1H Total: Use dynamic tempo factor
+        home_score_1h = home_ratings.adj_o * avg_tempo * h1_factors.tempo_factor / 100.0
+        away_score_1h = away_ratings.adj_o * avg_tempo * h1_factors.tempo_factor / 100.0
         total_1h = home_score_1h + away_score_1h + hca_total_1h
 
         # ─────────────────────────────────────────────────────────────────────
-        # WIN PROBABILITY & MONEYLINE
+        # WIN PROBABILITY & MONEYLINE - DYNAMIC VARIANCE (v6.2)
         # ─────────────────────────────────────────────────────────────────────
 
-        home_win_prob = self._spread_to_win_prob(spread)
-        home_win_prob_1h = self._spread_to_win_prob(spread_1h)
+        home_win_prob = self._spread_to_win_prob(spread, sigma=game_sigma)
+        home_win_prob_1h = self._spread_to_win_prob(spread_1h, sigma=h1_sigma)
 
         home_ml = self._prob_to_american_odds(home_win_prob)
         away_ml = self._prob_to_american_odds(1 - home_win_prob)
@@ -198,18 +254,27 @@ class BarttorkvikPredictor:
             away_ml=away_ml,
             home_ml_1h=home_ml_1h,
             away_ml_1h=away_ml_1h,
+            # v6.2 enhancement tracking
+            variance=game_sigma,
+            variance_1h=h1_sigma,
+            situational_adj=sit_adj,
+            first_half_factors=h1_factors,
         )
 
-    def _spread_to_win_prob(self, spread: float) -> float:
+    def _spread_to_win_prob(self, spread: float, sigma: Optional[float] = None) -> float:
         """
         Convert spread to win probability using normal CDF.
 
         Spread > 0 means home is favored (home wins by X points).
         Spread < 0 means away is favored.
+
+        Args:
+            spread: Predicted spread
+            sigma: Standard deviation for conversion (default from config)
         """
-        # Using normal distribution approximation
-        # sigma ~11 for college basketball spreads
-        sigma = self.config.spread_to_ml_sigma
+        # Use dynamic sigma if provided, otherwise use config default
+        if sigma is None:
+            sigma = self.config.spread_to_ml_sigma
 
         # CDF of normal distribution
         # Positive spread = home favored = higher home win probability
@@ -249,6 +314,8 @@ class PredictionEngine:
         away_ratings: TeamRatings,
         market_odds: Optional[MarketOdds] = None,
         is_neutral: bool = False,
+        home_rest: Optional[RestInfo] = None,
+        away_rest: Optional[RestInfo] = None,
     ) -> Prediction:
         """
         Generate a full prediction for a game.
@@ -262,12 +329,16 @@ class PredictionEngine:
             away_ratings: Barttorvik ratings for away team
             market_odds: Current market odds (optional)
             is_neutral: True if neutral site
+            home_rest: Rest info for home team (optional, for situational adjustments)
+            away_rest: Rest info for away team (optional, for situational adjustments)
 
         Returns:
             Complete Prediction object
         """
-        # Generate raw predictions
-        output = self.predictor.predict(home_ratings, away_ratings, is_neutral)
+        # Generate raw predictions with v6.2 enhancements
+        output = self.predictor.predict(
+            home_ratings, away_ratings, is_neutral, home_rest, away_rest
+        )
 
         # Calculate confidence based on sample quality
         spread_confidence = self._calculate_confidence(
@@ -277,9 +348,12 @@ class PredictionEngine:
             home_ratings, away_ratings, "total"
         )
 
-        # First half has slightly lower confidence (less data/signal)
-        spread_confidence_1h = spread_confidence * 0.9
-        total_confidence_1h = total_confidence * 0.9
+        # First half confidence: use dynamic scale from 1H factors if available
+        h1_conf_scale = 0.9
+        if output.first_half_factors:
+            h1_conf_scale = output.first_half_factors.confidence_scale
+        spread_confidence_1h = spread_confidence * h1_conf_scale
+        total_confidence_1h = total_confidence * h1_conf_scale
 
         prediction = Prediction(
             game_id=game_id,
@@ -304,6 +378,7 @@ class PredictionEngine:
             predicted_away_ml_1h=output.away_ml_1h,
             home_win_prob=output.home_win_prob,
             home_win_prob_1h=output.home_win_prob_1h,
+            model_version="v6.2",
         )
 
         # Calculate edges if market odds available

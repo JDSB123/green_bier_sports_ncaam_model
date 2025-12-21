@@ -58,10 +58,21 @@ class TeamRatings:
     tempo: float          # Possessions per 40 minutes
     rank: int             # Barttorvik rank
 
+    # Extended metrics (optional, for enhanced predictions)
+    efg: Optional[float] = None            # Effective FG%
+    efgd: Optional[float] = None           # Effective FG% Defense
+    three_pt_rate: Optional[float] = None  # 3-point attempt rate (% of FGA)
+    three_pt_rate_d: Optional[float] = None  # Opponent 3-point rate
+
     @property
     def net_rating(self) -> float:
         """Net efficiency rating (higher = better)."""
         return self.adj_o - self.adj_d
+
+    @property
+    def has_extended_metrics(self) -> bool:
+        """Check if extended metrics are available."""
+        return self.efg is not None and self.three_pt_rate is not None
 
     def __str__(self) -> str:
         return f"{self.team_name} (#{self.rank}): O={self.adj_o:.1f} D={self.adj_d:.1f} Net={self.net_rating:+.1f}"
