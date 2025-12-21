@@ -1,21 +1,13 @@
 @echo off
-REM NCAA Basketball Prediction System v6.0
-REM 
+REM NCAA Basketball Prediction System v6.1
+REM
 REM ONE SOURCE OF TRUTH: Everything runs inside the container
-REM 
+REM
 REM USAGE:
 REM   predict.bat                    - Full slate today
 REM   predict.bat --no-sync          - Skip data sync
 REM   predict.bat --game "Duke" "UNC"  - Specific game
 REM   predict.bat --date 2025-12-20     - Specific date
-
-REM Ensure secrets exist
-python ensure_secrets.py
-if errorlevel 1 (
-    echo.
-    echo ❌ Secrets check failed. Please fix the issues above.
-    exit /b 1
-)
 
 REM Ensure containers are running
 docker compose up -d postgres

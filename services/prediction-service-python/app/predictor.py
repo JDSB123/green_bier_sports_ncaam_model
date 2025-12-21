@@ -1,37 +1,31 @@
 """
-Green Bier Sport Ventures - NCAAM Prediction Engine v6.1
+Green Bier Sports - NCAAM Prediction Engine v6.1
 
-SINGLE SOURCE OF TRUTH: All predictions flow through this containerized service.
+SINGLE SOURCE OF TRUTH: All predictions flow through this service.
 
 v6.1 CHANGES (2024-12-20):
 - FIXED: Total formula was inflating by 15-20 pts (multiplicative error)
 - Spread: Uses net rating difference (Home_Net - Away_Net)/2 + HCA
 - Total: Uses simple efficiency (AdjO * Tempo / 100) for each team
-- Both formulas now align with market lines
+- HCA values now EXPLICIT in config (no hidden multipliers)
 
-MODULAR HCA Approach:
-- Full Game Spreads: HCA=3.0
-- Full Game Totals: HCA=0.9 (4.5 * 0.2)
-- First Half Spreads: HCA=1.5 (50% of full game)
-- First Half Totals: HCA=0.225 (2.25 * 0.1)
+HCA Values (from config.py - applied directly):
+- Full Game Spreads: 3.0 points
+- Full Game Totals: 0.9 points
+- First Half Spreads: 1.5 points
+- First Half Totals: 0.225 points
 
 Core Formulas:
-- Spread = -((Home_Net - Away_Net)/2 + HCA) where Net = AdjO - AdjD
+- Spread = -((Home_Net - Away_Net)/2 + HCA)
 - Total = (Home_AdjO + Away_AdjO) * AvgTempo / 100 + HCA_total
-- First Half: Derived using pace/score factors
-- Moneylines: Converted from spreads using normal CDF (sigma=11)
+- 1H Spread = -(raw_margin * 0.5 + HCA_1h)
+- 1H Total = 48% tempo calculation + HCA_total_1h
+- Moneylines: Normal CDF conversion (sigma=11)
 
-All 6 markets calculated:
-1. Full Game Spread
-2. Full Game Total
-3. Full Game Moneyline
-4. First Half Spread
-5. First Half Total
-6. First Half Moneyline
+All 6 markets: FG Spread/Total/ML, 1H Spread/Total/ML
 """
 
 import math
-import os
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -148,8 +142,7 @@ class BarttorkvikPredictor:
         away_score_base = away_ratings.adj_o * avg_tempo / 100.0
 
         hca_for_total = 0.0 if is_neutral else self.hca_total
-        total = home_score_base + away_score_base + (hca_for_total * 0.2)
-
+        total = home_score_base + away_score_base + hca_for_total
 
         # Derive final scores from spread and total
         home_score = (total - spread) / 2
@@ -175,7 +168,7 @@ class BarttorkvikPredictor:
         first_half_tempo_pct = 0.48
         home_score_1h = home_ratings.adj_o * avg_tempo * first_half_tempo_pct / 100.0
         away_score_1h = away_ratings.adj_o * avg_tempo * first_half_tempo_pct / 100.0
-        total_1h = home_score_1h + away_score_1h + (hca_total_1h * 0.1)
+        total_1h = home_score_1h + away_score_1h + hca_total_1h
 
         # ─────────────────────────────────────────────────────────────────────
         # WIN PROBABILITY & MONEYLINE
@@ -462,7 +455,6 @@ class PredictionEngine:
             else:
                 # Totals: if model total > market, take OVER
                 pick = Pick.OVER if model_line > market_line else Pick.UNDER
-
 
             # Calculate EV and Kelly
             ev_percent, kelly = self._calculate_ev_kelly(
