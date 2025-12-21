@@ -30,6 +30,9 @@ if ($status) {
     Write-Host "⚠️  You have uncommitted changes:" -ForegroundColor Yellow
     Write-Host $status -ForegroundColor Yellow
     Write-Host ""
+    Write-Host "⚠️  WARNING: Pulling with uncommitted changes may result in merge conflicts or data loss!" -ForegroundColor Red
+    Write-Host "Consider using 'git stash' to safely preserve your work before pulling." -ForegroundColor Yellow
+    Write-Host ""
     $response = Read-Host "Continue anyway? (y/N)"
     if ($response -ne "y" -and $response -ne "Y") {
         Write-Host "Cancelled. Commit or stash your changes first." -ForegroundColor Yellow
@@ -81,19 +84,26 @@ if ($currentBranch -eq "main") {
     # Check if main has updates
     Write-Host ""
     Write-Host "Checking if main has updates..." -ForegroundColor Gray
-    git fetch origin main
-    $mainAhead = git rev-list --count origin/main..main 2>$null
-    $mainBehind = git rev-list --count main..origin/main 2>$null
     
-    if ($mainBehind -gt 0) {
-        Write-Host "⚠️  Main branch is $mainBehind commits behind origin/main" -ForegroundColor Yellow
-        Write-Host "Consider merging main into your feature branch:" -ForegroundColor Yellow
-        Write-Host "  git checkout main" -ForegroundColor Cyan
-        Write-Host "  git pull origin main" -ForegroundColor Cyan
-        Write-Host "  git checkout $currentBranch" -ForegroundColor Cyan
-        Write-Host "  git merge main" -ForegroundColor Cyan
+    # Ensure local 'main' exists before comparing with origin/main
+    git show-ref --verify --quiet refs/heads/main
+    $localMainExists = ($LASTEXITCODE -eq 0)
+    
+    if ($localMainExists) {
+        $mainBehind = git rev-list --count main..origin/main 2>$null
+        
+        if ($mainBehind -gt 0) {
+            Write-Host "⚠️  Main branch is $mainBehind commits behind origin/main" -ForegroundColor Yellow
+            Write-Host "Consider merging main into your feature branch:" -ForegroundColor Yellow
+            Write-Host "  git checkout main" -ForegroundColor Cyan
+            Write-Host "  git pull origin main" -ForegroundColor Cyan
+            Write-Host "  git checkout $currentBranch" -ForegroundColor Cyan
+            Write-Host "  git merge main" -ForegroundColor Cyan
+        } else {
+            Write-Host "✅ Main branch is up to date" -ForegroundColor Green
+        }
     } else {
-        Write-Host "✅ Main branch is up to date" -ForegroundColor Green
+        Write-Host "⚠️  Local 'main' branch does not exist. Skipping comparison with origin/main." -ForegroundColor Yellow
     }
 }
 

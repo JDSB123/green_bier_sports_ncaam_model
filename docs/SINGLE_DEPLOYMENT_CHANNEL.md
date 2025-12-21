@@ -251,7 +251,9 @@ git pull origin main
 
 # 2. Deploy from GitHub
 cd azure
-.\deploy.ps1 -Environment prod -OddsApiKey "YOUR_KEY"
+# Read the Odds API key from an environment variable to avoid exposing it in shell history
+$oddsApiKey = $env:ODDS_API_KEY
+.\deploy.ps1 -Environment prod -OddsApiKey $oddsApiKey
 # This pulls from GitHub, builds, deploys
 ```
 
@@ -262,7 +264,8 @@ git tag -a v6.3.1 -m "Release v6.3.1"
 git push origin v6.3.1
 
 # 2. Deploy specific tag
-.\deploy.ps1 -Environment prod -ImageTag v6.3.1 -OddsApiKey "YOUR_KEY"
+$oddsApiKey = $env:ODDS_API_KEY
+.\deploy.ps1 -Environment prod -ImageTag v6.3.1 -OddsApiKey $oddsApiKey
 ```
 
 ---
@@ -309,8 +312,8 @@ az containerapp show -n ncaam-prod-prediction -g ncaam-prod-rg --query "properti
 git checkout main
 git pull origin main
 
-# 2. Check what changed
-git log --oneline origin/main..HEAD
+# 2. Check what's new on remote
+git log --oneline HEAD..origin/main
 # If empty, you're up to date
 
 # 3. Check for uncommitted changes
@@ -376,7 +379,9 @@ git commit -m "Resolve merge conflicts"
 2. **Deploy from GitHub:**
    ```powershell
    cd azure
-   .\deploy.ps1 -Environment prod -OddsApiKey "YOUR_KEY"
+   # Read the Odds API key from an environment variable (set via CI/CD secret store or local environment)
+   $oddsApiKey = $env:ODDS_API_KEY
+   .\deploy.ps1 -Environment prod -OddsApiKey $oddsApiKey
    ```
 
 3. **Verify deployment:**
@@ -472,19 +477,19 @@ git checkout feature/fix-accidental-commit
 ### Daily Commands
 ```powershell
 # Start work
-git checkout main && git pull origin main
+git checkout main; git pull origin main
 
 # Create feature
 git checkout -b feature/name
 
 # Work and commit
-git add . && git commit -m "Message"
+git add .; git commit -m "Message"
 
 # Push and PR
 git push origin feature/name
 
 # After merge
-git checkout main && git pull origin main
+git checkout main; git pull origin main
 ```
 
 ### State Check
