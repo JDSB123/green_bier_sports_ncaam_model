@@ -26,13 +26,21 @@
 
 ### 1. Barttorvik API
 
-**Purpose:** Team efficiency ratings (AdjO, AdjD, Tempo)  
+**Purpose:** Team efficiency ratings (AdjO, AdjD, Tempo + Four Factors)  
 **URL:** `https://barttorvik.com/{season}_team_results.json`  
 **Frequency:** Daily sync (6 AM ET) or on-demand  
 **Authentication:** None (public API)  
 **Rate Limits:** Not documented (assumed reasonable)  
 **Data Format:** JSON array-of-arrays  
 **Required:** ✅ **YES** - System cannot generate predictions without ratings
+
+**Fields Pulled:** 25+ fields per team including:
+- Core efficiency metrics (AdjOE, AdjDE, Tempo)
+- Four Factors (EFG, TOR, ORB, FTR + defense)
+- Shooting breakdown (2P%, 3P%, rates)
+- Quality metrics (Barthag, WAB)
+
+**📖 For complete field reference, see [`BARTTORVIK_FIELDS.md`](BARTTORVIK_FIELDS.md)**
 
 **Usage:**
 - Go binary (`ratings-sync`) fetches ratings
