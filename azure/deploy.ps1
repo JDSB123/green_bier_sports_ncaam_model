@@ -16,10 +16,10 @@ param(
     [string]$OddsApiKey,
 
     [Parameter(Mandatory=$false)]
-    [string]$Location = 'centralus',
+    [string]$Location = 'eastus',
 
     [Parameter(Mandatory=$false)]
-    [string]$ResourceGroup = '',
+    [string]$ResourceGroup = 'greenbier-enterprise-rg',
 
     [Parameter(Mandatory=$false)]
     [switch]$SkipInfra,
@@ -28,7 +28,10 @@ param(
     [switch]$SkipBuild,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v6.2.0'
+    [string]$ImageTag = 'v6.2.0',
+
+    [Parameter(Mandatory=$false)]
+    [switch]$EnterpriseMode = $true
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,8 +43,22 @@ $ErrorActionPreference = 'Stop'
 $baseName = 'ncaam'
 $resourcePrefix = "$baseName-$Environment"
 
-if ([string]::IsNullOrEmpty($ResourceGroup)) {
-    $ResourceGroup = "$resourcePrefix-rg"
+# Enterprise mode: Use greenbier-enterprise-rg with ncaam- prefixed resources
+if ($EnterpriseMode) {
+    if ([string]::IsNullOrEmpty($ResourceGroup)) {
+        $ResourceGroup = 'greenbier-enterprise-rg'
+        # Ensure location matches enterprise RG (default to eastus)
+        if ($Location -eq 'centralus') {
+            $Location = 'eastus'
+        }
+    }
+    # In enterprise mode, prefix all resource names with 'ncaam-' to organize within RG
+    # Resource names stay the same, just organized in enterprise RG
+} else {
+    # Standard mode: Use dedicated resource group per environment
+    if ([string]::IsNullOrEmpty($ResourceGroup)) {
+        $ResourceGroup = "$resourcePrefix-rg"
+    }
 }
 
 $acrName = ($resourcePrefix -replace '-', '') + 'acr'
@@ -54,6 +71,7 @@ Write-Host ""
 Write-Host "  Environment:    $Environment" -ForegroundColor Yellow
 Write-Host "  Resource Group: $ResourceGroup" -ForegroundColor Yellow
 Write-Host "  Location:       $Location" -ForegroundColor Yellow
+Write-Host "  Enterprise Mode: $EnterpriseMode" -ForegroundColor Yellow
 Write-Host "  ACR Name:       $acrName" -ForegroundColor Yellow
 Write-Host "  Image Tag:      $ImageTag" -ForegroundColor Yellow
 Write-Host ""

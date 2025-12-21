@@ -1,0 +1,8 @@
+{
+  "AcrLoginServer": null,
+  "ResourceGroup": "greenbier-enterprise-rg",
+  "DeployedAt": "2025-12-21 13:45:29",
+  "ContainerAppUrl": "https://",
+  "Environment": "staging",
+  "ImageTag": "v6.2.0"
+}
