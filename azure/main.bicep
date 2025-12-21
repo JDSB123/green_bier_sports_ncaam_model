@@ -280,7 +280,7 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
             }
             {
               name: 'MODEL__HOME_COURT_ADVANTAGE_SPREAD'
-              value: '3.0'
+              value: '3.2'
             }
             {
               name: 'MODEL__HOME_COURT_ADVANTAGE_TOTAL'

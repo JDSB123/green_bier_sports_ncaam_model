@@ -168,9 +168,9 @@ impl Config {
             database_url,
             redis_url,
             poll_interval_seconds: env::var("POLL_INTERVAL_SECONDS")
-                .unwrap_or_else(|_| "30".to_string())
+                .unwrap_or_else(|_| "1200".to_string())
                 .parse()
-                .unwrap_or(30),
+                .unwrap_or(1200),
             sport_key: env::var("SPORT_KEY").unwrap_or_else(|_| "basketball_ncaab".to_string()),
             health_port: env::var("HEALTH_PORT")
                 .unwrap_or_else(|_| "8083".to_string())

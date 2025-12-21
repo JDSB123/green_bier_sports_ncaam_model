@@ -217,9 +217,9 @@ class BarttorkvikPredictor:
         hca_for_spread = 0.0 if is_neutral else self.hca_spread
         hca_for_total = 0.0 if is_neutral else self.hca_total
 
-        # Total = Sum of scores + HCA + Situational
-        # Note: Matchup adjustments (ORB/TOR) primarily affect efficiency/margin, not necessarily total pace/score directly in this model
-        total = home_score_base + away_score_base + hca_for_total + situational_total_adj
+        # Total = Sum of scores + HCA + Situational + Matchup
+        # Matchup adjustments affect total scoring volume through rebounding/turnover advantages
+        total = home_score_base + away_score_base + hca_for_total + situational_total_adj + matchup_adj
 
         # Spread = -(Home - Away + HCA + Situational + Matchup)
         # Note: Spread is negative when Home is favored
@@ -649,6 +649,9 @@ class PredictionEngine:
                 sharp_line = market_odds.sharp_spread
             elif bet_type == BetType.TOTAL:
                 sharp_line = market_odds.sharp_total
+            elif bet_type in (BetType.MONEYLINE, BetType.MONEYLINE_1H):
+                # For moneyline, use sharp spread as proxy for game outcome
+                sharp_line = market_odds.sharp_spread
 
             if sharp_line is not None:
                 # Check if we're aligned with sharp movement
@@ -756,8 +759,8 @@ class PredictionEngine:
                 kelly_fraction=kelly,
                 recommended_units=round(recommended_units, 1),
                 bet_tier=bet_tier,
-                sharp_line=None,  # No sharp line tracking for ML yet
-                is_sharp_aligned=True,
+                sharp_line=sharp_line,  # Now includes sharp spread as proxy
+                is_sharp_aligned=is_sharp_aligned,
             )
 
             recommendations.append(rec)
