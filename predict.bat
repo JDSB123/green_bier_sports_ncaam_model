@@ -18,7 +18,7 @@ if errorlevel 1 (
 )
 
 REM Wait for postgres to be healthy
-timeout /t 5 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep -Seconds 5" >nul
 
 REM Start prediction service if not running (force recreate to pick up secrets)
 docker compose up -d --force-recreate prediction-service
@@ -29,7 +29,7 @@ if errorlevel 1 (
 )
 
 REM Wait for service to be ready
-timeout /t 3 /nobreak >nul
+powershell -NoProfile -Command "Start-Sleep -Seconds 3" >nul
 
 REM Execute inside container - ONE source of truth
 docker compose exec -T prediction-service python /app/run_today.py %*
