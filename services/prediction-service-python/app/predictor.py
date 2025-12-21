@@ -340,8 +340,9 @@ class BarttorkvikPredictor:
         """
         Convert spread to win probability using normal CDF.
 
-        Spread > 0 means home is favored (home wins by X points).
-        Spread < 0 means away is favored.
+        Spread is HOME-perspective (same convention as market odds in this repo):
+        - spread < 0 => home favored by |spread|
+        - spread > 0 => away favored by spread
 
         Args:
             spread: Predicted spread
