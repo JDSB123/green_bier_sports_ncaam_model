@@ -135,7 +135,7 @@ This is a **well-architected, production-ready** NCAA basketball prediction syst
 **Location:** `services/odds-ingestion-rust/src/main.rs`
 
 **Process:**
-1. Polls The Odds API every 30 seconds (configurable)
+1. Runs a **one-shot** Odds API sync when triggered (manual-only; `RUN_ONCE=true`)
 2. Normalizes team names via `resolve_team_name()`
 3. Validates `home_team_id ≠ away_team_id`
 4. Stores in `odds_snapshots` (TimescaleDB)
@@ -152,17 +152,9 @@ This is a **well-architected, production-ready** NCAA basketball prediction syst
 - Audit logging via `team_resolution_audit`
 
 **Issues Found:**
-1. 🔴 **CRITICAL: API Quota Exceeded** (from `docs/ODDS_API_USAGE.md`)
-   - Current: 86,400 requests/month (polling every 30s)
-   - Quota: 2,000 requests/month
-   - **43x over limit!**
-   
-   **Impact:** Will exhaust quota in ~12.5 hours of operation
-   
-   **Solutions:**
-   - Option A: Reduce poll frequency to 20 minutes (2,160 req/month)
-   - Option B: Upgrade to Professional tier ($20/month, 10k req/month)
-   - Option C: Implement event-driven polling (check `/events` first)
+1. 🟠 **Quota risk (only if polling is re-enabled)** (see `docs/ODDS_API_USAGE.md`)
+   - This repo defaults to **manual-only** (no continuous polling), which mitigates quota exhaustion.
+   - If you ever re-enable polling, implement event-driven polling or upgrade tiers first.
 
 2. ⚠️ **Health endpoint:** Service exposes health endpoint on port 8083, but this conflicts if multiple instances run
    **Recommendation:** Use ephemeral port for one-shot runs (already handled in `run_today.py` line 156)

@@ -27,11 +27,6 @@ class ModelConfig(BaseSettings):
     # These values are applied DIRECTLY to predictions (no hidden multipliers).
     # What you see here is exactly what gets added to spreads/totals.
     #
-    # Backtest Results (2024-12-17):
-    #   - Spreads with HCA=3.0: 16.57% ROI
-    #   - Totals with HCA=0.9: 34.10% ROI (was "4.5 * 0.2" internally)
-    #   - Combined: 25.64% ROI
-    #
     # Environment override: MODEL__HOME_COURT_ADVANTAGE_SPREAD=3.5
     # ─────────────────────────────────────────────────────────────────────────
 
@@ -49,8 +44,8 @@ class ModelConfig(BaseSettings):
     # TOTAL HCA - Points added to total score prediction
     # Standard efficiency models assume HCA is zero-sum for totals (Home scores more, Away scores less)
     home_court_advantage_total: float = Field(
-        default=0.9,
-        description="Points added to total prediction. Backtested optimal: 0.9 (34.10% ROI)."
+        default=0.0,
+        description="Points added to total prediction. Default 0.0 (zero-sum assumption)."
     )
     home_court_advantage_total_1h: float = Field(
         default=0.0,

@@ -11,7 +11,7 @@ This document provides a comprehensive reference of all fields pulled from the B
 
 **API Endpoint:** `https://barttorvik.com/{season}_team_results.json`  
 **Data Format:** JSON array-of-arrays (not array-of-objects)  
-**Sync Frequency:** Daily at 6 AM ET, or on-demand via `predict.bat`  
+**Sync Frequency:** **On-demand only** via `predict.bat` / `run_today.py` (manual-only mode)  
 **Service:** `ratings-sync-go` (Go binary)
 
 ---
@@ -242,28 +242,36 @@ CREATE TABLE team_ratings (
 
 **Formula:**
 ```python
-avg_tempo = (home.tempo + away.tempo) / 2
-home_expected_eff = (home.adj_o * away.adj_d) / 100.0
-away_expected_eff = (away.adj_o * home.adj_d) / 100.0
+# v6.3 formula (matches services/prediction-service-python/app/predictor.py)
+league_avg_tempo = 68.5
+league_avg_eff = 106.0
 
-home_score_base = home_expected_eff * avg_tempo / 100.0
-away_score_base = away_expected_eff * avg_tempo / 100.0
+avg_tempo = home.tempo + away.tempo - league_avg_tempo
+home_eff = home.adj_o + away.adj_d - league_avg_eff
+away_eff = away.adj_o + home.adj_d - league_avg_eff
+
+home_score_base = home_eff * avg_tempo / 100.0
+away_score_base = away_eff * avg_tempo / 100.0
 ```
 
 ### Matchup Adjustments (When Available)
 
 **Rebounding Edge:**
 ```python
-if home.orb and away.drb:
-    home_orb_edge = (home.orb - 28) - (72 - away.drb)
-    adjustment += home_orb_edge * 0.15  # ~0.15 points per % edge
+avg_orb = 28.0
+home_orb_adv = (home.orb - avg_orb) + ((100 - away.drb) - avg_orb)
+away_orb_adv = (away.orb - avg_orb) + ((100 - home.drb) - avg_orb)
+net_orb_edge = home_orb_adv - away_orb_adv
+adjustment += net_orb_edge * 0.15  # ~0.15 points per % edge
 ```
 
 **Turnover Differential:**
 ```python
-if home.tor and away.tord:
-    home_tor_edge = (away.tord - 20) - (home.tor - 20)
-    adjustment += home_tor_edge * 0.10  # ~0.10 points per % edge
+avg_tor = 18.5
+exp_home_tor = avg_tor + (home.tor - avg_tor) + (away.tord - avg_tor)
+exp_away_tor = avg_tor + (away.tor - avg_tor) + (home.tord - avg_tor)
+net_tor_edge = exp_away_tor - exp_home_tor
+adjustment += net_tor_edge * 0.10  # ~0.10 points per % edge
 ```
 
 ### Variance Estimation
@@ -486,7 +494,7 @@ class ExtendedTeamRatings:
 - **4** Identifiers (Rank, Team, Conf, Record) - **METADATA**
 - **1** Raw JSON (raw_barttorvik) - **AUDIT**
 
-**Update Frequency:** Daily at 6 AM ET via cron, or on-demand
+**Update Frequency:** **On-demand only** (manual-only mode; no cron)
 
 **Storage:** PostgreSQL `team_ratings` table with date-based versioning
 
@@ -494,5 +502,5 @@ class ExtendedTeamRatings:
 
 ---
 
-**Version:** v6.0 FINAL  
-**Last Updated:** December 20, 2025
+**Version:** v6.3  
+**Last Updated:** December 21, 2025

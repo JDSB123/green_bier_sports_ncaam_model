@@ -5,6 +5,10 @@
 **Branch:** basketball-api-endpoints  
 **Status:** ANALYSIS COMPLETE
 
+> **Update (manual-only mode):** The current stack is **manual-only** (no continuous polling).
+> Odds/rates are synced **one-shot** when you run `predict.bat` / `run_today.py`.
+> The quota math below is still useful if you ever re-enable polling, but it is **not the default behavior**.
+
 ---
 
 ## 🔴 CRITICAL ISSUES IDENTIFIED
@@ -540,8 +544,8 @@ Set these to tailor coverage without code changes:
 - `MARKETS_H2`: second-half markets (default: `spreads_h2,totals_h2,h2h_h2`)
 - `BOOKMAKERS_H1`: preferred books for H1 (default: `bovada,pinnacle,circa,bookmaker`)
 - `BOOKMAKERS_H2`: preferred books for H2 (default: `draftkings,fanduel,pinnacle,bovada`)
-- `RUN_ONCE`: `true` for one-shot sync (skip per-event half markets), `false` for continuous
-- `POLL_INTERVAL_SECONDS`: continuous polling interval (default: `30`)
+- `RUN_ONCE`: **manual-only** (always `true` in this repo; service runs once and exits)
+- `POLL_INTERVAL_SECONDS`: **unused** (continuous polling is disabled)
 
 Secrets are read from Docker secrets or environment variables:
 
@@ -571,8 +575,7 @@ python services/prediction-service-python/run_today.py
 ```
 
 ### Continuous (daemon)
-- Purpose: Stream and store full + half markets continuously.
-- Behavior: Polls full-game odds; then per-event H1/H2 odds; stores and publishes.
+- **Not supported in this repo** (manual-only mode; no background polling/daemons).
 - How to run (in container):
 ```bash
 # Example overrides; adjust to cover remaining markets/books supported by premium plan

@@ -1,6 +1,10 @@
 # Changelog - December 20, 2025
 ## Event-Driven Polling, Placeholder Removal, and Configuration Standardization
 
+> **Note (current default):** The repo is now **manual-only** (no continuous polling/cron).
+> The polling/quota sections below are retained as historical context and for future reference
+> if polling is ever re-enabled.
+
 ---
 
 ## 🎯 Summary

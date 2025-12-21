@@ -111,7 +111,7 @@ class BacktestConfig:
     sigma_total: float = 8.0  # Std dev for totals
     # HCA values - EXPLICIT (match config.py v6.1)
     hca_spread: float = 3.0  # Points added to spread
-    hca_total: float = 0.9  # Points added to total (was 4.5*0.2)
+    hca_total: float = 0.0  # Points added to total (default zero-sum assumption)
     neutral_pct: float = 0.05  # % of games at neutral site
     seed: int = 42  # Random seed for reproducibility
 
@@ -173,7 +173,7 @@ class NCAAMPredictor:
         home_score_base = home.adj_o * avg_tempo / 100.0
         away_score_base = away.adj_o * avg_tempo / 100.0
 
-        # HCA for total is now explicit (0.9 pts, not 4.5 * 0.2)
+        # HCA for total is explicit. Default is 0.0 (zero-sum assumption).
         hca_total = 0.0 if is_neutral else self.config.hca_total
         fg_total = home_score_base + away_score_base + hca_total
 

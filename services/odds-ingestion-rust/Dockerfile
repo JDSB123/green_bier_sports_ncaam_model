@@ -35,8 +35,7 @@ COPY --from=builder --chown=ncaam:ncaam /app/odds-ingestion/target/release/odds-
 # Switch to non-root user
 USER ncaam
 
-ENV RUST_LOG=info \
-    POLL_INTERVAL_SECONDS=30
+ENV RUST_LOG=info
 
 EXPOSE 8083
 ENTRYPOINT ["/app/odds-ingestion"]

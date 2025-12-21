@@ -68,6 +68,14 @@ def _read_secret_file(file_path: str, secret_name: str) -> str:
             f"Container must have secrets mounted. Check docker-compose.yml secrets configuration."
         )
 
+
+def _read_optional_secret_file(file_path: str, secret_name: str) -> str:
+    """Best-effort secret read for OPTIONAL secrets (returns empty string if missing)."""
+    try:
+        return _read_secret_file(file_path, secret_name)
+    except Exception:
+        return ""
+
 # Config sources:
 # - Docker Compose: secrets are mounted at /run/secrets/*
 # - Azure Container Apps: secrets are provided via env vars (no /run/secrets mount)
@@ -91,14 +99,18 @@ if not REDIS_URL:
 
 # Model parameters (from config, but display here for clarity)
 HCA_SPREAD = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_SPREAD', 3.2))
-HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 0.9))
+HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 0.0))
 MIN_SPREAD_EDGE = float(os.getenv('MODEL__MIN_SPREAD_EDGE', 2.5))
 MIN_TOTAL_EDGE = float(os.getenv('MODEL__MIN_TOTAL_EDGE', 3.0))
 
-# Teams Webhook URL for picks notifications
-TEAMS_WEBHOOK_URL = os.getenv(
-    'TEAMS_WEBHOOK_URL',
-    'https://greenbiercapital.webhook.office.com/webhookb2/6d55cb22-b8b0-43a4-8ec1-f5df8a966856@18ee0910-417d-4a81-a3f5-7945bdbd5a78/IncomingWebhook/e30b3a8ed7f24aecaf03bcad8e98717b/c30a04d7-4015-49cf-9fb9-f4735f413e33/V2jPjbvcHCfsN2nnwuPo8l39OnxHPPO7QHgNURWhGeInE1'
+# Teams Webhook URL for picks notifications (OPTIONAL)
+# - Azure: set env var TEAMS_WEBHOOK_URL
+# - Docker: mount secret file at /run/secrets/teams_webhook_url or set TEAMS_WEBHOOK_URL
+_teams_webhook_file = os.getenv("TEAMS_WEBHOOK_URL_FILE", "/run/secrets/teams_webhook_url")
+TEAMS_WEBHOOK_URL = (
+    os.getenv("TEAMS_WEBHOOK_URL")
+    or _read_optional_secret_file(_teams_webhook_file, "teams_webhook_url")
+    or ""
 )
 
 

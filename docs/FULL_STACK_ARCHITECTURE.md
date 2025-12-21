@@ -100,7 +100,7 @@ secrets/
 ### **How Secrets Work:**
 1. **Docker Compose** reads files from `./secrets/*.txt`
 2. **Mounts** them as Docker secrets at `/run/secrets/*`
-3. **Services** read from `/run/secrets/*` - **NO environment variable fallbacks**
+3. **Services** read from `/run/secrets/*` (Docker) or **environment variables** (Azure)
 4. **If missing:** Container **FAILS HARD** with clear error message
 
 ### **Code Behavior:**
@@ -111,7 +111,7 @@ secrets/
 **NO** `.env` file loading  
 **NO** `localhost` fallbacks  
 **NO** default passwords  
-**NO** environment variable fallbacks
+**NO** hidden fallbacks (Azure uses explicit environment variables instead of `/run/secrets` mounts)
 
 ---
 
@@ -126,7 +126,7 @@ All migrations in `database/migrations/` run automatically on first database ini
 5. **`005_complete_team_data.sql`** - 300+ teams + 600+ aliases
 6. **`006_team_matching_validation.sql`** - Validation functions + audit table
 
-**Result:** Fresh database has **688 aliases** from migrations, plus runtime-generated ones.
+**Result:** Fresh database has **800+ aliases** from migrations, plus runtime-generated ones.
 
 ---
 
@@ -333,7 +333,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 - ✅ **Read-only filesystem** (prediction-service)
 - ✅ **No new privileges** (all services)
 - ✅ **Dropped capabilities** (all services)
-- ✅ **Secrets in files** (not environment variables)
+- ✅ **Secrets in Docker secret files** (Docker) / **secret env vars** (Azure)
 - ✅ **Network isolation** (separate networks for backend/data)
 - ✅ **Resource limits** (CPU/memory constraints)
 
@@ -344,9 +344,9 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 - [x] **NO .env file dependencies**
 - [x] **NO localhost fallbacks**
 - [x] **NO default passwords**
-- [x] **NO environment variable fallbacks**
-- [x] **All secrets from Docker secret files**
-- [x] **All team aliases in migrations (688+)**
+- [x] **No hidden fallbacks** (Azure uses explicit env vars instead of `/run/secrets` mounts)
+- [x] **Secrets sourced from Docker secret files (Docker) or env vars (Azure)**
+- [x] **All team aliases in migrations (800+)**
 - [x] **All validation functions in migrations**
 - [x] **All binaries compiled inside containers**
 - [x] **All dependencies locked in requirements.txt/go.mod/Cargo.toml**
@@ -364,7 +364,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 - ✅ All data in Docker volumes
 - ✅ All migrations auto-run
 - ✅ All validation built-in
-- ✅ **NO fallbacks** - fails hard if secrets missing
+- ✅ **No hidden fallbacks** - fails hard if required secrets are missing
 - ✅ **Production ready** - repeatable on any machine
 
 **To run on a new machine:**
@@ -403,7 +403,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 
 **Purpose:** Team efficiency ratings (AdjO, AdjD, Tempo + Four Factors)  
 **URL:** `https://barttorvik.com/{season}_team_results.json`  
-**Frequency:** Daily sync (6 AM ET) or on-demand  
+**Frequency:** **On-demand only** (manual-only mode; triggered via `predict.bat` / `run_today.py`)  
 **Authentication:** None (public API)  
 **Rate Limits:** Not documented (assumed reasonable)  
 **Data Format:** JSON array-of-arrays  
@@ -426,7 +426,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 
 **Purpose:** Betting odds (spreads, totals, moneylines)  
 **URL:** `https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds`  
-**Frequency:** Every 30 seconds (continuous polling)  
+**Frequency:** **On-demand only** (manual-only mode; one-shot sync when you run predictions)  
 **Authentication:** API key required (stored in Docker secret)  
 **Rate Limits:** 45 requests/minute (enforced in code)  
 **Data Format:** JSON  
@@ -440,7 +440,8 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 **API Key:**
 - Stored in `secrets/odds_api_key.txt`
 - Mounted as Docker secret at `/run/secrets/odds_api_key`
-- **NO fallback** - system fails if missing
+- **Docker:** fails if missing secret file  
+- **Azure:** provided via environment variable `THE_ODDS_API_KEY`
 
 ---
 
@@ -498,7 +499,6 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 | Module | Version | Purpose |
 |--------|---------|---------|
 | `github.com/jackc/pgx/v5` | 5.5.2 | PostgreSQL driver |
-| `github.com/robfig/cron/v3` | 3.0.1 | Cron scheduler |
 | `go.uber.org/zap` | 1.26.0 | Structured logging |
 
 **Total:** ~10 modules (including transitive dependencies)
@@ -621,7 +621,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 
 1. **Secrets Management:** All secrets in Docker secrets, no local files
 2. **Database Schema:** All migrations auto-run on first init
-3. **Team Data:** 688+ aliases from migrations, no manual entry
+3. **Team Data:** 800+ aliases from migrations, no manual entry
 4. **Code:** All binaries built into container, no external tools needed
 5. **Configuration:** All config via environment variables or Docker secrets
 

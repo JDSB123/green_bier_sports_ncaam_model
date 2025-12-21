@@ -381,7 +381,8 @@ Exit codes: `0` when all checks pass, `1` otherwise.
 - FAIL: Includes the reason (rate limited, server error, JSON parse error, missing key).
 
 If Odds API reports `429` frequently, consider:
-- Reducing poll interval
+- Running sync less frequently (manual-only; no continuous polling loop)
+- Reducing market/bookmaker coverage (fewer requests and smaller payloads)
 - Ensuring per-minute quotas are observed (see Rust rate limiter)
 - Honoring `Retry-After` headers (already implemented in services)
 

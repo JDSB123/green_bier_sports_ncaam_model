@@ -211,7 +211,7 @@ CREATE INDEX idx_recommendations_game ON betting_recommendations(game_id);
 -- TIMESCALEDB HYPERTABLES (Time-Series Data)
 -----------------------------------------------------------
 
--- Odds snapshots (continuous polling)
+-- Odds snapshots (time-series odds history)
 CREATE TABLE odds_snapshots (
     time            TIMESTAMPTZ NOT NULL,
     game_id         UUID NOT NULL,

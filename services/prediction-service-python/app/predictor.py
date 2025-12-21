@@ -19,17 +19,21 @@ v6.1 CHANGES (2024-12-20):
 - Total: Uses simple efficiency (AdjO * Tempo / 100) for each team
 - HCA values now EXPLICIT in config (no hidden multipliers)
 
-HCA Values (from config.py - applied directly):
-- Full Game Spreads: 3.0 points
-- Full Game Totals: 0.9 points
-- First Half Spreads: 1.5 points
-- First Half Totals: 0.225 points
+HCA Values (from config.py - applied directly; can be overridden via env vars):
+- Full Game Spreads: 3.2 (default)
+- Full Game Totals: 0.0 (default; totals are typically treated as zero-sum for HCA)
+- First Half Spreads: 1.6 (default)
+- First Half Totals: 0.0 (default)
 
-Core Formulas:
-- Spread = -((Home_Net - Away_Net)/2 + HCA + Situational_Adj)
-- Total = (Home_AdjO + Away_AdjO) * AvgTempo / 100 + HCA_total + Situational_Adj
-- 1H Spread = -(raw_margin * margin_scale + HCA_1h)  [dynamic margin_scale]
-- 1H Total = tempo_factor calculation + HCA_total_1h  [dynamic tempo_factor]
+Core Formulas (v6.3):
+- Expected Tempo = Home_Tempo + Away_Tempo - League_Avg_Tempo
+- Expected Eff (Home) = Home_AdjO + Away_AdjD - League_Avg_Eff
+- Expected Eff (Away) = Away_AdjO + Home_AdjD - League_Avg_Eff
+- Base Scores = Eff * Tempo / 100
+- Total = Home_Base + Away_Base + HCA_total + Situational_total_adj + Matchup_adj
+- Spread (HOME perspective) = -( (Home_Base - Away_Base) + HCA_spread + Situational_spread_adj + Matchup_adj )
+- 1H Spread = -(raw_margin * margin_scale + HCA_spread_1h)  [dynamic margin_scale]
+- 1H Total = (Home_Base + Away_Base) * tempo_factor + HCA_total_1h  [dynamic tempo_factor]
 - Moneylines: Normal CDF conversion (dynamic sigma based on 3PR/tempo)
 
 All 6 markets: FG Spread/Total/ML, 1H Spread/Total/ML
