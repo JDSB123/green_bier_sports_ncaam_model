@@ -1,7 +1,12 @@
 """
-Green Bier Sports - NCAAM Prediction Engine v6.2
+Green Bier Sports - NCAAM Prediction Engine v6.3
 
 SINGLE SOURCE OF TRUTH: All predictions flow through this service.
+
+v6.3 CHANGES (2024-12-20):
+- ALL 22 BARTTORVIK FIELDS NOW REQUIRED - no fallbacks, no defaults
+- TeamRatings dataclass now enforces all fields present
+- Data pipeline guarantees complete data or explicit failure
 
 v6.2 CHANGES (2024-12-20):
 - NEW: Situational adjustments (rest days, back-to-back detection)
@@ -78,7 +83,10 @@ class PredictorOutput:
 
 class BarttorkvikPredictor:
     """
-    Simplified Barttorvik efficiency-based predictor with v6.2 enhancements.
+    Simplified Barttorvik efficiency-based predictor with v6.3 enhancements.
+
+    v6.3: ALL 22 BARTTORVIK FIELDS REQUIRED - no fallbacks, no defaults.
+    TeamRatings dataclass now enforces all fields present.
 
     Core Formula:
         Spread = Home_NetRtg - Away_NetRtg + HCA + Situational_Adj
@@ -135,12 +143,15 @@ class BarttorkvikPredictor:
         """
         Generate predictions for a matchup.
 
+        v6.3: TeamRatings MUST contain all 22 Barttorvik fields.
+        No fallbacks, no defaults - data pipeline ensures complete data.
+
         Args:
-            home_ratings: Barttorvik ratings for home team
-            away_ratings: Barttorvik ratings for away team
+            home_ratings: Barttorvik ratings for home team (ALL 22 FIELDS REQUIRED)
+            away_ratings: Barttorvik ratings for away team (ALL 22 FIELDS REQUIRED)
             is_neutral: True if neutral site game
-            home_rest: Rest info for home team (optional, for situational adjustments)
-            away_rest: Rest info for away team (optional, for situational adjustments)
+            home_rest: Rest info for home team (for situational adjustments)
+            away_rest: Rest info for away team (for situational adjustments)
 
         Returns:
             PredictorOutput with all predictions
@@ -378,7 +389,7 @@ class PredictionEngine:
             predicted_away_ml_1h=output.away_ml_1h,
             home_win_prob=output.home_win_prob,
             home_win_prob_1h=output.home_win_prob_1h,
-            model_version="v6.2",
+            model_version="v6.3",
         )
 
         # Calculate edges if market odds available
