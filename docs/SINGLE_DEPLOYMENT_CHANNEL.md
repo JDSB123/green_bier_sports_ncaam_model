@@ -496,7 +496,7 @@ git checkout main; git pull origin main
 ```powershell
 # Am I up to date?
 git status
-git log origin/main..HEAD
+git log HEAD..origin/main
 
 # What's different?
 git diff origin/main
