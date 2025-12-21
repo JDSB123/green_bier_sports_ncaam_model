@@ -17,6 +17,7 @@ NOTE: You must manually create secrets/odds_api_key.txt with your The Odds API k
 
 import os
 import secrets
+import sys
 from pathlib import Path
 
 
@@ -32,7 +33,10 @@ def create_secret_file(filepath: Path, value: str, description: str) -> bool:
         return False
 
     filepath.write_text(value)
-    filepath.chmod(0o600)  # Owner read/write only
+    try:
+        filepath.chmod(0o600)  # Owner read/write only
+    except Exception:
+        pass # Windows might ignore this
     print(f"  [CREATE] {filepath.name} - {description}")
     return True
 
@@ -68,16 +72,33 @@ def main():
 
     # Check for odds_api_key.txt
     odds_api_key_file = secrets_dir / "odds_api_key.txt"
+    
     if not odds_api_key_file.exists():
-        print(f"  [MISSING] odds_api_key.txt - YOU MUST CREATE THIS MANUALLY")
+        print(f"  [MISSING] odds_api_key.txt")
         print()
-        print("  To create odds_api_key.txt:")
-        print("    1. Get your API key from https://the-odds-api.com/")
-        print("    2. Create the file: secrets/odds_api_key.txt")
-        print("    3. Paste your API key (just the key, no quotes)")
-        print()
+        print("  Please enter your The Odds API key (or press Enter to skip):")
+        user_key = input("  > ").strip()
+        
+        if user_key:
+            create_secret_file(odds_api_key_file, user_key, "Odds API Key")
+            created.append("odds_api_key.txt")
+        else:
+            print("  [SKIPPED] No key entered.")
     else:
-        print(f"  [OK] odds_api_key.txt exists")
+        # Validate content
+        content = odds_api_key_file.read_text().strip()
+        if not content or "change_me" in content.lower() or content.lower().startswith("sample"):
+             print(f"  [WARNING] odds_api_key.txt exists but appears to be a placeholder!")
+             print(f"            Current content: {content[:10]}...")
+             print("  Do you want to overwrite it? (y/N)")
+             if input("  > ").lower().startswith('y'):
+                 print("  Enter new API key:")
+                 user_key = input("  > ").strip()
+                 if user_key:
+                     odds_api_key_file.write_text(user_key)
+                     print("  [UPDATED] odds_api_key.txt")
+        else:
+            print(f"  [OK] odds_api_key.txt exists")
 
     print()
     print("=" * 50)
@@ -87,9 +108,12 @@ def main():
     if skipped:
         print(f"  Skipped (already exist): {', '.join(skipped)}")
 
-    if not odds_api_key_file.exists():
+    # Final check
+    has_file = odds_api_key_file.exists() and len(odds_api_key_file.read_text().strip()) > 10
+    
+    if not has_file:
         print()
-        print("ACTION REQUIRED: Create secrets/odds_api_key.txt with your API key!")
+        print("ACTION REQUIRED: You must create secrets/odds_api_key.txt")
         return 1
 
     print()
@@ -98,4 +122,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

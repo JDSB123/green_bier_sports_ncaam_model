@@ -1,7 +1,7 @@
 """
-Configuration for NCAA Basketball Prediction Service v6.1
+Configuration for NCAA Basketball Prediction Service v6.3
 
-v6.1 Changes:
+v6.3 Changes:
 - HCA values are now EXPLICIT (what you see is what gets applied)
 - Removed hidden multipliers from predictor.py
 - Synced with corrected total/spread formulas
@@ -36,35 +36,48 @@ class ModelConfig(BaseSettings):
     # ─────────────────────────────────────────────────────────────────────────
 
     # SPREAD HCA - Points added to home team advantage
+    # Standard Barttorvik/KenPom value is ~3.2 points
     home_court_advantage_spread: float = Field(
-        default=3.0,
+        default=3.2,
         description="Points added for home court in spread calc. Applied directly."
     )
     home_court_advantage_spread_1h: float = Field(
-        default=1.5,
+        default=1.6,
         description="1H spread HCA (50% of full game). Applied directly."
     )
 
     # TOTAL HCA - Points added to total score prediction
-    # NOTE: These are the ACTUAL values applied (previously had hidden 0.2/0.1 multipliers)
+    # Standard efficiency models assume HCA is zero-sum for totals (Home scores more, Away scores less)
     home_court_advantage_total: float = Field(
-        default=0.9,
-        description="Points added to total prediction. Applied directly. (Was 4.5*0.2)"
+        default=0.0,
+        description="Points added to total prediction. Standard is 0.0."
     )
     home_court_advantage_total_1h: float = Field(
-        default=0.225,
-        description="1H total HCA. Applied directly. (Was 2.25*0.1)"
+        default=0.0,
+        description="1H total HCA. Standard is 0.0."
     )
 
-    # League averages (reference values only - not used in prediction formula)
-    # The prediction formula uses 100 as a mathematical constant, NOT as D1 average
+    # League averages (REQUIRED for correct Tempo/Efficiency formulas)
+    # Formula: Expected = TeamA + TeamB - LeagueAvg
     league_avg_tempo: float = Field(
-        default=68.0,
-        description="NCAA D1 average possessions per 40 minutes (reference only)."
+        default=68.5,
+        description="NCAA D1 average possessions per 40 minutes."
     )
     league_avg_efficiency: float = Field(
-        default=100.0,
-        description="Reference value only. Prediction formula uses 100 as constant."
+        default=106.0,
+        description="NCAA D1 average efficiency (points per 100 possessions)."
+    )
+    league_avg_orb: float = Field(
+        default=28.0,
+        description="NCAA D1 average Offensive Rebound %."
+    )
+    league_avg_tor: float = Field(
+        default=18.5,
+        description="NCAA D1 average Turnover Rate."
+    )
+    league_avg_ftr: float = Field(
+        default=33.0,
+        description="NCAA D1 average Free Throw Rate (FTA/FGA)."
     )
 
     # First half scoring factors
@@ -242,7 +255,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "6.1.0"
+    service_version: str = "6.3.0"
     debug: bool = False
 
     # Feature Store

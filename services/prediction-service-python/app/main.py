@@ -21,6 +21,24 @@ class TeamRatingsInput(BaseModel):
     adj_d: float
     tempo: float
     rank: int
+    
+    # Four Factors
+    efg: float
+    efgd: float
+    tor: float
+    tord: float
+    orb: float
+    drb: float
+    ftr: float
+    ftrd: float
+    
+    # Shooting Breakdown
+    two_pt_pct: float
+    two_pt_pct_d: float
+    three_pt_pct: float
+    three_pt_pct_d: float
+    three_pt_rate: float
+    three_pt_rate_d: float
 
     def to_domain(self) -> TeamRatings:
         return TeamRatings(
@@ -29,6 +47,20 @@ class TeamRatingsInput(BaseModel):
             adj_d=self.adj_d,
             tempo=self.tempo,
             rank=self.rank,
+            efg=self.efg,
+            efgd=self.efgd,
+            tor=self.tor,
+            tord=self.tord,
+            orb=self.orb,
+            drb=self.drb,
+            ftr=self.ftr,
+            ftrd=self.ftrd,
+            two_pt_pct=self.two_pt_pct,
+            two_pt_pct_d=self.two_pt_pct_d,
+            three_pt_pct=self.three_pt_pct,
+            three_pt_pct_d=self.three_pt_pct_d,
+            three_pt_rate=self.three_pt_rate,
+            three_pt_rate_d=self.three_pt_rate_d,
         )
 
 
@@ -46,6 +78,9 @@ class MarketOddsInput(BaseModel):
     total_1h: Optional[float] = None
     home_ml_1h: Optional[int] = None
     away_ml_1h: Optional[int] = None
+    spread_price_1h: Optional[int] = None
+    over_price_1h: Optional[int] = None
+    under_price_1h: Optional[int] = None
 
     # Sharp book reference
     sharp_spread: Optional[float] = None
@@ -64,6 +99,9 @@ class MarketOddsInput(BaseModel):
             total_1h=self.total_1h,
             home_ml_1h=self.home_ml_1h,
             away_ml_1h=self.away_ml_1h,
+            spread_price_1h=self.spread_price_1h,
+            over_price_1h=self.over_price_1h,
+            under_price_1h=self.under_price_1h,
             sharp_spread=self.sharp_spread,
             sharp_total=self.sharp_total,
         )

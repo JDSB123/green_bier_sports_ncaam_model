@@ -50,19 +50,60 @@ class TeamRatings:
     """
     Barttorvik team ratings - the core data for predictions.
 
-    All ratings are per 100 possessions.
+    ALL FIELDS ARE REQUIRED. No fallbacks, no defaults.
+    The Go sync service captures all 22 Barttorvik fields - we use them ALL.
+
+    All efficiency ratings are per 100 possessions.
     """
     team_name: str
-    adj_o: float          # Adjusted offensive efficiency
-    adj_d: float          # Adjusted defensive efficiency
-    tempo: float          # Possessions per 40 minutes
-    rank: int             # Barttorvik rank
 
-    # Extended metrics (optional, for enhanced predictions)
-    efg: Optional[float] = None            # Effective FG%
-    efgd: Optional[float] = None           # Effective FG% Defense
-    three_pt_rate: Optional[float] = None  # 3-point attempt rate (% of FGA)
-    three_pt_rate_d: Optional[float] = None  # Opponent 3-point rate
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CORE EFFICIENCY METRICS (REQUIRED)
+    # ═══════════════════════════════════════════════════════════════════════════
+    adj_o: float          # Adjusted offensive efficiency (pts per 100 possessions)
+    adj_d: float          # Adjusted defensive efficiency (pts per 100 possessions)
+    tempo: float          # Possessions per 40 minutes
+    rank: int             # Barttorvik overall rank
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FOUR FACTORS - SHOOTING (REQUIRED)
+    # ═══════════════════════════════════════════════════════════════════════════
+    efg: float            # Effective FG% (accounts for 3P value)
+    efgd: float           # Effective FG% allowed by defense
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FOUR FACTORS - TURNOVERS (REQUIRED)
+    # ═══════════════════════════════════════════════════════════════════════════
+    tor: float            # Turnover Rate (turnovers per 100 possessions)
+    tord: float           # Turnover Rate forced by defense
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FOUR FACTORS - REBOUNDING (REQUIRED)
+    # ═══════════════════════════════════════════════════════════════════════════
+    orb: float            # Offensive Rebound % (% of available offensive rebounds grabbed)
+    drb: float            # Defensive Rebound % (% of available defensive rebounds grabbed)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # FOUR FACTORS - FREE THROWS (REQUIRED)
+    # ═══════════════════════════════════════════════════════════════════════════
+    ftr: float            # Free Throw Rate (FTA per FGA)
+    ftrd: float           # Free Throw Rate allowed by defense
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SHOOTING BREAKDOWN (REQUIRED)
+    # ═══════════════════════════════════════════════════════════════════════════
+    two_pt_pct: float     # 2-Point FG%
+    two_pt_pct_d: float   # 2-Point FG% allowed by defense
+    three_pt_pct: float   # 3-Point FG%
+    three_pt_pct_d: float # 3-Point FG% allowed by defense
+    three_pt_rate: float  # 3-Point attempt rate (% of FGA that are 3s)
+    three_pt_rate_d: float # 3-Point rate allowed by defense
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # QUALITY METRICS (REQUIRED)
+    # ═══════════════════════════════════════════════════════════════════════════
+    barthag: float        # Barttorvik power rating (expected win % vs average D1 team)
+    wab: float            # Wins Above Bubble (wins above expected for bubble team)
 
     @property
     def net_rating(self) -> float:
@@ -70,12 +111,36 @@ class TeamRatings:
         return self.adj_o - self.adj_d
 
     @property
-    def has_extended_metrics(self) -> bool:
-        """Check if extended metrics are available."""
-        return self.efg is not None and self.three_pt_rate is not None
+    def turnover_margin(self) -> float:
+        """Turnover differential (positive = forces more than commits)."""
+        return self.tord - self.tor
+
+    @property
+    def rebound_margin(self) -> float:
+        """Rebounding differential (positive = better rebounder)."""
+        return self.orb + self.drb - 100  # Normalized to 0 baseline
+
+    @property
+    def free_throw_margin(self) -> float:
+        """Free throw rate differential (positive = gets to line more)."""
+        return self.ftr - self.ftrd
+
+    @property
+    def three_pt_reliance(self) -> float:
+        """How 3-point dependent is this team (higher = more 3s)."""
+        return self.three_pt_rate
+
+    @property
+    def interior_strength(self) -> float:
+        """Interior scoring strength (2P% relative to 3P dependence)."""
+        return self.two_pt_pct * (100 - self.three_pt_rate) / 100
 
     def __str__(self) -> str:
-        return f"{self.team_name} (#{self.rank}): O={self.adj_o:.1f} D={self.adj_d:.1f} Net={self.net_rating:+.1f}"
+        return (
+            f"{self.team_name} (#{self.rank}): "
+            f"O={self.adj_o:.1f} D={self.adj_d:.1f} Net={self.net_rating:+.1f} "
+            f"Barthag={self.barthag:.3f}"
+        )
 
 
 @dataclass(frozen=True)
@@ -100,6 +165,9 @@ class MarketOdds:
     total_1h: Optional[float] = None
     home_ml_1h: Optional[int] = None
     away_ml_1h: Optional[int] = None
+    spread_price_1h: Optional[int] = None
+    over_price_1h: Optional[int] = None
+    under_price_1h: Optional[int] = None
 
     # Sharp book reference (Pinnacle/Circa)
     sharp_spread: Optional[float] = None

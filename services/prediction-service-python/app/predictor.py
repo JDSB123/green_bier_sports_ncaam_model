@@ -1,7 +1,12 @@
 """
-Green Bier Sports - NCAAM Prediction Engine v6.2
+Green Bier Sports - NCAAM Prediction Engine v6.3
 
 SINGLE SOURCE OF TRUTH: All predictions flow through this service.
+
+v6.3 CHANGES (2024-12-20):
+- ALL 22 BARTTORVIK FIELDS NOW REQUIRED - no fallbacks, no defaults
+- TeamRatings dataclass now enforces all fields present
+- Data pipeline guarantees complete data or explicit failure
 
 v6.2 CHANGES (2024-12-20):
 - NEW: Situational adjustments (rest days, back-to-back detection)
@@ -49,6 +54,8 @@ from app.models import (
 from app.situational import SituationalAdjuster, SituationalAdjustment, RestInfo
 from app.variance import DynamicVarianceCalculator, VarianceFactors
 from app.first_half import EnhancedFirstHalfCalculator, FirstHalfFactors
+from sklearn.linear_model import LinearRegression
+import structlog
 
 
 @dataclass
@@ -74,11 +81,15 @@ class PredictorOutput:
     variance_1h: float = 12.65  # 1H variance
     situational_adj: Optional[SituationalAdjustment] = None
     first_half_factors: Optional[FirstHalfFactors] = None
+    matchup_adj: float = 0.0  # v6.3 Matchup adjustment (ORB/TOR)
 
 
 class BarttorkvikPredictor:
     """
-    Simplified Barttorvik efficiency-based predictor with v6.2 enhancements.
+    Simplified Barttorvik efficiency-based predictor with v6.3 enhancements.
+
+    v6.3: ALL 22 BARTTORVIK FIELDS REQUIRED - no fallbacks, no defaults.
+    TeamRatings dataclass now enforces all fields present.
 
     Core Formula:
         Spread = Home_NetRtg - Away_NetRtg + HCA + Situational_Adj
@@ -123,6 +134,33 @@ class BarttorkvikPredictor:
             efg_margin_adjustment=self.config.efg_margin_adjustment,
             enabled=self.config.enhanced_1h_enabled,
         )
+        # ML Model Integration
+        self.ml_model = LinearRegression()
+        self.ml_ready = False
+        # TODO: Train on historical data from testing/data/kaggle
+        self._train_ml_model()
+
+    def _train_ml_model(self):
+        import pandas as pd
+        import os
+        # Placeholder: Load and train on historical data
+        # Assume data in testing/data/kaggle
+        try:
+            # Check if file exists first to avoid noise
+            data_path = 'testing/data/kaggle/scores.csv'
+            if not os.path.exists(data_path):
+                self.logger.warning(f"ML training skipped: {data_path} not found")
+                return
+
+            df = pd.read_csv(data_path)  # Adjust filename as per actual
+            X = df[['home_adj_o', 'away_adj_o', 'home_adj_d', 'away_adj_d', 'tempo']]
+            y = df['home_score - away_score']  # Actual spread
+            self.ml_model.fit(X, y)
+            self.ml_ready = True
+            self.logger.info("ML model trained successfully")
+        except Exception as e:
+            self.logger.warning(f"ML training failed: {e}")
+            # Fallback to no ML
 
     def predict(
         self,
@@ -135,16 +173,21 @@ class BarttorkvikPredictor:
         """
         Generate predictions for a matchup.
 
+        v6.3: TeamRatings MUST contain all 22 Barttorvik fields.
+        No fallbacks, no defaults - data pipeline ensures complete data.
+
         Args:
-            home_ratings: Barttorvik ratings for home team
-            away_ratings: Barttorvik ratings for away team
+            home_ratings: Barttorvik ratings for home team (ALL 22 FIELDS REQUIRED)
+            away_ratings: Barttorvik ratings for away team (ALL 22 FIELDS REQUIRED)
             is_neutral: True if neutral site game
-            home_rest: Rest info for home team (optional, for situational adjustments)
-            away_rest: Rest info for away team (optional, for situational adjustments)
+            home_rest: Rest info for home team (for situational adjustments)
+            away_rest: Rest info for away team (for situational adjustments)
 
         Returns:
             PredictorOutput with all predictions
         """
+        self.logger.info(f"Starting prediction for {home_ratings.team} vs {away_ratings.team}")
+
         # ─────────────────────────────────────────────────────────────────────
         # v6.2 ENHANCEMENTS - Situational, Variance, 1H Factors
         # ─────────────────────────────────────────────────────────────────────
@@ -178,35 +221,48 @@ class BarttorkvikPredictor:
             away_tempo=away_ratings.tempo,
         )
 
-        # ─────────────────────────────────────────────────────────────────────
-        # SCORE PREDICTIONS - CORRECTED FORMULA (v6.1) + SITUATIONAL (v6.2)
-        # ─────────────────────────────────────────────────────────────────────
-        avg_tempo = (home_ratings.tempo + away_ratings.tempo) / 2
+        # 4. Calculate Matchup Adjustments (Rebounding, Turnovers)
+        matchup_adj = self._calculate_matchup_adjustments(home_ratings, away_ratings)
 
         # ─────────────────────────────────────────────────────────────────────
-        # SPREAD CALCULATION - Net Rating Difference + Situational
+        # SCORE PREDICTIONS - CORRECTED FORMULA (v6.3)
         # ─────────────────────────────────────────────────────────────────────
-        home_net = home_ratings.adj_o - home_ratings.adj_d
-        away_net = away_ratings.adj_o - away_ratings.adj_d
+        # 1. Expected Tempo (Home + Away - Avg)
+        avg_tempo = home_ratings.tempo + away_ratings.tempo - self.config.league_avg_tempo
 
-        # Raw margin from net rating difference
-        raw_margin = (home_net - away_net) / 2
+        # 2. Expected Efficiency (Off + Def - Avg)
+        home_eff = home_ratings.adj_o + away_ratings.adj_d - self.config.league_avg_efficiency
+        away_eff = away_ratings.adj_o + home_ratings.adj_d - self.config.league_avg_efficiency
 
+        # 3. Base Scores (Efficiency * Tempo / 100)
+        home_score_base = home_eff * avg_tempo / 100.0
+        away_score_base = away_eff * avg_tempo / 100.0
+
+        # 4. Apply HCA & Situational & Matchup
         hca_for_spread = 0.0 if is_neutral else self.hca_spread
-        # Apply situational adjustment (positive = helps home)
-        spread = -(raw_margin + hca_for_spread + situational_spread_adj)
-
-        # ─────────────────────────────────────────────────────────────────────
-        # TOTAL CALCULATION - Simple Efficiency + Situational
-        # ─────────────────────────────────────────────────────────────────────
-        home_score_base = home_ratings.adj_o * avg_tempo / 100.0
-        away_score_base = away_ratings.adj_o * avg_tempo / 100.0
-
         hca_for_total = 0.0 if is_neutral else self.hca_total
-        # Apply situational adjustment (tired teams = lower total)
+
+        # Total = Sum of scores + HCA + Situational
+        # Note: Matchup adjustments (ORB/TOR) primarily affect efficiency/margin, not necessarily total pace/score directly in this model
         total = home_score_base + away_score_base + hca_for_total + situational_total_adj
 
-        # Derive final scores from spread and total
+        # Spread = -(Home - Away + HCA + Situational + Matchup)
+        # Note: Spread is negative when Home is favored
+        # Matchup Adj: Positive value means Home Advantage -> More negative spread
+        raw_margin = home_score_base - away_score_base
+        spread = -(raw_margin + hca_for_spread + situational_spread_adj + matchup_adj)
+
+        # ML adjustment (blend with rule-based)
+        if self.ml_ready:
+            features = [home_ratings.adj_o, away_ratings.adj_o, home_ratings.adj_d, away_ratings.adj_d, avg_tempo]
+            try:
+                ml_spread = self.ml_model.predict([features])[0]
+                spread = (spread + ml_spread) / 2  # Simple average blend
+            except Exception as e:
+                self.logger.error(f"ML prediction failed: {e}")
+        
+        # Derive final scores from spread and total for consistency
+        # (This ensures spread/total match the individual team scores exactly)
         home_score = (total - spread) / 2
         away_score = (total + spread) / 2
 
@@ -218,12 +274,13 @@ class BarttorkvikPredictor:
         hca_spread_1h = 0.0 if is_neutral else self.hca_spread_1h
         hca_total_1h = 0.0 if is_neutral else self.hca_total_1h
 
-        # 1H Spread: Use dynamic margin scale
+        # 1H Spread: Use dynamic margin scale on the NEW raw margin
         spread_1h = -(raw_margin * h1_factors.margin_scale + hca_spread_1h)
 
-        # 1H Total: Use dynamic tempo factor
-        home_score_1h = home_ratings.adj_o * avg_tempo * h1_factors.tempo_factor / 100.0
-        away_score_1h = away_ratings.adj_o * avg_tempo * h1_factors.tempo_factor / 100.0
+        # 1H Total: Use dynamic tempo factor on the NEW avg tempo
+        # Note: We use the base efficiency scores scaled by tempo factor
+        home_score_1h = home_score_base * h1_factors.tempo_factor
+        away_score_1h = away_score_base * h1_factors.tempo_factor
         total_1h = home_score_1h + away_score_1h + hca_total_1h
 
         # ─────────────────────────────────────────────────────────────────────
@@ -259,7 +316,56 @@ class BarttorkvikPredictor:
             variance_1h=h1_sigma,
             situational_adj=sit_adj,
             first_half_factors=h1_factors,
+            matchup_adj=matchup_adj,
         )
+
+    def _calculate_matchup_adjustments(self, home: TeamRatings, away: TeamRatings) -> float:
+        """
+        Calculate specific matchup advantages based on Four Factors.
+        Returns points to ADD to Home Margin (Positive = Home Advantage).
+        
+        Based on docs/BARTTORVIK_FIELDS.md:
+        - Rebounding Edge: ~0.15 pts per % edge
+        - Turnover Edge: ~0.10 pts per % edge
+        - Free Throw Edge: ~0.15 pts per % edge (Estimated)
+        """
+        adjustment = 0.0
+        avg_orb = self.config.league_avg_orb
+        avg_tor = self.config.league_avg_tor
+        avg_ftr = self.config.league_avg_ftr
+
+        # 1. Rebounding Edge (ORB% vs Opponent Allowed ORB%)
+        # Home ORB Advantage = (Home ORB - Avg) + (Away Allowed ORB - Avg)
+        # Away Allowed ORB = 100 - Away DRB
+        home_orb_adv = (home.orb - avg_orb) + ((100 - away.drb) - avg_orb)
+        away_orb_adv = (away.orb - avg_orb) + ((100 - home.drb) - avg_orb)
+        
+        net_orb_edge = home_orb_adv - away_orb_adv
+        adjustment += net_orb_edge * 0.15
+
+        # 2. Turnover Edge (TO% vs Opponent Forced TO%)
+        # Home TO Disadvantage = (Home TOR - Avg) - (Away TORD - Avg)
+        # Note: Higher TOR is BAD. Higher TORD is GOOD.
+        # If Home TOR is 25 (+5 bad) and Away TORD is 25 (+5 good), Home is in trouble.
+        # Expected Home TO% = Avg + (Home - Avg) + (Away_Forced - Avg)
+        exp_home_tor = avg_tor + (home.tor - avg_tor) + (away.tord - avg_tor)
+        exp_away_tor = avg_tor + (away.tor - avg_tor) + (home.tord - avg_tor)
+        
+        # Net TO% Edge (Negative diff means Home commits fewer TOs -> Good)
+        # If Home commits 15% and Away commits 25%, Home has +10% edge.
+        net_tor_edge = exp_away_tor - exp_home_tor
+        adjustment += net_tor_edge * 0.10
+
+        # 3. Free Throw Edge (FTR vs Opponent Allowed FTR)
+        # FTR = FTA / FGA. Higher is better for offense.
+        # Expected Home FTR = Avg + (Home FTR - Avg) + (Away FTRD - Avg)
+        exp_home_ftr = avg_ftr + (home.ftr - avg_ftr) + (away.ftrd - avg_ftr)
+        exp_away_ftr = avg_ftr + (away.ftr - avg_ftr) + (home.ftrd - avg_ftr)
+
+        net_ftr_edge = exp_home_ftr - exp_away_ftr
+        adjustment += net_ftr_edge * 0.15
+
+        return adjustment
 
     def _spread_to_win_prob(self, spread: float, sigma: Optional[float] = None) -> float:
         """
@@ -378,7 +484,7 @@ class PredictionEngine:
             predicted_away_ml_1h=output.away_ml_1h,
             home_win_prob=output.home_win_prob,
             home_win_prob_1h=output.home_win_prob_1h,
-            model_version="v6.2",
+            model_version="v6.3",
         )
 
         # Calculate edges if market odds available
@@ -386,6 +492,21 @@ class PredictionEngine:
             prediction.calculate_edges(market_odds)
 
         return prediction
+
+    def _ev_and_kelly_from_prob(self, model_prob: float, odds: int) -> tuple[float, float, float]:
+        """Return (ev_percent, kelly_fraction, market_implied_prob) for a moneyline."""
+        market_prob = self._american_odds_to_prob(odds)
+
+        # Profit multiple for 1 unit stake
+        if odds >= 0:
+            b = odds / 100.0
+        else:
+            b = 100.0 / abs(odds)
+
+        ev_percent = (model_prob * b - (1 - model_prob)) * 100.0
+        kelly = max(0.0, (b * model_prob - (1 - model_prob)) / b)
+
+        return round(ev_percent, 2), round(kelly, 4), market_prob
 
     def _check_moneyline_value(
         self,
@@ -395,60 +516,76 @@ class PredictionEngine:
         """
         Check if moneylines offer value.
 
-        Returns list of (bet_type, pick, ev_percent, confidence) tuples.
+        Returns list of (bet_type, pick, ev_percent, model_prob, market_prob, kelly, odds, confidence).
         """
         recommendations = []
-        min_ev = 0.03  # Minimum 3% EV edge
+        min_ev_pct = 3.0  # Require at least +3% EV relative to stake
 
         # Full game moneyline
         if market_odds.home_ml is not None and market_odds.away_ml is not None:
-            # Convert market odds to implied probabilities
-            home_market_prob = self._american_odds_to_prob(market_odds.home_ml)
-            away_market_prob = self._american_odds_to_prob(market_odds.away_ml)
+            home_ev, home_kelly, home_market_prob = self._ev_and_kelly_from_prob(
+                prediction.home_win_prob,
+                market_odds.home_ml,
+            )
+            away_ev, away_kelly, away_market_prob = self._ev_and_kelly_from_prob(
+                1 - prediction.home_win_prob,
+                market_odds.away_ml,
+            )
 
-            # Calculate EV
-            home_ev = prediction.home_win_prob - home_market_prob
-            away_ev = (1 - prediction.home_win_prob) - away_market_prob
-
-            if home_ev >= min_ev:
+            if home_ev >= min_ev_pct:
                 recommendations.append((
                     BetType.MONEYLINE,
                     Pick.HOME,
-                    home_ev * 100,
+                    home_ev,
                     prediction.spread_confidence,
+                    prediction.home_win_prob,
+                    home_market_prob,
+                    home_kelly,
                     market_odds.home_ml,
                 ))
-            elif away_ev >= min_ev:
+            if away_ev >= min_ev_pct:
                 recommendations.append((
                     BetType.MONEYLINE,
                     Pick.AWAY,
-                    away_ev * 100,
+                    away_ev,
                     prediction.spread_confidence,
+                    1 - prediction.home_win_prob,
+                    away_market_prob,
+                    away_kelly,
                     market_odds.away_ml,
                 ))
 
         # 1H moneyline
         if market_odds.home_ml_1h is not None and market_odds.away_ml_1h is not None:
-            home_market_prob_1h = self._american_odds_to_prob(market_odds.home_ml_1h)
-            away_market_prob_1h = self._american_odds_to_prob(market_odds.away_ml_1h)
+            home_ev_1h, home_kelly_1h, home_market_prob_1h = self._ev_and_kelly_from_prob(
+                prediction.home_win_prob_1h,
+                market_odds.home_ml_1h,
+            )
+            away_ev_1h, away_kelly_1h, away_market_prob_1h = self._ev_and_kelly_from_prob(
+                1 - prediction.home_win_prob_1h,
+                market_odds.away_ml_1h,
+            )
 
-            home_ev_1h = prediction.home_win_prob_1h - home_market_prob_1h
-            away_ev_1h = (1 - prediction.home_win_prob_1h) - away_market_prob_1h
-
-            if home_ev_1h >= min_ev:
+            if home_ev_1h >= min_ev_pct:
                 recommendations.append((
                     BetType.MONEYLINE_1H,
                     Pick.HOME,
-                    home_ev_1h * 100,
+                    home_ev_1h,
                     prediction.spread_confidence_1h,
+                    prediction.home_win_prob_1h,
+                    home_market_prob_1h,
+                    home_kelly_1h,
                     market_odds.home_ml_1h,
                 ))
-            elif away_ev_1h >= min_ev:
+            if away_ev_1h >= min_ev_pct:
                 recommendations.append((
                     BetType.MONEYLINE_1H,
                     Pick.AWAY,
-                    away_ev_1h * 100,
+                    away_ev_1h,
                     prediction.spread_confidence_1h,
+                    1 - prediction.home_win_prob_1h,
+                    away_market_prob_1h,
+                    away_kelly_1h,
                     market_odds.away_ml_1h,
                 ))
 
@@ -570,16 +707,20 @@ class PredictionEngine:
             # FIX: Calculate actual market probability from odds instead of hardcoding 0.5
             # Standard -110 odds imply 52.38% probability (110/210)
             # This accounts for the vig/juice in the line
-            if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
-                # Use spread price if available, default to -110
-                spread_price = getattr(market_odds, 'spread_price', -110) or -110
+            if bet_type == BetType.SPREAD:
+                spread_price = getattr(market_odds, 'spread_price', None) or -110
                 market_prob = self._american_odds_to_prob(spread_price)
-            elif bet_type in (BetType.TOTAL, BetType.TOTAL_1H):
-                # Use over/under price, default to -110
-                over_price = getattr(market_odds, 'over_price', -110) or -110
+            elif bet_type == BetType.SPREAD_1H:
+                spread_price = getattr(market_odds, 'spread_price_1h', None) or -110
+                market_prob = self._american_odds_to_prob(spread_price)
+            elif bet_type == BetType.TOTAL:
+                over_price = getattr(market_odds, 'over_price', None) or -110
+                market_prob = self._american_odds_to_prob(over_price)
+            elif bet_type == BetType.TOTAL_1H:
+                over_price = getattr(market_odds, 'over_price_1h', None) or -110
                 market_prob = self._american_odds_to_prob(over_price)
             else:
-                market_prob = 0.5  # Fallback for edge cases
+                market_prob = 0.5
 
             rec = BettingRecommendation(
                 game_id=prediction.game_id,
@@ -606,13 +747,18 @@ class PredictionEngine:
             recommendations.append(rec)
 
         # Process moneyline recommendations
-        for bet_type, pick, ev_percent, confidence, market_odds_value in moneyline_checks:
+        for (
+            bet_type,
+            pick,
+            ev_percent,
+            confidence,
+            model_prob,
+            market_prob,
+            kelly,
+            market_odds_value,
+        ) in moneyline_checks:
             if confidence < self.config.min_confidence:
                 continue
-
-            # Calculate Kelly fraction for moneyline
-            # For moneyline, edge is the EV percentage
-            kelly = ev_percent / 100.0  # Simple Kelly approximation
 
             # Determine bet tier based on EV
             if ev_percent >= 10.0:
@@ -626,15 +772,6 @@ class PredictionEngine:
                 kelly * self.config.kelly_fraction * 10,
                 self.config.max_bet_units,
             )
-
-            # Get model and market probabilities
-            if bet_type == BetType.MONEYLINE:
-                model_prob = prediction.home_win_prob if pick == Pick.HOME else (1 - prediction.home_win_prob)
-            else:  # MONEYLINE_1H
-                model_prob = prediction.home_win_prob_1h if pick == Pick.HOME else (1 - prediction.home_win_prob_1h)
-
-            market_prob = self._american_odds_to_prob(market_odds_value)
-
             rec = BettingRecommendation(
                 game_id=prediction.game_id,
                 home_team=prediction.home_team,

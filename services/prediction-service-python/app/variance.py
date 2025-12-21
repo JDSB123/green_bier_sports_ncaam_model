@@ -1,10 +1,10 @@
 """
 Dynamic variance modeling for NCAAM predictions.
 
+v6.3: ALL DATA IS REQUIRED - no fallbacks, no defaults.
 Adjusts sigma based on shooting style and pace mismatches.
 """
 from dataclasses import dataclass
-from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,14 +27,13 @@ class DynamicVarianceCalculator:
     """
     Calculates game-specific variance based on team profiles.
 
+    v6.3: ALL FIELDS REQUIRED - no fallbacks to league averages.
+    TeamRatings now guarantees all 22 fields are present.
+
     Higher variance expected for:
     - High 3-point rate teams (more volatile scoring)
     - Large pace mismatches (uncertain tempo)
     """
-
-    # League averages for reference
-    LEAGUE_AVG_3PR = 35.0  # Average 3-point rate
-    LEAGUE_AVG_TEMPO = 68.0  # Average tempo
 
     def __init__(
         self,
@@ -54,19 +53,21 @@ class DynamicVarianceCalculator:
 
     def calculate_game_variance(
         self,
-        home_three_pt_rate: Optional[float],
-        away_three_pt_rate: Optional[float],
+        home_three_pt_rate: float,
+        away_three_pt_rate: float,
         home_tempo: float,
         away_tempo: float,
     ) -> VarianceFactors:
         """
         Calculate game-specific variance.
 
+        v6.3: ALL PARAMETERS ARE REQUIRED - no Optional, no fallbacks.
+
         Args:
-            home_three_pt_rate: Home team's 3-point attempt rate (%)
-            away_three_pt_rate: Away team's 3-point attempt rate (%)
-            home_tempo: Home team's tempo
-            away_tempo: Away team's tempo
+            home_three_pt_rate: Home team's 3-point attempt rate (%) - REQUIRED
+            away_three_pt_rate: Away team's 3-point attempt rate (%) - REQUIRED
+            home_tempo: Home team's tempo - REQUIRED
+            away_tempo: Away team's tempo - REQUIRED
 
         Returns:
             VarianceFactors with breakdown and total sigma
@@ -79,13 +80,12 @@ class DynamicVarianceCalculator:
                 total_variance=self.base_sigma,
             )
 
-        # 3-point rate adjustment
-        home_3pr = home_three_pt_rate if home_three_pt_rate else self.LEAGUE_AVG_3PR
-        away_3pr = away_three_pt_rate if away_three_pt_rate else self.LEAGUE_AVG_3PR
-        avg_3pr = (home_3pr + away_3pr) / 2
+        # 3-point rate adjustment - NO FALLBACKS, data is REQUIRED
+        avg_3pr = (home_three_pt_rate + away_three_pt_rate) / 2
 
-        # Higher 3PR = more variance
-        three_pt_adj = (avg_3pr - self.LEAGUE_AVG_3PR) * self.three_pt_variance_factor
+        # Higher 3PR = more variance (35% is league average baseline)
+        league_avg_3pr = 35.0
+        three_pt_adj = (avg_3pr - league_avg_3pr) * self.three_pt_variance_factor
 
         # Pace mismatch adjustment
         tempo_diff = abs(home_tempo - away_tempo)

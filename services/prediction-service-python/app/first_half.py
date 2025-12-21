@@ -1,10 +1,10 @@
 """
 Enhanced first half prediction logic.
 
+v6.3: ALL DATA IS REQUIRED - no fallbacks, no defaults.
 Adjusts 1H tempo factor and margin scaling based on matchup profile.
 """
 from dataclasses import dataclass
-from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,12 +24,15 @@ class EnhancedFirstHalfCalculator:
     """
     Dynamic first half predictions based on matchup profiles.
 
+    v6.3: ALL FIELDS REQUIRED - no fallbacks to league averages.
+    TeamRatings now guarantees all 22 fields are present.
+
     When one team has much better shooting efficiency (EFG):
     - They score more consistently in 1H
     - Adjust tempo factor and margin scaling
     """
 
-    # League averages
+    # League average for EFG (used for relative calculations, not fallbacks)
     LEAGUE_AVG_EFG = 50.0
 
     def __init__(
@@ -58,19 +61,21 @@ class EnhancedFirstHalfCalculator:
 
     def calculate_factors(
         self,
-        home_efg: Optional[float],
-        away_efg: Optional[float],
+        home_efg: float,
+        away_efg: float,
         home_tempo: float,
         away_tempo: float,
     ) -> FirstHalfFactors:
         """
         Calculate dynamic 1H factors based on matchup.
 
+        v6.3: ALL PARAMETERS ARE REQUIRED - no Optional, no fallbacks.
+
         Args:
-            home_efg: Home team EFG%
-            away_efg: Away team EFG%
-            home_tempo: Home team tempo
-            away_tempo: Away team tempo
+            home_efg: Home team EFG% - REQUIRED
+            away_efg: Away team EFG% - REQUIRED
+            home_tempo: Home team tempo - REQUIRED
+            away_tempo: Away team tempo - REQUIRED
 
         Returns:
             FirstHalfFactors with dynamic tempo and margin scales
@@ -84,16 +89,13 @@ class EnhancedFirstHalfCalculator:
                 reasoning="Dynamic 1H disabled, using base factors",
             )
 
-        # Use league average if EFG not available
-        h_efg = home_efg if home_efg else self.LEAGUE_AVG_EFG
-        a_efg = away_efg if away_efg else self.LEAGUE_AVG_EFG
-
         # EFG differential (positive = home has better shooting)
-        efg_diff = h_efg - a_efg
+        # v6.3: NO FALLBACKS - data is REQUIRED
+        efg_diff = home_efg - away_efg
 
         # Tempo factor adjustment
         # Higher-scoring matchups (better shooters) tend to have more 1H scoring
-        avg_efg = (h_efg + a_efg) / 2
+        avg_efg = (home_efg + away_efg) / 2
         efg_above_avg = avg_efg - self.LEAGUE_AVG_EFG
 
         tempo_adj = efg_above_avg * self.efg_tempo_adjustment
@@ -120,7 +122,7 @@ class EnhancedFirstHalfCalculator:
             confidence_scale = self.base_confidence_scale
 
         reasoning = (
-            f"EFG diff={efg_diff:+.1f}% (home={h_efg:.1f}%, away={a_efg:.1f}%), "
+            f"EFG diff={efg_diff:+.1f}% (home={home_efg:.1f}%, away={away_efg:.1f}%), "
             f"tempo_factor={tempo_factor:.3f}, margin_scale={margin_scale:.3f}"
         )
 

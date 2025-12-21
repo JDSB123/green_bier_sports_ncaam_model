@@ -85,8 +85,8 @@ if not REDIS_URL:
     REDIS_URL = f"redis://:{REDIS_PASSWORD}@redis:6379"
 
 # Model parameters (from config, but display here for clarity)
-HCA_SPREAD = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_SPREAD', 3.0))
-HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 4.5))
+HCA_SPREAD = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_SPREAD', 3.2))
+HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 0.0))
 MIN_SPREAD_EDGE = float(os.getenv('MODEL__MIN_SPREAD_EDGE', 2.5))
 MIN_TOTAL_EDGE = float(os.getenv('MODEL__MIN_TOTAL_EDGE', 3.0))
 
@@ -292,19 +292,38 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
               time DESC
         ),
         -- Latest ratings (filtered by target date to prevent future data leakage)
-        -- FIX: Added WHERE clause to ensure we only use ratings available on game date
-        -- v6.2: Added efg, efgd, three_pt_rate, three_pt_rate_d for dynamic variance
+        -- v6.3: ALL 22 Barttorvik fields are REQUIRED - no fallbacks, no optional data
+        -- The Go sync service captures everything - we use everything
         latest_ratings AS (
             SELECT DISTINCT ON (team_id)
                 team_id,
+                -- Core efficiency
                 adj_o,
                 adj_d,
                 tempo,
                 torvik_rank,
+                -- Four Factors: Shooting
                 efg,
                 efgd,
+                -- Four Factors: Turnovers
+                tor,
+                tord,
+                -- Four Factors: Rebounding
+                orb,
+                drb,
+                -- Four Factors: Free Throws
+                ftr,
+                ftrd,
+                -- Shooting Breakdown
+                two_pt_pct,
+                two_pt_pct_d,
+                three_pt_pct,
+                three_pt_pct_d,
                 three_pt_rate,
                 three_pt_rate_d,
+                -- Quality Metrics
+                barthag,
+                wab,
                 rating_date
             FROM team_ratings
             WHERE rating_date <= :target_date
@@ -337,24 +356,48 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.under_price END) as under_1h_juice,
             MAX(CASE WHEN lo1h.market_type = 'h2h' THEN lo1h.home_price END) as home_ml_1h,
             MAX(CASE WHEN lo1h.market_type = 'h2h' THEN lo1h.away_price END) as away_ml_1h,
-            -- Home team ratings
+            -- Home team ratings (ALL 22 fields - REQUIRED)
             htr.adj_o as home_adj_o,
             htr.adj_d as home_adj_d,
             htr.tempo as home_tempo,
             htr.torvik_rank as home_rank,
             htr.efg as home_efg,
             htr.efgd as home_efgd,
+            htr.tor as home_tor,
+            htr.tord as home_tord,
+            htr.orb as home_orb,
+            htr.drb as home_drb,
+            htr.ftr as home_ftr,
+            htr.ftrd as home_ftrd,
+            htr.two_pt_pct as home_two_pt_pct,
+            htr.two_pt_pct_d as home_two_pt_pct_d,
+            htr.three_pt_pct as home_three_pt_pct,
+            htr.three_pt_pct_d as home_three_pt_pct_d,
             htr.three_pt_rate as home_three_pt_rate,
             htr.three_pt_rate_d as home_three_pt_rate_d,
-            -- Away team ratings
+            htr.barthag as home_barthag,
+            htr.wab as home_wab,
+            -- Away team ratings (ALL 22 fields - REQUIRED)
             atr.adj_o as away_adj_o,
             atr.adj_d as away_adj_d,
             atr.tempo as away_tempo,
             atr.torvik_rank as away_rank,
             atr.efg as away_efg,
             atr.efgd as away_efgd,
+            atr.tor as away_tor,
+            atr.tord as away_tord,
+            atr.orb as away_orb,
+            atr.drb as away_drb,
+            atr.ftr as away_ftr,
+            atr.ftrd as away_ftrd,
+            atr.two_pt_pct as away_two_pt_pct,
+            atr.two_pt_pct_d as away_two_pt_pct_d,
+            atr.three_pt_pct as away_three_pt_pct,
+            atr.three_pt_pct_d as away_three_pt_pct_d,
             atr.three_pt_rate as away_three_pt_rate,
-            atr.three_pt_rate_d as away_three_pt_rate_d
+            atr.three_pt_rate_d as away_three_pt_rate_d,
+            atr.barthag as away_barthag,
+            atr.wab as away_wab
         FROM games g
         JOIN teams ht ON g.home_team_id = ht.id
         JOIN teams at ON g.away_team_id = at.id
@@ -366,10 +409,16 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
           AND g.status = 'scheduled'
         GROUP BY
             g.id, g.commence_time, ht.canonical_name, at.canonical_name, g.is_neutral,
+            -- Home team ratings (all 22 fields)
             htr.adj_o, htr.adj_d, htr.tempo, htr.torvik_rank,
-            htr.efg, htr.efgd, htr.three_pt_rate, htr.three_pt_rate_d,
+            htr.efg, htr.efgd, htr.tor, htr.tord, htr.orb, htr.drb, htr.ftr, htr.ftrd,
+            htr.two_pt_pct, htr.two_pt_pct_d, htr.three_pt_pct, htr.three_pt_pct_d,
+            htr.three_pt_rate, htr.three_pt_rate_d, htr.barthag, htr.wab,
+            -- Away team ratings (all 22 fields)
             atr.adj_o, atr.adj_d, atr.tempo, atr.torvik_rank,
-            atr.efg, atr.efgd, atr.three_pt_rate, atr.three_pt_rate_d
+            atr.efg, atr.efgd, atr.tor, atr.tord, atr.orb, atr.drb, atr.ftr, atr.ftrd,
+            atr.two_pt_pct, atr.two_pt_pct_d, atr.three_pt_pct, atr.three_pt_pct_d,
+            atr.three_pt_rate, atr.three_pt_rate_d, atr.barthag, atr.wab
         ORDER BY g.commence_time
     """)
     
@@ -379,36 +428,100 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
         
         games = []
         for row in rows:
-            # Build home ratings (v6.2: include extended metrics for dynamic variance)
+            # ═══════════════════════════════════════════════════════════════════════
+            # v6.3: ALL 22 BARTTORVIK FIELDS ARE REQUIRED - NO FALLBACKS
+            # If any field is missing, we log an error and skip the game.
+            # The data pipeline must ensure complete data before predictions run.
+            # ═══════════════════════════════════════════════════════════════════════
+
+            # Check home team has ALL required fields
+            home_required_fields = [
+                row.home_adj_o, row.home_adj_d, row.home_tempo, row.home_rank,
+                row.home_efg, row.home_efgd, row.home_tor, row.home_tord,
+                row.home_orb, row.home_drb, row.home_ftr, row.home_ftrd,
+                row.home_two_pt_pct, row.home_two_pt_pct_d,
+                row.home_three_pt_pct, row.home_three_pt_pct_d,
+                row.home_three_pt_rate, row.home_three_pt_rate_d,
+                row.home_barthag, row.home_wab
+            ]
+
+            # Check away team has ALL required fields
+            away_required_fields = [
+                row.away_adj_o, row.away_adj_d, row.away_tempo, row.away_rank,
+                row.away_efg, row.away_efgd, row.away_tor, row.away_tord,
+                row.away_orb, row.away_drb, row.away_ftr, row.away_ftrd,
+                row.away_two_pt_pct, row.away_two_pt_pct_d,
+                row.away_three_pt_pct, row.away_three_pt_pct_d,
+                row.away_three_pt_rate, row.away_three_pt_rate_d,
+                row.away_barthag, row.away_wab
+            ]
+
+            # Build home ratings - ALL fields REQUIRED
             home_ratings = None
-            if row.home_adj_o and row.home_adj_d:
+            if all(f is not None for f in home_required_fields):
                 home_ratings = {
                     "team_name": row.home,
+                    # Core efficiency
                     "adj_o": float(row.home_adj_o),
                     "adj_d": float(row.home_adj_d),
-                    "tempo": float(row.home_tempo) if row.home_tempo else 70.0,
-                    "rank": int(row.home_rank) if row.home_rank else 100,
-                    # v6.2 extended metrics
-                    "efg": float(row.home_efg) if row.home_efg else None,
-                    "efgd": float(row.home_efgd) if row.home_efgd else None,
-                    "three_pt_rate": float(row.home_three_pt_rate) if row.home_three_pt_rate else None,
-                    "three_pt_rate_d": float(row.home_three_pt_rate_d) if row.home_three_pt_rate_d else None,
+                    "tempo": float(row.home_tempo),
+                    "rank": int(row.home_rank),
+                    # Four Factors: Shooting
+                    "efg": float(row.home_efg),
+                    "efgd": float(row.home_efgd),
+                    # Four Factors: Turnovers
+                    "tor": float(row.home_tor),
+                    "tord": float(row.home_tord),
+                    # Four Factors: Rebounding
+                    "orb": float(row.home_orb),
+                    "drb": float(row.home_drb),
+                    # Four Factors: Free Throws
+                    "ftr": float(row.home_ftr),
+                    "ftrd": float(row.home_ftrd),
+                    # Shooting Breakdown
+                    "two_pt_pct": float(row.home_two_pt_pct),
+                    "two_pt_pct_d": float(row.home_two_pt_pct_d),
+                    "three_pt_pct": float(row.home_three_pt_pct),
+                    "three_pt_pct_d": float(row.home_three_pt_pct_d),
+                    "three_pt_rate": float(row.home_three_pt_rate),
+                    "three_pt_rate_d": float(row.home_three_pt_rate_d),
+                    # Quality Metrics
+                    "barthag": float(row.home_barthag),
+                    "wab": float(row.home_wab),
                 }
 
-            # Build away ratings (v6.2: include extended metrics for dynamic variance)
+            # Build away ratings - ALL fields REQUIRED
             away_ratings = None
-            if row.away_adj_o and row.away_adj_d:
+            if all(f is not None for f in away_required_fields):
                 away_ratings = {
                     "team_name": row.away,
+                    # Core efficiency
                     "adj_o": float(row.away_adj_o),
                     "adj_d": float(row.away_adj_d),
-                    "tempo": float(row.away_tempo) if row.away_tempo else 70.0,
-                    "rank": int(row.away_rank) if row.away_rank else 100,
-                    # v6.2 extended metrics
-                    "efg": float(row.away_efg) if row.away_efg else None,
-                    "efgd": float(row.away_efgd) if row.away_efgd else None,
-                    "three_pt_rate": float(row.away_three_pt_rate) if row.away_three_pt_rate else None,
-                    "three_pt_rate_d": float(row.away_three_pt_rate_d) if row.away_three_pt_rate_d else None,
+                    "tempo": float(row.away_tempo),
+                    "rank": int(row.away_rank),
+                    # Four Factors: Shooting
+                    "efg": float(row.away_efg),
+                    "efgd": float(row.away_efgd),
+                    # Four Factors: Turnovers
+                    "tor": float(row.away_tor),
+                    "tord": float(row.away_tord),
+                    # Four Factors: Rebounding
+                    "orb": float(row.away_orb),
+                    "drb": float(row.away_drb),
+                    # Four Factors: Free Throws
+                    "ftr": float(row.away_ftr),
+                    "ftrd": float(row.away_ftrd),
+                    # Shooting Breakdown
+                    "two_pt_pct": float(row.away_two_pt_pct),
+                    "two_pt_pct_d": float(row.away_two_pt_pct_d),
+                    "three_pt_pct": float(row.away_three_pt_pct),
+                    "three_pt_pct_d": float(row.away_three_pt_pct_d),
+                    "three_pt_rate": float(row.away_three_pt_rate),
+                    "three_pt_rate_d": float(row.away_three_pt_rate_d),
+                    # Quality Metrics
+                    "barthag": float(row.away_barthag),
+                    "wab": float(row.away_wab),
                 }
             
             game = {
@@ -523,40 +636,84 @@ def get_prediction(
     Returns:
         Prediction result dict
     """
-    # Convert to domain objects (v6.2: include extended metrics)
+    # Convert to domain objects (v6.3: ALL 22 fields REQUIRED)
     home_ratings_obj = TeamRatings(
         team_name=home_ratings["team_name"],
+        # Core efficiency
         adj_o=home_ratings["adj_o"],
         adj_d=home_ratings["adj_d"],
         tempo=home_ratings["tempo"],
         rank=home_ratings["rank"],
-        efg=home_ratings.get("efg"),
-        efgd=home_ratings.get("efgd"),
-        three_pt_rate=home_ratings.get("three_pt_rate"),
-        three_pt_rate_d=home_ratings.get("three_pt_rate_d"),
+        # Four Factors: Shooting
+        efg=home_ratings["efg"],
+        efgd=home_ratings["efgd"],
+        # Four Factors: Turnovers
+        tor=home_ratings["tor"],
+        tord=home_ratings["tord"],
+        # Four Factors: Rebounding
+        orb=home_ratings["orb"],
+        drb=home_ratings["drb"],
+        # Four Factors: Free Throws
+        ftr=home_ratings["ftr"],
+        ftrd=home_ratings["ftrd"],
+        # Shooting Breakdown
+        two_pt_pct=home_ratings["two_pt_pct"],
+        two_pt_pct_d=home_ratings["two_pt_pct_d"],
+        three_pt_pct=home_ratings["three_pt_pct"],
+        three_pt_pct_d=home_ratings["three_pt_pct_d"],
+        three_pt_rate=home_ratings["three_pt_rate"],
+        three_pt_rate_d=home_ratings["three_pt_rate_d"],
+        # Quality Metrics
+        barthag=home_ratings["barthag"],
+        wab=home_ratings["wab"],
     )
 
     away_ratings_obj = TeamRatings(
         team_name=away_ratings["team_name"],
+        # Core efficiency
         adj_o=away_ratings["adj_o"],
         adj_d=away_ratings["adj_d"],
         tempo=away_ratings["tempo"],
         rank=away_ratings["rank"],
-        efg=away_ratings.get("efg"),
-        efgd=away_ratings.get("efgd"),
-        three_pt_rate=away_ratings.get("three_pt_rate"),
-        three_pt_rate_d=away_ratings.get("three_pt_rate_d"),
+        # Four Factors: Shooting
+        efg=away_ratings["efg"],
+        efgd=away_ratings["efgd"],
+        # Four Factors: Turnovers
+        tor=away_ratings["tor"],
+        tord=away_ratings["tord"],
+        # Four Factors: Rebounding
+        orb=away_ratings["orb"],
+        drb=away_ratings["drb"],
+        # Four Factors: Free Throws
+        ftr=away_ratings["ftr"],
+        ftrd=away_ratings["ftrd"],
+        # Shooting Breakdown
+        two_pt_pct=away_ratings["two_pt_pct"],
+        two_pt_pct_d=away_ratings["two_pt_pct_d"],
+        three_pt_pct=away_ratings["three_pt_pct"],
+        three_pt_pct_d=away_ratings["three_pt_pct_d"],
+        three_pt_rate=away_ratings["three_pt_rate"],
+        three_pt_rate_d=away_ratings["three_pt_rate_d"],
+        # Quality Metrics
+        barthag=away_ratings["barthag"],
+        wab=away_ratings["wab"],
     )
     
     market_odds_obj = None
     if market_odds:
         market_odds_obj = MarketOdds(
             spread=market_odds.get("spread"),
+            spread_price=market_odds.get("spread_price") or -110,
             total=market_odds.get("total"),
+            over_price=market_odds.get("over_price") or -110,
+            under_price=market_odds.get("under_price") or -110,
             home_ml=market_odds.get("home_ml"),
             away_ml=market_odds.get("away_ml"),
             spread_1h=market_odds.get("spread_1h"),
+            spread_price_1h=market_odds.get("spread_price_1h"),
             total_1h=market_odds.get("total_1h"),
+            over_price_1h=market_odds.get("over_price_1h"),
+            under_price_1h=market_odds.get("under_price_1h"),
             home_ml_1h=market_odds.get("home_ml_1h"),
             away_ml_1h=market_odds.get("away_ml_1h"),
         )
@@ -762,7 +919,7 @@ def main():
     print()
     print("╔" + "═" * 118 + "╗")
     print("║" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "║")
-    print("║" + f"  Model: v6.2 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
+    print("║" + f"  Model: v6.3 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
     print("╚" + "═" * 118 + "╝")
     print()
     
@@ -850,11 +1007,17 @@ def main():
         # Build market odds
         market_odds = {
             "spread": game["spread"],
+            "spread_price": game.get("spread_home_juice") or game.get("spread_away_juice"),
             "total": game["total"],
+            "over_price": game.get("over_juice"),
+            "under_price": game.get("under_juice"),
             "home_ml": game["home_ml"],
             "away_ml": game["away_ml"],
             "spread_1h": game.get("spread_1h"),
+            "spread_price_1h": game.get("spread_1h_home_juice") or game.get("spread_1h_away_juice"),
             "total_1h": game.get("total_1h"),
+            "over_price_1h": game.get("over_1h_juice"),
+            "under_price_1h": game.get("under_1h_juice"),
             "home_ml_1h": game.get("home_ml_1h"),
             "away_ml_1h": game.get("away_ml_1h"),
         }

@@ -1,4 +1,4 @@
-# NCAA Basketball v6.2 - PRODUCTION FINAL
+# NCAA Basketball v6.3 - PRODUCTION FINAL
 
 ## Single Point of Entry
 
@@ -65,8 +65,8 @@ That's it. One command. Everything runs inside the container.
 
 ## Model Parameters
 
-- Home Court Advantage (Spread): 3.0 pts
-- Home Court Advantage (Total): 4.5 pts
+- Home Court Advantage (Spread): 3.2 pts (Standard Torvik)
+- Home Court Advantage (Total): 0.0 pts (Standard Efficiency Model)
 - Minimum Spread Edge: 2.5 pts
 - Minimum Total Edge: 3.0 pts
 

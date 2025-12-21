@@ -1,0 +1,25 @@
+name: Backtest and Metrics
+
+on:
+  push:
+    branches: [ main, ncaam_model_dev ]
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r testing/requirements.txt
+    - name: Run backtests
+      run: python testing/run_backtest.py
+    - name: Report metrics
+      run: |
+        # Placeholder for metrics reporting, e.g., upload to artifact or comment on PR
+        echo "Backtest completed. Add actual metrics calculation here."
