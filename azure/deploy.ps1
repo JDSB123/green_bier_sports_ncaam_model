@@ -168,10 +168,8 @@ Write-Host "[2/6] Generating secure passwords..." -ForegroundColor Green
 
 # Generate secure passwords
 $postgresPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
-$redisPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
 
 Write-Host "  ✓ PostgreSQL password generated (32 chars)" -ForegroundColor Gray
-Write-Host "  ✓ Redis password generated (32 chars)" -ForegroundColor Gray
 
 # Optional: Load Teams webhook from repo secret file if not explicitly provided
 if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
@@ -221,7 +219,6 @@ if (-not $SkipInfra) {
             location=$Location `
             baseName=$baseName `
             postgresPassword=$postgresPassword `
-            redisPassword=$redisPassword `
             oddsApiKey=$OddsApiKey `
             teamsWebhookUrl=$TeamsWebhookUrl `
             imageTag=$ImageTag `
@@ -235,6 +232,8 @@ if (-not $SkipInfra) {
     $acrLoginServer = $deploymentOutput.properties.outputs.acrLoginServer.value
     $postgresHost = $deploymentOutput.properties.outputs.postgresHost.value
     $containerAppUrl = $deploymentOutput.properties.outputs.containerAppUrl.value
+     $oddsIngestName = $deploymentOutput.properties.outputs.oddsIngestName.value
+     $ratingsSyncName = $deploymentOutput.properties.outputs.ratingsSyncName.value
 
     Write-Host "  ✓ ACR: $acrLoginServer" -ForegroundColor Gray
     Write-Host "  ✓ PostgreSQL: $postgresHost" -ForegroundColor Gray
@@ -260,29 +259,36 @@ if (-not $SkipBuild) {
     Write-Host "  Logging in to ACR..." -ForegroundColor Gray
     az acr login --name $acrName
 
-    # Build image
-    $imageName = "$acrLoginServer/$baseName-prediction:$ImageTag"
-    Write-Host "  Building image: $imageName" -ForegroundColor Gray
+    # Build images
+    $predImage = "$acrLoginServer/$baseName-prediction:$ImageTag"
+    $rustImage = "$acrLoginServer/$baseName-odds-ingestion:$ImageTag"
+    $goImage   = "$acrLoginServer/$baseName-ratings-sync:$ImageTag"
 
     Push-Location "$PSScriptRoot\.."
-    docker build -t $imageName -f services/prediction-service-python/Dockerfile.hardened .
 
-    if ($LASTEXITCODE -ne 0) {
-        Pop-Location
-        Write-Error "Docker build failed!"
-    }
+    Write-Host "  Building image: $predImage" -ForegroundColor Gray
+    docker build -t $predImage -f services/prediction-service-python/Dockerfile.hardened .
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker build failed (prediction)!" }
 
-    # Push image
-    Write-Host "  Pushing image to ACR..." -ForegroundColor Gray
-    docker push $imageName
+    Write-Host "  Building image: $rustImage" -ForegroundColor Gray
+    docker build -t $rustImage -f services/odds-ingestion-rust/Dockerfile services/odds-ingestion-rust
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker build failed (odds-ingestion)!" }
 
-    if ($LASTEXITCODE -ne 0) {
-        Pop-Location
-        Write-Error "Docker push failed!"
-    }
+    Write-Host "  Building image: $goImage" -ForegroundColor Gray
+    docker build -t $goImage -f services/ratings-sync-go/Dockerfile services/ratings-sync-go
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker build failed (ratings-sync)!" }
+
+    # Push images
+    Write-Host "  Pushing images to ACR..." -ForegroundColor Gray
+    docker push $predImage
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker push failed (prediction)!" }
+    docker push $rustImage
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker push failed (odds-ingestion)!" }
+    docker push $goImage
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker push failed (ratings-sync)!" }
 
     Pop-Location
-    Write-Host "  ✓ Image pushed: $imageName" -ForegroundColor Gray
+    Write-Host "  ✓ Images pushed: $predImage, $rustImage, $goImage" -ForegroundColor Gray
 } else {
     Write-Host ""
     Write-Host "[4/6] Skipping Docker build (--SkipBuild)" -ForegroundColor Yellow
@@ -351,6 +357,8 @@ Write-Host "    curl https://$containerAppUrl/predict" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  To view logs:" -ForegroundColor Yellow
 Write-Host "    az containerapp logs show -n $containerAppName -g $ResourceGroup --follow" -ForegroundColor Gray
+Write-Host "    az containerapp logs show -n $oddsIngestName -g $ResourceGroup --follow" -ForegroundColor Gray
+Write-Host "    az containerapp logs show -n $ratingsSyncName -g $ResourceGroup --follow" -ForegroundColor Gray
 Write-Host ""
 
 # Save deployment info

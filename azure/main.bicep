@@ -25,13 +25,14 @@ param location string = resourceGroup().location
 @description('Base name for all resources')
 param baseName string = 'ncaam'
 
+@description('Optional uniqueness suffix to avoid global name collisions (e.g., initials or short GUID)')
+param nameSuffix string = ''
+
 @description('PostgreSQL administrator password')
 @secure()
 param postgresPassword string
 
-@description('Redis password')
-@secure()
-param redisPassword string
+// Removed redis password parameter; Redis key is retrieved from the resource.
 
 @description('The Odds API key')
 @secure()
@@ -52,11 +53,15 @@ param resourceNameSuffix string = ''
 // ─────────────────────────────────────────────────────────────────────────────────
 
 var resourcePrefix = '${baseName}-${environment}'
-var acrName = replace('${resourcePrefix}${replace(resourceNameSuffix, '-', '')}acr', '-', '')
-var postgresServerName = '${resourcePrefix}${resourceNameSuffix}-postgres'
-var redisName = '${resourcePrefix}${resourceNameSuffix}-redis'
+var suffix = trim(nameSuffix)
+var unique = empty(suffix) ? '' : '-${suffix}'
+var acrName = replace('${resourcePrefix}${unique}acr', '-', '')
+var postgresServerName = '${resourcePrefix}${unique}-postgres'
+var redisName = '${resourcePrefix}${unique}-redis'
 var containerEnvName = '${resourcePrefix}-env'
 var containerAppName = '${resourcePrefix}-prediction'
+var oddsIngestAppName = '${resourcePrefix}-odds-ingestion'
+var ratingsSyncAppName = '${resourcePrefix}-ratings-sync'
 var logAnalyticsName = '${resourcePrefix}-logs'
 
 // Common tags for resource organization (especially for enterprise resource group)
@@ -224,32 +229,20 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
           passwordSecretRef: 'acr-password'
         }
       ]
-      secrets: concat(
-        [
-          {
-            name: 'acr-password'
-            value: acr.listCredentials().passwords[0].value
-          }
-          {
-            name: 'db-password'
-            value: postgresPassword
-          }
-          {
-            name: 'redis-password'
-            value: redis.listKeys().primaryKey
-          }
-          {
-            name: 'odds-api-key'
-            value: oddsApiKey
-          }
-        ],
-        (teamsWebhookUrl != '') ? [
-          {
-            name: 'teams-webhook-url'
-            value: teamsWebhookUrl
-          }
-        ] : []
-      )
+      secrets: [
+        {
+          name: 'acr-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+        {
+          name: 'db-password'
+          value: postgresPassword
+        }
+        {
+          name: 'odds-api-key'
+          value: oddsApiKey
+        }
+      ]
     }
     template: {
       containers: [
@@ -357,6 +350,138 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
+// ODDS INGESTION CONTAINER APP (no ingress)
+// ─────────────────────────────────────────────────────────────────────────────────
+
+resource oddsIngestApp 'Microsoft.App/containerApps@2023-05-01' = {
+  name: oddsIngestAppName
+  location: location
+  properties: {
+    managedEnvironmentId: containerEnv.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: false
+        targetPort: 8080
+        transport: 'http'
+        allowInsecure: false
+      }
+      registries: [
+        {
+          server: acr.properties.loginServer
+          username: acr.listCredentials().username
+          passwordSecretRef: 'acr-password'
+        }
+      ]
+      secrets: [
+        {
+          name: 'acr-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+        {
+          name: 'odds-api-key'
+          value: oddsApiKey
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'odds-ingestion'
+          image: '${acr.properties.loginServer}/${baseName}-odds-ingestion:${imageTag}'
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          env: [
+            {
+              name: 'DATABASE_URL'
+              value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
+            }
+            {
+              name: 'REDIS_URL'
+              value: 'rediss://:${redis.listKeys().primaryKey}@${redis.properties.hostName}:6380'
+            }
+            {
+              name: 'THE_ODDS_API_KEY'
+              secretRef: 'odds-api-key'
+            }
+            {
+              name: 'TZ'
+              value: 'America/Chicago'
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 0
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
+// RATINGS SYNC CONTAINER APP (no ingress)
+// ─────────────────────────────────────────────────────────────────────────────────
+
+resource ratingsSyncApp 'Microsoft.App/containerApps@2023-05-01' = {
+  name: ratingsSyncAppName
+  location: location
+  properties: {
+    managedEnvironmentId: containerEnv.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: false
+        targetPort: 8080
+        transport: 'http'
+        allowInsecure: false
+      }
+      registries: [
+        {
+          server: acr.properties.loginServer
+          username: acr.listCredentials().username
+          passwordSecretRef: 'acr-password'
+        }
+      ]
+      secrets: [
+        {
+          name: 'acr-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'ratings-sync'
+          image: '${acr.properties.loginServer}/${baseName}-ratings-sync:${imageTag}'
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          env: [
+            {
+              name: 'DATABASE_URL'
+              value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
+            }
+            {
+              name: 'TZ'
+              value: 'America/Chicago'
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 0
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
 // OUTPUTS
 // ─────────────────────────────────────────────────────────────────────────────────
 
@@ -366,3 +491,5 @@ output postgresHost string = postgres.properties.fullyQualifiedDomainName
 output redisHost string = redis.properties.hostName
 output containerAppUrl string = predictionApp.properties.configuration.ingress.fqdn
 output containerEnvName string = containerEnv.name
+output oddsIngestName string = oddsIngestApp.name
+output ratingsSyncName string = ratingsSyncApp.name
