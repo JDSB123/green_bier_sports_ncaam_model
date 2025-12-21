@@ -95,6 +95,10 @@ services/backtesting-python/backtest_results.json
 *_backup.csv
 *_fresh.csv
 
+# Testing branch Kaggle data (downloaded artifacts)
+testing/data/kaggle/*.csv
+testing/data/tmp_kaggle_download/
+
 # Windows artifacts
 nul
 
