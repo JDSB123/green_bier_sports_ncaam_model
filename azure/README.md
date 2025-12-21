@@ -85,7 +85,7 @@ az containerapp logs show -n ncaam-prod-prediction -g ncaam-prod-rg --follow
 ### Full Deployment (Default)
 
 ```powershell
-.\deploy.ps1 -Environment prod -OddsApiKey "your-key"
+.\deploy.ps1 -Environment prod -OddsApiKey "<your-actual-odds-api-key>"
 ```
 
 ### Skip Infrastructure (Image Update Only)

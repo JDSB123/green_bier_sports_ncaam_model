@@ -72,7 +72,9 @@ class OddsApiClient:
             not self.api_key
             or "change_me" in key_lower
             or key_lower.startswith("sample")
-            or key_lower == "4a0b80471d1ebeeb74c358fa0fcc4a2"
+            or key_lower.startswith("your_")
+            or key_lower.startswith("<your")
+            or key_lower == "4a0b80471d1ebeeb74c358fa0fcc4a2"  # Known example/test key
         ):
             raise OddsApiError(
                 "THE_ODDS_API_KEY appears to be a placeholder value. "
