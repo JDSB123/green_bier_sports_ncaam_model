@@ -36,6 +36,8 @@ from app.predictor import prediction_engine
 from app.models import TeamRatings, MarketOdds
 from app.situational import SituationalAdjuster, RestInfo
 from app.persistence import persist_prediction_and_recommendations
+import csv
+from pathlib import Path
 
 # Central Time Zone
 CST = ZoneInfo("America/Chicago")
@@ -102,6 +104,7 @@ HCA_SPREAD = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_SPREAD', 3.2))
 HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 0.0))
 MIN_SPREAD_EDGE = float(os.getenv('MODEL__MIN_SPREAD_EDGE', 2.5))
 MIN_TOTAL_EDGE = float(os.getenv('MODEL__MIN_TOTAL_EDGE', 3.0))
+PICKS_OUTPUT_DIR = os.getenv("PICKS_OUTPUT_DIR", "/app/output")
 
 # Teams Webhook URL for picks notifications (OPTIONAL)
 # - Azure: set env var TEAMS_WEBHOOK_URL
@@ -112,6 +115,20 @@ TEAMS_WEBHOOK_URL = (
     or _read_optional_secret_file(_teams_webhook_file, "teams_webhook_url")
     or ""
 )
+
+
+def _is_placeholder_teams_webhook(url: str) -> bool:
+    u = (url or "").strip().lower()
+    if not u:
+        return True
+    if "change_me" in u or u.startswith("sample") or u.startswith("your_") or u.startswith("<your"):
+        return True
+    # Basic sanity: Teams webhooks are long and contain webhook.office.com
+    if "webhook.office.com" not in u:
+        return True
+    if len(u) < 60:
+        return True
+    return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -325,6 +342,8 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 adj_d,
                 tempo,
                 torvik_rank,
+                wins,
+                losses,
                 -- Four Factors: Shooting
                 efg,
                 efgd,
@@ -420,7 +439,12 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             atr.three_pt_rate as away_three_pt_rate,
             atr.three_pt_rate_d as away_three_pt_rate_d,
             atr.barthag as away_barthag,
-            atr.wab as away_wab
+            atr.wab as away_wab,
+            -- Team records (fresh from latest_ratings)
+            htr.wins as home_wins,
+            htr.losses as home_losses,
+            atr.wins as away_wins,
+            atr.losses as away_losses
         FROM games g
         JOIN teams ht ON g.home_team_id = ht.id
         JOIN teams at ON g.away_team_id = at.id
@@ -433,12 +457,12 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         GROUP BY
             g.id, g.commence_time, ht.canonical_name, at.canonical_name, g.is_neutral,
             -- Home team ratings (all 22 fields)
-            htr.adj_o, htr.adj_d, htr.tempo, htr.torvik_rank,
+            htr.adj_o, htr.adj_d, htr.tempo, htr.torvik_rank, htr.wins, htr.losses,
             htr.efg, htr.efgd, htr.tor, htr.tord, htr.orb, htr.drb, htr.ftr, htr.ftrd,
             htr.two_pt_pct, htr.two_pt_pct_d, htr.three_pt_pct, htr.three_pt_pct_d,
             htr.three_pt_rate, htr.three_pt_rate_d, htr.barthag, htr.wab,
             -- Away team ratings (all 22 fields)
-            atr.adj_o, atr.adj_d, atr.tempo, atr.torvik_rank,
+            atr.adj_o, atr.adj_d, atr.tempo, atr.torvik_rank, atr.wins, atr.losses,
             atr.efg, atr.efgd, atr.tor, atr.tord, atr.orb, atr.drb, atr.ftr, atr.ftrd,
             atr.two_pt_pct, atr.two_pt_pct_d, atr.three_pt_pct, atr.three_pt_pct_d,
             atr.three_pt_rate, atr.three_pt_rate_d, atr.barthag, atr.wab
@@ -555,6 +579,8 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 "datetime_cst": row.datetime_cst,
                 "home": row.home,
                 "away": row.away,
+                "home_record": f"{int(row.home_wins)}-{int(row.home_losses)}" if row.home_wins is not None and row.home_losses is not None else None,
+                "away_record": f"{int(row.away_wins)}-{int(row.away_losses)}" if row.away_wins is not None and row.away_losses is not None else None,
                 "is_neutral": bool(row.is_neutral) if row.is_neutral is not None else False,
                 "spread": float(row.spread) if row.spread is not None else None,
                 "spread_home_juice": int(row.spread_home_juice) if row.spread_home_juice else None,
@@ -937,26 +963,109 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         print("  ⚠️  No picks to send to Teams")
         return False
     
-    if not webhook_url:
+    if _is_placeholder_teams_webhook(webhook_url):
         print("  ⚠️  No Teams webhook URL configured")
         return False
     
     # Sort picks by edge descending
     sorted_picks = sorted(all_picks, key=lambda p: p['edge'], reverse=True)
     
-    # Build the Teams message using Adaptive Card format
+    # Persist CSV to output directory (host-mounted via docker-compose).
+    # To save directly into a Teams channel's "Shared Documents", set PICKS_OUTPUT_HOST_DIR
+    # to your local OneDrive-synced folder for that channel (manual-only workflow).
+    csv_path: Optional[Path] = None
+    try:
+        out_dir = Path(PICKS_OUTPUT_DIR)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(CST).strftime("%Y%m%d_%H%M%S")
+        csv_path = out_dir / f"ncaam_picks_{target_date}_{ts}.csv"
+        with csv_path.open("w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(
+                [
+                    "date_time_cst",
+                    "matchup_away_vs_home",
+                    "segment",
+                    "recommended_pick_live_odds",
+                    "market_pricing",
+                    "model_expectation",
+                    "edge",
+                    "fire_rating",
+                ]
+            )
+            for p in sorted_picks:
+                matchup = f"{p['away']} ({p.get('away_record') or '?'}) vs {p['home']} ({p.get('home_record') or '?'})"
+                date_time = f"{p.get('date_cst', target_date)} {p.get('time_cst','')}".strip()
+                w.writerow(
+                    [
+                        date_time,
+                        matchup,
+                        p.get("period", ""),
+                        p.get("pick_display", ""),
+                        p.get("market_line", ""),
+                        p.get("model_line", ""),
+                        f"{p.get('edge', 0.0):.2f}",
+                        p.get("fire_rating", ""),
+                    ]
+                )
+        print(f"  ✓ CSV saved: {csv_path}")
+    except Exception as e:
+        print(f"  ⚠️  Failed to write CSV: {type(e).__name__}: {e}")
+
+    # Build the Teams message using Adaptive Card format (table-like)
     now_cst = datetime.now(CST)
     
-    # Create facts for each pick
-    pick_facts = []
-    for i, pick in enumerate(sorted_picks[:15], 1):  # Limit to top 15 picks
-        matchup = f"{pick['away'][:12]} @ {pick['home'][:12]}"
-        edge_str = f"{pick['edge']:.1f} pts" if pick['market'] != "ML" else f"{pick['edge']:.1f}%"
-        
-        pick_facts.append({
-            "title": f"#{i} {pick['fire_rating']}",
-            "value": f"**{pick['period']} {pick['market']}** | {matchup} | {pick['pick_display']} | Edge: {edge_str}"
-        })
+    def _col(text: str, width: str = "stretch", weight: str = "Default") -> dict:
+        return {
+            "type": "Column",
+            "width": width,
+            "items": [
+                {
+                    "type": "TextBlock",
+                    "text": text,
+                    "wrap": True,
+                    "weight": weight,
+                    "size": "Small",
+                }
+            ],
+        }
+
+    table_rows = [
+        {
+            "type": "ColumnSet",
+            "columns": [
+                _col("Date/Time CST", "auto", "Bolder"),
+                _col("Matchup (Away vs Home)", "stretch", "Bolder"),
+                _col("Seg", "auto", "Bolder"),
+                _col("Pick (live odds)", "auto", "Bolder"),
+                _col("Market → Model", "auto", "Bolder"),
+                _col("Edge", "auto", "Bolder"),
+                _col("Fire", "auto", "Bolder"),
+            ],
+        }
+    ]
+
+    for p in sorted_picks[:15]:
+        matchup = f"{p['away']} ({p.get('away_record') or '?'}) vs {p['home']} ({p.get('home_record') or '?'})"
+        date_time = f"{p.get('date_cst', target_date)} {p.get('time_cst','')}".strip()
+        edge_str = f"{p['edge']:.1f} pts" if p.get("market") != "ML" else f"{p['edge']:.1f}%"
+        market_to_model = f"{p.get('market_line','')} → {p.get('model_line','')}"
+
+        table_rows.append(
+            {
+                "type": "ColumnSet",
+                "separator": True,
+                "columns": [
+                    _col(date_time, "auto"),
+                    _col(matchup, "stretch"),
+                    _col(p.get("period", ""), "auto"),
+                    _col(p.get("pick_display", ""), "auto"),
+                    _col(market_to_model, "auto"),
+                    _col(edge_str, "auto"),
+                    _col(p.get("fire_rating", ""), "auto"),
+                ],
+            }
+        )
     
     # Build Adaptive Card payload
     card_payload = {
@@ -992,9 +1101,20 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
                             "size": "Small"
                         },
                         {
-                            "type": "FactSet",
-                            "facts": pick_facts
-                        }
+                            "type": "TextBlock",
+                            "text": f"CSV saved: {csv_path.name}" if csv_path else "CSV not saved",
+                            "wrap": True,
+                            "isSubtle": True,
+                            "size": "Small"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": "Top 15 picks (sorted by edge):",
+                            "wrap": True,
+                            "weight": "Bolder",
+                            "spacing": "Medium"
+                        },
+                        *table_rows
                     ],
                     "actions": []
                 }
@@ -1351,7 +1471,14 @@ def main():
                     model_line_val = pred["predicted_total"] if not is_1h else pred["predicted_total_1h"]
                     model_str = f"{model_line_val:.1f}"
                 else:
-                    model_str = f"{pred.get('home_win_prob', 0.5)*100:.0f}%"
+                    # Moneyline expectation: show model fair odds for the chosen side + implied win prob
+                    if pick_val == "HOME":
+                        model_ml = pred.get("predicted_home_ml" if not is_1h else "predicted_home_ml_1h")
+                        prob = pred.get("home_win_prob" if not is_1h else "home_win_prob_1h", 0.5)
+                    else:
+                        model_ml = pred.get("predicted_away_ml" if not is_1h else "predicted_away_ml_1h")
+                        prob = 1 - pred.get("home_win_prob" if not is_1h else "home_win_prob_1h", 0.5)
+                    model_str = f"{format_odds(model_ml)} ({prob*100:.1f}%)" if model_ml is not None else f"{prob*100:.1f}%"
                 
                 # Market line display with juice
                 if market == "SPREAD":
@@ -1363,15 +1490,18 @@ def main():
                     mkt_juice = game.get("over_juice", -110) if not is_1h else game.get("over_1h_juice", -110)
                     market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
                 else:
-                    market_str = f"See odds"
+                    market_str = f"{format_odds(ml_odds)}" if ml_odds is not None else "N/A"
                 
                 # Fire rating
                 fire = get_fire_rating(rec['edge'], rec.get('bet_tier', 'STANDARD'))
                 
                 all_picks.append({
+                    "date_cst": game.get("date_cst"),
                     "time_cst": game["time_cst"],
                     "home": game["home"],
                     "away": game["away"],
+                    "home_record": game.get("home_record"),
+                    "away_record": game.get("away_record"),
                     "period": period,
                     "market": market,
                     "pick_display": pick_display,

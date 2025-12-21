@@ -11,6 +11,7 @@ Usage:
 Creates:
     secrets/db_password.txt     - PostgreSQL password (32 hex chars)
     secrets/redis_password.txt  - Redis password (32 hex chars)
+    secrets/teams_webhook_url.txt - (Optional) Microsoft Teams incoming webhook URL
 
 NOTE: The Odds API key must be provided. Get it from https://the-odds-api.com/
       The script will prompt for it if secrets/odds_api_key.txt doesn't exist.
@@ -120,6 +121,21 @@ def main():
         print()
         print("ACTION REQUIRED: You must create secrets/odds_api_key.txt")
         return 1
+
+    # Optional: Teams webhook for posting picks (manual-only, user-triggered).
+    # We create a placeholder file so local Docker Compose can mount it when configured,
+    # without forcing Teams usage.
+    teams_webhook_file = secrets_dir / "teams_webhook_url.txt"
+    if not teams_webhook_file.exists():
+        create_secret_file(teams_webhook_file, "CHANGE_ME", "Teams webhook URL (optional)")
+        created.append("teams_webhook_url.txt")
+        print("  [INFO] Teams webhook is optional. Update secrets/teams_webhook_url.txt to enable --teams.")
+    else:
+        content = teams_webhook_file.read_text().strip()
+        if not content or "change_me" in content.lower() or "your_" in content.lower():
+            print("  [INFO] teams_webhook_url.txt exists but is not configured (placeholder).")
+        else:
+            print("  [OK] teams_webhook_url.txt exists")
 
     print()
     print("All secrets configured. Ready to run: docker compose up -d")
