@@ -2,13 +2,17 @@ from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+import subprocess
+import logging
 
 from app.predictor import prediction_engine
 from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendation
 from app.config import settings
+
+logger = logging.getLogger("api")
 
 
 # -----------------------------
@@ -140,6 +144,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def run_picks_task():
+    """Run the picks generation script in background."""
+    try:
+        logger.info("Starting background picks generation task...")
+        # Run run_today.py with --teams flag
+        result = subprocess.run(
+            ["python", "run_today.py", "--teams"],
+            capture_output=True,
+            text=True,
+            cwd="/app"  # Ensure we run from app root in container
+        )
+        if result.returncode == 0:
+            logger.info("Picks generation completed successfully")
+            logger.info(result.stdout)
+        else:
+            logger.error(f"Picks generation failed with code {result.returncode}")
+            logger.error(result.stderr)
+    except Exception as e:
+        logger.error(f"Failed to run picks task: {e}")
+
+
+@app.post("/trigger-picks")
+async def trigger_picks(background_tasks: BackgroundTasks):
+    """Trigger the daily picks generation process and send to Teams."""
+    background_tasks.add_task(run_picks_task)
+    return {"message": "Picks generation started in background. Check Teams channel shortly."}
 
 
 @app.get("/health")
