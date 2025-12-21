@@ -13,6 +13,7 @@ dist/
 build/
 *.egg
 .pytest_cache/
+.mypy_cache/
 .coverage
 htmlcov/
 
