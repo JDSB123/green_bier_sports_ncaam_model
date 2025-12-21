@@ -19,7 +19,7 @@ import os
 import io
 import argparse
 from datetime import datetime, date, timezone, timedelta
-from uuid import uuid4
+from uuid import UUID
 from zoneinfo import ZoneInfo
 from typing import Optional, List, Dict
 
@@ -35,6 +35,7 @@ import subprocess
 from app.predictor import prediction_engine
 from app.models import TeamRatings, MarketOdds
 from app.situational import SituationalAdjuster, RestInfo
+from app.persistence import persist_prediction_and_recommendations
 
 # Central Time Zone
 CST = ZoneInfo("America/Chicago")
@@ -241,7 +242,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
 # DATABASE FETCHING
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
+def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List[Dict]:
     """
     Fetch games, odds, and ratings from database.
     
@@ -254,7 +255,7 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
     if target_date is None:
         target_date = date.today()
     
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    engine = engine or create_engine(DATABASE_URL, pool_pre_ping=True)
     
     query = text("""
         -- Full-game odds: prefer Pinnacle, fallback Bovada, then any book
@@ -535,7 +536,8 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
                 }
             
             game = {
-                "game_id": str(row.game_id),
+                "game_id": row.game_id,
+                "commence_time": row.commence_time,
                 "date_cst": str(row.date_cst),
                 "time_cst": row.time_cst,
                 "datetime_cst": row.datetime_cst,
@@ -629,6 +631,10 @@ def get_prediction(
     is_neutral: bool = False,
     home_rest: Optional[RestInfo] = None,
     away_rest: Optional[RestInfo] = None,
+    game_id: Optional[UUID] = None,
+    commence_time: Optional[datetime] = None,
+    engine=None,
+    persist: bool = True,
 ) -> Dict:
     """
     Get prediction using direct import (no HTTP).
@@ -729,9 +735,13 @@ def get_prediction(
         )
     
     # Generate prediction (v6.2: pass rest info for situational adjustments)
-    commence_time = datetime.now(timezone.utc)
+    if commence_time is None:
+        commence_time = datetime.now(timezone.utc)
+    if game_id is None:
+        raise ValueError("game_id is required for persistence and reproducibility")
+
     prediction = prediction_engine.make_prediction(
-        game_id=uuid4(),
+        game_id=game_id,
         home_team=home_team,
         away_team=away_team,
         commence_time=commence_time,
@@ -749,6 +759,28 @@ def get_prediction(
         recommendations = prediction_engine.generate_recommendations(
             prediction, market_odds_obj
         )
+
+    # Persist to Postgres (prediction + recommendations)
+    if persist and engine is not None:
+        try:
+            features = {
+                "home_ratings": home_ratings,
+                "away_ratings": away_ratings,
+                "market_odds": market_odds or {},
+                "is_neutral": is_neutral,
+                "home_rest": vars(home_rest) if home_rest else None,
+                "away_rest": vars(away_rest) if away_rest else None,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            persist_prediction_and_recommendations(
+                engine=engine,
+                prediction=prediction,
+                recommendations=recommendations,
+                features=features,
+            )
+        except Exception as e:
+            # Do not fail the whole run if persistence has a transient issue.
+            print(f"  ⚠️  Persistence warning for {away_team} @ {home_team}: {type(e).__name__}: {e}")
     
     # Convert to dict
     prediction_dict = {
@@ -1035,6 +1067,28 @@ def main():
         action="store_true",
         help="Only send to Teams (skip console output)"
     )
+    parser.add_argument(
+        "--no-settle",
+        action="store_true",
+        help="Skip score sync + bet settlement/report"
+    )
+    parser.add_argument(
+        "--settle-only",
+        action="store_true",
+        help="Only run score sync + settlement/report (no new predictions)"
+    )
+    parser.add_argument(
+        "--settle-days-from",
+        type=int,
+        default=3,
+        help="How many days back to request from The Odds API /scores (default: 3)"
+    )
+    parser.add_argument(
+        "--report-days",
+        type=int,
+        default=30,
+        help="Lookback window for ROI/CLV report in days (default: 30)"
+    )
     
     args = parser.parse_args()
     
@@ -1059,12 +1113,39 @@ def main():
     # Sync data (unless --no-sync)
     sync_fresh_data(skip_sync=args.no_sync)
     
+    # Create DB engine once for the entire run (predictions persistence + settlement).
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
+    # Optional: score sync + settlement + ROI report (production auditing)
+    if not args.no_settle:
+        try:
+            from app.settlement import sync_final_scores, settle_pending_bets, print_performance_report
+
+            print("🔁 Syncing final scores + settling pending bets...")
+            score_summary = sync_final_scores(engine, days_from=args.settle_days_from)
+            settle_summary = settle_pending_bets(engine)
+            print(
+                f"  ✓ Scores: fetched={score_summary.fetched_events} completed={score_summary.completed_events} "
+                f"updated_games={score_summary.updated_games} missing_games={score_summary.missing_games}"
+            )
+            print(
+                f"  ✓ Settlement: settled={settle_summary.settled} W-L-P={settle_summary.wins}-{settle_summary.losses}-{settle_summary.pushes} "
+                f"skipped_1H_missing_scores={settle_summary.skipped_missing_scores_1h} missing_closing_line={settle_summary.missing_closing_line}"
+            )
+            if not args.teams_only:
+                print_performance_report(engine, lookback_days=args.report_days)
+        except Exception as e:
+            print(f"  ⚠️  Settlement step failed: {type(e).__name__}: {e}")
+
+        if args.settle_only:
+            return
+
     # Fetch games
     print(f"✓ Fetching games for {target_date}...")
     print()
     
     try:
-        games = fetch_games_from_db(target_date=target_date)
+        games = fetch_games_from_db(target_date=target_date, engine=engine)
     except Exception as e:
         print(f"✗ FATAL ERROR: Failed to fetch games: {type(e).__name__}: {e}")
         import traceback
@@ -1092,7 +1173,6 @@ def main():
 
     # v6.2: Setup situational adjuster for rest day calculations
     situational_adjuster = SituationalAdjuster()
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
     # Process each game
     all_picks = []
@@ -1195,6 +1275,10 @@ def main():
                 is_neutral=game.get("is_neutral", False),
                 home_rest=home_rest,
                 away_rest=away_rest,
+                game_id=game.get("game_id"),
+                commence_time=game.get("commence_time"),
+                engine=engine,
+                persist=True,
             )
         except Exception as e:
             print(f"  ✗ Error predicting {game['away']} @ {game['home']}: {e}")

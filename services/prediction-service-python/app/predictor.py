@@ -161,7 +161,10 @@ class BarttorkvikPredictor:
         Returns:
             PredictorOutput with all predictions
         """
-        self.logger.info(f"Starting prediction for {home_ratings.team} vs {away_ratings.team}")
+        # TeamRatings uses `team_name` (not `team`). Keep this log line safe.
+        self.logger.info(
+            f"Starting prediction for {home_ratings.team_name} vs {away_ratings.team_name}"
+        )
 
         # ─────────────────────────────────────────────────────────────────────
         # v6.2 ENHANCEMENTS - Situational, Variance, 1H Factors
@@ -634,6 +637,14 @@ class PredictionEngine:
                 # Totals: if model total > market, take OVER
                 pick = Pick.OVER if model_line > market_line else Pick.UNDER
 
+            # Store the bet line from the PICK perspective.
+            # Market lines are stored from HOME perspective in MarketOdds:
+            # - e.g. home -3.5, away +3.5 => market_line = -3.5
+            # For AWAY spread picks, the bet line should be +3.5.
+            bet_line = market_line
+            if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+                bet_line = market_line if pick == Pick.HOME else -market_line
+
             # Calculate EV and Kelly
             ev_percent, kelly = self._calculate_ev_kelly(
                 edge, confidence, bet_type
@@ -698,7 +709,7 @@ class PredictionEngine:
                 commence_time=prediction.commence_time,
                 bet_type=bet_type,
                 pick=pick,
-                line=market_line,
+                line=bet_line,
                 model_line=model_line,
                 market_line=market_line,
                 edge=edge,
