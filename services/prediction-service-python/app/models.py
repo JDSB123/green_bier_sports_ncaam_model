@@ -219,8 +219,9 @@ class Prediction:
 
     # Edges (model - market)
     # FIX: Added signed edges to preserve directional information
-    # Positive spread_edge_signed = model more negative = HOME value
-    # Negative spread_edge_signed = model more positive = AWAY value
+    # NOTE: signed spread edge = (model - market), using HOME-perspective lines.
+    # - Negative spread_edge_signed => model is MORE negative => HOME value
+    # - Positive spread_edge_signed => model is MORE positive => AWAY value
     spread_edge: float = 0.0           # Absolute value for threshold checks
     spread_edge_signed: float = 0.0    # Signed value for direction
     total_edge: float = 0.0
