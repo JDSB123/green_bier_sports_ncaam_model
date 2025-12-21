@@ -167,7 +167,7 @@ def run_picks_task():
         logger.error(f"Failed to run picks task: {e}")
 
 
-@app.post("/trigger-picks")
+@app.get("/trigger-picks")
 async def trigger_picks(background_tasks: BackgroundTasks):
     """Trigger the daily picks generation process and send to Teams."""
     background_tasks.add_task(run_picks_task)
