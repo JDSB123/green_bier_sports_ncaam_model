@@ -167,10 +167,9 @@ impl Config {
             odds_api_key,
             database_url,
             redis_url,
-            poll_interval_seconds: env::var("POLL_INTERVAL_SECONDS")
-                .unwrap_or_else(|_| "1200".to_string())
-                .parse()
-                .unwrap_or(1200),
+            // MANUAL-ONLY: No automatic polling - this value is ignored
+            // Service runs once when triggered and exits immediately
+            poll_interval_seconds: 0, // Disabled - manual mode only
             sport_key: env::var("SPORT_KEY").unwrap_or_else(|_| "basketball_ncaab".to_string()),
             health_port: env::var("HEALTH_PORT")
                 .unwrap_or_else(|_| "8083".to_string())
@@ -1379,47 +1378,16 @@ impl OddsIngestionService {
         Ok(())
     }
 
-    /// Main polling loop
-    pub async fn run(&self) -> Result<()> {
-        info!(
-            "Starting odds ingestion loop (poll interval: {}s)",
-            self.config.poll_interval_seconds
-        );
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // MANUAL-ONLY MODE: NO AUTOMATIC POLLING
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // This service does NOT poll automatically. It runs ONCE when triggered
+    // by run_today.py or manual invocation, then EXITS immediately.
+    // 
+    // To fetch fresh odds, run: python run_today.py
+    // ═══════════════════════════════════════════════════════════════════════════════
 
-        // Periodic cache cleanup
-        let game_cache = self.game_cache.clone();
-        let event_tracker = self.event_tracker.clone();
-        tokio::spawn(async move {
-            loop {
-                tokio::time::sleep(Duration::from_secs(3600)).await;
-                game_cache.cleanup(10000).await;
-                event_tracker.cleanup().await;
-            }
-        });
-
-        loop {
-            let start = std::time::Instant::now();
-
-            match self.poll_once().await {
-                Ok(count) => {
-                    self.health.record_success(count).await;
-                    info!(
-                        "Poll completed: {} snapshots in {:?}",
-                        count,
-                        start.elapsed()
-                    );
-                }
-                Err(e) => {
-                    self.health.record_error().await;
-                    error!("Poll failed: {:?}", e);
-                }
-            }
-
-            tokio::time::sleep(Duration::from_secs(self.config.poll_interval_seconds)).await;
-        }
-    }
-
-    /// Single poll iteration with event-driven polling
+    /// Single fetch iteration - runs once and exits (NO POLLING LOOP)
     async fn poll_once(&self) -> Result<usize> {
         // Step 1: Fetch event list (lightweight - no odds data)
         let all_event_ids = self.fetch_event_ids().await?;
