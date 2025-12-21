@@ -42,7 +42,7 @@ param oddsApiKey string
 param teamsWebhookUrl string = ''
 
 @description('Container image tag')
-param imageTag string = 'v6.3.0'
+param imageTag string = 'v6.3.1'
 
 // ─────────────────────────────────────────────────────────────────────────────────
 // VARIABLES

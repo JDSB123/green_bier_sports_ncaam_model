@@ -44,4 +44,17 @@ CREATE INDEX IF NOT EXISTS odds_snapshots_time_idx ON odds_snapshots(time DESC);
 CREATE INDEX IF NOT EXISTS idx_odds_game_time ON odds_snapshots(game_id, time DESC);
 
 -- Convert to TimescaleDB hypertable (no-op if already converted)
-SELECT create_hypertable('odds_snapshots', 'time', chunk_time_interval => INTERVAL '1 day', if_not_exists => TRUE, migrate_data => TRUE);
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable(
+            'odds_snapshots',
+            'time',
+            chunk_time_interval => INTERVAL '1 day',
+            if_not_exists => TRUE,
+            migrate_data => TRUE
+        );
+    ELSE
+        RAISE NOTICE 'TimescaleDB not installed; leaving odds_snapshots as a regular table';
+    END IF;
+END$$;

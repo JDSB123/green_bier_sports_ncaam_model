@@ -4,7 +4,18 @@
 
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS timescaledb;
+
+-- TimescaleDB is optional (Azure Database for PostgreSQL may not allow-list it).
+-- If it's not available, we fall back to standard Postgres tables.
+DO $$
+BEGIN
+    BEGIN
+        CREATE EXTENSION IF NOT EXISTS timescaledb;
+        RAISE NOTICE 'TimescaleDB extension enabled';
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'TimescaleDB extension not available: %', SQLERRM;
+    END;
+END$$;
 
 -----------------------------------------------------------
 -- CORE TABLES
@@ -234,7 +245,19 @@ CREATE TABLE odds_snapshots (
 );
 
 -- Convert to TimescaleDB hypertable
-SELECT create_hypertable('odds_snapshots', 'time', chunk_time_interval => INTERVAL '1 day');
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable(
+            'odds_snapshots',
+            'time',
+            chunk_time_interval => INTERVAL '1 day',
+            if_not_exists => TRUE
+        );
+    ELSE
+        RAISE NOTICE 'TimescaleDB not installed; leaving odds_snapshots as a regular table';
+    END IF;
+END$$;
 
 CREATE INDEX idx_odds_game ON odds_snapshots(game_id, time DESC);
 CREATE INDEX idx_odds_bookmaker ON odds_snapshots(bookmaker);
@@ -258,7 +281,19 @@ CREATE TABLE line_movement_events (
     PRIMARY KEY (time, game_id, market_type, period, bookmaker)
 );
 
-SELECT create_hypertable('line_movement_events', 'time', chunk_time_interval => INTERVAL '1 day');
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable(
+            'line_movement_events',
+            'time',
+            chunk_time_interval => INTERVAL '1 day',
+            if_not_exists => TRUE
+        );
+    ELSE
+        RAISE NOTICE 'TimescaleDB not installed; leaving line_movement_events as a regular table';
+    END IF;
+END$$;
 
 CREATE INDEX idx_line_movement_game ON line_movement_events(game_id, time DESC);
 CREATE INDEX idx_line_movement_steam ON line_movement_events(is_steam_move) WHERE is_steam_move = TRUE;
@@ -274,7 +309,19 @@ CREATE TABLE model_performance (
     PRIMARY KEY (time, model_version, metric_name)
 );
 
-SELECT create_hypertable('model_performance', 'time', chunk_time_interval => INTERVAL '7 days');
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        PERFORM create_hypertable(
+            'model_performance',
+            'time',
+            chunk_time_interval => INTERVAL '7 days',
+            if_not_exists => TRUE
+        );
+    ELSE
+        RAISE NOTICE 'TimescaleDB not installed; leaving model_performance as a regular table';
+    END IF;
+END$$;
 
 -----------------------------------------------------------
 -- BACKTESTING
@@ -345,29 +392,49 @@ CREATE INDEX idx_backtest_created ON backtest_runs(created_at DESC);
 -----------------------------------------------------------
 
 -- Consensus odds (5-minute buckets)
-CREATE MATERIALIZED VIEW odds_consensus
-WITH (timescaledb.continuous) AS
-SELECT
-    time_bucket('5 minutes', time) AS bucket,
-    game_id,
-    market_type,
-    period,
-    AVG(home_line) AS consensus_spread,
-    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY home_line) AS median_spread,
-    AVG(total_line) AS consensus_total,
-    MIN(home_line) AS min_spread,
-    MAX(home_line) AS max_spread,
-    COUNT(DISTINCT bookmaker) AS book_count
-FROM odds_snapshots
-GROUP BY bucket, game_id, market_type, period
-WITH NO DATA;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_matviews
+            WHERE schemaname = 'public' AND matviewname = 'odds_consensus'
+        ) THEN
+            EXECUTE $sql$
+                CREATE MATERIALIZED VIEW odds_consensus
+                WITH (timescaledb.continuous) AS
+                SELECT
+                    time_bucket('5 minutes', time) AS bucket,
+                    game_id,
+                    market_type,
+                    period,
+                    AVG(home_line) AS consensus_spread,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY home_line) AS median_spread,
+                    AVG(total_line) AS consensus_total,
+                    MIN(home_line) AS min_spread,
+                    MAX(home_line) AS max_spread,
+                    COUNT(DISTINCT bookmaker) AS book_count
+                FROM odds_snapshots
+                GROUP BY bucket, game_id, market_type, period
+                WITH NO DATA
+            $sql$;
+        END IF;
 
--- Refresh policy: every 5 minutes
-SELECT add_continuous_aggregate_policy('odds_consensus',
-    start_offset => INTERVAL '1 hour',
-    end_offset => INTERVAL '5 minutes',
-    schedule_interval => INTERVAL '5 minutes'
-);
+        BEGIN
+            PERFORM add_continuous_aggregate_policy(
+                'odds_consensus',
+                start_offset => INTERVAL '1 hour',
+                end_offset => INTERVAL '5 minutes',
+                schedule_interval => INTERVAL '5 minutes'
+            );
+        EXCEPTION WHEN OTHERS THEN
+            -- Policy may already exist; ignore
+            RAISE NOTICE 'Skipping add_continuous_aggregate_policy(odds_consensus): %', SQLERRM;
+        END;
+    ELSE
+        RAISE NOTICE 'TimescaleDB not installed; skipping continuous aggregate odds_consensus';
+    END IF;
+END$$;
 
 -----------------------------------------------------------
 -- FUNCTIONS

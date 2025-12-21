@@ -124,7 +124,7 @@ az containerapp logs show -n ncaam-prod-prediction -g ncaam-prod-rg --follow
 ### Custom Image Tag
 
 ```powershell
-.\deploy.ps1 -Environment prod -OddsApiKey "your-key" -ImageTag "v6.3.0"
+.\deploy.ps1 -Environment prod -OddsApiKey "your-key" -ImageTag "v6.3.1"
 ```
 
 ## Manual Deployment Steps
@@ -157,11 +157,11 @@ az deployment group create `
 az acr login --name ncaamprodacr
 
 # Build
-docker build -t ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.0 `
+docker build -t ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1 `
     -f services/prediction-service-python/Dockerfile.hardened .
 
 # Push
-docker push ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.0
+docker push ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1
 ```
 
 ### 4. Update Container App
@@ -170,7 +170,7 @@ docker push ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.0
 az containerapp update `
     --name ncaam-prod-prediction `
     --resource-group ncaam-prod-rg `
-    --image ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.0
+    --image ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1
 ```
 
 ## Files
