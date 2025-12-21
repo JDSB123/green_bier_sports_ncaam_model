@@ -84,11 +84,21 @@ az containerapp logs show -n ncaam-prod-prediction -g ncaam-prod-rg --follow
 
 ## Deployment Options
 
-### Full Deployment (Default)
+### Full Deployment (Default - Dedicated Resource Group)
 
 ```powershell
 # Replace YOUR_ACTUAL_KEY with your real API key (sets env var THE_ODDS_API_KEY)
 .\deploy.ps1 -Environment prod -OddsApiKey "YOUR_ACTUAL_KEY"
+# Deploys to: ncaam-prod-rg (centralus)
+```
+
+### Enterprise Mode Deployment (greenbier-enterprise-rg)
+
+```powershell
+# Deploy to enterprise resource group with NCAAM model organization
+.\deploy.ps1 -Environment prod -EnterpriseMode -OddsApiKey "YOUR_ACTUAL_KEY"
+# Deploys to: greenbier-enterprise-rg (eastus)
+# Resources tagged with Model=ncaam for organization
 ```
 
 ### Skip Infrastructure (Image Update Only)

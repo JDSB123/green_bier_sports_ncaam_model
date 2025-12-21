@@ -52,6 +52,14 @@ var containerEnvName = '${resourcePrefix}-env'
 var containerAppName = '${resourcePrefix}-prediction'
 var logAnalyticsName = '${resourcePrefix}-logs'
 
+// Common tags for resource organization (especially for enterprise resource group)
+var commonTags = {
+  Model: baseName
+  Environment: environment
+  ManagedBy: 'Bicep'
+  Application: 'NCAAM-Prediction-Model'
+}
+
 // ─────────────────────────────────────────────────────────────────────────────────
 // LOG ANALYTICS WORKSPACE
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -59,6 +67,7 @@ var logAnalyticsName = '${resourcePrefix}-logs'
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: logAnalyticsName
   location: location
+  tags: commonTags
   properties: {
     sku: {
       name: 'PerGB2018'
@@ -74,6 +83,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: acrName
   location: location
+  tags: commonTags
   sku: {
     name: 'Basic'
   }
@@ -89,6 +99,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
 resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2023-03-01-preview' = {
   name: postgresServerName
   location: location
+  tags: commonTags
   sku: {
     name: 'Standard_B1ms'
     tier: 'Burstable'
@@ -147,6 +158,7 @@ resource postgresExtensions 'Microsoft.DBforPostgreSQL/flexibleServers/configura
 resource redis 'Microsoft.Cache/redis@2023-08-01' = {
   name: redisName
   location: location
+  tags: commonTags
   properties: {
     sku: {
       name: 'Basic'
@@ -168,6 +180,7 @@ resource redis 'Microsoft.Cache/redis@2023-08-01' = {
 resource containerEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: containerEnvName
   location: location
+  tags: commonTags
   properties: {
     appLogsConfiguration: {
       destination: 'log-analytics'
@@ -186,6 +199,7 @@ resource containerEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
 resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: containerAppName
   location: location
+  tags: commonTags
   properties: {
     managedEnvironmentId: containerEnv.id
     configuration: {
