@@ -36,12 +36,12 @@
 
 ---
 
-## 📋 Workflow: Always Pull Before Work
+## 📋 Workflow: Push to Feature Branch, Pull from Main
 
 ### Standard Workflow (Every Time)
 
 ```powershell
-# 1. ALWAYS start by pulling latest from GitHub
+# 1. ALWAYS start by pulling latest from GitHub main
 git checkout main
 git pull origin main
 
@@ -51,17 +51,19 @@ git checkout -b feature/your-feature-name
 # 3. Make your changes
 # ... edit files ...
 
-# 4. Commit and push
+# 4. Commit and push to FEATURE BRANCH (not main)
 git add .
 git commit -m "Descriptive message"
-git push origin feature/your-feature-name
+git push origin feature/your-feature-name  # ← Push to feature branch
 
-# 5. Create PR on GitHub
-# 6. Review and merge PR
-# 7. Pull latest main after merge
+# 5. Create PR on GitHub (feature branch → main)
+# 6. Review and merge PR to main
+# 7. Pull from main after merge
 git checkout main
-git pull origin main
+git pull origin main  # ← Pull from main
 ```
+
+**Key Rule:** All pushes go through PRs to main. Then pull from main.
 
 ---
 
