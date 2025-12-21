@@ -1,23 +1,37 @@
-# Pull Request Template
-
 ## Description
-<!-- Describe the changes and why they're needed -->
+<!-- Brief description of what this PR does -->
 
 ## Type of Change
+- [ ] Feature (new functionality)
 - [ ] Bug fix
-- [ ] New feature
-- [ ] Documentation update
-- [ ] Configuration change
-- [ ] Refactor/cleanup
+- [ ] Documentation
+- [ ] Refactoring
+- [ ] Cleanup
+- [ ] Configuration
+
+## Changes Made
+<!-- List the main changes in this PR -->
+- 
+- 
+- 
 
 ## Testing
-<!-- How was this tested? -->
+- [ ] Tested locally
+- [ ] Manual testing completed
+- [ ] No breaking changes
+- [ ] Docker containers build successfully
 
 ## Related Issues
-<!-- Link any related issues -->
+<!-- Link to related issues if applicable -->
+- Closes #
 
 ## Checklist
-- [ ] Tested locally
-- [ ] Secrets and env vars properly configured
-- [ ] Database migrations verified (if applicable)
-- [ ] Docker build validated (if applicable)
+- [ ] Code follows project standards
+- [ ] Documentation updated (if needed)
+- [ ] No hardcoded secrets/passwords
+- [ ] Commits are descriptive
+- [ ] PR description is complete
+- [ ] Self-review completed
+
+## Additional Notes
+<!-- Any additional information, concerns, or context -->
