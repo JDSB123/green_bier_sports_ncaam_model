@@ -46,6 +46,9 @@ class MarketOddsInput(BaseModel):
     total_1h: Optional[float] = None
     home_ml_1h: Optional[int] = None
     away_ml_1h: Optional[int] = None
+    spread_price_1h: Optional[int] = None
+    over_price_1h: Optional[int] = None
+    under_price_1h: Optional[int] = None
 
     # Sharp book reference
     sharp_spread: Optional[float] = None
@@ -64,6 +67,9 @@ class MarketOddsInput(BaseModel):
             total_1h=self.total_1h,
             home_ml_1h=self.home_ml_1h,
             away_ml_1h=self.away_ml_1h,
+            spread_price_1h=self.spread_price_1h,
+            over_price_1h=self.over_price_1h,
+            under_price_1h=self.under_price_1h,
             sharp_spread=self.sharp_spread,
             sharp_total=self.sharp_total,
         )

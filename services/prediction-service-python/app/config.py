@@ -1,7 +1,7 @@
 """
-Configuration for NCAA Basketball Prediction Service v6.1
+Configuration for NCAA Basketball Prediction Service v6.3
 
-v6.1 Changes:
+v6.3 Changes:
 - HCA values are now EXPLICIT (what you see is what gets applied)
 - Removed hidden multipliers from predictor.py
 - Synced with corrected total/spread formulas
@@ -242,7 +242,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "6.1.0"
+    service_version: str = "6.3.0"
     debug: bool = False
 
     # Feature Store

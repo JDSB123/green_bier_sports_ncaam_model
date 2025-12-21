@@ -165,6 +165,9 @@ class MarketOdds:
     total_1h: Optional[float] = None
     home_ml_1h: Optional[int] = None
     away_ml_1h: Optional[int] = None
+    spread_price_1h: Optional[int] = None
+    over_price_1h: Optional[int] = None
+    under_price_1h: Optional[int] = None
 
     # Sharp book reference (Pinnacle/Circa)
     sharp_spread: Optional[float] = None

@@ -86,7 +86,7 @@ if not REDIS_URL:
 
 # Model parameters (from config, but display here for clarity)
 HCA_SPREAD = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_SPREAD', 3.0))
-HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 4.5))
+HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 0.9))
 MIN_SPREAD_EDGE = float(os.getenv('MODEL__MIN_SPREAD_EDGE', 2.5))
 MIN_TOTAL_EDGE = float(os.getenv('MODEL__MIN_TOTAL_EDGE', 3.0))
 
@@ -703,11 +703,17 @@ def get_prediction(
     if market_odds:
         market_odds_obj = MarketOdds(
             spread=market_odds.get("spread"),
+            spread_price=market_odds.get("spread_price") or -110,
             total=market_odds.get("total"),
+            over_price=market_odds.get("over_price") or -110,
+            under_price=market_odds.get("under_price") or -110,
             home_ml=market_odds.get("home_ml"),
             away_ml=market_odds.get("away_ml"),
             spread_1h=market_odds.get("spread_1h"),
+            spread_price_1h=market_odds.get("spread_price_1h"),
             total_1h=market_odds.get("total_1h"),
+            over_price_1h=market_odds.get("over_price_1h"),
+            under_price_1h=market_odds.get("under_price_1h"),
             home_ml_1h=market_odds.get("home_ml_1h"),
             away_ml_1h=market_odds.get("away_ml_1h"),
         )
@@ -913,7 +919,7 @@ def main():
     print()
     print("╔" + "═" * 118 + "╗")
     print("║" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "║")
-    print("║" + f"  Model: v6.2 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
+    print("║" + f"  Model: v6.3 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
     print("╚" + "═" * 118 + "╝")
     print()
     
@@ -1001,11 +1007,17 @@ def main():
         # Build market odds
         market_odds = {
             "spread": game["spread"],
+            "spread_price": game.get("spread_home_juice") or game.get("spread_away_juice"),
             "total": game["total"],
+            "over_price": game.get("over_juice"),
+            "under_price": game.get("under_juice"),
             "home_ml": game["home_ml"],
             "away_ml": game["away_ml"],
             "spread_1h": game.get("spread_1h"),
+            "spread_price_1h": game.get("spread_1h_home_juice") or game.get("spread_1h_away_juice"),
             "total_1h": game.get("total_1h"),
+            "over_price_1h": game.get("over_1h_juice"),
+            "under_price_1h": game.get("under_1h_juice"),
             "home_ml_1h": game.get("home_ml_1h"),
             "away_ml_1h": game.get("away_ml_1h"),
         }
