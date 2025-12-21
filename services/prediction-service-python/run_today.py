@@ -30,6 +30,7 @@ import subprocess
 # Import prediction engine (direct, no HTTP)
 from app.predictor import prediction_engine
 from app.models import TeamRatings, MarketOdds
+from app.situational import SituationalAdjuster, RestInfo
 
 # Central Time Zone
 CST = ZoneInfo("America/Chicago")
@@ -292,6 +293,7 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
         ),
         -- Latest ratings (filtered by target date to prevent future data leakage)
         -- FIX: Added WHERE clause to ensure we only use ratings available on game date
+        -- v6.2: Added efg, efgd, three_pt_rate, three_pt_rate_d for dynamic variance
         latest_ratings AS (
             SELECT DISTINCT ON (team_id)
                 team_id,
@@ -299,6 +301,10 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
                 adj_d,
                 tempo,
                 torvik_rank,
+                efg,
+                efgd,
+                three_pt_rate,
+                three_pt_rate_d,
                 rating_date
             FROM team_ratings
             WHERE rating_date <= :target_date
@@ -336,11 +342,19 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
             htr.adj_d as home_adj_d,
             htr.tempo as home_tempo,
             htr.torvik_rank as home_rank,
+            htr.efg as home_efg,
+            htr.efgd as home_efgd,
+            htr.three_pt_rate as home_three_pt_rate,
+            htr.three_pt_rate_d as home_three_pt_rate_d,
             -- Away team ratings
             atr.adj_o as away_adj_o,
             atr.adj_d as away_adj_d,
             atr.tempo as away_tempo,
-            atr.torvik_rank as away_rank
+            atr.torvik_rank as away_rank,
+            atr.efg as away_efg,
+            atr.efgd as away_efgd,
+            atr.three_pt_rate as away_three_pt_rate,
+            atr.three_pt_rate_d as away_three_pt_rate_d
         FROM games g
         JOIN teams ht ON g.home_team_id = ht.id
         JOIN teams at ON g.away_team_id = at.id
@@ -350,10 +364,12 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
         LEFT JOIN latest_ratings atr ON at.id = atr.team_id
         WHERE DATE(g.commence_time AT TIME ZONE 'America/Chicago') = :target_date
           AND g.status = 'scheduled'
-        GROUP BY 
+        GROUP BY
             g.id, g.commence_time, ht.canonical_name, at.canonical_name, g.is_neutral,
             htr.adj_o, htr.adj_d, htr.tempo, htr.torvik_rank,
-            atr.adj_o, atr.adj_d, atr.tempo, atr.torvik_rank
+            htr.efg, htr.efgd, htr.three_pt_rate, htr.three_pt_rate_d,
+            atr.adj_o, atr.adj_d, atr.tempo, atr.torvik_rank,
+            atr.efg, atr.efgd, atr.three_pt_rate, atr.three_pt_rate_d
         ORDER BY g.commence_time
     """)
     
@@ -363,7 +379,7 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
         
         games = []
         for row in rows:
-            # Build home ratings
+            # Build home ratings (v6.2: include extended metrics for dynamic variance)
             home_ratings = None
             if row.home_adj_o and row.home_adj_d:
                 home_ratings = {
@@ -372,9 +388,14 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
                     "adj_d": float(row.home_adj_d),
                     "tempo": float(row.home_tempo) if row.home_tempo else 70.0,
                     "rank": int(row.home_rank) if row.home_rank else 100,
+                    # v6.2 extended metrics
+                    "efg": float(row.home_efg) if row.home_efg else None,
+                    "efgd": float(row.home_efgd) if row.home_efgd else None,
+                    "three_pt_rate": float(row.home_three_pt_rate) if row.home_three_pt_rate else None,
+                    "three_pt_rate_d": float(row.home_three_pt_rate_d) if row.home_three_pt_rate_d else None,
                 }
-            
-            # Build away ratings
+
+            # Build away ratings (v6.2: include extended metrics for dynamic variance)
             away_ratings = None
             if row.away_adj_o and row.away_adj_d:
                 away_ratings = {
@@ -383,6 +404,11 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
                     "adj_d": float(row.away_adj_d),
                     "tempo": float(row.away_tempo) if row.away_tempo else 70.0,
                     "rank": int(row.away_rank) if row.away_rank else 100,
+                    # v6.2 extended metrics
+                    "efg": float(row.away_efg) if row.away_efg else None,
+                    "efgd": float(row.away_efgd) if row.away_efgd else None,
+                    "three_pt_rate": float(row.away_three_pt_rate) if row.away_three_pt_rate else None,
+                    "three_pt_rate_d": float(row.away_three_pt_rate_d) if row.away_three_pt_rate_d else None,
                 }
             
             game = {
@@ -418,6 +444,56 @@ def fetch_games_from_db(target_date: Optional[date] = None) -> List[Dict]:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# GAME HISTORY FOR REST CALCULATION (v6.2)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def fetch_team_game_history(team_name: str, before_date: datetime, engine) -> List[Dict]:
+    """
+    Fetch recent completed games for a team to calculate rest days.
+
+    Args:
+        team_name: Canonical team name
+        before_date: Only include games before this datetime
+        engine: SQLAlchemy engine
+
+    Returns:
+        List of recent game dicts with commence_time
+    """
+    query = text("""
+        SELECT
+            g.id as game_id,
+            g.commence_time,
+            g.status,
+            ht.canonical_name as home_team,
+            at.canonical_name as away_team
+        FROM games g
+        JOIN teams ht ON g.home_team_id = ht.id
+        JOIN teams at ON g.away_team_id = at.id
+        WHERE (ht.canonical_name = :team_name OR at.canonical_name = :team_name)
+          AND g.commence_time < :before_date
+          AND g.status IN ('completed', 'final')
+        ORDER BY g.commence_time DESC
+        LIMIT 10
+    """)
+
+    with engine.connect() as conn:
+        result = conn.execute(query, {"team_name": team_name, "before_date": before_date})
+        rows = result.fetchall()
+
+        games = []
+        for row in rows:
+            games.append({
+                "game_id": str(row.game_id),
+                "commence_time": row.commence_time,
+                "status": row.status,
+                "home_team": row.home_team,
+                "away_team": row.away_team,
+            })
+
+        return games
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # PREDICTION - Direct import (no HTTP)
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -428,10 +504,12 @@ def get_prediction(
     away_ratings: Dict,
     market_odds: Optional[Dict] = None,
     is_neutral: bool = False,
+    home_rest: Optional[RestInfo] = None,
+    away_rest: Optional[RestInfo] = None,
 ) -> Dict:
     """
     Get prediction using direct import (no HTTP).
-    
+
     Args:
         home_team: Home team name
         away_team: Away team name
@@ -439,25 +517,35 @@ def get_prediction(
         away_ratings: Away team ratings dict
         market_odds: Market odds dict (optional)
         is_neutral: True if neutral site
-        
+        home_rest: Home team rest info (v6.2)
+        away_rest: Away team rest info (v6.2)
+
     Returns:
         Prediction result dict
     """
-    # Convert to domain objects
+    # Convert to domain objects (v6.2: include extended metrics)
     home_ratings_obj = TeamRatings(
         team_name=home_ratings["team_name"],
         adj_o=home_ratings["adj_o"],
         adj_d=home_ratings["adj_d"],
         tempo=home_ratings["tempo"],
         rank=home_ratings["rank"],
+        efg=home_ratings.get("efg"),
+        efgd=home_ratings.get("efgd"),
+        three_pt_rate=home_ratings.get("three_pt_rate"),
+        three_pt_rate_d=home_ratings.get("three_pt_rate_d"),
     )
-    
+
     away_ratings_obj = TeamRatings(
         team_name=away_ratings["team_name"],
         adj_o=away_ratings["adj_o"],
         adj_d=away_ratings["adj_d"],
         tempo=away_ratings["tempo"],
         rank=away_ratings["rank"],
+        efg=away_ratings.get("efg"),
+        efgd=away_ratings.get("efgd"),
+        three_pt_rate=away_ratings.get("three_pt_rate"),
+        three_pt_rate_d=away_ratings.get("three_pt_rate_d"),
     )
     
     market_odds_obj = None
@@ -473,7 +561,7 @@ def get_prediction(
             away_ml_1h=market_odds.get("away_ml_1h"),
         )
     
-    # Generate prediction
+    # Generate prediction (v6.2: pass rest info for situational adjustments)
     commence_time = datetime.now(timezone.utc)
     prediction = prediction_engine.make_prediction(
         game_id=uuid4(),
@@ -484,6 +572,8 @@ def get_prediction(
         away_ratings=away_ratings_obj,
         market_odds=market_odds_obj,
         is_neutral=is_neutral,
+        home_rest=home_rest,
+        away_rest=away_rest,
     )
     
     # Generate recommendations
@@ -672,7 +762,7 @@ def main():
     print()
     print("╔" + "═" * 118 + "╗")
     print("║" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "║")
-    print("║" + f"  Model: v6.0 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
+    print("║" + f"  Model: v6.2 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
     print("╚" + "═" * 118 + "╝")
     print()
     
@@ -709,13 +799,17 @@ def main():
     
     print(f"✓ Found {len(games)} games")
     print()
-    
+
+    # v6.2: Setup situational adjuster for rest day calculations
+    situational_adjuster = SituationalAdjuster()
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
     # Process each game
     all_picks = []
     games_processed = 0
     games_skipped = 0
     skipped_reasons = []
-    
+
     for game in games:
         # Validate ratings
         if not game.get("home_ratings") or not game.get("away_ratings"):
@@ -764,7 +858,36 @@ def main():
             "home_ml_1h": game.get("home_ml_1h"),
             "away_ml_1h": game.get("away_ml_1h"),
         }
-        
+
+        # v6.2: Compute rest info for situational adjustments
+        game_datetime = game.get("datetime_cst")
+        if game_datetime is None:
+            # Fallback: use noon on the game date
+            game_datetime = datetime.combine(target_date, datetime.min.time().replace(hour=12))
+            game_datetime = game_datetime.replace(tzinfo=CST)
+
+        home_rest = None
+        away_rest = None
+        try:
+            # Fetch game history for each team
+            home_history = fetch_team_game_history(game["home"], game_datetime, engine)
+            away_history = fetch_team_game_history(game["away"], game_datetime, engine)
+
+            # Compute rest info
+            home_rest = situational_adjuster.compute_rest_info(
+                team_name=game["home"],
+                game_datetime=game_datetime,
+                game_history=home_history,
+            )
+            away_rest = situational_adjuster.compute_rest_info(
+                team_name=game["away"],
+                game_datetime=game_datetime,
+                game_history=away_history,
+            )
+        except Exception as e:
+            # Log but don't fail - rest info is optional enhancement
+            print(f"  ⚠️ Rest calc failed for {game['away']} @ {game['home']}: {e}")
+
         # Get prediction
         try:
             result = get_prediction(
@@ -774,6 +897,8 @@ def main():
                 away_ratings=game["away_ratings"],
                 market_odds=market_odds,
                 is_neutral=game.get("is_neutral", False),
+                home_rest=home_rest,
+                away_rest=away_rest,
             )
         except Exception as e:
             print(f"  ✗ Error predicting {game['away']} @ {game['home']}: {e}")
