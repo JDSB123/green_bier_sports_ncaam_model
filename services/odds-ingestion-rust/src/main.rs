@@ -1451,18 +1451,24 @@ impl OddsIngestionService {
             // If full-game disabled, use all event IDs for half markets
             event_ids = all_event_ids;
         } else {
-            // No new events
-            event_ids = all_event_ids;
+            // No new events - keep event_ids empty to preserve event-driven optimization
+            // Only fetch H1/H2 odds if explicitly needed in run_once mode
+            event_ids = Vec::new();
         }
 
-        // In one-shot mode, use all events (no event-driven filtering for one-shot)
+        // In one-shot mode, preserve event-driven optimization
+        // Only fetch H1/H2 for events that had full-game odds fetched (new/changed events)
         if self.config.run_once {
             // For one-shot, if full-game was disabled, we may need to fetch event IDs
+            // But only if we don't already have event_ids from new/changed events
             if !self.config.enable_full && event_ids.is_empty() {
                 if self.config.enable_h1 || self.config.enable_h2 {
+                    // Only fetch all events if we truly need them (full-game disabled)
                     event_ids = self.fetch_event_ids().await?;
                 }
             }
+            // If enable_full was true but no new events, event_ids stays empty
+            // This preserves event-driven optimization - no H1/H2 fetch for unchanged events
             
             // Optional H1
             let mut h1_count = 0usize;
