@@ -36,6 +36,7 @@ from app.predictor import prediction_engine
 from app.models import TeamRatings, MarketOdds
 from app.situational import SituationalAdjuster, RestInfo
 from app.persistence import persist_prediction_and_recommendations
+from app.graph_upload import upload_file_to_teams
 import csv
 from pathlib import Path
 
@@ -1012,6 +1013,99 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
     except Exception as e:
         print(f"  ⚠️  Failed to write CSV: {type(e).__name__}: {e}")
 
+    # Generate HTML Report
+    html_url = ""
+    try:
+        out_dir = Path("/app/output")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        html_path = out_dir / "latest_picks.html"
+        
+        # Simple CSS-styled HTML table
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>NCAAM Picks - {target_date}</title>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
+                h1 {{ color: #333; }}
+                .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                th {{ background: #2c3e50; color: white; padding: 12px; text-align: left; }}
+                td {{ padding: 12px; border-bottom: 1px solid #ddd; }}
+                tr:hover {{ background-color: #f9f9f9; }}
+                .fire {{ color: #e74c3c; font-weight: bold; }}
+                .edge-high {{ color: #27ae60; font-weight: bold; }}
+                .timestamp {{ color: #7f8c8d; font-size: 0.9em; margin-bottom: 20px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🏀 NCAAM Predictions</h1>
+                <div class="timestamp">Generated: {datetime.now(CST).strftime("%Y-%m-%d %H:%M CST")} | Target Date: {target_date}</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Matchup</th>
+                            <th>Seg</th>
+                            <th>Pick</th>
+                            <th>Market</th>
+                            <th>Model</th>
+                            <th>Edge</th>
+                            <th>Fire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        """
+        
+        for p in sorted_picks:
+            matchup = f"{p['away']} vs {p['home']}"
+            edge_val = p.get('edge', 0.0)
+            edge_class = "edge-high" if edge_val > 3.0 else ""
+            
+            html_content += f"""
+                        <tr>
+                            <td>{p.get('time_cst', '')}</td>
+                            <td>{matchup}</td>
+                            <td>{p.get('period', '')}</td>
+                            <td>{p.get('pick_display', '')}</td>
+                            <td>{p.get('market_line', '')}</td>
+                            <td>{p.get('model_line', '')}</td>
+                            <td class="{edge_class}">{edge_val:.1f}</td>
+                            <td class="fire">{p.get('fire_rating', '')}</td>
+                        </tr>
+            """
+            
+        html_content += """
+                    </tbody>
+                </table>
+            </div>
+        </body>
+        </html>
+        """
+        
+        with html_path.open("w", encoding="utf-8") as f:
+            f.write(html_content)
+            
+        # URL where this file will be served
+        # We need the base URL of the container app. We can get it from env or just relative.
+        # Since we send this to Teams, we need absolute URL.
+        # We'll rely on the API to serve /output/latest_picks.html
+        # Hardcoding the base URL for now based on your deployment
+        base_url = "https://ncaam-prod-prediction.bluecoast-4efaeaba.centralus.azurecontainerapps.io"
+        html_url = f"{base_url}/picks/html"
+        print(f"  ✓ HTML saved: {html_path}")
+        
+        # Upload to Microsoft Graph (SharePoint/Teams)
+        upload_success = upload_file_to_teams(html_path, target_date)
+        if upload_success:
+            print("  ✓ HTML uploaded to Teams Shared Documents")
+        
+    except Exception as e:
+        print(f"  ⚠️  Failed to generate HTML: {e}")
+
     # Build the Teams message using Adaptive Card format (table-like)
     now_cst = datetime.now(CST)
     
@@ -1068,6 +1162,23 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         )
     
     # Build Adaptive Card payload
+    
+    # Define Actions (HTML Report + Run Fresh)
+    actions = [
+        {
+            "type": "Action.OpenUrl",
+            "title": "⚡ Run Fresh Picks",
+            "url": "https://ncaam-prod-prediction.bluecoast-4efaeaba.centralus.azurecontainerapps.io/trigger-picks"
+        }
+    ]
+    
+    if html_url:
+        actions.insert(0, {
+            "type": "Action.OpenUrl",
+            "title": "📄 View Full HTML Report",
+            "url": html_url
+        })
+
     card_payload = {
         "type": "message",
         "attachments": [
@@ -1116,7 +1227,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
                         },
                         *table_rows
                     ],
-                    "actions": []
+                    "actions": actions
                 }
             }
         ]
