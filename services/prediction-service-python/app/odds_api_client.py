@@ -38,9 +38,19 @@ class OddsApiClient:
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.sport_key = sport_key or DEFAULT_SPORT_KEY
-        self.api_key = api_key or os.getenv("THE_ODDS_API_KEY") or _read_secret_file(
-            "/run/secrets/odds_api_key", "odds_api_key"
-        )
+        
+        # Priority: 1. Constructor arg, 2. Env var (if set), 3. Docker Secret File
+        env_key = os.getenv("THE_ODDS_API_KEY")
+        file_key = None
+        try:
+            file_key = _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
+        except Exception:
+            pass
+
+        self.api_key = api_key or env_key or file_key
+
+        if not self.api_key:
+             raise OddsApiError("THE_ODDS_API_KEY not found in env vars or secrets/odds_api_key.txt")
 
         # Config defaults mirror Rust ingestion
         self.regions = regions or os.getenv("REGIONS", "us")
@@ -65,7 +75,8 @@ class OddsApiClient:
             or key_lower == "4a0b80471d1ebeeb74c358fa0fcc4a2"
         ):
             raise OddsApiError(
-                "THE_ODDS_API_KEY appears to be a placeholder value; replace with your real key"
+                "THE_ODDS_API_KEY appears to be a placeholder value. "
+                "Please update secrets/odds_api_key.txt with your real key and RESTART the container."
             )
 
     def _request(

@@ -180,6 +180,42 @@ services:
     restart: unless-stopped
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # RATINGS SYNC - Fetches Barttorvik ratings daily
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  ratings-sync:
+    build:
+      context: ./services/ratings-sync-go
+      dockerfile: ./Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_ratings_sync:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_ratings_sync
+    <<: [*common-env, *resource-limits]
+    secrets:
+      - db_password
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      SPORT: ${SPORT:-ncaam}
+      DB_USER: ${DB_USER:-${SPORT:-ncaam}}
+      DB_NAME: ${DB_NAME:-${SPORT:-ncaam}}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      # Run sync on startup and exit (cron mode for production)
+      RUN_ONCE: "${RATINGS_RUN_ONCE:-false}"
+    networks:
+      - ncaam_v6_data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    cap_add:
+      - NET_BIND_SERVICE
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50M
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # MANUAL ODDS PULLS (NEVER AUTOMATED): Full-game then 1H
   # Run these one at a time via `docker compose run --rm ...`
   # ─────────────────────────────────────────────────────────────────────────────

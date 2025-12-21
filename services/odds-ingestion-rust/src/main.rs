@@ -123,16 +123,15 @@ impl Config {
         // API key
         let odds_api_key = match env::var("THE_ODDS_API_KEY") {
             Ok(v) if !v.trim().is_empty() => v,
-            Ok(_) => return Err(anyhow!("THE_ODDS_API_KEY is set but empty")),
-            Err(_) => read_secret_file("/run/secrets/odds_api_key", "odds_api_key")?,
+            // If env var is missing OR empty, try the secret file
+            _ => read_secret_file("/run/secrets/odds_api_key", "odds_api_key")?,
         };
 
         // Prevent accidental use of sample/placeholder keys
         let key_lower = odds_api_key.trim().to_lowercase();
-        if key_lower.contains("change_me") 
-            || key_lower.contains("your_") 
-            || key_lower.starts_with("sample")
-            || key_lower == "4a0b80471d1ebeeb74c358fa0fcc4a27" {
+        if key_lower.contains("change_me")
+            || key_lower.contains("your_")
+            || key_lower.starts_with("sample") {
             return Err(anyhow!(
                 "THE_ODDS_API_KEY appears to be a placeholder value; replace with your real key"
             ));

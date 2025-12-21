@@ -20,8 +20,8 @@ if errorlevel 1 (
 REM Wait for postgres to be healthy
 timeout /t 5 /nobreak >nul
 
-REM Start prediction service if not running
-docker compose up -d prediction-service
+REM Start prediction service if not running (force recreate to pick up secrets)
+docker compose up -d --force-recreate prediction-service
 if errorlevel 1 (
     echo.
     echo ❌ Failed to start prediction-service container

@@ -108,20 +108,36 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 
 	var teams []BarttorkvikTeam
 	for _, raw := range rawTeams {
-		if len(raw) < 46 {
-			continue // Skip incomplete records
+		// 2025-26 season: Barttorvik returns 45 fields (indices 0-44)
+		// AdjTempo is at index 44 (last element)
+		if len(raw) < 25 {
+			continue // Skip incomplete records - need at least basic metrics
 		}
 
 		// Parse wins/losses from record string "W-L" at index 3
 		wins, losses := parseRecord(toString(raw[3]))
 
-		// Extract ALL Barttorvik metrics for comprehensive model
-		// Array indices verified against 2025_team_results.json structure:
+		// Extract Barttorvik metrics
+		// Array indices for 2026 season structure:
 		// [0]=Rank, [1]=Team, [2]=Conf, [3]=Record, [4]=AdjOE, [5]=AdjOE Rank,
 		// [6]=AdjDE, [7]=AdjDE Rank, [8]=Barthag, [9]=Barthag Rank,
-		// [10]=EFG%, [11]=EFGD%, [12]=TOR, [13]=TORD, [14]=ORB, [15]=DRB,
-		// [16]=FTR, [17]=FTRD, [18]=2P%, [19]=2PD%, [20]=3P%, [21]=3PD%,
-		// [22]=3PR, [23]=3PRD, ... [44]=AdjTempo, [45]=WAB
+		// [10]=EFG%, [11]=EFGD%, [12]=TOR, [13]=TORD, [14]=RoadRec (string),
+		// ... [44]=AdjTempo (last element, variable position)
+
+		// Safely get AdjTempo - it's typically the last numeric value
+		adjTempo := 70.0 // Default tempo
+		if len(raw) >= 45 {
+			adjTempo = toFloat(raw[44])
+		} else if len(raw) >= 42 {
+			adjTempo = toFloat(raw[len(raw)-1])
+		}
+
+		// WAB is not reliably present in 2026 format
+		wab := 0.0
+		if len(raw) >= 46 {
+			wab = toFloat(raw[45])
+		}
+
 		team := BarttorkvikTeam{
 			// Core identifiers
 			Rank: toInt(raw[0]),
@@ -131,7 +147,7 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 			// Efficiency ratings (primary prediction inputs)
 			AdjOE:    toFloat(raw[4]),
 			AdjDE:    toFloat(raw[6]),
-			AdjTempo: toFloat(raw[44]),
+			AdjTempo: adjTempo,
 
 			// Record
 			Wins:   wins,
@@ -140,7 +156,7 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 
 			// Quality metrics
 			Barthag: toFloat(raw[8]),
-			WAB:     toFloat(raw[45]),
+			WAB:     wab,
 
 			// Four Factors - Shooting
 			EFG:  toFloat(raw[10]),
@@ -150,21 +166,21 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 			TOR:  toFloat(raw[12]),
 			TORD: toFloat(raw[13]),
 
-			// Four Factors - Rebounding
-			ORB: toFloat(raw[14]),
-			DRB: toFloat(raw[15]),
+			// Four Factors - Rebounding (indices shifted due to road record string)
+			ORB: toFloat(raw[15]),
+			DRB: toFloat(raw[16]),
 
 			// Four Factors - Free Throws
-			FTR:  toFloat(raw[16]),
-			FTRD: toFloat(raw[17]),
+			FTR:  toFloat(raw[17]),
+			FTRD: toFloat(raw[18]),
 
 			// Shooting breakdown
-			TwoP:     toFloat(raw[18]),
-			TwoPD:    toFloat(raw[19]),
-			ThreeP:   toFloat(raw[20]),
-			ThreePD:  toFloat(raw[21]),
-			ThreePR:  toFloat(raw[22]),
-			ThreePRD: toFloat(raw[23]),
+			TwoP:     toFloat(raw[19]),
+			TwoPD:    toFloat(raw[20]),
+			ThreeP:   toFloat(raw[21]),
+			ThreePD:  toFloat(raw[22]),
+			ThreePR:  toFloat(raw[23]),
+			ThreePRD: toFloat(raw[24]),
 		}
 		teams = append(teams, team)
 	}
