@@ -25,16 +25,23 @@ That's it. One command. Everything runs inside the container.
    
 2. **Create** `secrets/odds_api_key.txt` with your The Odds API key:
    
-   The API key is read from:
-   - **Docker Compose:** `secrets/odds_api_key.txt` → mounted at `/run/secrets/odds_api_key`
+   **Configuration locations (used by code):**
+   - **Docker Compose:** File `secrets/odds_api_key.txt` → mounted at `/run/secrets/odds_api_key`
    - **Azure Container Apps:** Environment variable `THE_ODDS_API_KEY`
    
-   Get your API key from: https://the-odds-api.com/
+   **Get your API key from:** https://the-odds-api.com/
    
-   Then create the file:
+   **Create the file (replace `YOUR_ACTUAL_KEY` with your real key):**
    ```powershell
-   # Windows PowerShell
-   "your-actual-key-from-odds-api-dot-com" | Out-File -FilePath secrets/odds_api_key.txt -NoNewline -Encoding utf8
+   # Windows PowerShell - replace YOUR_ACTUAL_KEY with your real API key
+   $apiKey = "YOUR_ACTUAL_KEY"  # Get from https://the-odds-api.com/
+   $apiKey | Out-File -FilePath secrets/odds_api_key.txt -NoNewline -Encoding utf8
+   ```
+   
+   **Or use environment variable (Azure only):**
+   ```powershell
+   # Set environment variable - code reads from THE_ODDS_API_KEY
+   $env:THE_ODDS_API_KEY = "YOUR_ACTUAL_KEY"
    ```
    
    Or use the helper script:

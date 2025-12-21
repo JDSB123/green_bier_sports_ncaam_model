@@ -57,7 +57,9 @@ az account set --subscription "Your Subscription Name"
 
 ```powershell
 cd azure
-.\deploy.ps1 -Environment prod -OddsApiKey "<your-actual-odds-api-key>"
+# Replace YOUR_ACTUAL_KEY with your real API key from https://the-odds-api.com/
+# The code will read from environment variable THE_ODDS_API_KEY
+.\deploy.ps1 -Environment prod -OddsApiKey "YOUR_ACTUAL_KEY"
 ```
 
 This will:
@@ -85,7 +87,8 @@ az containerapp logs show -n ncaam-prod-prediction -g ncaam-prod-rg --follow
 ### Full Deployment (Default)
 
 ```powershell
-.\deploy.ps1 -Environment prod -OddsApiKey "<your-actual-odds-api-key>"
+# Replace YOUR_ACTUAL_KEY with your real API key (sets env var THE_ODDS_API_KEY)
+.\deploy.ps1 -Environment prod -OddsApiKey "YOUR_ACTUAL_KEY"
 ```
 
 ### Skip Infrastructure (Image Update Only)
@@ -132,7 +135,7 @@ az deployment group create `
         environment=prod `
         postgresPassword="$(openssl rand -base64 24)" `
         redisPassword="$(openssl rand -base64 24)" `
-        oddsApiKey="<your-actual-odds-api-key>"
+        oddsApiKey="YOUR_ACTUAL_KEY"  # Replace with real key - sets env var THE_ODDS_API_KEY
 ```
 
 ### 3. Build and Push Image

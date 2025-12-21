@@ -22,8 +22,9 @@ openssl rand -hex 32 | tr -d '\n' > jwt_secret.txt
 openssl rand -hex 32 | tr -d '\n' > master_api_key.txt
 
 # The Odds API key (get from https://the-odds-api.com/)
-# This must be your actual API key - placeholder values will be rejected
-echo -n "<your-actual-api-key>" > odds_api_key.txt
+# Code reads from: /run/secrets/odds_api_key (Docker) or env var THE_ODDS_API_KEY (Azure)
+# Replace YOUR_ACTUAL_KEY with your real API key from the website
+echo -n "YOUR_ACTUAL_KEY" > odds_api_key.txt
 ```
 
 ### 2. Secure File Permissions
