@@ -1,5 +1,5 @@
 @echo off
-REM NCAA Basketball Prediction System v6.1
+REM NCAA Basketball Prediction System v6.2
 REM
 REM ONE SOURCE OF TRUTH: Everything runs inside the container
 REM
