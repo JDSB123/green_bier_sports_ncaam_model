@@ -654,7 +654,8 @@ func main() {
 		Season:       getCurrentSeason(),
 		// MANUAL-ONLY: Default to run once and exit (no cron automation)
 		// User triggers via run_today.py when they want fresh picks
-		RunOnce:      os.Getenv("RUN_ONCE") != "false", // Default true, only false if explicitly set
+		// Case-insensitive check to match Rust service behavior
+		RunOnce:      strings.ToLower(os.Getenv("RUN_ONCE")) != "false", // Default true, only false if explicitly set
 		BackfillFrom: 0,
 		BackfillTo:   0,
 	}
