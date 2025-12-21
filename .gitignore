@@ -77,6 +77,10 @@ yarn-error.log*
 coverage/
 .nyc_output/
 
+# Testing data (large Kaggle datasets - download separately)
+testing/data/kaggle/
+testing/data/tmp_*
+
 # Temporary files
 *.tmp
 *.bak
