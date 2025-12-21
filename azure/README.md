@@ -190,9 +190,11 @@ The container receives these environment variables:
 |----------|--------|-------------|
 | `DATABASE_URL` | Constructed | PostgreSQL connection string |
 | `REDIS_URL` | Constructed | Redis connection string |
-| `THE_ODDS_API_KEY` | Secret | Odds API key |
+| `THE_ODDS_API_KEY` | **Environment Variable** | Odds API key (set via `-OddsApiKey` parameter) |
 | `SPORT` | Config | Sport identifier (ncaam) |
 | `TZ` | Config | Timezone (America/Chicago) |
+
+**Note:** Code reads API key from environment variable `THE_ODDS_API_KEY`. The `-OddsApiKey` deployment parameter sets this environment variable.
 
 ## Secrets Management
 
