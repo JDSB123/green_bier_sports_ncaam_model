@@ -5,6 +5,7 @@
 #   .\deploy.ps1 -Environment prod -OddsApiKey "YOUR_ACTUAL_KEY"
 #   .\deploy.ps1 -Environment dev -OddsApiKey "YOUR_ACTUAL_KEY" -SkipInfra
 #   Note: -OddsApiKey parameter sets environment variable THE_ODDS_API_KEY in the container
+#   Optional: -TeamsWebhookUrl sets TEAMS_WEBHOOK_URL secret/env var for run_today.py --teams
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(
@@ -14,6 +15,9 @@ param(
 
     [Parameter(Mandatory=$true)]
     [string]$OddsApiKey,
+
+    [Parameter(Mandatory=$false)]
+    [string]$TeamsWebhookUrl = '',
 
     [Parameter(Mandatory=$false)]
     [string]$Location = 'eastus',
@@ -121,6 +125,25 @@ $redisPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 |
 Write-Host "  ✓ PostgreSQL password generated (32 chars)" -ForegroundColor Gray
 Write-Host "  ✓ Redis password generated (32 chars)" -ForegroundColor Gray
 
+# Optional: Load Teams webhook from repo secret file if not explicitly provided
+if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
+    $teamsSecretPath = Join-Path $PSScriptRoot "..\\secrets\\teams_webhook_url.txt"
+    if (Test-Path $teamsSecretPath) {
+        $TeamsWebhookUrl = (Get-Content $teamsSecretPath -Raw).Trim()
+    }
+}
+
+# Sanity check / ignore placeholder Teams webhook
+if ($TeamsWebhookUrl) {
+    $tw = $TeamsWebhookUrl.ToLowerInvariant()
+    if ($tw.Contains("change_me") -or $tw.StartsWith("your_") -or ($tw -notlike "*webhook.office.com*") -or ($TeamsWebhookUrl.Length -lt 60)) {
+        Write-Host "  [INFO] Teams webhook not configured (placeholder). Skipping Teams webhook env var." -ForegroundColor Gray
+        $TeamsWebhookUrl = ''
+    } else {
+        Write-Host "  ✓ Teams webhook configured (will enable run_today.py --teams)" -ForegroundColor Gray
+    }
+}
+
 # ─────────────────────────────────────────────────────────────────────────────────
 # DEPLOY INFRASTRUCTURE
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -146,6 +169,7 @@ if (-not $SkipInfra) {
             postgresPassword=$postgresPassword `
             redisPassword=$redisPassword `
             oddsApiKey=$OddsApiKey `
+            teamsWebhookUrl=$TeamsWebhookUrl `
             imageTag=$ImageTag `
         --output json | ConvertFrom-Json
 

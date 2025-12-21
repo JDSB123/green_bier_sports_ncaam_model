@@ -37,6 +37,10 @@ param redisPassword string
 @secure()
 param oddsApiKey string
 
+@description('Microsoft Teams incoming webhook URL (optional)')
+@secure()
+param teamsWebhookUrl string = ''
+
 @description('Container image tag')
 param imageTag string = 'v6.3.0'
 
@@ -217,24 +221,32 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
           passwordSecretRef: 'acr-password'
         }
       ]
-      secrets: [
-        {
-          name: 'acr-password'
-          value: acr.listCredentials().passwords[0].value
-        }
-        {
-          name: 'db-password'
-          value: postgresPassword
-        }
-        {
-          name: 'redis-password'
-          value: redis.listKeys().primaryKey
-        }
-        {
-          name: 'odds-api-key'
-          value: oddsApiKey
-        }
-      ]
+      secrets: concat(
+        [
+          {
+            name: 'acr-password'
+            value: acr.listCredentials().passwords[0].value
+          }
+          {
+            name: 'db-password'
+            value: postgresPassword
+          }
+          {
+            name: 'redis-password'
+            value: redis.listKeys().primaryKey
+          }
+          {
+            name: 'odds-api-key'
+            value: oddsApiKey
+          }
+        ],
+        (teamsWebhookUrl != '') ? [
+          {
+            name: 'teams-webhook-url'
+            value: teamsWebhookUrl
+          }
+        ] : []
+      )
     }
     template: {
       containers: [
@@ -277,6 +289,10 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'THE_ODDS_API_KEY'
               secretRef: 'odds-api-key'
+            }
+            if (teamsWebhookUrl != '') {
+              name: 'TEAMS_WEBHOOK_URL'
+              secretRef: 'teams-webhook-url'
             }
             {
               name: 'MODEL__HOME_COURT_ADVANTAGE_SPREAD'

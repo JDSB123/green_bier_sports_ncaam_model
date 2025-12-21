@@ -1,8 +1,10 @@
-# NCAAM v6.3 - Azure Deployment
+# NCAAM v6.3 - Azure Deployment (Manual-Only)
 
 ## Overview
 
 This directory contains everything needed to deploy the NCAAM prediction model to Azure Container Apps.
+
+**Manual-only:** Azure runs the API, but **picks are generated only when you manually run** `run_today.py` (no cron/polling).
 
 ## Architecture
 
@@ -201,6 +203,7 @@ The container receives these environment variables:
 | `DATABASE_URL` | Constructed | PostgreSQL connection string |
 | `REDIS_URL` | Constructed | Redis connection string |
 | `THE_ODDS_API_KEY` | **Environment Variable** | Odds API key (set via `-OddsApiKey` parameter) |
+| `TEAMS_WEBHOOK_URL` | Optional | Microsoft Teams Incoming Webhook URL (only needed for `run_today.py --teams`) |
 | `SPORT` | Config | Sport identifier (ncaam) |
 | `TZ` | Config | Timezone (America/Chicago) |
 
@@ -214,6 +217,31 @@ Secrets are managed through Azure Container Apps secrets:
 - `redis-password` - Redis access key (from Azure)
 - `odds-api-key` - The Odds API key (provided by you)
 - `acr-password` - ACR pull credential (auto-generated)
+- `teams-webhook-url` - (Optional) Teams webhook URL for posting picks
+
+## Manual picks run (optional)
+
+Azure does **not** auto-run daily picks. When you want picks, run them manually inside the container app:
+
+1. Open a shell:
+
+```powershell
+az containerapp exec -n ncaam-prod-prediction -g greenbier-enterprise-rg --command sh
+```
+
+2. Inside the shell, run:
+
+```bash
+python /app/run_today.py --teams
+```
+
+### CSV output note
+
+- **Local Docker**: CSV can be saved directly into your Teams channel "Shared Documents" by setting
+  `PICKS_OUTPUT_HOST_DIR` to your OneDrive-synced channel folder (recommended).
+- **Azure**: `run_today.py --teams` will still write a CSV to `/app/output`, but that filesystem is
+  not your Teams SharePoint drive. Uploading to channel documents from Azure would require a separate
+  Microsoft Graph/SharePoint integration.
 
 ## Scaling
 

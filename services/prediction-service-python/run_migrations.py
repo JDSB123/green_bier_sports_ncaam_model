@@ -22,6 +22,36 @@ MIGRATIONS_DIR = Path("/app/migrations")
 COMPLETE_SCHEMA = MIGRATIONS_DIR / "complete_schema.sql"
 
 
+def _read_secret_file(file_path: str, secret_name: str) -> str:
+    try:
+        return Path(file_path).read_text(encoding="utf-8").strip()
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError(f"Secret file missing at {file_path} ({secret_name}): {e}") from e
+
+
+def _build_database_url_from_env() -> Optional[str]:
+    """
+    Build DATABASE_URL when it's not explicitly set.
+
+    - Docker Compose: DB password is mounted at /run/secrets/db_password and DB_HOST=postgres.
+    - Azure: DATABASE_URL is provided explicitly (no /run/secrets mount).
+    """
+    sport = os.getenv("SPORT", "ncaam")
+    db_user = os.getenv("DB_USER", sport)
+    db_name = os.getenv("DB_NAME", sport)
+    db_host = os.getenv("DB_HOST", "postgres")
+    db_port = os.getenv("DB_PORT", "5432")
+
+    pw_file = os.getenv("DB_PASSWORD_FILE", "/run/secrets/db_password")
+    if not Path(pw_file).exists():
+        return None
+    password = _read_secret_file(pw_file, "db_password")
+    if not password:
+        return None
+
+    return f"postgresql://{db_user}:{password}@{db_host}:{db_port}/{db_name}"
+
+
 def _split_sql(sql: str) -> List[str]:
     """Split SQL into statements, respecting quotes and dollar-strings."""
 
@@ -164,9 +194,11 @@ def _ordered_migration_files() -> List[Path]:
 
 
 def main() -> int:
-    db_url = os.getenv("DATABASE_URL")
+    db_url = os.getenv("DATABASE_URL") or _build_database_url_from_env()
     if not db_url:
-        raise SystemExit("DATABASE_URL is required")
+        raise SystemExit(
+            "DATABASE_URL is required (Azure) or DB_PASSWORD_FILE must exist (Docker)."
+        )
 
     files = _ordered_migration_files()
     if not files:
