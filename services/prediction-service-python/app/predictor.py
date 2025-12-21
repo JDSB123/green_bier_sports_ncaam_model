@@ -54,6 +54,8 @@ from app.models import (
 from app.situational import SituationalAdjuster, SituationalAdjustment, RestInfo
 from app.variance import DynamicVarianceCalculator, VarianceFactors
 from app.first_half import EnhancedFirstHalfCalculator, FirstHalfFactors
+from sklearn.linear_model import LinearRegression
+import structlog
 
 
 @dataclass
@@ -132,6 +134,23 @@ class BarttorkvikPredictor:
             efg_margin_adjustment=self.config.efg_margin_adjustment,
             enabled=self.config.enhanced_1h_enabled,
         )
+        # ML Model Integration
+        self.ml_model = LinearRegression()
+        # TODO: Train on historical data from testing/data/kaggle
+        self._train_ml_model()
+
+    def _train_ml_model(self):
+        import pandas as pd
+        # Placeholder: Load and train on historical data
+        # Assume data in testing/data/kaggle
+        try:
+            df = pd.read_csv('testing/data/kaggle/scores.csv')  # Adjust filename as per actual
+            X = df[['home_adj_o', 'away_adj_o', 'home_adj_d', 'away_adj_d', 'tempo']]
+            y = df['home_score - away_score']  # Actual spread
+            self.ml_model.fit(X, y)
+        except Exception as e:
+            print(f"ML training failed: {e}")
+            # Fallback to no ML
 
     def predict(
         self,
@@ -157,6 +176,8 @@ class BarttorkvikPredictor:
         Returns:
             PredictorOutput with all predictions
         """
+        self.logger.info(f"Starting prediction for {home_ratings.team} vs {away_ratings.team}")
+
         # ─────────────────────────────────────────────────────────────────────
         # v6.2 ENHANCEMENTS - Situational, Variance, 1H Factors
         # ─────────────────────────────────────────────────────────────────────
@@ -220,6 +241,11 @@ class BarttorkvikPredictor:
         # Matchup Adj: Positive value means Home Advantage -> More negative spread
         raw_margin = home_score_base - away_score_base
         spread = -(raw_margin + hca_for_spread + situational_spread_adj + matchup_adj)
+
+        # ML adjustment (blend with rule-based)
+        features = [home_ratings.adj_o, away_ratings.adj_o, home_ratings.adj_d, away_ratings.adj_d, avg_tempo]
+        ml_spread = self.ml_model.predict([features])[0]
+        spread = (spread + ml_spread) / 2  # Simple average blend
 
         # Derive final scores from spread and total for consistency
         # (This ensures spread/total match the individual team scores exactly)

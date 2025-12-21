@@ -561,10 +561,16 @@ func (r *RatingsSync) Sync(ctx context.Context) error {
 
 	teams, err := r.FetchRatings(ctx)
 	if err != nil {
+		r.logger.Error("Fetch ratings failed", zap.Error(err))
+		// Alert placeholder
+		fmt.Println("ALERT: Fetch ratings failed: " + err.Error())
 		return fmt.Errorf("fetching ratings: %w", err)
 	}
 
 	if err := r.StoreRatings(ctx, teams); err != nil {
+		r.logger.Error("Store ratings failed", zap.Error(err))
+		// Alert placeholder
+		fmt.Println("ALERT: Store ratings failed: " + err.Error())
 		return fmt.Errorf("storing ratings: %w", err)
 	}
 
