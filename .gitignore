@@ -106,3 +106,4 @@ nul
 gateway.exe
 *.exe
 !setup.bat
+testing/data/kaggle/

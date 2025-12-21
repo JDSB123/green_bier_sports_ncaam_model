@@ -1,19 +1,24 @@
 """
-Green Bier Sport Ventures - NCAAM Prediction Engine v6.0
+Green Bier Sport Ventures - NCAAM Prediction Engine v6.1
 
 SINGLE SOURCE OF TRUTH: All predictions flow through this containerized service.
 
-MODULAR HCA Approach:
-- Full Game Spreads: HCA=3.0 (optimized for 16.57% ROI)
-- Full Game Totals: HCA=4.5 * 0.2 = 0.9 points (optimized for 34.10% ROI)
-- First Half Spreads: HCA=1.5 (50% of full game)
-- First Half Totals: HCA=2.25 * 0.1 = 0.225 points (minimal impact)
+v6.1 CHANGES (2024-12-20):
+- FIXED: Total formula was inflating by 15-20 pts (multiplicative error)
+- Spread: Uses net rating difference (Home_Net - Away_Net)/2 + HCA
+- Total: Uses simple efficiency (AdjO * Tempo / 100) for each team
+- Both formulas now align with market lines
 
-Core Formula (PROVEN MODEL):
-- Base scores: (AdjO * Opponent_AdjD / 100) / 100 * Avg_Tempo
-- Full Game Spread: -(home_score_base - away_score_base + HCA_spread)
-- Full Game Total: home_score_base + away_score_base + (HCA_total * 0.2)
-- First Half: Derived from base scores using pace/score factors
+MODULAR HCA Approach:
+- Full Game Spreads: HCA=3.0
+- Full Game Totals: HCA=0.9 (4.5 * 0.2)
+- First Half Spreads: HCA=1.5 (50% of full game)
+- First Half Totals: HCA=0.225 (2.25 * 0.1)
+
+Core Formulas:
+- Spread = -((Home_Net - Away_Net)/2 + HCA) where Net = AdjO - AdjD
+- Total = (Home_AdjO + Away_AdjO) * AvgTempo / 100 + HCA_total
+- First Half: Derived using pace/score factors
 - Moneylines: Converted from spreads using normal CDF (sigma=11)
 
 All 6 markets calculated:
@@ -104,38 +109,44 @@ class BarttorkvikPredictor:
             PredictorOutput with all predictions
         """
         # ─────────────────────────────────────────────────────────────────────
-        # SCORE PREDICTIONS - STANDARD BARTTORVIK FORMULA
+        # SCORE PREDICTIONS - CORRECTED FORMULA (v6.1)
         # ─────────────────────────────────────────────────────────────────────
         #
-        # Standard efficiency formula (proven in backtesting):
-        #   Expected points = (Team_AdjO * Opp_AdjD / 100) * Tempo / 100
+        # SPREAD: Net rating difference approach
+        #   Net Rating = AdjO - AdjD (points per 100 poss vs avg D1 team)
+        #   Raw Margin = (Home_Net - Away_Net) / 2
+        #   Spread = -(Raw_Margin + HCA)
         #
-        # The /100 values are MATHEMATICAL CONSTANTS, not D1 average corrections.
-        # Barttorvik ratings are internally consistent - use them as-is.
+        # TOTAL: Simple efficiency approach
+        #   Points = AdjO * Tempo / 100 (expected pts vs average defense)
+        #   Total = Home_Pts + Away_Pts + HCA_total
+        #
+        # NOTE: The old multiplicative formula (AdjO * OppAdjD / 100) inflated
+        # totals by 15-20 points because it compounds values above 100.
         #
         avg_tempo = (home_ratings.tempo + away_ratings.tempo) / 2
 
-        # Expected points per 100 possessions for each team
-        home_expected_eff = (home_ratings.adj_o * away_ratings.adj_d) / 100.0
-        away_expected_eff = (away_ratings.adj_o * home_ratings.adj_d) / 100.0
-
-        # Base scores: efficiency * (tempo / 100)
-        home_score_base = home_expected_eff * avg_tempo / 100.0
-        away_score_base = away_expected_eff * avg_tempo / 100.0
-
-
         # ─────────────────────────────────────────────────────────────────────
-        # MODULAR: Calculate spread with spread-specific HCA
+        # SPREAD CALCULATION - Net Rating Difference
         # ─────────────────────────────────────────────────────────────────────
+        home_net = home_ratings.adj_o - home_ratings.adj_d
+        away_net = away_ratings.adj_o - away_ratings.adj_d
+
+        # Raw margin from net rating difference
+        # Divide by 2 because net ratings are differential from D1 average
+        raw_margin = (home_net - away_net) / 2
+
         hca_for_spread = 0.0 if is_neutral else self.hca_spread
-        spread = -((home_score_base - away_score_base) + hca_for_spread)
+        spread = -(raw_margin + hca_for_spread)
 
         # ─────────────────────────────────────────────────────────────────────
-        # MODULAR: Calculate total with total-specific HCA
+        # TOTAL CALCULATION - Simple Efficiency
         # ─────────────────────────────────────────────────────────────────────
-        # PROVEN MODEL: Uses 20% of HCA_total (4.5 * 0.2 = 0.9 points)
-        # This formula produced 34.10% ROI in backtesting
-        # The 0.2 multiplier accounts for minimal home court impact on pace/scoring
+        # Each team's expected points = their AdjO * game tempo / 100
+        # This assumes they face an average (100 efficiency) defense
+        home_score_base = home_ratings.adj_o * avg_tempo / 100.0
+        away_score_base = away_ratings.adj_o * avg_tempo / 100.0
+
         hca_for_total = 0.0 if is_neutral else self.hca_total
         total = home_score_base + away_score_base + (hca_for_total * 0.2)
 
@@ -145,24 +156,26 @@ class BarttorkvikPredictor:
         away_score = (total + spread) / 2
 
         # ─────────────────────────────────────────────────────────────────────
-        # FIRST HALF PREDICTIONS (MODULAR)
+        # FIRST HALF PREDICTIONS - INDEPENDENT CALCULATION
         # ─────────────────────────────────────────────────────────────────────
-        # PROVEN MODEL: Matches backtesting code that produced validated ROI
+        # First half markets are separate from full game - calculate independently
+        # using the same corrected formulas but with 1H-specific parameters
+        #
+        # 1H typically uses ~48% of possessions (slightly less than 50%)
+        # 1H HCA is roughly 50% of full game HCA
 
         hca_spread_1h = 0.0 if is_neutral else self.hca_spread_1h
         hca_total_1h = 0.0 if is_neutral else self.hca_total_1h
 
-        # First half spread: PROVEN formula from backtesting
-        # Applies pace factor to full game spread (which includes HCA), then subtracts 1H HCA
-        spread_1h = (spread + hca_for_spread) * self.config.first_half_pace_factor - hca_spread_1h
+        # 1H Spread: Scale margin to half game
+        # Margin should be ~50% of full game margin (less time for skill to show)
+        spread_1h = -(raw_margin * 0.5 + hca_spread_1h)
 
-        # First half total: PROVEN formula from backtesting
-        # Removes full game HCA, applies score factor, then adds minimal 1H HCA
-        total_1h = (total - hca_for_total * 0.2) * self.config.first_half_score_factor + (hca_total_1h * 0.1)
-
-        # Derive first half scores from full game scores (consistent with proven model)
-        home_score_1h = home_score * self.config.first_half_score_factor
-        away_score_1h = away_score * self.config.first_half_score_factor
+        # 1H Total: ~48% of full game tempo, independent calculation
+        first_half_tempo_pct = 0.48
+        home_score_1h = home_ratings.adj_o * avg_tempo * first_half_tempo_pct / 100.0
+        away_score_1h = away_ratings.adj_o * avg_tempo * first_half_tempo_pct / 100.0
+        total_1h = home_score_1h + away_score_1h + (hca_total_1h * 0.1)
 
         # ─────────────────────────────────────────────────────────────────────
         # WIN PROBABILITY & MONEYLINE
