@@ -44,14 +44,17 @@ param teamsWebhookUrl string = ''
 @description('Container image tag')
 param imageTag string = 'v6.3.1'
 
+@description('Suffix for resource names (e.g. -gbe for enterprise resources)')
+param resourceNameSuffix string = ''
+
 // ─────────────────────────────────────────────────────────────────────────────────
 // VARIABLES
 // ─────────────────────────────────────────────────────────────────────────────────
 
 var resourcePrefix = '${baseName}-${environment}'
-var acrName = replace('${resourcePrefix}acr', '-', '')
-var postgresServerName = '${resourcePrefix}-postgres'
-var redisName = '${resourcePrefix}-redis'
+var acrName = replace('${resourcePrefix}${replace(resourceNameSuffix, '-', '')}acr', '-', '')
+var postgresServerName = '${resourcePrefix}${resourceNameSuffix}-postgres'
+var redisName = '${resourcePrefix}${resourceNameSuffix}-redis'
 var containerEnvName = '${resourcePrefix}-env'
 var containerAppName = '${resourcePrefix}-prediction'
 var logAnalyticsName = '${resourcePrefix}-logs'
@@ -257,56 +260,62 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
             cpu: json('1.0')
             memory: '2Gi'
           }
-          env: [
-            {
-              name: 'SPORT'
-              value: 'ncaam'
-            }
-            {
-              name: 'DB_USER'
-              value: 'ncaam'
-            }
-            {
-              name: 'DB_NAME'
-              value: 'ncaam'
-            }
-            {
-              name: 'DB_HOST'
-              value: postgres.properties.fullyQualifiedDomainName
-            }
-            {
-              name: 'DB_PORT'
-              value: '5432'
-            }
-            {
-              name: 'DATABASE_URL'
-              value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
-            }
-            {
-              name: 'REDIS_URL'
-              value: 'rediss://:${redis.listKeys().primaryKey}@${redis.properties.hostName}:6380'
-            }
-            {
-              name: 'THE_ODDS_API_KEY'
-              secretRef: 'odds-api-key'
-            }
-            if (teamsWebhookUrl != '') {
-              name: 'TEAMS_WEBHOOK_URL'
-              secretRef: 'teams-webhook-url'
-            }
-            {
-              name: 'MODEL__HOME_COURT_ADVANTAGE_SPREAD'
-              value: '3.2'
-            }
-            {
-              name: 'MODEL__HOME_COURT_ADVANTAGE_TOTAL'
-              value: '0.0'
-            }
-            {
-              name: 'TZ'
-              value: 'America/Chicago'
-            }
-          ]
+          env: concat(
+            [
+              {
+                name: 'SPORT'
+                value: 'ncaam'
+              }
+              {
+                name: 'DB_USER'
+                value: 'ncaam'
+              }
+              {
+                name: 'DB_NAME'
+                value: 'ncaam'
+              }
+              {
+                name: 'DB_HOST'
+                value: postgres.properties.fullyQualifiedDomainName
+              }
+              {
+                name: 'DB_PORT'
+                value: '5432'
+              }
+              {
+                name: 'DATABASE_URL'
+                value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
+              }
+              {
+                name: 'REDIS_URL'
+                value: 'rediss://:${redis.listKeys().primaryKey}@${redis.properties.hostName}:6380'
+              }
+              {
+                name: 'THE_ODDS_API_KEY'
+                secretRef: 'odds-api-key'
+              }
+            ],
+            (teamsWebhookUrl != '') ? [
+              {
+                name: 'TEAMS_WEBHOOK_URL'
+                secretRef: 'teams-webhook-url'
+              }
+            ] : [],
+            [
+              {
+                name: 'MODEL__HOME_COURT_ADVANTAGE_SPREAD'
+                value: '3.2'
+              }
+              {
+                name: 'MODEL__HOME_COURT_ADVANTAGE_TOTAL'
+                value: '0.0'
+              }
+              {
+                name: 'TZ'
+                value: 'America/Chicago'
+              }
+            ]
+          )
           probes: [
             {
               type: 'Liveness'

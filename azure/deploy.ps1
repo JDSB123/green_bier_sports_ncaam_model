@@ -58,14 +58,22 @@ if ($EnterpriseMode) {
     }
     # In enterprise mode, prefix all resource names with 'ncaam-' to organize within RG
     # Resource names stay the same, just organized in enterprise RG
+    
+    # HARDCODED: Enforce the 'gbe' naming convention for existing Enterprise resources
+    # This prevents duplicate resource creation (e.g. ncaamprodacr vs ncaamprodgbeacr)
+    if ($Environment -eq 'prod') {
+        $acrName = 'ncaamprodgbeacr'
+        # Bicep parameters will need to match this convention via overrides or updates
+    } else {
+        $acrName = ($resourcePrefix -replace '-', '') + 'gbeacr'
+    }
 } else {
     # Standard mode: Use dedicated resource group per environment
     if ([string]::IsNullOrEmpty($ResourceGroup)) {
         $ResourceGroup = "$resourcePrefix-rg"
     }
+    $acrName = ($resourcePrefix -replace '-', '') + 'acr'
 }
-
-$acrName = ($resourcePrefix -replace '-', '') + 'acr'
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
@@ -159,6 +167,12 @@ if (-not $SkipInfra) {
     # Deploy Bicep template
     Write-Host "  Deploying Bicep template (this may take 10-15 minutes)..." -ForegroundColor Gray
 
+    # Calculate resource names for 'gbe' convention in Enterprise mode
+    $resourceNameSuffix = ''
+    if ($EnterpriseMode) {
+        $resourceNameSuffix = '-gbe'
+    }
+
     $deploymentOutput = az deployment group create `
         --resource-group $ResourceGroup `
         --template-file "$PSScriptRoot\main.bicep" `
@@ -171,6 +185,7 @@ if (-not $SkipInfra) {
             oddsApiKey=$OddsApiKey `
             teamsWebhookUrl=$TeamsWebhookUrl `
             imageTag=$ImageTag `
+            resourceNameSuffix=$resourceNameSuffix `
         --output json | ConvertFrom-Json
 
     if ($LASTEXITCODE -ne 0) {
