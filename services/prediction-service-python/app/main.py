@@ -21,6 +21,24 @@ class TeamRatingsInput(BaseModel):
     adj_d: float
     tempo: float
     rank: int
+    
+    # Four Factors
+    efg: float
+    efgd: float
+    tor: float
+    tord: float
+    orb: float
+    drb: float
+    ftr: float
+    ftrd: float
+    
+    # Shooting Breakdown
+    two_pt_pct: float
+    two_pt_pct_d: float
+    three_pt_pct: float
+    three_pt_pct_d: float
+    three_pt_rate: float
+    three_pt_rate_d: float
 
     def to_domain(self) -> TeamRatings:
         return TeamRatings(
@@ -29,6 +47,20 @@ class TeamRatingsInput(BaseModel):
             adj_d=self.adj_d,
             tempo=self.tempo,
             rank=self.rank,
+            efg=self.efg,
+            efgd=self.efgd,
+            tor=self.tor,
+            tord=self.tord,
+            orb=self.orb,
+            drb=self.drb,
+            ftr=self.ftr,
+            ftrd=self.ftrd,
+            two_pt_pct=self.two_pt_pct,
+            two_pt_pct_d=self.two_pt_pct_d,
+            three_pt_pct=self.three_pt_pct,
+            three_pt_pct_d=self.three_pt_pct_d,
+            three_pt_rate=self.three_pt_rate,
+            three_pt_rate_d=self.three_pt_rate_d,
         )
 
 

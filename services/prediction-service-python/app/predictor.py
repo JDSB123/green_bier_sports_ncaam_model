@@ -287,10 +287,12 @@ class BarttorkvikPredictor:
         Based on docs/BARTTORVIK_FIELDS.md:
         - Rebounding Edge: ~0.15 pts per % edge
         - Turnover Edge: ~0.10 pts per % edge
+        - Free Throw Edge: ~0.15 pts per % edge (Estimated)
         """
         adjustment = 0.0
         avg_orb = self.config.league_avg_orb
         avg_tor = self.config.league_avg_tor
+        avg_ftr = self.config.league_avg_ftr
 
         # 1. Rebounding Edge (ORB% vs Opponent Allowed ORB%)
         # Home ORB Advantage = (Home ORB - Avg) + (Away Allowed ORB - Avg)
@@ -313,6 +315,15 @@ class BarttorkvikPredictor:
         # If Home commits 15% and Away commits 25%, Home has +10% edge.
         net_tor_edge = exp_away_tor - exp_home_tor
         adjustment += net_tor_edge * 0.10
+
+        # 3. Free Throw Edge (FTR vs Opponent Allowed FTR)
+        # FTR = FTA / FGA. Higher is better for offense.
+        # Expected Home FTR = Avg + (Home FTR - Avg) + (Away FTRD - Avg)
+        exp_home_ftr = avg_ftr + (home.ftr - avg_ftr) + (away.ftrd - avg_ftr)
+        exp_away_ftr = avg_ftr + (away.ftr - avg_ftr) + (home.ftrd - avg_ftr)
+
+        net_ftr_edge = exp_home_ftr - exp_away_ftr
+        adjustment += net_ftr_edge * 0.15
 
         return adjustment
 

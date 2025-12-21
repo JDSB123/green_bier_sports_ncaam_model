@@ -75,6 +75,10 @@ class ModelConfig(BaseSettings):
         default=18.5,
         description="NCAA D1 average Turnover Rate."
     )
+    league_avg_ftr: float = Field(
+        default=33.0,
+        description="NCAA D1 average Free Throw Rate (FTA/FGA)."
+    )
 
     # First half scoring factors
     first_half_score_factor: float = Field(
