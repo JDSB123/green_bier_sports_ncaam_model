@@ -149,6 +149,89 @@ class ModelConfig(BaseSettings):
         description="Maximum bet size in units."
     )
 
+    # ─────────────────────────────────────────────────────────────────────────
+    # SITUATIONAL ADJUSTMENTS (Rest Days, Back-to-Back)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    situational_enabled: bool = Field(
+        default=True,
+        description="Enable rest/B2B situational adjustments."
+    )
+    b2b_penalty: float = Field(
+        default=-2.25,
+        description="Point penalty for back-to-back games."
+    )
+    one_day_rest_penalty: float = Field(
+        default=-1.25,
+        description="Point penalty for 1 day of rest."
+    )
+    rest_differential_factor: float = Field(
+        default=0.5,
+        description="Points per day of rest advantage."
+    )
+    max_rest_differential_adj: float = Field(
+        default=2.0,
+        description="Maximum rest differential adjustment."
+    )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # DYNAMIC VARIANCE (Game-Specific Sigma)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    dynamic_variance_enabled: bool = Field(
+        default=True,
+        description="Enable dynamic variance based on shooting style."
+    )
+    base_sigma: float = Field(
+        default=11.0,
+        description="Base sigma for spread-to-probability conversion."
+    )
+    three_pt_variance_factor: float = Field(
+        default=0.15,
+        description="Variance adjustment per % above/below avg 3PR."
+    )
+    pace_variance_factor: float = Field(
+        default=0.10,
+        description="Variance adjustment per tempo differential point."
+    )
+    min_sigma: float = Field(
+        default=9.0,
+        description="Minimum allowed sigma."
+    )
+    max_sigma: float = Field(
+        default=14.0,
+        description="Maximum allowed sigma."
+    )
+    variance_1h_multiplier: float = Field(
+        default=1.15,
+        description="Multiplier for 1H variance vs full game."
+    )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # ENHANCED FIRST HALF PREDICTIONS
+    # ─────────────────────────────────────────────────────────────────────────
+
+    enhanced_1h_enabled: bool = Field(
+        default=True,
+        description="Enable dynamic 1H factor adjustments."
+    )
+    first_half_base_tempo_factor: float = Field(
+        default=0.48,
+        description="Base tempo factor for 1H predictions."
+    )
+    first_half_base_margin_scale: float = Field(
+        default=0.50,
+        description="Base margin scale for 1H predictions."
+    )
+    efg_tempo_adjustment: float = Field(
+        default=0.005,
+        description="Tempo adjustment per % EFG above average."
+    )
+    efg_margin_adjustment: float = Field(
+        default=0.01,
+        description="Margin adjustment per % EFG differential."
+    )
+
     class Config:
         # Note: env_prefix removed - use parent's env_nested_delimiter instead
         pass
