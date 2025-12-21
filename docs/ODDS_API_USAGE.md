@@ -543,10 +543,19 @@ Set these to tailor coverage without code changes:
 - `RUN_ONCE`: `true` for one-shot sync (skip per-event half markets), `false` for continuous
 - `POLL_INTERVAL_SECONDS`: continuous polling interval (default: `30`)
 
-Secrets are read from Docker secrets by default:
-- `/run/secrets/odds_api_key` → The Odds API key
-- `/run/secrets/db_password` → database password
-- `/run/secrets/redis_password` → redis password
+Secrets are read from Docker secrets or environment variables:
+
+**Docker Compose (default):**
+- `/run/secrets/odds_api_key` → The Odds API key (from `secrets/odds_api_key.txt`)
+- `/run/secrets/db_password` → database password (from `secrets/db_password.txt`)
+- `/run/secrets/redis_password` → redis password (from `secrets/redis_password.txt`)
+
+**Azure Container Apps:**
+- Environment variable `THE_ODDS_API_KEY` → The Odds API key
+- Environment variable `DATABASE_URL` → PostgreSQL connection string
+- Environment variable `REDIS_URL` → Redis connection string
+
+Get your The Odds API key from: https://the-odds-api.com/
 
 ## Repeatable Run Paths
 

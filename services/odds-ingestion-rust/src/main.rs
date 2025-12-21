@@ -133,7 +133,7 @@ impl Config {
             || key_lower.contains("your_")
             || key_lower.starts_with("sample") {
             return Err(anyhow!(
-                "THE_ODDS_API_KEY appears to be a placeholder value; replace with your real key"
+                "THE_ODDS_API_KEY appears to be a placeholder value. Get your API key from https://the-odds-api.com/ and set it in: Docker Compose: secrets/odds_api_key.txt → /run/secrets/odds_api_key, or Azure: environment variable THE_ODDS_API_KEY"
             ));
         }
 

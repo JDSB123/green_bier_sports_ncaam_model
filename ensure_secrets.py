@@ -12,7 +12,12 @@ Creates:
     secrets/db_password.txt     - PostgreSQL password (32 hex chars)
     secrets/redis_password.txt  - Redis password (32 hex chars)
 
-NOTE: You must manually create secrets/odds_api_key.txt with your The Odds API key.
+NOTE: The Odds API key must be provided. Get it from https://the-odds-api.com/
+      The script will prompt for it if secrets/odds_api_key.txt doesn't exist.
+      
+      Key storage locations:
+      - Docker Compose: secrets/odds_api_key.txt → /run/secrets/odds_api_key
+      - Azure: Environment variable THE_ODDS_API_KEY
 """
 
 import os

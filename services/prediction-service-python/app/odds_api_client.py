@@ -76,7 +76,9 @@ class OddsApiClient:
         ):
             raise OddsApiError(
                 "THE_ODDS_API_KEY appears to be a placeholder value. "
-                "Please update secrets/odds_api_key.txt with your real key and RESTART the container."
+                "Get your API key from https://the-odds-api.com/ and set it in: "
+                "Docker Compose: secrets/odds_api_key.txt → /run/secrets/odds_api_key, "
+                "or Azure: environment variable THE_ODDS_API_KEY"
             )
 
     def _request(

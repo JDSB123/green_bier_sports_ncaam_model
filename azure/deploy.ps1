@@ -2,8 +2,8 @@
 # NCAAM v6.2 - Azure Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════════
 # Usage:
-#   .\deploy.ps1 -Environment prod -OddsApiKey "your-api-key"
-#   .\deploy.ps1 -Environment dev -OddsApiKey "your-api-key" -SkipInfra
+#   .\deploy.ps1 -Environment prod -OddsApiKey "<your-actual-odds-api-key>"
+#   .\deploy.ps1 -Environment dev -OddsApiKey "<your-actual-odds-api-key>" -SkipInfra
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(

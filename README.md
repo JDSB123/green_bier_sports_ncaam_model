@@ -23,11 +23,25 @@ That's it. One command. Everything runs inside the container.
    ```
    This creates `db_password.txt` and `redis_password.txt` with secure random values.
    
-2. **Manually create** `secrets/odds_api_key.txt` with your API key:
+2. **Create** `secrets/odds_api_key.txt` with your The Odds API key:
+   
+   The API key is read from:
+   - **Docker Compose:** `secrets/odds_api_key.txt` → mounted at `/run/secrets/odds_api_key`
+   - **Azure Container Apps:** Environment variable `THE_ODDS_API_KEY`
+   
+   Get your API key from: https://the-odds-api.com/
+   
+   Then create the file:
+   ```powershell
+   # Windows PowerShell
+   "your-actual-key-from-odds-api-dot-com" | Out-File -FilePath secrets/odds_api_key.txt -NoNewline -Encoding utf8
    ```
-   YOUR_API_KEY_HERE
+   
+   Or use the helper script:
+   ```powershell
+   python ensure_secrets.py
    ```
-   (Replace with your actual API key from The Odds API)
+   (It will prompt for the API key if not found)
 
 3. Build the container: `docker compose build`
 4. Run: `.\predict.bat`

@@ -57,7 +57,7 @@ az account set --subscription "Your Subscription Name"
 
 ```powershell
 cd azure
-.\deploy.ps1 -Environment prod -OddsApiKey "your-api-key-here"
+.\deploy.ps1 -Environment prod -OddsApiKey "<your-actual-odds-api-key>"
 ```
 
 This will:
@@ -132,7 +132,7 @@ az deployment group create `
         environment=prod `
         postgresPassword="$(openssl rand -base64 24)" `
         redisPassword="$(openssl rand -base64 24)" `
-        oddsApiKey="your-api-key"
+        oddsApiKey="<your-actual-odds-api-key>"
 ```
 
 ### 3. Build and Push Image

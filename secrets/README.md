@@ -21,8 +21,9 @@ openssl rand -hex 32 | tr -d '\n' > jwt_secret.txt
 # Master API key (generate with: openssl rand -hex 32)
 openssl rand -hex 32 | tr -d '\n' > master_api_key.txt
 
-# The Odds API key
-echo -n "your_odds_api_key" > odds_api_key.txt
+# The Odds API key (get from https://the-odds-api.com/)
+# This must be your actual API key - placeholder values will be rejected
+echo -n "<your-actual-api-key>" > odds_api_key.txt
 ```
 
 ### 2. Secure File Permissions

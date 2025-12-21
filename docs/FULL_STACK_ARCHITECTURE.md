@@ -256,7 +256,9 @@ Output: "Wisconsin" (canonical name with ratings)
 python ensure_secrets.py
 
 # 2. Manually create odds_api_key.txt
-echo "YOUR_API_KEY_HERE" > secrets/odds_api_key.txt
+# Get your API key from https://the-odds-api.com/
+# Then create the file (replace with your actual key):
+echo -n "<your-actual-api-key>" > secrets/odds_api_key.txt
 
 # 3. Build containers
 docker compose build
