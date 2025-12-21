@@ -100,7 +100,7 @@ class BetResult:
 
 @dataclass
 class BacktestConfig:
-    """Configuration for backtest run."""
+    """Configuration for backtest run (synced with predictor.py v6.1)."""
     market: MarketType
     seasons: List[int]
     min_edge: float = 1.5  # Minimum edge to place bet
@@ -109,8 +109,9 @@ class BacktestConfig:
     max_kelly: float = 0.10  # Max Kelly fraction
     sigma_spread: float = 11.0  # Std dev for game margins
     sigma_total: float = 8.0  # Std dev for totals
-    hca_spread: float = 3.0  # Home court advantage for spreads
-    hca_total: float = 4.5  # HCA for totals
+    # HCA values - EXPLICIT (match config.py v6.1)
+    hca_spread: float = 3.0  # Points added to spread
+    hca_total: float = 0.9  # Points added to total (was 4.5*0.2)
     neutral_pct: float = 0.05  # % of games at neutral site
     seed: int = 42  # Random seed for reproducibility
 
@@ -136,7 +137,13 @@ class BacktestSummary:
 
 
 class NCAAMPredictor:
-    """Replicates prediction logic from predictor.py."""
+    """
+    Replicates prediction logic from predictor.py v6.1.
+
+    v6.1 Formula (CORRECTED):
+    - Spread: Net rating difference approach (NOT multiplicative)
+    - Total: Simple efficiency (AdjO * Tempo / 100)
+    """
 
     def __init__(self, config: BacktestConfig):
         self.config = config
@@ -147,32 +154,47 @@ class NCAAMPredictor:
         away: TeamRating,
         is_neutral: bool = False
     ) -> Dict[str, float]:
-        """Generate predictions for all 6 markets."""
-        # Tempo and efficiency calculations
+        """Generate predictions for all 6 markets using v6.1 formulas."""
         avg_tempo = (home.adj_t + away.adj_t) / 2.0
 
-        # Cross-efficiency: home offense vs away defense and vice versa
-        home_eff = (home.adj_o * away.adj_d) / 100.0
-        away_eff = (away.adj_o * home.adj_d) / 100.0
+        # ─────────────────────────────────────────────────────────────────
+        # SPREAD: Net rating difference (v6.1 formula)
+        # ─────────────────────────────────────────────────────────────────
+        home_net = home.adj_o - home.adj_d
+        away_net = away.adj_o - away.adj_d
+        raw_margin = (home_net - away_net) / 2.0
 
-        # Expected points per 100 possessions scaled to game
-        home_score_base = home_eff * avg_tempo / 100.0
-        away_score_base = away_eff * avg_tempo / 100.0
-
-        # Home court advantage
         hca_spread = 0.0 if is_neutral else self.config.hca_spread
+        fg_spread = -(raw_margin + hca_spread)
+
+        # ─────────────────────────────────────────────────────────────────
+        # TOTAL: Simple efficiency (v6.1 formula)
+        # ─────────────────────────────────────────────────────────────────
+        home_score_base = home.adj_o * avg_tempo / 100.0
+        away_score_base = away.adj_o * avg_tempo / 100.0
+
+        # HCA for total is now explicit (0.9 pts, not 4.5 * 0.2)
         hca_total = 0.0 if is_neutral else self.config.hca_total
+        fg_total = home_score_base + away_score_base + hca_total
 
-        # Full game predictions
-        fg_spread = -((home_score_base - away_score_base) + hca_spread)
-        fg_total = home_score_base + away_score_base + (hca_total * 0.2)
+        # ─────────────────────────────────────────────────────────────────
+        # FIRST HALF: Independent calculation (v6.1 formula)
+        # ─────────────────────────────────────────────────────────────────
+        hca_spread_1h = 0.0 if is_neutral else (self.config.hca_spread * 0.5)
+        hca_total_1h = 0.0 if is_neutral else (self.config.hca_total * 0.25)
 
-        # First half predictions (approximately 50% of game)
-        first_half_factor = 0.50
-        h1_spread = (fg_spread + hca_spread) * first_half_factor - (hca_spread * 0.5)
-        h1_total = (fg_total - hca_total * 0.2) * first_half_factor + (hca_total * 0.5 * 0.1)
+        # 1H Spread: 50% of raw margin + 1H HCA
+        h1_spread = -(raw_margin * 0.5 + hca_spread_1h)
 
-        # Moneyline from spread (probit model)
+        # 1H Total: 48% tempo factor
+        first_half_tempo_pct = 0.48
+        home_score_1h = home.adj_o * avg_tempo * first_half_tempo_pct / 100.0
+        away_score_1h = away.adj_o * avg_tempo * first_half_tempo_pct / 100.0
+        h1_total = home_score_1h + away_score_1h + hca_total_1h
+
+        # ─────────────────────────────────────────────────────────────────
+        # MONEYLINE: Normal CDF from spread
+        # ─────────────────────────────────────────────────────────────────
         sigma = self.config.sigma_spread
         z_fg = -fg_spread / sigma
         home_win_prob_fg = 0.5 * (1 + math.erf(z_fg / math.sqrt(2)))
@@ -182,6 +204,10 @@ class NCAAMPredictor:
         home_win_prob_1h = 0.5 * (1 + math.erf(z_1h / math.sqrt(2)))
         home_win_prob_1h = max(0.01, min(0.99, home_win_prob_1h))
 
+        # Derive final scores
+        home_score = (fg_total - fg_spread) / 2
+        away_score = (fg_total + fg_spread) / 2
+
         return {
             "fg_spread": fg_spread,
             "fg_total": fg_total,
@@ -189,8 +215,8 @@ class NCAAMPredictor:
             "1h_spread": h1_spread,
             "1h_total": h1_total,
             "1h_ml_prob": home_win_prob_1h,
-            "home_score": home_score_base + (hca_spread / 2 if not is_neutral else 0),
-            "away_score": away_score_base - (hca_spread / 2 if not is_neutral else 0),
+            "home_score": home_score,
+            "away_score": away_score,
         }
 
 

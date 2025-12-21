@@ -1,5 +1,10 @@
 """
-Configuration for NCAA Basketball Prediction Service v6.0
+Configuration for NCAA Basketball Prediction Service v6.1
+
+v6.1 Changes:
+- HCA values are now EXPLICIT (what you see is what gets applied)
+- Removed hidden multipliers from predictor.py
+- Synced with corrected total/spread formulas
 
 Key differences from v4.0:
 - Simplified formulas (no interaction terms)
@@ -16,45 +21,39 @@ class ModelConfig(BaseSettings):
     """Model configuration - MODULAR approach (spreads vs totals optimized separately)."""
 
     # ─────────────────────────────────────────────────────────────────────────
-    # MODULAR HCA - SINGLE SOURCE OF TRUTH
+    # MODULAR HCA - SINGLE SOURCE OF TRUTH (v6.1 - EXPLICIT VALUES)
     # ─────────────────────────────────────────────────────────────────────────
-    # 
+    #
+    # These values are applied DIRECTLY to predictions (no hidden multipliers).
+    # What you see here is exactly what gets added to spreads/totals.
+    #
     # Backtest Results (2024-12-17):
     #   - Spreads with HCA=3.0: 16.57% ROI
-    #   - Totals with HCA=4.5: 34.10% ROI
+    #   - Totals with HCA=0.9: 34.10% ROI (was "4.5 * 0.2" internally)
     #   - Combined: 25.64% ROI
     #
-    # These are loaded via MODEL__<NAME> environment variables
+    # Environment override: MODEL__HOME_COURT_ADVANTAGE_SPREAD=3.5
     # ─────────────────────────────────────────────────────────────────────────
 
-    # SPREAD-specific HCA (lower is better for spreads)
+    # SPREAD HCA - Points added to home team advantage
     home_court_advantage_spread: float = Field(
         default=3.0,
-        description="HCA for spread predictions. Optimized: 3.0 = 16.57% ROI."
+        description="Points added for home court in spread calc. Applied directly."
     )
     home_court_advantage_spread_1h: float = Field(
         default=1.5,
-        description="First half HCA for spreads (50% of full game)."
+        description="1H spread HCA (50% of full game). Applied directly."
     )
 
-    # TOTAL-specific HCA (higher is better for totals)
+    # TOTAL HCA - Points added to total score prediction
+    # NOTE: These are the ACTUAL values applied (previously had hidden 0.2/0.1 multipliers)
     home_court_advantage_total: float = Field(
-        default=4.5,
-        description="HCA for total predictions. Optimized: 4.5 = 34.10% ROI."
+        default=0.9,
+        description="Points added to total prediction. Applied directly. (Was 4.5*0.2)"
     )
     home_court_advantage_total_1h: float = Field(
-        default=2.25,
-        description="First half HCA base value for totals. NOTE: Multiplied by 0.1 in formula for ~0.2 pts actual impact."
-    )
-
-    # Legacy single HCA (deprecated, use spread/total specific)
-    home_court_advantage: float = Field(
-        default=3.0,
-        description="DEPRECATED: Use home_court_advantage_spread/total instead."
-    )
-    home_court_advantage_1h: float = Field(
-        default=1.5,
-        description="DEPRECATED: Use spread/total specific values."
+        default=0.225,
+        description="1H total HCA. Applied directly. (Was 2.25*0.1)"
     )
 
     # League averages (reference values only - not used in prediction formula)
@@ -160,7 +159,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "6.0.0"
+    service_version: str = "6.1.0"
     debug: bool = False
 
     # Feature Store
