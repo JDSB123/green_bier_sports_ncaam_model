@@ -190,35 +190,33 @@ class BarttorkvikPredictor:
         )
 
         # ─────────────────────────────────────────────────────────────────────
-        # SCORE PREDICTIONS - CORRECTED FORMULA (v6.1) + SITUATIONAL (v6.2)
+        # SCORE PREDICTIONS - CORRECTED FORMULA (v6.3)
         # ─────────────────────────────────────────────────────────────────────
-        avg_tempo = (home_ratings.tempo + away_ratings.tempo) / 2
+        # 1. Expected Tempo (Home + Away - Avg)
+        avg_tempo = home_ratings.tempo + away_ratings.tempo - self.config.league_avg_tempo
 
-        # ─────────────────────────────────────────────────────────────────────
-        # SPREAD CALCULATION - Net Rating Difference + Situational
-        # ─────────────────────────────────────────────────────────────────────
-        home_net = home_ratings.adj_o - home_ratings.adj_d
-        away_net = away_ratings.adj_o - away_ratings.adj_d
+        # 2. Expected Efficiency (Off + Def - Avg)
+        home_eff = home_ratings.adj_o + away_ratings.adj_d - self.config.league_avg_efficiency
+        away_eff = away_ratings.adj_o + home_ratings.adj_d - self.config.league_avg_efficiency
 
-        # Raw margin from net rating difference
-        raw_margin = (home_net - away_net) / 2
+        # 3. Base Scores (Efficiency * Tempo / 100)
+        home_score_base = home_eff * avg_tempo / 100.0
+        away_score_base = away_eff * avg_tempo / 100.0
 
+        # 4. Apply HCA & Situational
         hca_for_spread = 0.0 if is_neutral else self.hca_spread
-        # Apply situational adjustment (positive = helps home)
-        spread = -(raw_margin + hca_for_spread + situational_spread_adj)
+        hca_for_total = 0.0 if is_neutral else self.hca_total
 
-        # ─────────────────────────────────────────────────────────────────────
-        # TOTAL CALCULATION - Simple Efficiency + Situational
-        # ─────────────────────────────────────────────────────────────────────
-        home_score_base = home_ratings.adj_o * avg_tempo / 100.0
-        away_score_base = away_ratings.adj_o * avg_tempo / 100.0
-
-        # Legacy multiplier: 4.5 input -> 0.9 effective
-        hca_for_total = 0.0 if is_neutral else (self.hca_total * 0.2)
-        # Apply situational adjustment (tired teams = lower total)
+        # Total = Sum of scores + HCA + Situational
         total = home_score_base + away_score_base + hca_for_total + situational_total_adj
 
-        # Derive final scores from spread and total
+        # Spread = -(Home - Away + HCA + Situational)
+        # Note: Spread is negative when Home is favored
+        raw_margin = home_score_base - away_score_base
+        spread = -(raw_margin + hca_for_spread + situational_spread_adj)
+
+        # Derive final scores from spread and total for consistency
+        # (This ensures spread/total match the individual team scores exactly)
         home_score = (total - spread) / 2
         away_score = (total + spread) / 2
 
@@ -230,12 +228,13 @@ class BarttorkvikPredictor:
         hca_spread_1h = 0.0 if is_neutral else self.hca_spread_1h
         hca_total_1h = 0.0 if is_neutral else self.hca_total_1h
 
-        # 1H Spread: Use dynamic margin scale
+        # 1H Spread: Use dynamic margin scale on the NEW raw margin
         spread_1h = -(raw_margin * h1_factors.margin_scale + hca_spread_1h)
 
-        # 1H Total: Use dynamic tempo factor
-        home_score_1h = home_ratings.adj_o * avg_tempo * h1_factors.tempo_factor / 100.0
-        away_score_1h = away_ratings.adj_o * avg_tempo * h1_factors.tempo_factor / 100.0
+        # 1H Total: Use dynamic tempo factor on the NEW avg tempo
+        # Note: We use the base efficiency scores scaled by tempo factor
+        home_score_1h = home_score_base * h1_factors.tempo_factor
+        away_score_1h = away_score_base * h1_factors.tempo_factor
         total_1h = home_score_1h + away_score_1h + hca_total_1h
 
         # ─────────────────────────────────────────────────────────────────────

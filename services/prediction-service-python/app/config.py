@@ -36,36 +36,36 @@ class ModelConfig(BaseSettings):
     # ─────────────────────────────────────────────────────────────────────────
 
     # SPREAD HCA - Points added to home team advantage
+    # Standard Barttorvik/KenPom value is ~3.2 points
     home_court_advantage_spread: float = Field(
-        default=3.0,
+        default=3.2,
         description="Points added for home court in spread calc. Applied directly."
     )
     home_court_advantage_spread_1h: float = Field(
-        default=1.5,
+        default=1.6,
         description="1H spread HCA (50% of full game). Applied directly."
     )
 
     # TOTAL HCA - Points added to total score prediction
-    # NOTE: This value is multiplied by 0.2 internally (Legacy compatibility)
-    # Default 4.5 * 0.2 = 0.9 points effective HCA
+    # Standard efficiency models assume HCA is zero-sum for totals (Home scores more, Away scores less)
     home_court_advantage_total: float = Field(
-        default=4.5,
-        description="Base HCA for totals. Multiplied by 0.2 internally."
+        default=0.0,
+        description="Points added to total prediction. Standard is 0.0."
     )
     home_court_advantage_total_1h: float = Field(
-        default=0.225,
-        description="1H total HCA. Applied directly. (Was 2.25*0.1)"
+        default=0.0,
+        description="1H total HCA. Standard is 0.0."
     )
 
-    # League averages (reference values only - not used in prediction formula)
-    # The prediction formula uses 100 as a mathematical constant, NOT as D1 average
+    # League averages (REQUIRED for correct Tempo/Efficiency formulas)
+    # Formula: Expected = TeamA + TeamB - LeagueAvg
     league_avg_tempo: float = Field(
-        default=68.0,
-        description="NCAA D1 average possessions per 40 minutes (reference only)."
+        default=68.5,
+        description="NCAA D1 average possessions per 40 minutes."
     )
     league_avg_efficiency: float = Field(
-        default=100.0,
-        description="Reference value only. Prediction formula uses 100 as constant."
+        default=106.0,
+        description="NCAA D1 average efficiency (points per 100 possessions)."
     )
 
     # First half scoring factors
