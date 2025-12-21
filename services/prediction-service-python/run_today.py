@@ -10,6 +10,8 @@ Usage:
     python run_today.py --no-sync          # Skip data sync
     python run_today.py --game "Duke" "UNC"  # Specific game
     python run_today.py --date 2025-12-20    # Specific date
+    python run_today.py --teams            # Send picks to Teams
+    python run_today.py --teams-only       # Only send to Teams (no console)
 """
 
 import sys
@@ -22,6 +24,8 @@ from zoneinfo import ZoneInfo
 from typing import Optional, List, Dict
 
 from sqlalchemy import create_engine, text
+import requests
+import json
 
 # Use existing Go/Rust binaries (reuse all hard work!)
 # No need to recreate - just call the proven binaries
@@ -86,9 +90,15 @@ if not REDIS_URL:
 
 # Model parameters (from config, but display here for clarity)
 HCA_SPREAD = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_SPREAD', 3.2))
-HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 0.0))
+HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 0.9))
 MIN_SPREAD_EDGE = float(os.getenv('MODEL__MIN_SPREAD_EDGE', 2.5))
 MIN_TOTAL_EDGE = float(os.getenv('MODEL__MIN_TOTAL_EDGE', 3.0))
+
+# Teams Webhook URL for picks notifications
+TEAMS_WEBHOOK_URL = os.getenv(
+    'TEAMS_WEBHOOK_URL',
+    'https://greenbiercapital.webhook.office.com/webhookb2/6d55cb22-b8b0-43a4-8ec1-f5df8a966856@18ee0910-417d-4a81-a3f5-7945bdbd5a78/IncomingWebhook/e30b3a8ed7f24aecaf03bcad8e98717b/c30a04d7-4015-49cf-9fb9-f4735f413e33/V2jPjbvcHCfsN2nnwuPo8l39OnxHPPO7QHgNURWhGeInE1'
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -864,6 +874,128 @@ def format_team_display(team: str, record: Optional[str] = None, rank: Optional[
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# TEAMS WEBHOOK NOTIFICATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_WEBHOOK_URL) -> bool:
+    """
+    Send picks to Microsoft Teams via webhook.
+    
+    Args:
+        all_picks: List of pick dictionaries
+        target_date: Date of the picks
+        webhook_url: Teams webhook URL
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    if not all_picks:
+        print("  ⚠️  No picks to send to Teams")
+        return False
+    
+    if not webhook_url:
+        print("  ⚠️  No Teams webhook URL configured")
+        return False
+    
+    # Sort picks by edge descending
+    sorted_picks = sorted(all_picks, key=lambda p: p['edge'], reverse=True)
+    
+    # Build the Teams message using Adaptive Card format
+    now_cst = datetime.now(CST)
+    
+    # Create facts for each pick
+    pick_facts = []
+    for i, pick in enumerate(sorted_picks[:15], 1):  # Limit to top 15 picks
+        matchup = f"{pick['away'][:12]} @ {pick['home'][:12]}"
+        edge_str = f"{pick['edge']:.1f} pts" if pick['market'] != "ML" else f"{pick['edge']:.1f}%"
+        
+        pick_facts.append({
+            "title": f"#{i} {pick['fire_rating']}",
+            "value": f"**{pick['period']} {pick['market']}** | {matchup} | {pick['pick_display']} | Edge: {edge_str}"
+        })
+    
+    # Build Adaptive Card payload
+    card_payload = {
+        "type": "message",
+        "attachments": [
+            {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "contentUrl": None,
+                "content": {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "type": "AdaptiveCard",
+                    "version": "1.4",
+                    "body": [
+                        {
+                            "type": "TextBlock",
+                            "size": "Large",
+                            "weight": "Bolder",
+                            "text": f"🏀 NCAAM PICKS - {target_date}",
+                            "wrap": True,
+                            "style": "heading"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": f"Generated: {now_cst.strftime('%I:%M %p CST')} | {len(sorted_picks)} picks found",
+                            "wrap": True,
+                            "isSubtle": True
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": f"Model: v6.3 Barttorvik | HCA: {HCA_SPREAD} spread, {HCA_TOTAL} total",
+                            "wrap": True,
+                            "isSubtle": True,
+                            "size": "Small"
+                        },
+                        {
+                            "type": "FactSet",
+                            "facts": pick_facts
+                        }
+                    ],
+                    "actions": []
+                }
+            }
+        ]
+    }
+    
+    # Add summary section
+    max_picks = [p for p in sorted_picks if p.get('bet_tier') == 'MAX' or p['edge'] >= 5.0]
+    if max_picks:
+        summary_text = f"🔥 MAX PLAYS ({len(max_picks)}): " + ", ".join(
+            [f"{p['away'][:8]}@{p['home'][:8]} {p['market']}" for p in max_picks[:5]]
+        )
+        card_payload["attachments"][0]["content"]["body"].insert(2, {
+            "type": "TextBlock",
+            "text": summary_text,
+            "wrap": True,
+            "weight": "Bolder",
+            "color": "Attention"
+        })
+    
+    try:
+        response = requests.post(
+            webhook_url,
+            json=card_payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
+        
+        if response.status_code == 200 or response.status_code == 202:
+            print(f"  ✓ Picks sent to Teams successfully ({len(sorted_picks)} picks)")
+            return True
+        else:
+            print(f"  ⚠️  Teams webhook returned status {response.status_code}: {response.text[:200]}")
+            return False
+            
+    except requests.exceptions.Timeout:
+        print("  ⚠️  Teams webhook timed out")
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"  ⚠️  Teams webhook error: {e}")
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -892,6 +1024,16 @@ def main():
         "--debug-skips",
         action="store_true",
         help="Print skipped games and why (missing ratings vs missing odds)"
+    )
+    parser.add_argument(
+        "--teams",
+        action="store_true",
+        help="Send picks to Microsoft Teams webhook"
+    )
+    parser.add_argument(
+        "--teams-only",
+        action="store_true",
+        help="Only send to Teams (skip console output)"
     )
     
     args = parser.parse_args()
@@ -1152,8 +1294,15 @@ def main():
         for away, home, reason, has_home_r, has_away_r, spread, total in skipped_reasons[:30]:
             print(f"  - SKIP ({reason}): {away} @ {home} | ratings(home={has_home_r}, away={has_away_r}) | spread={spread} total={total}")
     
-    # Print executive summary table
-    print_executive_table(all_picks, target_date)
+    # Print executive summary table (unless --teams-only)
+    if not args.teams_only:
+        print_executive_table(all_picks, target_date)
+    
+    # Send to Teams if requested
+    if args.teams or args.teams_only:
+        print()
+        print("📤 Sending picks to Microsoft Teams...")
+        send_picks_to_teams(all_picks, target_date)
 
 
 if __name__ == "__main__":
