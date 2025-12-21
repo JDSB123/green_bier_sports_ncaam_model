@@ -13,7 +13,7 @@ param(
     [ValidateSet('dev', 'staging', 'prod')]
     [string]$Environment = 'prod',
 
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$false)]
     [string]$OddsApiKey,
 
     [Parameter(Mandatory=$false)]
@@ -87,6 +87,46 @@ Write-Host "  Enterprise Mode: $EnterpriseMode" -ForegroundColor Yellow
 Write-Host "  ACR Name:       $acrName" -ForegroundColor Yellow
 Write-Host "  Image Tag:      $ImageTag" -ForegroundColor Yellow
 Write-Host ""
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# AUTO-FETCH SECRETS (IF MISSING)
+# ─────────────────────────────────────────────────────────────────────────────────
+
+if ([string]::IsNullOrEmpty($OddsApiKey)) {
+    Write-Host "[0/6] Odds API Key not provided. Attempting to fetch from existing container app..." -ForegroundColor Cyan
+    
+    # Try to find the existing container app name
+    $existingAppName = "$resourcePrefix-prediction"
+    
+    try {
+        # Check if app exists
+        $appExists = az containerapp show --name $existingAppName --resource-group $ResourceGroup --query "id" -o tsv 2>$null
+        
+        if ($appExists) {
+            Write-Host "  Found existing app: $existingAppName" -ForegroundColor Gray
+            $fetchedKey = az containerapp secret list --name $existingAppName --resource-group $ResourceGroup --show-values --query "[?name=='odds-api-key'].value" -o tsv 2>$null
+            
+            if ($fetchedKey) {
+                $OddsApiKey = $fetchedKey
+                Write-Host "  ✓ Successfully retrieved Odds API Key from Azure!" -ForegroundColor Green
+            } else {
+                Write-Warning "  ! Could not retrieve key (secret 'odds-api-key' not found)."
+            }
+        } else {
+            Write-Warning "  ! App '$existingAppName' not found in RG '$ResourceGroup'. Cannot fetch key."
+        }
+    } catch {
+        Write-Warning "  ! Error fetching existing key: $_"
+    }
+    
+    # If still empty, check if we can proceed (e.g. maybe SkipInfra doesn't need it?)
+    # But Bicep usually needs it. If we can't find it, we must fail.
+    if ([string]::IsNullOrEmpty($OddsApiKey)) {
+        if (-not $SkipInfra) {
+            Write-Error "OddsApiKey is required for infrastructure deployment and could not be found automatically. Please provide it via -OddsApiKey."
+        }
+    }
+}
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # PREREQUISITES CHECK
