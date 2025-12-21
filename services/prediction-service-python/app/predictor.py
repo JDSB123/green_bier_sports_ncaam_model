@@ -79,6 +79,7 @@ class PredictorOutput:
     variance_1h: float = 12.65  # 1H variance
     situational_adj: Optional[SituationalAdjustment] = None
     first_half_factors: Optional[FirstHalfFactors] = None
+    matchup_adj: float = 0.0  # v6.3 Matchup adjustment (ORB/TOR)
 
 
 class BarttorkvikPredictor:
@@ -189,6 +190,9 @@ class BarttorkvikPredictor:
             away_tempo=away_ratings.tempo,
         )
 
+        # 4. Calculate Matchup Adjustments (Rebounding, Turnovers)
+        matchup_adj = self._calculate_matchup_adjustments(home_ratings, away_ratings)
+
         # ─────────────────────────────────────────────────────────────────────
         # SCORE PREDICTIONS - CORRECTED FORMULA (v6.3)
         # ─────────────────────────────────────────────────────────────────────
@@ -203,17 +207,19 @@ class BarttorkvikPredictor:
         home_score_base = home_eff * avg_tempo / 100.0
         away_score_base = away_eff * avg_tempo / 100.0
 
-        # 4. Apply HCA & Situational
+        # 4. Apply HCA & Situational & Matchup
         hca_for_spread = 0.0 if is_neutral else self.hca_spread
         hca_for_total = 0.0 if is_neutral else self.hca_total
 
         # Total = Sum of scores + HCA + Situational
+        # Note: Matchup adjustments (ORB/TOR) primarily affect efficiency/margin, not necessarily total pace/score directly in this model
         total = home_score_base + away_score_base + hca_for_total + situational_total_adj
 
-        # Spread = -(Home - Away + HCA + Situational)
+        # Spread = -(Home - Away + HCA + Situational + Matchup)
         # Note: Spread is negative when Home is favored
+        # Matchup Adj: Positive value means Home Advantage -> More negative spread
         raw_margin = home_score_base - away_score_base
-        spread = -(raw_margin + hca_for_spread + situational_spread_adj)
+        spread = -(raw_margin + hca_for_spread + situational_spread_adj + matchup_adj)
 
         # Derive final scores from spread and total for consistency
         # (This ensures spread/total match the individual team scores exactly)
@@ -270,7 +276,45 @@ class BarttorkvikPredictor:
             variance_1h=h1_sigma,
             situational_adj=sit_adj,
             first_half_factors=h1_factors,
+            matchup_adj=matchup_adj,
         )
+
+    def _calculate_matchup_adjustments(self, home: TeamRatings, away: TeamRatings) -> float:
+        """
+        Calculate specific matchup advantages based on Four Factors.
+        Returns points to ADD to Home Margin (Positive = Home Advantage).
+        
+        Based on docs/BARTTORVIK_FIELDS.md:
+        - Rebounding Edge: ~0.15 pts per % edge
+        - Turnover Edge: ~0.10 pts per % edge
+        """
+        adjustment = 0.0
+        avg_orb = self.config.league_avg_orb
+        avg_tor = self.config.league_avg_tor
+
+        # 1. Rebounding Edge (ORB% vs Opponent Allowed ORB%)
+        # Home ORB Advantage = (Home ORB - Avg) + (Away Allowed ORB - Avg)
+        # Away Allowed ORB = 100 - Away DRB
+        home_orb_adv = (home.orb - avg_orb) + ((100 - away.drb) - avg_orb)
+        away_orb_adv = (away.orb - avg_orb) + ((100 - home.drb) - avg_orb)
+        
+        net_orb_edge = home_orb_adv - away_orb_adv
+        adjustment += net_orb_edge * 0.15
+
+        # 2. Turnover Edge (TO% vs Opponent Forced TO%)
+        # Home TO Disadvantage = (Home TOR - Avg) - (Away TORD - Avg)
+        # Note: Higher TOR is BAD. Higher TORD is GOOD.
+        # If Home TOR is 25 (+5 bad) and Away TORD is 25 (+5 good), Home is in trouble.
+        # Expected Home TO% = Avg + (Home - Avg) + (Away_Forced - Avg)
+        exp_home_tor = avg_tor + (home.tor - avg_tor) + (away.tord - avg_tor)
+        exp_away_tor = avg_tor + (away.tor - avg_tor) + (home.tord - avg_tor)
+        
+        # Net TO% Edge (Negative diff means Home commits fewer TOs -> Good)
+        # If Home commits 15% and Away commits 25%, Home has +10% edge.
+        net_tor_edge = exp_away_tor - exp_home_tor
+        adjustment += net_tor_edge * 0.10
+
+        return adjustment
 
     def _spread_to_win_prob(self, spread: float, sigma: Optional[float] = None) -> float:
         """

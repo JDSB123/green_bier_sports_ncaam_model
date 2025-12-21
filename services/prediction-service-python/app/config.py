@@ -67,6 +67,14 @@ class ModelConfig(BaseSettings):
         default=106.0,
         description="NCAA D1 average efficiency (points per 100 possessions)."
     )
+    league_avg_orb: float = Field(
+        default=28.0,
+        description="NCAA D1 average Offensive Rebound %."
+    )
+    league_avg_tor: float = Field(
+        default=18.5,
+        description="NCAA D1 average Turnover Rate."
+    )
 
     # First half scoring factors
     first_half_score_factor: float = Field(
