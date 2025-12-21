@@ -106,10 +106,13 @@ def check_odds_api(sport_key: str) -> Tuple[bool, str]:
         except Exception as e:
             return False, f"Odds API key missing: {e}"
 
-    # Basic placeholder guard
+    # Validate key is not a placeholder
     key_lower = api_key.strip().lower()
-    if "change_me" in key_lower or key_lower.startswith("sample") or key_lower.startswith("your_"):
-        return False, "Odds API key appears to be a placeholder"
+    if ("change_me" in key_lower 
+        or key_lower.startswith("sample") 
+        or key_lower.startswith("your_")
+        or key_lower.startswith("<your")):
+        return False, "Odds API key appears to be a placeholder. Get your key from https://the-odds-api.com/"
 
     params = {
         "apiKey": api_key,
