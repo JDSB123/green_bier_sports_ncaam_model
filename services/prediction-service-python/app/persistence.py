@@ -249,16 +249,22 @@ def insert_recommendations(
 
     rows = []
     for r in recommendations:
-        # Cap ev_percent and edge to 999.99 to avoid DECIMAL(5,2) overflow on extreme ML edges
+        # Cap values to avoid DECIMAL overflow:
+        # - ev_percent: DECIMAL(6,3) max 999.999 - cap at 999.99
+        # - edge: DECIMAL(5,2) max 999.99
+        # - line: DECIMAL(5,2) max 999.99 - ML odds like +4000 overflow!
         capped_ev = min(r.ev_percent, 999.99) if r.ev_percent is not None else None
         capped_edge = min(r.edge, 999.99) if r.edge is not None else None
+        capped_line = r.line
+        if capped_line is not None and abs(capped_line) > 999.99:
+            capped_line = 999.99 if capped_line > 0 else -999.99
         rows.append(
             {
                 "prediction_id": prediction_id,
                 "game_id": game_id,
                 "bet_type": r.bet_type.value,
                 "pick": r.pick.value,
-                "line": r.line,
+                "line": capped_line,
                 "edge": capped_edge,
                 "confidence": r.confidence,
                 "ev_percent": capped_ev,
