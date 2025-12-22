@@ -625,6 +625,10 @@ class PredictionEngine:
         # Add moneyline checks if market odds available
         moneyline_checks = self._check_moneyline_value(prediction, market_odds)
 
+        # Initialize sharp line tracking (used across all bet types)
+        sharp_line = None
+        is_sharp_aligned = True
+
         for bet_type, model_line, market_line, edge, confidence, min_edge in bet_checks:
             if market_line is None:
                 continue
