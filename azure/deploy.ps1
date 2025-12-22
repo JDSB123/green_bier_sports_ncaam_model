@@ -20,10 +20,10 @@ param(
     [string]$TeamsWebhookUrl = '',
 
     [Parameter(Mandatory=$false)]
-    [string]$Location = 'eastus',
+    [string]$Location = 'centralus',
 
     [Parameter(Mandatory=$false)]
-    [string]$ResourceGroup = 'greenbier-enterprise-rg',
+    [string]$ResourceGroup = 'ncaam-stable-rg',
 
     [Parameter(Mandatory=$false)]
     [switch]$SkipInfra,
