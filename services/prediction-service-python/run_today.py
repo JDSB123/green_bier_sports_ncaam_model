@@ -365,6 +365,19 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
               (bookmaker = 'bovada') DESC,
               time DESC
         ),
+        -- Sharp book reference (Pinnacle ONLY) for CLV tracking
+        sharp_odds AS (
+            SELECT DISTINCT ON (game_id, market_type)
+                game_id,
+                market_type,
+                home_line as sharp_home_line,
+                total_line as sharp_total_line
+            FROM odds_snapshots
+            WHERE bookmaker = 'pinnacle'
+              AND period = 'full'
+              AND market_type IN ('spreads', 'totals')
+            ORDER BY game_id, market_type, time DESC
+        ),
         -- Latest ratings (filtered by target date to prevent future data leakage)
         -- v6.3: ALL 22 Barttorvik fields are REQUIRED - no fallbacks, no optional data
         -- The Go sync service captures everything - we use everything
@@ -432,6 +445,9 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.under_price END) as under_1h_juice,
             MAX(CASE WHEN lo1h.market_type = 'h2h' THEN lo1h.home_price END) as home_ml_1h,
             MAX(CASE WHEN lo1h.market_type = 'h2h' THEN lo1h.away_price END) as away_ml_1h,
+            -- Sharp book reference (Pinnacle)
+            MAX(CASE WHEN so.market_type = 'spreads' THEN so.sharp_home_line END) as sharp_spread,
+            MAX(CASE WHEN so.market_type = 'totals' THEN so.sharp_total_line END) as sharp_total,
             -- Home team ratings (ALL 22 fields - REQUIRED)
             htr.adj_o as home_adj_o,
             htr.adj_d as home_adj_d,
@@ -484,6 +500,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         JOIN teams at ON g.away_team_id = at.id
         LEFT JOIN latest_odds lo ON g.id = lo.game_id
         LEFT JOIN latest_odds_1h lo1h ON g.id = lo1h.game_id
+        LEFT JOIN sharp_odds so ON g.id = so.game_id
         LEFT JOIN latest_ratings htr ON ht.id = htr.team_id
         LEFT JOIN latest_ratings atr ON at.id = atr.team_id
         WHERE DATE(g.commence_time AT TIME ZONE 'America/Chicago') = :target_date
@@ -632,6 +649,9 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 "under_1h_juice": int(row.under_1h_juice) if row.under_1h_juice else None,
                 "home_ml_1h": int(row.home_ml_1h) if row.home_ml_1h else None,
                 "away_ml_1h": int(row.away_ml_1h) if row.away_ml_1h else None,
+                # Sharp book reference (Pinnacle)
+                "sharp_spread": float(row.sharp_spread) if row.sharp_spread is not None else None,
+                "sharp_total": float(row.sharp_total) if row.sharp_total is not None else None,
                 "home_ratings": home_ratings,
                 "away_ratings": away_ratings,
             }
@@ -804,6 +824,9 @@ def get_prediction(
             under_price_1h=market_odds.get("under_price_1h"),
             home_ml_1h=market_odds.get("home_ml_1h"),
             away_ml_1h=market_odds.get("away_ml_1h"),
+            # Sharp book reference (Pinnacle) for CLV tracking
+            sharp_spread=market_odds.get("sharp_spread"),
+            sharp_total=market_odds.get("sharp_total"),
         )
     
     # Generate prediction (v6.2: pass rest info for situational adjustments)
@@ -1437,6 +1460,9 @@ def main():
             "under_price_1h": game.get("under_1h_juice"),
             "home_ml_1h": game.get("home_ml_1h"),
             "away_ml_1h": game.get("away_ml_1h"),
+            # Sharp book reference (Pinnacle) for CLV tracking
+            "sharp_spread": game.get("sharp_spread"),
+            "sharp_total": game.get("sharp_total"),
         }
 
         # v6.2: Compute rest info for situational adjustments
