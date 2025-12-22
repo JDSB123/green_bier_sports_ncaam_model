@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
@@ -312,19 +313,19 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 
 	r.logger.Info("Storing ratings", zap.String("date", today), zap.Int("team_count", len(teams)))
 
+	// Start transaction
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("starting transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
 	stored := 0
 	for _, team := range teams {
-		// Use per-team transaction to avoid poisoning the whole batch if one insert fails
-		tx, err := r.db.Begin(ctx)
-		if err != nil {
-			return fmt.Errorf("starting transaction: %w", err)
-		}
-
 		// First, ensure team exists
-		teamID, err := r.ensureTeam(ctx, team)
+		teamID, err := r.ensureTeam(ctx, tx, team)
 		if err != nil {
 			r.logger.Warn("Failed to ensure team", zap.String("team", team.Team), zap.Error(err))
-			tx.Rollback(ctx)
 			continue
 		}
 
@@ -418,16 +419,13 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 
 		if err != nil {
 			r.logger.Warn("Failed to store rating", zap.String("team", team.Team), zap.Error(err))
-			tx.Rollback(ctx)
 			continue
 		}
-
-		if err := tx.Commit(ctx); err != nil {
-			r.logger.Warn("Commit failed", zap.String("team", team.Team), zap.Error(err))
-			continue
-		}
-
 		stored++
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
 	}
 
 	r.logger.Info("Stored ratings successfully", zap.Int("stored", stored), zap.Int("total", len(teams)))
@@ -435,11 +433,11 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 }
 
 // ensureTeam makes sure the team exists in the database
-func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (string, error) {
+func (r *RatingsSync) ensureTeam(ctx context.Context, tx pgx.Tx, team BarttorkvikTeam) (string, error) {
 	var teamID string
 
 	// Try to find by barttorvik_name first
-	err := r.db.QueryRow(ctx, `
+	err := tx.QueryRow(ctx, `
 		SELECT id FROM teams WHERE barttorvik_name = $1
 	`, team.Team).Scan(&teamID)
 
@@ -447,41 +445,32 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (str
 		return teamID, nil
 	}
 
-	// STEP 1: Try to resolve using database function (99.99% accuracy) IF it exists
-	// Guard against missing function in environments where migrations haven't been applied
-	resolverExists := false
-	err = r.db.QueryRow(ctx, `
-		SELECT to_regproc('resolve_team_name(text)') IS NOT NULL
-	`).Scan(&resolverExists)
-	if err != nil {
-		r.logger.Warn("resolve_team_name existence check failed; skipping resolver", zap.Error(err))
-	} else if resolverExists {
-		var resolvedCanonical string
-		err = r.db.QueryRow(ctx, `
-			SELECT resolve_team_name($1)
-		`, team.Team).Scan(&resolvedCanonical)
+	// STEP 1: Try to resolve using database function (99.99% accuracy)
+	var resolvedCanonical string
+	err = tx.QueryRow(ctx, `
+		SELECT resolve_team_name($1)
+	`, team.Team).Scan(&resolvedCanonical)
 
-		if err == nil && resolvedCanonical != "" {
-			// Found existing canonical name via alias resolution
-			err = r.db.QueryRow(ctx, `
-				SELECT id FROM teams WHERE canonical_name = $1
-			`, resolvedCanonical).Scan(&teamID)
+	if err == nil && resolvedCanonical != "" {
+		// Found existing canonical name via alias resolution
+		err = tx.QueryRow(ctx, `
+			SELECT id FROM teams WHERE canonical_name = $1
+		`, resolvedCanonical).Scan(&teamID)
 
-			if err == nil {
-				// Update barttorvik_name if not set
-				r.db.Exec(ctx, `
-					UPDATE teams SET barttorvik_name = $1 WHERE id = $2 AND barttorvik_name IS NULL
-				`, team.Team, teamID)
+		if err == nil {
+			// Update barttorvik_name if not set
+			tx.Exec(ctx, `
+				UPDATE teams SET barttorvik_name = $1 WHERE id = $2 AND barttorvik_name IS NULL
+			`, team.Team, teamID)
 
-				// Ensure alias exists
-				r.db.Exec(ctx, `
-					INSERT INTO team_aliases (team_id, alias, source)
-					VALUES ($1, $2, 'barttorvik')
-					ON CONFLICT (alias, source) DO NOTHING
-				`, teamID, team.Team)
+			// Ensure alias exists
+			tx.Exec(ctx, `
+				INSERT INTO team_aliases (team_id, alias, source)
+				VALUES ($1, $2, 'barttorvik')
+				ON CONFLICT (alias, source) DO NOTHING
+			`, teamID, team.Team)
 
-				return teamID, nil
-			}
+			return teamID, nil
 		}
 	}
 
@@ -492,18 +481,18 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (str
 		zap.String("barttorvik_name", team.Team),
 		zap.String("normalized_to", canonicalName),
 	)
-	err = r.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 		SELECT id FROM teams WHERE canonical_name = $1
 	`, canonicalName).Scan(&teamID)
 
 	if err == nil {
 		// Update barttorvik_name if not set
-		r.db.Exec(ctx, `
+		tx.Exec(ctx, `
 			UPDATE teams SET barttorvik_name = $1 WHERE id = $2 AND barttorvik_name IS NULL
 		`, team.Team, teamID)
 
 		// Ensure alias exists
-		r.db.Exec(ctx, `
+		tx.Exec(ctx, `
 			INSERT INTO team_aliases (team_id, alias, source)
 			VALUES ($1, $2, 'barttorvik')
 			ON CONFLICT (alias, source) DO NOTHING
@@ -513,7 +502,7 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (str
 	}
 
 	// STEP 3: Team doesn't exist - create with normalized canonical name
-	err = r.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 		INSERT INTO teams (canonical_name, barttorvik_name, conference)
 		VALUES ($1, $2, $3)
 		RETURNING id
@@ -524,7 +513,7 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (str
 	}
 
 	// Also add barttorvik alias
-	r.db.Exec(ctx, `
+	tx.Exec(ctx, `
 		INSERT INTO team_aliases (team_id, alias, source)
 		VALUES ($1, $2, 'barttorvik')
 		ON CONFLICT (alias, source) DO NOTHING
@@ -738,14 +727,8 @@ func main() {
 		logger.Fatal("RUN_ONCE=false is not supported. This service is manual-only. Use RUN_ONCE=true for manual runs.")
 	}
 
-	// CHANGE: No automatic scheduling. Service runs idle and waits for manual trigger via HTTP endpoint.
-	// The Python FastAPI service exposes POST /api/sync/ratings to trigger sync on demand.
-	logger.Info("Ratings sync service started (manual trigger mode). Waiting for external trigger via HTTP endpoint.")
-
-	// Wait for shutdown signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
-
-	logger.Info("Shutting down...")
+	if err := sync.Sync(ctx); err != nil {
+		logger.Fatal("Sync failed", zap.Error(err))
+	}
+	logger.Info("Manual sync completed successfully")
 }

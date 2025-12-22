@@ -106,8 +106,6 @@ class BarttorkvikPredictor:
 
     def __init__(self):
         self.config = settings.model
-        # Structured logger for predictor lifecycle and ML training
-        self.logger = structlog.get_logger("predictor")
         # MODULAR HCA - loaded from config.py (single source of truth)
         self.hca_spread = self.config.home_court_advantage_spread
         self.hca_total = self.config.home_court_advantage_total

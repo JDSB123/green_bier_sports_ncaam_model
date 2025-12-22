@@ -1,8 +1,0 @@
-{
-  "ContainerAppUrl": "https://ncaam-prod-prediction.delightfulwave-0643b168.centralus.azurecontainerapps.io",
-  "ImageTag": "v6.2.2",
-  "DeployedAt": "2025-12-21 06:00:30",
-  "AcrLoginServer": "ncaamprodacr.azurecr.io",
-  "ResourceGroup": "green-bier-ncaam",
-  "Environment": "prod"
-}
