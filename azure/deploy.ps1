@@ -1,4 +1,3 @@
-<##>
 # ═══════════════════════════════════════════════════════════════════════════════
 # NCAAM v6.3 - Azure Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -8,7 +7,6 @@
 #   Note: -OddsApiKey parameter sets environment variable THE_ODDS_API_KEY in the container
 #   Optional: -TeamsWebhookUrl sets TEAMS_WEBHOOK_URL secret/env var for run_today.py --teams
 # ═══════════════════════════════════════════════════════════════════════════════
-<##>
 
 param(
     [Parameter(Mandatory=$false)]
@@ -53,17 +51,24 @@ $resourcePrefix = "$baseName-$Environment"
 if ($EnterpriseMode) {
     if ([string]::IsNullOrEmpty($ResourceGroup)) {
         $ResourceGroup = 'greenbier-enterprise-rg'
+        # Ensure location matches enterprise RG (default to eastus)
         if ($Location -eq 'centralus') {
             $Location = 'eastus'
         }
     }
-
+    # In enterprise mode, prefix all resource names with 'ncaam-' to organize within RG
+    # Resource names stay the same, just organized in enterprise RG
+    
+    # HARDCODED: Enforce the 'gbe' naming convention for existing Enterprise resources
+    # This prevents duplicate resource creation (e.g. ncaamprodacr vs ncaamprodgbeacr)
     if ($Environment -eq 'prod') {
         $acrName = 'ncaamprodgbeacr'
+        # Bicep parameters will need to match this convention via overrides or updates
     } else {
         $acrName = ($resourcePrefix -replace '-', '') + 'gbeacr'
     }
 } else {
+    # Standard mode: Use dedicated resource group per environment
     if ([string]::IsNullOrEmpty($ResourceGroup)) {
         $ResourceGroup = "$resourcePrefix-rg"
     }
@@ -82,44 +87,6 @@ Write-Host "  Enterprise Mode: $EnterpriseMode" -ForegroundColor Yellow
 Write-Host "  ACR Name:       $acrName" -ForegroundColor Yellow
 Write-Host "  Image Tag:      $ImageTag" -ForegroundColor Yellow
 Write-Host ""
-
-<##>
-# ─────────────────────────────────────────────────────────────────────────────────
-# AUTO-FETCH SECRETS (IF MISSING)
-# ─────────────────────────────────────────────────────────────────────────────────
-<##>
-
-if ([string]::IsNullOrEmpty($OddsApiKey)) {
-    Write-Host "[0/6] Odds API Key not provided. Attempting to fetch from existing container app..." -ForegroundColor Cyan
-
-    $existingAppName = "$resourcePrefix-prediction"
-
-    try {
-        $appExists = az containerapp show --name $existingAppName --resource-group $ResourceGroup --query "id" -o tsv 2>$null
-
-        if ($appExists) {
-            Write-Host "  Found existing app: $existingAppName" -ForegroundColor Gray
-            $fetchedKey = az containerapp secret list --name $existingAppName --resource-group $ResourceGroup --show-values --query "[?name=='odds-api-key'].value" -o tsv 2>$null
-
-            if ($fetchedKey) {
-                $OddsApiKey = $fetchedKey
-                Write-Host "  ✓ Successfully retrieved Odds API Key from Azure!" -ForegroundColor Green
-            } else {
-                Write-Warning "  ! Could not retrieve key (secret 'odds-api-key' not found)."
-            }
-        } else {
-            Write-Warning "  ! App '$existingAppName' not found in RG '$ResourceGroup'. Cannot fetch key."
-        }
-    } catch {
-        Write-Warning "  ! Error fetching existing key: $_"
-    }
-
-    if ([string]::IsNullOrEmpty($OddsApiKey)) {
-        if (-not $SkipInfra) {
-            Write-Error "OddsApiKey is required for infrastructure deployment and could not be found automatically. Please provide it via -OddsApiKey."
-        }
-    }
-}
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # AUTO-FETCH SECRETS (IF MISSING)
@@ -167,6 +134,7 @@ if ([string]::IsNullOrEmpty($OddsApiKey)) {
 
 Write-Host "[1/6] Checking prerequisites..." -ForegroundColor Green
 
+# Check Azure CLI
 try {
     $azVersion = az version --output json | ConvertFrom-Json
     Write-Host "  ✓ Azure CLI: $($azVersion.'azure-cli')" -ForegroundColor Gray
@@ -174,6 +142,7 @@ try {
     Write-Error "Azure CLI not found. Install from https://aka.ms/installazurecliwindows"
 }
 
+# Check Docker
 try {
     docker version --format '{{.Server.Version}}' | Out-Null
     Write-Host "  ✓ Docker: Running" -ForegroundColor Gray
@@ -181,6 +150,7 @@ try {
     Write-Error "Docker not running. Start Docker Desktop."
 }
 
+# Check logged in to Azure
 $account = az account show --output json 2>$null | ConvertFrom-Json
 if (-not $account) {
     Write-Host "  ! Not logged in to Azure. Running 'az login'..." -ForegroundColor Yellow
@@ -196,28 +166,10 @@ Write-Host "  ✓ Azure Account: $($account.name)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "[2/6] Generating secure passwords..." -ForegroundColor Green
 
+# Generate secure passwords
 $postgresPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
-$redisPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
 
 Write-Host "  ✓ PostgreSQL password generated (32 chars)" -ForegroundColor Gray
-Write-Host "  ✓ Redis password generated (32 chars)" -ForegroundColor Gray
-
-if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
-    $teamsSecretPath = Join-Path $PSScriptRoot "..\secrets\teams_webhook_url.txt"
-    if (Test-Path $teamsSecretPath) {
-        $TeamsWebhookUrl = (Get-Content $teamsSecretPath -Raw).Trim()
-    }
-}
-
-if ($TeamsWebhookUrl) {
-    $tw = $TeamsWebhookUrl.ToLowerInvariant()
-    if ($tw.Contains("change_me") -or $tw.StartsWith("your_") -or ($tw -notlike "*webhook.office.com*") -or ($TeamsWebhookUrl.Length -lt 60)) {
-        Write-Host "  [INFO] Teams webhook not configured (placeholder). Skipping Teams webhook env var." -ForegroundColor Gray
-        $TeamsWebhookUrl = ''
-    } else {
-        Write-Host "  ✓ Teams webhook configured (will enable run_today.py --teams)" -ForegroundColor Gray
-    }
-}
 
 # Optional: Load Teams webhook from repo secret file if not explicitly provided
 if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
@@ -253,6 +205,7 @@ if (-not $SkipInfra) {
     # Deploy Bicep template
     Write-Host "  Deploying Bicep template (this may take 10-15 minutes)..." -ForegroundColor Gray
 
+    # Calculate resource names for 'gbe' convention in Enterprise mode
     $resourceNameSuffix = ''
     if ($EnterpriseMode) {
         $resourceNameSuffix = '-gbe'
@@ -266,7 +219,6 @@ if (-not $SkipInfra) {
             location=$Location `
             baseName=$baseName `
             postgresPassword=$postgresPassword `
-            redisPassword=$redisPassword `
             oddsApiKey=$OddsApiKey `
             teamsWebhookUrl=$TeamsWebhookUrl `
             imageTag=$ImageTag `
@@ -280,6 +232,8 @@ if (-not $SkipInfra) {
     $acrLoginServer = $deploymentOutput.properties.outputs.acrLoginServer.value
     $postgresHost = $deploymentOutput.properties.outputs.postgresHost.value
     $containerAppUrl = $deploymentOutput.properties.outputs.containerAppUrl.value
+     $oddsIngestName = $deploymentOutput.properties.outputs.oddsIngestName.value
+     $ratingsSyncName = $deploymentOutput.properties.outputs.ratingsSyncName.value
 
     Write-Host "  ✓ ACR: $acrLoginServer" -ForegroundColor Gray
     Write-Host "  ✓ PostgreSQL: $postgresHost" -ForegroundColor Gray
@@ -306,27 +260,35 @@ if (-not $SkipBuild) {
     az acr login --name $acrName
 
     # Build images
-    $imageName = "$acrLoginServer/$baseName-prediction:$ImageTag"
-    Write-Host "  Building image: $imageName" -ForegroundColor Gray
+    $predImage = "$acrLoginServer/$baseName-prediction:$ImageTag"
+    $rustImage = "$acrLoginServer/$baseName-odds-ingestion:$ImageTag"
+    $goImage   = "$acrLoginServer/$baseName-ratings-sync:$ImageTag"
 
     Push-Location "$PSScriptRoot\.."
-    docker build -t $imageName -f services/prediction-service-python/Dockerfile.hardened .
 
-    if ($LASTEXITCODE -ne 0) {
-        Pop-Location
-        Write-Error "Docker build failed!"
-    }
+    Write-Host "  Building image: $predImage" -ForegroundColor Gray
+    docker build -t $predImage -f services/prediction-service-python/Dockerfile.hardened .
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker build failed (prediction)!" }
 
-    Write-Host "  Pushing image to ACR..." -ForegroundColor Gray
-    docker push $imageName
+    Write-Host "  Building image: $rustImage" -ForegroundColor Gray
+    docker build -t $rustImage -f services/odds-ingestion-rust/Dockerfile services/odds-ingestion-rust
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker build failed (odds-ingestion)!" }
 
-    if ($LASTEXITCODE -ne 0) {
-        Pop-Location
-        Write-Error "Docker push failed!"
-    }
+    Write-Host "  Building image: $goImage" -ForegroundColor Gray
+    docker build -t $goImage -f services/ratings-sync-go/Dockerfile services/ratings-sync-go
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker build failed (ratings-sync)!" }
+
+    # Push images
+    Write-Host "  Pushing images to ACR..." -ForegroundColor Gray
+    docker push $predImage
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker push failed (prediction)!" }
+    docker push $rustImage
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker push failed (odds-ingestion)!" }
+    docker push $goImage
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Error "Docker push failed (ratings-sync)!" }
 
     Pop-Location
-    Write-Host "  ✓ Image pushed: $imageName" -ForegroundColor Gray
+    Write-Host "  ✓ Images pushed: $predImage, $rustImage, $goImage" -ForegroundColor Gray
 } else {
     Write-Host ""
     Write-Host "[4/6] Skipping Docker build (--SkipBuild)" -ForegroundColor Yellow
@@ -395,6 +357,8 @@ Write-Host "    curl https://$containerAppUrl/predict" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  To view logs:" -ForegroundColor Yellow
 Write-Host "    az containerapp logs show -n $containerAppName -g $ResourceGroup --follow" -ForegroundColor Gray
+Write-Host "    az containerapp logs show -n $oddsIngestName -g $ResourceGroup --follow" -ForegroundColor Gray
+Write-Host "    az containerapp logs show -n $ratingsSyncName -g $ResourceGroup --follow" -ForegroundColor Gray
 Write-Host ""
 
 # Save deployment info
