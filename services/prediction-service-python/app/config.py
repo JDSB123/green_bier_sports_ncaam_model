@@ -91,18 +91,18 @@ class ModelConfig(BaseSettings):
 
     # Minimum edge to recommend a bet (in points)
     min_spread_edge: float = Field(
-        default=3.0,
-        description="Minimum spread edge to recommend bet. Raised from 2.5 for better ROE selectivity."
+        default=2.5,
+        description="Minimum spread edge to recommend bet. Higher than v4.0's 2.0 for selectivity."
     )
     min_total_edge: float = Field(
-        default=3.5,
-        description="Minimum total edge to recommend bet. Raised from 3.0 - totals are noisier."
+        default=3.0,
+        description="Minimum total edge to recommend bet."
     )
 
     # Minimum confidence threshold
     min_confidence: float = Field(
-        default=0.70,
-        description="Minimum confidence to recommend bet. Raised from 0.65 for better ROE."
+        default=0.65,
+        description="Minimum confidence to recommend bet. Higher than v4.0's 0.60."
     )
 
     # ─────────────────────────────────────────────────────────────────────────

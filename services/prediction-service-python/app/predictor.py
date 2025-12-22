@@ -734,10 +734,6 @@ class PredictionEngine:
             recommendations.append(rec)
 
         # Process moneyline recommendations
-        # FIX: Initialize sharp alignment for ML bets (use spread as proxy)
-        ml_sharp_line = market_odds.sharp_spread
-        ml_sharp_aligned = True  # Default to aligned if no sharp data
-        
         for (
             bet_type,
             pick,
@@ -781,8 +777,8 @@ class PredictionEngine:
                 kelly_fraction=kelly,
                 recommended_units=round(recommended_units, 1),
                 bet_tier=bet_tier,
-                sharp_line=ml_sharp_line,  # FIX: Use dedicated ML sharp line
-                is_sharp_aligned=ml_sharp_aligned,  # FIX: Use dedicated ML alignment
+                sharp_line=sharp_line,  # Now includes sharp spread as proxy
+                is_sharp_aligned=is_sharp_aligned,
             )
 
             recommendations.append(rec)
@@ -831,17 +827,13 @@ class PredictionEngine:
         Calculate expected value percentage and Kelly criterion.
 
         Assumes standard -110 odds (bet $110 to win $100).
-        Uses proper CDF-based probability conversion instead of linear approximation.
         """
         # Standard -110 juice implies ~52.38% needed to break even
         break_even = 0.5238
 
-        # Our implied probability based on edge using proper Gaussian CDF
-        # This replaces the naive linear edge/30 approximation
-        # A negative spread means home favored, so -edge gives us the edge probability
-        sigma = self.config.spread_to_ml_sigma  # Default 11.0
-        z = edge / sigma
-        edge_prob = 0.5 * (1 + math.erf(z / math.sqrt(2))) - 0.5  # Probability above 50%
+        # Our implied probability based on edge
+        # Edge in points roughly translates to probability advantage
+        edge_prob = edge / 30  # ~30 points = 100% probability shift
 
         our_prob = break_even + edge_prob * confidence
 
