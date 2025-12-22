@@ -1,7 +1,12 @@
 """
-Green Bier Sports - NCAAM Prediction Engine v6.3
+Green Bier Sports - NCAAM Prediction Engine v6.3.25
 
 SINGLE SOURCE OF TRUTH: All predictions flow through this service.
+
+v6.3.25 CHANGES (2024-12-22):
+- FIXED: 1H Spread now includes scaled situational and matchup adjustments
+- FIXED: 1H Total now includes scaled situational adjustments
+- Both 1H markets now mirror FG formula structure for consistency
 
 v6.3 CHANGES (2024-12-20):
 - ALL 22 BARTTORVIK FIELDS NOW REQUIRED - no fallbacks, no defaults
@@ -25,22 +30,22 @@ HCA Values (from config.py - applied directly; can be overridden via env vars):
 - First Half Spreads: 1.6 (default)
 - First Half Totals: 0.0 (default)
 
-Core Formulas (v6.3):
+Core Formulas (v6.3.25):
 - Expected Tempo = Home_Tempo + Away_Tempo - League_Avg_Tempo
 - Expected Eff (Home) = Home_AdjO + Away_AdjD - League_Avg_Eff
 - Expected Eff (Away) = Away_AdjO + Home_AdjD - League_Avg_Eff
 - Base Scores = Eff * Tempo / 100
-- Total = Home_Base + Away_Base + HCA_total + Situational_total_adj + Matchup_adj
+- Total = Home_Base + Away_Base + HCA_total + Situational_total_adj
 - Spread (HOME perspective) = -( (Home_Base - Away_Base) + HCA_spread + Situational_spread_adj + Matchup_adj )
-- 1H Spread = -(raw_margin * margin_scale + HCA_spread_1h)  [dynamic margin_scale]
-- 1H Total = (Home_Base + Away_Base) * tempo_factor + HCA_total_1h  [dynamic tempo_factor]
+- 1H Spread = -( (raw_margin + situational + matchup) * margin_scale + HCA_1H )  [dynamic margin_scale]
+- 1H Total = (Home_Base + Away_Base) * tempo_factor + HCA_1H + situational_1H  [dynamic tempo_factor]
 - Moneylines: Normal CDF conversion (dynamic sigma based on 3PR/tempo)
 
 All 6 markets: FG Spread/Total/ML, 1H Spread/Total/ML
 """
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
@@ -56,7 +61,7 @@ from app.models import (
     TeamRatings,
 )
 from app.situational import SituationalAdjuster, SituationalAdjustment, RestInfo
-from app.variance import DynamicVarianceCalculator, VarianceFactors
+from app.variance import DynamicVarianceCalculator
 from app.first_half import EnhancedFirstHalfCalculator, FirstHalfFactors
 import structlog
 
@@ -241,21 +246,27 @@ class BarttorkvikPredictor:
         away_score = (total + spread) / 2
 
         # ─────────────────────────────────────────────────────────────────────
-        # FIRST HALF PREDICTIONS - ENHANCED (v6.2)
+        # FIRST HALF PREDICTIONS - ENHANCED (v6.3.25)
         # ─────────────────────────────────────────────────────────────────────
         # Use dynamic factors based on EFG differential
+        # Now includes scaled situational and matchup adjustments for consistency
 
         hca_spread_1h = 0.0 if is_neutral else self.hca_spread_1h
         hca_total_1h = 0.0 if is_neutral else self.hca_total_1h
 
-        # 1H Spread: Use dynamic margin scale on the NEW raw margin
-        spread_1h = -(raw_margin * h1_factors.margin_scale + hca_spread_1h)
+        # 1H Spread: Scale (raw_margin + situational + matchup) by margin_scale
+        # Formula mirrors FG: -(components) * scale + HCA_1H
+        spread_1h = -(
+            (raw_margin + situational_spread_adj + matchup_adj)
+            * h1_factors.margin_scale
+            + hca_spread_1h
+        )
 
-        # 1H Total: Use dynamic tempo factor on the NEW avg tempo
-        # Note: We use the base efficiency scores scaled by tempo factor
+        # 1H Total: Scale base scores by tempo_factor + scaled situational adj
         home_score_1h = home_score_base * h1_factors.tempo_factor
         away_score_1h = away_score_base * h1_factors.tempo_factor
-        total_1h = home_score_1h + away_score_1h + hca_total_1h
+        situational_total_adj_1h = situational_total_adj * h1_factors.tempo_factor
+        total_1h = home_score_1h + away_score_1h + hca_total_1h + situational_total_adj_1h
 
         # ─────────────────────────────────────────────────────────────────────
         # WIN PROBABILITY & MONEYLINE - DYNAMIC VARIANCE (v6.2)
@@ -459,7 +470,7 @@ class PredictionEngine:
             predicted_away_ml_1h=output.away_ml_1h,
             home_win_prob=output.home_win_prob,
             home_win_prob_1h=output.home_win_prob_1h,
-            model_version="v6.3",
+            model_version="v6.3.25",
         )
 
         # Calculate edges if market odds available
