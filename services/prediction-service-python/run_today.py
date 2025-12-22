@@ -204,8 +204,8 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     if os.path.exists(rust_binary):
         print("  📈 Syncing odds from The Odds API (Rust binary)...")
         try:
-            # Get API key from env (Azure) or Docker secret file (Compose)
-            odds_api_key = os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
+            # Get API key from env (Azure: ODDS_API_KEY or THE_ODDS_API_KEY) or Docker secret file (Compose)
+            odds_api_key = os.getenv("ODDS_API_KEY") or os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
             
             result = subprocess.run(
                 [rust_binary],

@@ -39,8 +39,8 @@ class OddsApiClient:
         self.base_url = base_url.rstrip("/")
         self.sport_key = sport_key or DEFAULT_SPORT_KEY
         
-        # Priority: 1. Constructor arg, 2. Env var (if set), 3. Docker Secret File
-        env_key = os.getenv("THE_ODDS_API_KEY")
+        # Priority: 1. Constructor arg, 2. Env var (Azure uses ODDS_API_KEY, local uses THE_ODDS_API_KEY), 3. Docker Secret File
+        env_key = os.getenv("ODDS_API_KEY") or os.getenv("THE_ODDS_API_KEY")
         file_key = None
         try:
             file_key = _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
@@ -50,7 +50,7 @@ class OddsApiClient:
         self.api_key = api_key or env_key or file_key
 
         if not self.api_key:
-             raise OddsApiError("THE_ODDS_API_KEY not found in env vars or secrets/odds_api_key.txt")
+             raise OddsApiError("ODDS_API_KEY not found in env vars or secrets/odds_api_key.txt")
 
         # Config defaults mirror Rust ingestion
         self.regions = regions or os.getenv("REGIONS", "us")
