@@ -35,6 +35,12 @@ You control when data is synced and predictions are run.
 - No `.github/workflows/` directory
 - No CI/CD pipelines
 - No automated deployments
+- No automated backtesting workflows
+
+### ❌ No Automated Backtesting
+- No background backtesting tasks
+- No scheduled backtest runs
+- All backtesting is manual-only (run via `testing/scripts/run_backtest.py` when needed)
 
 ---
 
@@ -168,6 +174,7 @@ docker compose exec prediction-service env | grep RUN_ONCE
 ✅ **No cron** - No scheduled tasks  
 ✅ **No daemons** - No background sync processes  
 ✅ **No GitHub Actions** - No automation pipelines  
+✅ **No automated backtesting** - All backtesting is manual-only  
 
 **You run `.\predict.bat` when you want fresh picks. That's it.**
 

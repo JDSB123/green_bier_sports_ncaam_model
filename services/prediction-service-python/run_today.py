@@ -43,12 +43,20 @@ from pathlib import Path
 # Central Time Zone
 CST = ZoneInfo("America/Chicago")
 
-# NOTE: Azure CLI on Windows often runs with a legacy codepage and will crash
-# when it receives Unicode output (emoji/box-drawing). When FORCE_ASCII_OUTPUT=1,
-# we emit ASCII-only output by encoding with replacement.
-_force_ascii = os.getenv("FORCE_ASCII_OUTPUT", "").strip().lower() in {"1", "true", "yes"}
-_stdout_encoding = "ascii" if _force_ascii else "utf-8"
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding=_stdout_encoding, errors="replace")
+def _configure_stdout() -> None:
+    """
+    Configure stdout encoding for Windows Azure CLI terminals.
+
+    IMPORTANT: This must NOT run at import-time because other modules (e.g. FastAPI)
+    import `run_today` and should not have their stdout replaced.
+    """
+    try:
+        force_ascii = os.getenv("FORCE_ASCII_OUTPUT", "").strip().lower() in {"1", "true", "yes"}
+        stdout_encoding = "ascii" if force_ascii else "utf-8"
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding=stdout_encoding, errors="replace")
+    except Exception:
+        # Best effort only; never fail due to stdout wrapping.
+        return
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONFIGURATION - Always uses container network
@@ -1286,6 +1294,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
 
 def main():
     """Main entry point - handles all prompts."""
+    _configure_stdout()
     parser = argparse.ArgumentParser(
         description="NCAA Basketball Predictions - Self-Contained Container Entry Point"
     )
@@ -1542,9 +1551,11 @@ def main():
         
         # Collect picks for executive table
         for rec in recs:
-            if rec['edge'] >= MIN_SPREAD_EDGE:
+            bet_type = rec.get('bet_type', '')
+            # Apply correct thresholds (fix totals being over-selected by spread threshold)
+            threshold = MIN_TOTAL_EDGE if "TOTAL" in bet_type else MIN_SPREAD_EDGE
+            if rec['edge'] >= threshold:
                 # Determine period and market type
-                bet_type = rec['bet_type']
                 is_1h = "1H" in bet_type
                 period = "1H" if is_1h else "FULL"
                 
