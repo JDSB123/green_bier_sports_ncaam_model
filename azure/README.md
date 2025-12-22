@@ -11,7 +11,7 @@ This directory contains everything needed to deploy the NCAAM prediction model t
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        Azure Resource Group                              │
-│                        (greenbier-enterprise-rg)                        │
+│                        (ncaam-prod-rg)                                  │
 │                                                                          │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐ │
 │  │ Azure Container │  │ Azure Database  │  │ Azure Cache for Redis  │ │
@@ -45,21 +45,6 @@ This directory contains everything needed to deploy the NCAAM prediction model t
 2. **Docker Desktop** - Running and logged in
 3. **Azure Subscription** - With permissions to create resources
 4. **The Odds API Key** - From https://the-odds-api.com
-
-## Migration to Enterprise Resource Group
-
-To migrate resources from `green-bier-ncaam` to `greenbier-enterprise-rg`, use the provided script:
-
-```powershell
-cd azure
-.\finalize_migration.ps1
-```
-
-This script will:
-1. Wait for any ongoing resource moves to complete.
-2. Verify resources in the target group.
-3. Delete the legacy `green-bier-ncaam` resource group.
-4. Redeploy the Container App to `greenbier-enterprise-rg`.
 
 ## Quick Start
 
