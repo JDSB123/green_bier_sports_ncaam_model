@@ -353,6 +353,15 @@ async def get_picks_html():
     return FileResponse(html_path)
 
 
+@app.get("/")
+async def root():
+    return {
+        "message": "NCAA Basketball Prediction Service",
+        "docs_url": "/docs",
+        "health_url": "/health"
+    }
+
+
 @app.get("/health")
 async def health():
     return {

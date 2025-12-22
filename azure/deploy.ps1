@@ -32,7 +32,7 @@ param(
     [switch]$SkipBuild,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v6.3.22',
+    [string]$ImageTag = 'v6.3.23',
 
     [Parameter(Mandatory=$false)]
     [switch]$EnterpriseMode = $true
