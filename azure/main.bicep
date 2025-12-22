@@ -365,4 +365,5 @@ output postgresHost string = postgres.properties.fullyQualifiedDomainName
 output redisHost string = redis.properties.hostName
 output containerAppUrl string = predictionApp.properties.configuration.ingress.fqdn
 output containerEnvName string = containerEnv.name
-
+output oddsIngestName string = oddsIngestApp.name
+output ratingsSyncName string = ratingsSyncApp.name
