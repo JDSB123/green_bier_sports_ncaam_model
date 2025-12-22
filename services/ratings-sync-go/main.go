@@ -13,8 +13,10 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -662,8 +664,8 @@ func main() {
 	}
 
 	config := Config{
-		DatabaseURL:  databaseURL,
-		Season:       getCurrentSeason(),
+		DatabaseURL: databaseURL,
+		Season:      getCurrentSeason(),
 		// MANUAL-ONLY: Default to run once and exit (no cron automation)
 		// User triggers via run_today.py when they want fresh picks
 		// Case-insensitive check to match Rust service behavior

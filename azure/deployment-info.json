@@ -1,8 +1,8 @@
 {
-  "ContainerAppUrl": "https://ncaam-prod-prediction.delightfulwave-0643b168.centralus.azurecontainerapps.io",
-  "ImageTag": "v6.2.2",
-  "DeployedAt": "2025-12-21 06:00:30",
-  "AcrLoginServer": "ncaamprodacr.azurecr.io",
-  "ResourceGroup": "green-bier-ncaam",
-  "Environment": "prod"
+  "AcrLoginServer": "ncaamprodgbeacr.azurecr.io",
+  "ImageTag": "v6.3.1",
+  "ResourceGroup": "greenbier-enterprise-rg",
+  "DeployedAt": "2025-12-22 12:21:51",
+  "Environment": "prod",
+  "ContainerAppUrl": "https://ncaam-prod-prediction.bluecoast-4efaeaba.centralus.azurecontainerapps.io"
 }
