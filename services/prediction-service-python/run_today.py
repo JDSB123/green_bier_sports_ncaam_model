@@ -197,51 +197,71 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
         print(f"  ⚠️  Ratings sync error: {e}")
         ratings_success = False
     
-    # Sync odds using existing Rust binary (proven first half/full game logic)
-    print("  📈 Syncing odds from The Odds API (Rust binary)...")
-    try:
-        # Get API key from env (Azure) or Docker secret file (Compose)
-        odds_api_key = os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
-        
-        result = subprocess.run(
-            ["/app/bin/odds-ingestion"],
-            env={
-                **os.environ,
-                "DATABASE_URL": DATABASE_URL,
-                "REDIS_URL": REDIS_URL,
-                "THE_ODDS_API_KEY": odds_api_key,
-                # odds-ingestion starts a health server; the container's daemon already
-                # binds the default 8083, so use an ephemeral port for one-shot runs.
-                "HEALTH_PORT": "0",
-                "RUN_ONCE": "true",
-            },
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if result.returncode == 0:
-            print("  ✓ Odds synced successfully")
-            odds_success = True
-        else:
-            print(f"  ⚠️  Odds sync returned code {result.returncode}")
-            if result.stderr:
-                error_lines = result.stderr.strip().split('\n')[-3:]
-                for line in error_lines:
-                    print(f"      {line}")
-            odds_success = False
-    except subprocess.TimeoutExpired:
-        print("  ⚠️  Odds sync timed out (>2 min)")
-        odds_success = False
-    except Exception as e:
-        print(f"  ⚠️  Odds sync error: {e}")
-        odds_success = False
+    # Sync odds - try Rust binary first, fall back to Python if not available
+    odds_success = False
+    rust_binary = "/app/bin/odds-ingestion"
+    
+    if os.path.exists(rust_binary):
+        print("  📈 Syncing odds from The Odds API (Rust binary)...")
+        try:
+            # Get API key from env (Azure) or Docker secret file (Compose)
+            odds_api_key = os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
+            
+            result = subprocess.run(
+                [rust_binary],
+                env={
+                    **os.environ,
+                    "DATABASE_URL": DATABASE_URL,
+                    "REDIS_URL": REDIS_URL,
+                    "THE_ODDS_API_KEY": odds_api_key,
+                    # odds-ingestion starts a health server; the container's daemon already
+                    # binds the default 8083, so use an ephemeral port for one-shot runs.
+                    "HEALTH_PORT": "0",
+                    "RUN_ONCE": "true",
+                },
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if result.returncode == 0:
+                print("  ✓ Odds synced successfully (Rust)")
+                odds_success = True
+            else:
+                print(f"  ⚠️  Rust odds sync returned code {result.returncode}")
+                if result.stderr:
+                    error_lines = result.stderr.strip().split('\n')[-3:]
+                    for line in error_lines:
+                        print(f"      {line}")
+        except subprocess.TimeoutExpired:
+            print("  ⚠️  Rust odds sync timed out (>2 min)")
+        except Exception as e:
+            print(f"  ⚠️  Rust odds sync error: {e}")
+    
+    # Fall back to Python-based odds sync if Rust binary not available or failed
+    if not odds_success:
+        print("  📈 Syncing odds from The Odds API (Python fallback)...")
+        try:
+            from app.odds_sync import sync_odds
+            sync_result = sync_odds(
+                database_url=DATABASE_URL,
+                enable_full=True,
+                enable_h1=True,
+                enable_h2=False,
+            )
+            if sync_result["success"]:
+                print(f"  ✓ Odds synced successfully (Python): {sync_result['total_snapshots']} snapshots")
+                odds_success = True
+            else:
+                print(f"  ⚠️  Python odds sync error: {sync_result.get('error', 'unknown')}")
+        except Exception as e:
+            print(f"  ⚠️  Python odds sync error: {e}")
 
     # Basic resilience: if either sync failed, attempt one quick retry for transient issues
     if not (ratings_success and odds_success):
         print("  🔁 One quick retry for transient sync issues...")
         try:
-            # Retry ratings
-            if not ratings_success:
+            # Retry ratings using Go binary if available
+            if not ratings_success and os.path.exists("/app/bin/ratings-sync"):
                 result = subprocess.run(
                     ["/app/bin/ratings-sync"],
                     env={
@@ -255,24 +275,19 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                 )
                 ratings_success = (result.returncode == 0)
 
-            # Retry odds
+            # Retry odds using Python sync
             if not odds_success:
-                odds_api_key = os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
-                result = subprocess.run(
-                    ["/app/bin/odds-ingestion"],
-                    env={
-                        **os.environ,
-                        "DATABASE_URL": DATABASE_URL,
-                        "REDIS_URL": REDIS_URL,
-                        "THE_ODDS_API_KEY": odds_api_key,
-                        "HEALTH_PORT": "0",
-                        "RUN_ONCE": "true",
-                    },
-                    capture_output=True,
-                    text=True,
-                    timeout=90,
-                )
-                odds_success = (result.returncode == 0)
+                try:
+                    from app.odds_sync import sync_odds
+                    sync_result = sync_odds(
+                        database_url=DATABASE_URL,
+                        enable_full=True,
+                        enable_h1=True,
+                        enable_h2=False,
+                    )
+                    odds_success = sync_result["success"]
+                except Exception:
+                    pass
         except Exception as e:
             print(f"  ⚠️  Retry failed: {e}")
     

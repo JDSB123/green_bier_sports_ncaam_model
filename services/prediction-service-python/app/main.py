@@ -148,6 +148,152 @@ app.add_middleware(
 )
 
 
+@app.get("/debug/odds-periods")
+async def debug_odds_periods():
+    """Diagnostic endpoint to check odds periods in database."""
+    import os
+    from sqlalchemy import create_engine, text
+    
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        return {"error": "DATABASE_URL not set"}
+    
+    try:
+        engine = create_engine(db_url)
+        with engine.connect() as conn:
+            # Check odds periods
+            result = conn.execute(text("""
+                SELECT period, market_type, COUNT(*) as cnt 
+                FROM odds_snapshots 
+                WHERE time > NOW() - INTERVAL '24 hours' 
+                GROUP BY period, market_type 
+                ORDER BY period, market_type
+            """))
+            periods = [{"period": r.period, "market_type": r.market_type, "count": r.cnt} for r in result]
+            
+            # Check total odds count
+            total_result = conn.execute(text("""
+                SELECT COUNT(*) as total FROM odds_snapshots WHERE time > NOW() - INTERVAL '24 hours'
+            """))
+            total = total_result.scalar()
+            
+            return {
+                "periods": periods,
+                "total_odds_last_24h": total,
+                "has_1h_odds": any(p["period"] == "1h" for p in periods),
+                "has_full_odds": any(p["period"] == "full" for p in periods)
+            }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/debug/game-odds")
+async def debug_game_odds():
+    """Check which games have 1H odds loaded."""
+    import os
+    from sqlalchemy import create_engine, text
+    from datetime import date
+    
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        return {"error": "DATABASE_URL not set"}
+    
+    try:
+        engine = create_engine(db_url)
+        with engine.connect() as conn:
+            # Check 1H odds - which dates do they belong to?
+            result_dates = conn.execute(text("""
+                SELECT 
+                    DATE(g.commence_time AT TIME ZONE 'America/Chicago') as game_date,
+                    COUNT(DISTINCT o.game_id) as games_with_1h_odds
+                FROM odds_snapshots o
+                JOIN games g ON o.game_id = g.id
+                WHERE o.period = '1h'
+                  AND o.time > NOW() - INTERVAL '24 hours'
+                GROUP BY DATE(g.commence_time AT TIME ZONE 'America/Chicago')
+                ORDER BY game_date DESC
+            """))
+            dates_with_1h = [{"date": str(r.game_date), "games_with_1h": r.games_with_1h_odds} for r in result_dates]
+            
+            # Get today's games with their odds status
+            result = conn.execute(text("""
+                WITH game_list AS (
+                    SELECT 
+                        g.id,
+                        ht.canonical_name as home_team,
+                        at.canonical_name as away_team,
+                        g.commence_time
+                    FROM games g
+                    JOIN teams ht ON g.home_team_id = ht.id
+                    JOIN teams at ON g.away_team_id = at.id
+                    WHERE DATE(g.commence_time AT TIME ZONE 'America/Chicago') = CURRENT_DATE
+                      AND g.status = 'scheduled'
+                ),
+                odds_status AS (
+                    SELECT 
+                        game_id,
+                        MAX(CASE WHEN period = 'full' AND market_type = 'spreads' THEN 1 ELSE 0 END) as has_full_spread,
+                        MAX(CASE WHEN period = '1h' AND market_type = 'spreads' THEN 1 ELSE 0 END) as has_1h_spread,
+                        MAX(CASE WHEN period = 'full' AND market_type = 'totals' THEN 1 ELSE 0 END) as has_full_total,
+                        MAX(CASE WHEN period = '1h' AND market_type = 'totals' THEN 1 ELSE 0 END) as has_1h_total
+                    FROM odds_snapshots
+                    WHERE time > NOW() - INTERVAL '24 hours'
+                    GROUP BY game_id
+                )
+                SELECT 
+                    gl.home_team || ' vs ' || gl.away_team as matchup,
+                    COALESCE(os.has_full_spread, 0) as has_full_spread,
+                    COALESCE(os.has_1h_spread, 0) as has_1h_spread,
+                    COALESCE(os.has_full_total, 0) as has_full_total,
+                    COALESCE(os.has_1h_total, 0) as has_1h_total
+                FROM game_list gl
+                LEFT JOIN odds_status os ON gl.id = os.game_id
+                ORDER BY gl.commence_time
+            """))
+            
+            games = []
+            for r in result:
+                games.append({
+                    "matchup": r.matchup,
+                    "full_spread": bool(r.has_full_spread),
+                    "1h_spread": bool(r.has_1h_spread),
+                    "full_total": bool(r.has_full_total),
+                    "1h_total": bool(r.has_1h_total),
+                })
+            
+            return {
+                "date": str(date.today()),
+                "dates_with_1h_odds": dates_with_1h,
+                "games_count": len(games),
+                "games_with_1h": sum(1 for g in games if g["1h_spread"]),
+                "games": games
+            }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/debug/sync-odds")
+async def debug_sync_odds():
+    """Test the Python odds sync directly."""
+    import os
+    try:
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            return {"error": "DATABASE_URL not set"}
+        
+        from app.odds_sync import sync_odds
+        result = sync_odds(
+            database_url=database_url,
+            enable_full=True,
+            enable_h1=True,
+            enable_h2=False,
+        )
+        return result
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+
 def run_picks_task():
     """Run the picks generation script in background."""
     try:

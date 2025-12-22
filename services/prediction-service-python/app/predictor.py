@@ -492,7 +492,12 @@ class PredictionEngine:
         Check if moneylines offer value.
 
         Returns list of (bet_type, pick, ev_percent, model_prob, market_prob, kelly, odds, confidence).
+        
+        NOTE: Moneylines are currently DISABLED - they were generating too many false positives.
         """
+        # DISABLED: Moneylines screwing up the model output
+        return []
+        
         recommendations = []
         min_ev_pct = 3.0  # Require at least +3% EV relative to stake
 

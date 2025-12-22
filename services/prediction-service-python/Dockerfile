@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy application code
 COPY app /app/app
+COPY run_today.py /app/run_today.py
+COPY run_migrations.py /app/run_migrations.py
+COPY start.sh /app/start.sh
 
 # Expose service port
 EXPOSE 8082
