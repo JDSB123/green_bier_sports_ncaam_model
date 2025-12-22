@@ -249,6 +249,8 @@ def insert_recommendations(
 
     rows = []
     for r in recommendations:
+        # Cap ev_percent to 999.99 to avoid DECIMAL(5,2) overflow on extreme ML edges
+        capped_ev = min(r.ev_percent, 999.99) if r.ev_percent is not None else None
         rows.append(
             {
                 "prediction_id": prediction_id,
@@ -258,7 +260,7 @@ def insert_recommendations(
                 "line": r.line,
                 "edge": r.edge,
                 "confidence": r.confidence,
-                "ev_percent": r.ev_percent,
+                "ev_percent": capped_ev,
                 "kelly_fraction": r.kelly_fraction,
                 "recommended_units": r.recommended_units,
                 "bet_tier": r.bet_tier.value,

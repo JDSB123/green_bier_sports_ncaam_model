@@ -224,9 +224,10 @@ class BarttorkvikPredictor:
         hca_for_spread = 0.0 if is_neutral else self.hca_spread
         hca_for_total = 0.0 if is_neutral else self.hca_total
 
-        # Total = Sum of scores + HCA + Situational + Matchup
-        # Matchup adjustments affect total scoring volume through rebounding/turnover advantages
-        total = home_score_base + away_score_base + hca_for_total + situational_total_adj + matchup_adj
+        # Total = Sum of scores + HCA + Situational
+        # NOTE: Matchup adjustments (rebounding/turnover edges) affect MARGIN, not total.
+        # A rebounding edge gives one team more second-chance points at the expense of the other.
+        total = home_score_base + away_score_base + hca_for_total + situational_total_adj
 
         # Spread = -(Home - Away + HCA + Situational + Matchup)
         # Note: Spread is negative when Home is favored
