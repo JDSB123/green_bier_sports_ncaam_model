@@ -6,13 +6,16 @@
       "value": "prod"
     },
     "location": {
-      "value": "centralus"
+      "value": "eastus"
     },
     "baseName": {
       "value": "ncaam"
     },
     "imageTag": {
       "value": "v6.3.1"
+    },
+    "resourceNameSuffix": {
+      "value": "-gbe"
     }
   }
 }

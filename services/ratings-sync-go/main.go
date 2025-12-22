@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
@@ -320,8 +321,8 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 			return fmt.Errorf("starting transaction: %w", err)
 		}
 
-		// First, ensure team exists
-		teamID, err := r.ensureTeam(ctx, team)
+		// First, ensure team exists inside the transaction for consistency
+		teamID, err := r.ensureTeam(ctx, tx, team)
 		if err != nil {
 			r.logger.Warn("Failed to ensure team", zap.String("team", team.Team), zap.Error(err))
 			tx.Rollback(ctx)
@@ -435,11 +436,11 @@ func (r *RatingsSync) StoreRatings(ctx context.Context, teams []BarttorkvikTeam)
 }
 
 // ensureTeam makes sure the team exists in the database
-func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (string, error) {
+func (r *RatingsSync) ensureTeam(ctx context.Context, tx pgx.Tx, team BarttorkvikTeam) (string, error) {
 	var teamID string
 
 	// Try to find by barttorvik_name first
-	err := r.db.QueryRow(ctx, `
+	err := tx.QueryRow(ctx, `
 		SELECT id FROM teams WHERE barttorvik_name = $1
 	`, team.Team).Scan(&teamID)
 
@@ -450,31 +451,31 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (str
 	// STEP 1: Try to resolve using database function (99.99% accuracy) IF it exists
 	// Guard against missing function in environments where migrations haven't been applied
 	resolverExists := false
-	err = r.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 		SELECT to_regproc('resolve_team_name(text)') IS NOT NULL
 	`).Scan(&resolverExists)
 	if err != nil {
 		r.logger.Warn("resolve_team_name existence check failed; skipping resolver", zap.Error(err))
 	} else if resolverExists {
 		var resolvedCanonical string
-		err = r.db.QueryRow(ctx, `
+		err = tx.QueryRow(ctx, `
 			SELECT resolve_team_name($1)
 		`, team.Team).Scan(&resolvedCanonical)
 
 		if err == nil && resolvedCanonical != "" {
 			// Found existing canonical name via alias resolution
-			err = r.db.QueryRow(ctx, `
+			err = tx.QueryRow(ctx, `
 				SELECT id FROM teams WHERE canonical_name = $1
 			`, resolvedCanonical).Scan(&teamID)
 
 			if err == nil {
 				// Update barttorvik_name if not set
-				r.db.Exec(ctx, `
+				tx.Exec(ctx, `
 					UPDATE teams SET barttorvik_name = $1 WHERE id = $2 AND barttorvik_name IS NULL
 				`, team.Team, teamID)
 
 				// Ensure alias exists
-				r.db.Exec(ctx, `
+				tx.Exec(ctx, `
 					INSERT INTO team_aliases (team_id, alias, source)
 					VALUES ($1, $2, 'barttorvik')
 					ON CONFLICT (alias, source) DO NOTHING
@@ -492,18 +493,18 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (str
 		zap.String("barttorvik_name", team.Team),
 		zap.String("normalized_to", canonicalName),
 	)
-	err = r.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 		SELECT id FROM teams WHERE canonical_name = $1
 	`, canonicalName).Scan(&teamID)
 
 	if err == nil {
 		// Update barttorvik_name if not set
-		r.db.Exec(ctx, `
+		tx.Exec(ctx, `
 			UPDATE teams SET barttorvik_name = $1 WHERE id = $2 AND barttorvik_name IS NULL
 		`, team.Team, teamID)
 
 		// Ensure alias exists
-		r.db.Exec(ctx, `
+		tx.Exec(ctx, `
 			INSERT INTO team_aliases (team_id, alias, source)
 			VALUES ($1, $2, 'barttorvik')
 			ON CONFLICT (alias, source) DO NOTHING
@@ -513,7 +514,7 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (str
 	}
 
 	// STEP 3: Team doesn't exist - create with normalized canonical name
-	err = r.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 		INSERT INTO teams (canonical_name, barttorvik_name, conference)
 		VALUES ($1, $2, $3)
 		RETURNING id
@@ -524,7 +525,7 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, team BarttorkvikTeam) (str
 	}
 
 	// Also add barttorvik alias
-	r.db.Exec(ctx, `
+	tx.Exec(ctx, `
 		INSERT INTO team_aliases (team_id, alias, source)
 		VALUES ($1, $2, 'barttorvik')
 		ON CONFLICT (alias, source) DO NOTHING
