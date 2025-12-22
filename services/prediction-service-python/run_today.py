@@ -1124,87 +1124,32 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
     except Exception as e:
         print(f"  ⚠️  Failed to generate HTML: {e}")
 
-    # Build the Teams message using Adaptive Card format (table-like)
+    # Build simple Adaptive Card format (ColumnSet tables don't render in Teams Workflow webhooks)
     now_cst = datetime.now(CST)
     
-    def _col(text: str, width: str = "stretch", weight: str = "Default") -> dict:
-        return {
-            "type": "Column",
-            "width": width,
-            "items": [
-                {
-                    "type": "TextBlock",
-                    "text": text,
-                    "wrap": True,
-                    "weight": weight,
-                    "size": "Small",
-                }
-            ],
-        }
-
-    table_rows = [
-        {
-            "type": "ColumnSet",
-            "columns": [
-                _col("Date/Time CST", "auto", "Bolder"),
-                _col("Matchup (Away vs Home)", "stretch", "Bolder"),
-                _col("Seg", "auto", "Bolder"),
-                _col("Pick (live odds)", "auto", "Bolder"),
-                _col("Market → Model", "auto", "Bolder"),
-                _col("Edge", "auto", "Bolder"),
-                _col("Fire", "auto", "Bolder"),
-            ],
-        }
-    ]
-
-    for p in sorted_picks[:15]:
-        matchup = f"{p['away']} ({p.get('away_record') or '?'}) vs {p['home']} ({p.get('home_record') or '?'})"
-        date_time = f"{p.get('date_cst', target_date)} {p.get('time_cst','')}".strip()
-        edge_str = f"{p['edge']:.1f} pts" if p.get("market") != "ML" else f"{p['edge']:.1f}%"
-        market_to_model = f"{p.get('market_line','')} → {p.get('model_line','')}"
-
-        table_rows.append(
-            {
-                "type": "ColumnSet",
-                "separator": True,
-                "columns": [
-                    _col(date_time, "auto"),
-                    _col(matchup, "stretch"),
-                    _col(p.get("period", ""), "auto"),
-                    _col(p.get("pick_display", ""), "auto"),
-                    _col(market_to_model, "auto"),
-                    _col(edge_str, "auto"),
-                    _col(p.get("fire_rating", ""), "auto"),
-                ],
-            }
-        )
+    # Build top picks as simple text lines (proven to work)
+    top_picks_lines = []
+    for p in sorted_picks[:10]:
+        pick_display = p.get('pick_display', '')
+        edge_str = f"{p['edge']:.1f}"
+        fire = p.get('fire_rating', '')
+        # Format: "🔥🔥 Siena +23.5 @ Indiana (31 pts edge)"
+        matchup = f"@ {p['home']}" if p.get('pick_side') == 'away' else f"vs {p['away']}"
+        top_picks_lines.append(f"{fire} {pick_display} {matchup} ({edge_str} edge)")
     
-    # Build Adaptive Card payload
+    top_picks_text = "\n".join(top_picks_lines) if top_picks_lines else "No picks found"
     
-    # Define Actions (HTML Report + Run Fresh)
-    actions = [
-        {
-            "type": "Action.OpenUrl",
-            "title": "⚡ Run Fresh Picks",
-            "url": "https://ncaam-prod-prediction.bluecoast-4efaeaba.centralus.azurecontainerapps.io/trigger-picks"
-        }
-    ]
+    # Count max plays
+    max_plays = [p for p in sorted_picks if p.get('bet_tier') == 'MAX' or p['edge'] >= 5.0]
+    max_count = len(max_plays)
     
-    if html_url:
-        actions.insert(0, {
-            "type": "Action.OpenUrl",
-            "title": "📄 View Full HTML Report",
-            "url": html_url
-        })
-
+    # Build simple Adaptive Card that actually works
     card_payload = {
         "type": "message",
         "attachments": [
             {
                 "contentType": "application/vnd.microsoft.card.adaptive",
-                "contentUrl": None,
                 "content": {
-                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
                     "type": "AdaptiveCard",
                     "version": "1.4",
                     "body": [
@@ -1212,58 +1157,40 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
                             "type": "TextBlock",
                             "size": "Large",
                             "weight": "Bolder",
-                            "text": f"🏀 NCAAM PICKS - {target_date}",
-                            "wrap": True,
-                            "style": "heading"
+                            "text": f"🏀 NCAAM PICKS - {target_date}"
                         },
                         {
                             "type": "TextBlock",
-                            "text": f"Generated: {now_cst.strftime('%I:%M %p CST')} | {len(sorted_picks)} picks found",
+                            "text": f"{len(sorted_picks)} picks | {max_count} max plays | {now_cst.strftime('%I:%M %p CST')}",
                             "wrap": True,
                             "isSubtle": True
                         },
                         {
                             "type": "TextBlock",
-                            "text": f"Model: v6.3 Barttorvik | HCA: {HCA_SPREAD} spread, {HCA_TOTAL} total",
-                            "wrap": True,
-                            "isSubtle": True,
-                            "size": "Small"
-                        },
-                        {
-                            "type": "TextBlock",
-                            "text": f"CSV saved: {csv_path.name}" if csv_path else "CSV not saved",
-                            "wrap": True,
-                            "isSubtle": True,
-                            "size": "Small"
-                        },
-                        {
-                            "type": "TextBlock",
-                            "text": "Top 15 picks (sorted by edge):",
+                            "text": f"**TOP 10 PLAYS:**",
                             "wrap": True,
                             "weight": "Bolder",
                             "spacing": "Medium"
                         },
-                        *table_rows
+                        {
+                            "type": "TextBlock",
+                            "text": top_picks_text,
+                            "wrap": True,
+                            "fontType": "Monospace",
+                            "size": "Small"
+                        }
                     ],
-                    "actions": actions
+                    "actions": [
+                        {
+                            "type": "Action.OpenUrl",
+                            "title": "📄 Full Report",
+                            "url": html_url or "https://ncaam-prod-prediction.bluecoast-4efaeaba.centralus.azurecontainerapps.io/picks/html"
+                        }
+                    ]
                 }
             }
         ]
     }
-    
-    # Add summary section
-    max_picks = [p for p in sorted_picks if p.get('bet_tier') == 'MAX' or p['edge'] >= 5.0]
-    if max_picks:
-        summary_text = f"🔥 MAX PLAYS ({len(max_picks)}): " + ", ".join(
-            [f"{p['away'][:8]}@{p['home'][:8]} {p['market']}" for p in max_picks[:5]]
-        )
-        card_payload["attachments"][0]["content"]["body"].insert(2, {
-            "type": "TextBlock",
-            "text": summary_text,
-            "wrap": True,
-            "weight": "Bolder",
-            "color": "Attention"
-        })
     
     try:
         response = requests.post(
