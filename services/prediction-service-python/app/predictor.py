@@ -623,6 +623,10 @@ class PredictionEngine:
         # Add moneyline checks if market odds available
         moneyline_checks = self._check_moneyline_value(prediction, market_odds)
 
+        # Initialize sharp line tracking (used across all bet types)
+        sharp_line = None
+        is_sharp_aligned = True
+
         for bet_type, model_line, market_line, edge, confidence, min_edge in bet_checks:
             if market_line is None:
                 continue
@@ -661,9 +665,9 @@ class PredictionEngine:
             # Get sharp line for comparison
             sharp_line = None
             is_sharp_aligned = True
-            if bet_type == BetType.SPREAD:
+            if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
                 sharp_line = market_odds.sharp_spread
-            elif bet_type == BetType.TOTAL:
+            elif bet_type in (BetType.TOTAL, BetType.TOTAL_1H):
                 sharp_line = market_odds.sharp_total
             elif bet_type in (BetType.MONEYLINE, BetType.MONEYLINE_1H):
                 # For moneyline, use sharp spread as proxy for game outcome
@@ -732,6 +736,10 @@ class PredictionEngine:
             recommendations.append(rec)
 
         # Process moneyline recommendations
+        # FIX: Initialize sharp alignment for ML bets (use spread as proxy)
+        ml_sharp_line = market_odds.sharp_spread
+        ml_sharp_aligned = True  # Default to aligned if no sharp data
+
         for (
             bet_type,
             pick,
@@ -775,8 +783,8 @@ class PredictionEngine:
                 kelly_fraction=kelly,
                 recommended_units=round(recommended_units, 1),
                 bet_tier=bet_tier,
-                sharp_line=sharp_line,  # Now includes sharp spread as proxy
-                is_sharp_aligned=is_sharp_aligned,
+                sharp_line=ml_sharp_line,  # FIX: Use dedicated ML sharp line
+                is_sharp_aligned=ml_sharp_aligned,  # FIX: Use dedicated ML alignment
             )
 
             recommendations.append(rec)
