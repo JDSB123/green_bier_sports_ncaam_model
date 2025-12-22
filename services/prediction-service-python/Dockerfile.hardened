@@ -50,6 +50,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt \
 # Create bin directory and copy binaries
 RUN mkdir -p /app/bin && chown ncaam:ncaam /app/bin
 
+# Create output directory for HTML reports and CSV files
+RUN mkdir -p /app/output && chown ncaam:ncaam /app/output
+
 # Copy Go binary (from go-builder stage) - REUSE existing normalization logic
 COPY --from=go-builder --chown=ncaam:ncaam /out/ratings-sync /app/bin/ratings-sync
 RUN chmod +x /app/bin/ratings-sync

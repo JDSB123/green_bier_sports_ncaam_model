@@ -4,10 +4,12 @@ from uuid import UUID
 
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 import subprocess
 import logging
-
+import os
+from pathlib import Path
 from app.predictor import prediction_engine
 from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendation
 from app.config import settings
@@ -149,7 +151,7 @@ app.add_middleware(
 def run_picks_task():
     """Run the picks generation script in background."""
     try:
-        logger.info("Starting background picks generation task...")
+        print("[trigger-picks] Starting background picks generation task...", flush=True)
         # Run run_today.py with --teams flag
         result = subprocess.run(
             ["python", "run_today.py", "--teams"],
@@ -158,13 +160,13 @@ def run_picks_task():
             cwd="/app"  # Ensure we run from app root in container
         )
         if result.returncode == 0:
-            logger.info("Picks generation completed successfully")
-            logger.info(result.stdout)
+            print(f"[trigger-picks] Picks generation completed successfully", flush=True)
+            print(f"[trigger-picks] stdout: {result.stdout[:500] if result.stdout else 'none'}", flush=True)
         else:
-            logger.error(f"Picks generation failed with code {result.returncode}")
-            logger.error(result.stderr)
+            print(f"[trigger-picks] Picks generation failed with code {result.returncode}", flush=True)
+            print(f"[trigger-picks] stderr: {result.stderr[:1000] if result.stderr else 'none'}", flush=True)
     except Exception as e:
-        logger.error(f"Failed to run picks task: {e}")
+        print(f"[trigger-picks] Failed to run picks task: {e}", flush=True)
 
 
 @app.get("/trigger-picks")
@@ -172,6 +174,37 @@ async def trigger_picks(background_tasks: BackgroundTasks):
     """Trigger the daily picks generation process and send to Teams."""
     background_tasks.add_task(run_picks_task)
     return {"message": "Picks generation started in background. Check Teams channel shortly."}
+
+
+@app.get("/trigger-picks-sync")
+async def trigger_picks_sync():
+    """Synchronous picks trigger for debugging. Returns result directly."""
+    try:
+        result = subprocess.run(
+            ["python", "run_today.py", "--teams"],
+            capture_output=True,
+            text=True,
+            cwd="/app",
+            timeout=120  # 2 minute timeout
+        )
+        return {
+            "returncode": result.returncode,
+            "stdout": result.stdout[-2000:] if result.stdout else None,  # Last 2000 chars
+            "stderr": result.stderr[-2000:] if result.stderr else None
+        }
+    except subprocess.TimeoutExpired:
+        return {"error": "Script timed out after 120 seconds"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/picks/html")
+async def get_picks_html():
+    """Serve the latest HTML picks report."""
+    html_path = Path("/app/output/latest_picks.html")
+    if not html_path.exists():
+        return {"error": "No report generated yet. Trigger picks first."}
+    return FileResponse(html_path)
 
 
 @app.get("/health")
