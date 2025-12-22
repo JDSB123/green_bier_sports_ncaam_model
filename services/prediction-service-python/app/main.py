@@ -4,13 +4,12 @@ from uuid import UUID
 import subprocess
 import logging
 import os
+from pathlib import Path
+
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-import subprocess
-import logging
-import os
-from pathlib import Path
 from app.predictor import prediction_engine
 from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendation
 from app.config import settings

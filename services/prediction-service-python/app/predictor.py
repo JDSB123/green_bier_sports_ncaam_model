@@ -667,9 +667,9 @@ class PredictionEngine:
             # Get sharp line for comparison
             sharp_line = None
             is_sharp_aligned = True
-            if bet_type == BetType.SPREAD:
+            if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
                 sharp_line = market_odds.sharp_spread
-            elif bet_type == BetType.TOTAL:
+            elif bet_type in (BetType.TOTAL, BetType.TOTAL_1H):
                 sharp_line = market_odds.sharp_total
             elif bet_type in (BetType.MONEYLINE, BetType.MONEYLINE_1H):
                 # For moneyline, use sharp spread as proxy for game outcome
