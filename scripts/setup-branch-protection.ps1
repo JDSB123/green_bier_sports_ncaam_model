@@ -101,10 +101,8 @@ if ($confirm -ne "y" -and $confirm -ne "Y") {
 Write-Host ""
 Write-Host "Applying branch protection rules..." -ForegroundColor Gray
 
-$result = gh api "repos/$Repository/branches/$Branch/protection" `
-    --method PUT `
-    --input - `
-    2>&1 <<< $protectionConfig
+$protectionConfig | gh api "repos/$Repository/branches/$Branch/protection" --method PUT --input -
+$result = $LASTEXITCODE
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""

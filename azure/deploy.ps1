@@ -10,7 +10,7 @@
 
 param(
     [Parameter(Mandatory=$false)]
-    [ValidateSet('dev', 'staging', 'prod')]
+    [ValidateSet('dev', 'staging', 'prod', 'stable')]
     [string]$Environment = 'prod',
 
     [Parameter(Mandatory=$false)]
@@ -20,10 +20,10 @@ param(
     [string]$TeamsWebhookUrl = '',
 
     [Parameter(Mandatory=$false)]
-    [string]$Location = 'eastus',
+    [string]$Location = 'centralus',
 
     [Parameter(Mandatory=$false)]
-    [string]$ResourceGroup = 'greenbier-enterprise-rg',
+    [string]$ResourceGroup = 'ncaam-stable-rg',
 
     [Parameter(Mandatory=$false)]
     [switch]$SkipInfra,
@@ -32,7 +32,7 @@ param(
     [switch]$SkipBuild,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v6.3.1',
+    [string]$ImageTag = 'v6.3.22',
 
     [Parameter(Mandatory=$false)]
     [switch]$EnterpriseMode = $true
