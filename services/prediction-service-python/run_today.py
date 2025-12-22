@@ -1222,7 +1222,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
                         {
                             "type": "Action.OpenUrl",
                             "title": "📄 Full Report",
-                            "url": html_url or "https://ncaam-prod-prediction.bluecoast-4efaeaba.centralus.azurecontainerapps.io/picks/html"
+                            "url": html_url or "https://ncaam-stable-prediction.lemondesert-405ee2f3.centralus.azurecontainerapps.io/picks/html"
                         }
                     ]
                 }
