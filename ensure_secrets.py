@@ -137,6 +137,19 @@ def main():
         else:
             print("  [OK] teams_webhook_url.txt exists")
 
+    # Optional: Teams webhook secret for validating outgoing webhook messages
+    teams_webhook_secret_file = secrets_dir / "teams_webhook_secret.txt"
+    if not teams_webhook_secret_file.exists():
+        create_secret_file(teams_webhook_secret_file, generate_secure_password(32), "Teams webhook secret (optional)")
+        created.append("teams_webhook_secret.txt")
+        print("  [INFO] Teams webhook secret is optional. Used for validating outgoing webhook messages.")
+    else:
+        content = teams_webhook_secret_file.read_text().strip()
+        if not content or "change_me" in content.lower():
+            print("  [INFO] teams_webhook_secret.txt exists but is not configured (placeholder).")
+        else:
+            print("  [OK] teams_webhook_secret.txt exists")
+
     print()
     print("All secrets configured. Ready to run: docker compose up -d")
     return 0

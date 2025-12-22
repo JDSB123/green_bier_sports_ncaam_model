@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# GREEN BIER SPORT VENTURES - NCAAM v6.2 FINAL
+# GREEN BIER SPORT VENTURES - NCAAM v6.3.1 FINAL
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enterprise-ready sports prediction model with:
 # - Dynamic port allocation (no conflicts with other sports)
@@ -22,6 +22,8 @@ secrets:
     file: ./secrets/odds_api_key.txt
   teams_webhook_url:
     file: ./secrets/teams_webhook_url.txt
+  teams_webhook_secret:
+    file: ./secrets/teams_webhook_secret.txt
 
 x-common-env: &common-env
   environment:
@@ -129,10 +131,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
-    build:
-      context: .
-      dockerfile: ./services/prediction-service-python/Dockerfile.hardened
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_prediction:latest
+    image: ncaamprodgbeacr.azurecr.io/ncaam-prediction:v6.3.8
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
@@ -140,6 +139,7 @@ services:
       - odds_api_key
       - redis_password
       - teams_webhook_url
+      - teams_webhook_secret
     environment:
       # Sport-parameterized configuration (enables multi-sport deployment)
       SPORT: ${SPORT:-ncaam}
@@ -152,6 +152,7 @@ services:
       DB_PASSWORD_FILE: /run/secrets/db_password
       REDIS_PASSWORD_FILE: /run/secrets/redis_password
       TEAMS_WEBHOOK_URL_FILE: /run/secrets/teams_webhook_url
+      TEAMS_WEBHOOK_SECRET_FILE: /run/secrets/teams_webhook_secret
       # Model configuration (matches config.py defaults - single source of truth)
       # NOTE: POLL_INTERVAL_SECONDS is not used (manual-only mode, no polling)
       MODEL__HOME_COURT_ADVANTAGE_SPREAD: 3.2

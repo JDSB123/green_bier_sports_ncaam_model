@@ -117,6 +117,16 @@ TEAMS_WEBHOOK_URL = (
     or ""
 )
 
+# Teams Webhook Secret for validating outgoing webhook messages (OPTIONAL)
+# - Azure: set env var TEAMS_WEBHOOK_SECRET
+# - Docker: mount secret file at /run/secrets/teams_webhook_secret or set TEAMS_WEBHOOK_SECRET
+_teams_webhook_secret_file = os.getenv("TEAMS_WEBHOOK_SECRET_FILE", "/run/secrets/teams_webhook_secret")
+TEAMS_WEBHOOK_SECRET = (
+    os.getenv("TEAMS_WEBHOOK_SECRET")
+    or _read_optional_secret_file(_teams_webhook_secret_file, "teams_webhook_secret")
+    or ""
+)
+
 
 def _is_placeholder_teams_webhook(url: str) -> bool:
     u = (url or "").strip().lower()

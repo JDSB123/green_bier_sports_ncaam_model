@@ -272,6 +272,108 @@ async def predict(req: PredictRequest):
     return PredictionResponse(prediction=prediction_dict, recommendations=recommendations_list)
 
 
+# -----------------------------
+# Teams Outgoing Webhook Handler
+# -----------------------------
+
+import hmac
+import hashlib
+import json
+from fastapi import Request, HTTPException
+
+
+class TeamsWebhookMessage(BaseModel):
+    """Teams outgoing webhook message structure."""
+    text: str
+    type: str = "message"
+    timestamp: Optional[str] = None
+    from_field: Optional[dict] = Field(alias="from", default=None)
+    channelData: Optional[dict] = None
+
+
+def validate_teams_webhook(request_body: bytes, signature: str, secret: str) -> bool:
+    """Validate Teams webhook message using HMAC-SHA256."""
+    expected_signature = hmac.new(
+        secret.encode('utf-8'),
+        request_body,
+        hashlib.sha256
+    ).hexdigest()
+
+    # Teams sends signature as "sha256=<hash>"
+    if signature.startswith("sha256="):
+        provided_signature = signature[7:]  # Remove "sha256=" prefix
+    else:
+        provided_signature = signature
+
+    return hmac.compare_digest(expected_signature, provided_signature)
+
+
+@app.post("/teams-webhook")
+async def teams_webhook_handler(request: Request):
+    """Handle incoming messages from Teams outgoing webhook."""
+    try:
+        # Get the raw request body for signature validation
+        body = await request.body()
+        body_str = body.decode('utf-8')
+
+        # Get authorization header (contains the signature)
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+        # Get webhook secret from environment or file
+        webhook_secret = os.getenv("TEAMS_WEBHOOK_SECRET")
+        if not webhook_secret:
+            # Try reading from secret file (Docker)
+            secret_file = os.getenv("TEAMS_WEBHOOK_SECRET_FILE", "/run/secrets/teams_webhook_secret")
+            try:
+                with open(secret_file, 'r') as f:
+                    webhook_secret = f.read().strip()
+            except FileNotFoundError:
+                pass
+
+        if not webhook_secret:
+            logger.warning("TEAMS_WEBHOOK_SECRET not configured")
+            raise HTTPException(status_code=500, detail="Webhook secret not configured")
+
+        # Validate the request signature
+        if not validate_teams_webhook(body, auth_header, webhook_secret):
+            logger.warning("Invalid webhook signature")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
+        # Parse the message
+        message_data = json.loads(body_str)
+        logger.info(f"Received Teams webhook message: {message_data}")
+
+        # Extract message details
+        message_text = message_data.get("text", "").strip()
+        sender = message_data.get("from", {})
+        sender_name = sender.get("name", "Unknown")
+
+        # Process the message (you can add custom logic here)
+        logger.info(f"Message from {sender_name}: {message_text}")
+
+        # For now, just acknowledge receipt
+        # You can add logic to:
+        # - Parse commands like "@ncaam-bot predict tomorrow"
+        # - Trigger predictions
+        # - Send responses back to Teams
+
+        # Return a response (Teams expects a message response)
+        response = {
+            "type": "message",
+            "text": f"Received your message, {sender_name}: '{message_text}'"
+        }
+
+        return response
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    except Exception as e:
+        logger.error(f"Error processing Teams webhook: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 # Local run helper
 if __name__ == "__main__":
     import uvicorn

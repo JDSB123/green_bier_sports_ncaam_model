@@ -125,8 +125,8 @@
 ### Container Image
 - **Format:** `{acrName}.azurecr.io/ncaam-prediction:{tag}`
 - **Examples:**
-  - Production: `ncaamprodacr.azurecr.io/ncaam-prediction:v6.2.0`
-  - Development: `ncaamdevacr.azurecr.io/ncaam-prediction:v6.2.0`
+  - Production: `ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1`
+  - Development: `ncaamdevacr.azurecr.io/ncaam-prediction:v6.3.1`
 
 ---
 
@@ -196,7 +196,7 @@ ncaam-prod-prediction (Container App)
 ncaam-prod-logs (Log Analytics)
 
 # Container Image
-ncaamprodacr.azurecr.io/ncaam-prediction:v6.2.0
+ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1
 ```
 
 ### Full Development Deployment
@@ -213,7 +213,7 @@ ncaam-dev-prediction (Container App)
 ncaam-dev-logs (Log Analytics)
 
 # Container Image
-ncaamdevacr.azurecr.io/ncaam-prediction:v6.2.0
+ncaamdevacr.azurecr.io/ncaam-prediction:v6.3.1
 ```
 
 ---
