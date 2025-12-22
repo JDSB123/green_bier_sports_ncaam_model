@@ -920,8 +920,8 @@ def print_executive_table(all_picks: list, target_date) -> None:
         print("\n⚠️  No bets meet minimum edge thresholds")
         return
     
-    # Sort by fire rating (edge) descending
-    sorted_picks = sorted(all_picks, key=lambda p: p['edge'], reverse=True)
+    # Sort by game time ascending (earliest games first)
+    sorted_picks = sorted(all_picks, key=lambda p: p['time_cst'])
     
     # Header
     print()
@@ -1001,8 +1001,8 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         print("  ⚠️  No Teams webhook URL configured")
         return False
     
-    # Sort picks by edge descending
-    sorted_picks = sorted(all_picks, key=lambda p: p['edge'], reverse=True)
+    # Sort picks by game time ascending (earliest games first)
+    sorted_picks = sorted(all_picks, key=lambda p: p['time_cst'])
     
     # Persist CSV to output directory (host-mounted via docker-compose).
     # To save directly into a Teams channel's "Shared Documents", set PICKS_OUTPUT_HOST_DIR
