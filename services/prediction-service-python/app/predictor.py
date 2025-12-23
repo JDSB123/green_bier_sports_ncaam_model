@@ -427,6 +427,11 @@ class PredictionEngine:
         Returns:
             Complete Prediction object
         """
+        # Fail fast with a clear error message. The data pipeline is designed to
+        # guarantee ratings exist, but this guard makes API/test usage safer.
+        if home_ratings is None or away_ratings is None:
+            raise ValueError("home_ratings and away_ratings are required")
+
         # Generate raw predictions with v6.2 enhancements
         output = self.predictor.predict(
             home_ratings, away_ratings, is_neutral, home_rest, away_rest
