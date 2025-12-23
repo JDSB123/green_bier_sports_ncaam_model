@@ -172,12 +172,17 @@ class MarketOdds(BaseModel):
 
     @field_validator('total', 'total_1h', mode='before')
     @classmethod
-    def validate_totals(cls, v: Optional[float]) -> Optional[float]:
+    def validate_totals(cls, v: Optional[float], info) -> Optional[float]:
         if v is not None:
             if v <= 0:
                 raise ValueError("Total must be positive")
-            if v < 100 or v > 200:
-                raise ValueError("Total out of reasonable range (100-200)")
+            
+            if info.field_name == 'total_1h':
+                if v < 40 or v > 120:
+                    raise ValueError("1H Total out of reasonable range (40-120)")
+            else:
+                if v < 80 or v > 220:  # Relaxed range slightly
+                    raise ValueError("Total out of reasonable range (80-220)")
         return v
 
     @field_validator('spread', 'spread_1h', mode='before')

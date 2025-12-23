@@ -87,6 +87,9 @@ class DynamicVarianceCalculator:
 
         # Higher 3PR = more variance (league average baseline from config)
         three_pt_adj = (avg_3pr - self.league_avg_3pr) * self.three_pt_variance_factor
+        
+        # Pace mismatch adjustment
+        tempo_diff = abs(home_tempo - away_tempo)
         pace_adj = tempo_diff * self.pace_variance_factor
 
         # Total variance (clamped)
