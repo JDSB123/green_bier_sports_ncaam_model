@@ -2,8 +2,8 @@
 # NCAAM v6.3 - Azure Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════════
 # Usage:
-#   .\deploy.ps1 -Environment prod -OddsApiKey "YOUR_ACTUAL_KEY"
-#   .\deploy.ps1 -Environment dev -OddsApiKey "YOUR_ACTUAL_KEY" -SkipInfra
+#   .\deploy.ps1 -OddsApiKey "YOUR_ACTUAL_KEY"
+#   .\deploy.ps1 -OddsApiKey "YOUR_ACTUAL_KEY" -SkipInfra
 #   Note: -OddsApiKey parameter sets environment variable THE_ODDS_API_KEY in the container
 #   Optional: -TeamsWebhookUrl sets TEAMS_WEBHOOK_URL secret/env var for run_today.py --teams
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -11,7 +11,7 @@
 param(
     [Parameter(Mandatory=$false)]
     [ValidateSet('dev', 'staging', 'prod', 'stable')]
-    [string]$Environment = 'prod',
+    [string]$Environment = 'stable',
 
     [Parameter(Mandatory=$false)]
     [string]$OddsApiKey,
@@ -32,10 +32,7 @@ param(
     [switch]$SkipBuild,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v6.3.25',
-
-    [Parameter(Mandatory=$false)]
-    [switch]$EnterpriseMode = $true
+    [string]$ImageTag = 'v6.3.35'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -46,36 +43,7 @@ $ErrorActionPreference = 'Stop'
 
 $baseName = 'ncaam'
 $resourcePrefix = "$baseName-$Environment"
-
-# Enterprise mode: Use greenbier-enterprise-rg with ncaam- prefixed resources
-if ($EnterpriseMode) {
-    if ([string]::IsNullOrEmpty($ResourceGroup)) {
-        $ResourceGroup = 'greenbier-enterprise-rg'
-        # Ensure location matches enterprise RG (default to eastus)
-        if ($Location -eq 'centralus') {
-            $Location = 'eastus'
-        }
-    }
-    # In enterprise mode, prefix all resource names with 'ncaam-' to organize within RG
-    # Resource names stay the same, just organized in enterprise RG
-    
-    # HARDCODED: Enforce the correct naming convention for existing resources
-    # This prevents duplicate resource creation (e.g. ncaamprodacr vs ncaamprodgbeacr)
-    if ($Environment -eq 'prod') {
-        $acrName = 'ncaamprodgbeacr'
-    } elseif ($Environment -eq 'stable') {
-        # Stable environment uses dedicated RG without 'gbe' suffix
-        $acrName = 'ncaamstableacr'
-    } else {
-        $acrName = ($resourcePrefix -replace '-', '') + 'gbeacr'
-    }
-} else {
-    # Standard mode: Use dedicated resource group per environment
-    if ([string]::IsNullOrEmpty($ResourceGroup)) {
-        $ResourceGroup = "$resourcePrefix-rg"
-    }
-    $acrName = ($resourcePrefix -replace '-', '') + 'acr'
-}
+$acrName = 'ncaamstableacr'
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
@@ -85,7 +53,6 @@ Write-Host ""
 Write-Host "  Environment:    $Environment" -ForegroundColor Yellow
 Write-Host "  Resource Group: $ResourceGroup" -ForegroundColor Yellow
 Write-Host "  Location:       $Location" -ForegroundColor Yellow
-Write-Host "  Enterprise Mode: $EnterpriseMode" -ForegroundColor Yellow
 Write-Host "  ACR Name:       $acrName" -ForegroundColor Yellow
 Write-Host "  Image Tag:      $ImageTag" -ForegroundColor Yellow
 Write-Host ""
@@ -121,8 +88,7 @@ if ([string]::IsNullOrEmpty($OddsApiKey)) {
         Write-Warning "  ! Error fetching existing key: $_"
     }
     
-    # If still empty, check if we can proceed (e.g. maybe SkipInfra doesn't need it?)
-    # But Bicep usually needs it. If we can't find it, we must fail.
+    # If still empty, check if we can proceed
     if ([string]::IsNullOrEmpty($OddsApiKey)) {
         if (-not $SkipInfra) {
             Write-Error "OddsApiKey is required for infrastructure deployment and could not be found automatically. Please provide it via -OddsApiKey."
@@ -177,7 +143,7 @@ Write-Host "  [OK] Redis password generated (32 chars)" -ForegroundColor Gray
 
 # Optional: Load Teams webhook from repo secret file if not explicitly provided
 if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
-    $teamsSecretPath = Join-Path $PSScriptRoot "..\\secrets\\teams_webhook_url.txt"
+    $teamsSecretPath = Join-Path $PSScriptRoot "..\secrets\teams_webhook_url.txt"
     if (Test-Path $teamsSecretPath) {
         $TeamsWebhookUrl = (Get-Content $teamsSecretPath -Raw).Trim()
     }
@@ -209,12 +175,6 @@ if (-not $SkipInfra) {
     # Deploy Bicep template
     Write-Host "  Deploying Bicep template (this may take 10-15 minutes)..." -ForegroundColor Gray
 
-    # Calculate resource names for 'gbe' convention in Enterprise mode
-    $resourceNameSuffix = ''
-    if ($EnterpriseMode) {
-        $resourceNameSuffix = '-gbe'
-    }
-
     $deploymentOutput = az deployment group create `
         --resource-group $ResourceGroup `
         --template-file "$PSScriptRoot\main.bicep" `
@@ -227,7 +187,6 @@ if (-not $SkipInfra) {
             oddsApiKey=$OddsApiKey `
             teamsWebhookUrl=$TeamsWebhookUrl `
             imageTag=$ImageTag `
-            resourceNameSuffix=$resourceNameSuffix `
         --output json | ConvertFrom-Json
 
     if ($LASTEXITCODE -ne 0) {

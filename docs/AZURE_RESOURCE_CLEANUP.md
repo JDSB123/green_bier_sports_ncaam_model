@@ -1,91 +1,89 @@
-# Azure Resource Cleanup Guide
+# Azure Resource Cleanup - COMPLETED
 
-**Date:** December 21, 2025  
-**Purpose:** Identify and clean up duplicate/legacy Azure resource groups
+**Date:** December 23, 2025  
+**Status:** ✅ CLEANUP COMPLETE
 
 ---
 
-## 🔍 Current Azure Resource Groups
+## 🎯 Production Standard
 
-### Expected Resource Group (Active)
-- **Name:** `ncaam-prod-rg`
+All NCAAM resources are now consolidated in a single resource group:
+
+- **Resource Group:** `ncaam-stable-rg`
 - **Location:** `centralus`
-- **Status:** ✅ Active production deployment
-- **Used By:** Current deployment script (`azure/deploy.ps1`)
-
-### Legacy Resource Group (Potential Cleanup)
-- **Name:** `green-bier-ncaam`
-- **Location:** `eastus`
-- **Status:** ❓ Unknown - may be old/legacy deployment
-- **Used By:** ❌ Not referenced in current deployment scripts
+- **Container Registry:** `ncaamstableacr.azurecr.io`
 
 ---
 
-## 📋 What Should Exist
+## ✅ Cleanup Completed
 
-According to `azure/deploy.ps1`, the standard resource group is:
-- **Format:** `{baseName}-{environment}-rg`
-- **Example:** `ncaam-prod-rg` (for production)
-- **Default Location:** `centralus`
+The following legacy/duplicate resource groups have been cleaned up:
+
+| Resource Group | Status | Notes |
+|----------------|--------|-------|
+| `ncaam-prod-rg` | ❌ Deleted | Replaced by ncaam-stable-rg |
+| `green-bier-ncaam` | ❌ Deleted | Legacy deployment |
+| `greenbier-enterprise-rg` | ❌ Deleted | Enterprise mode deprecated |
 
 ---
 
-## 🧹 Cleanup Decision
+## 📋 Current Production Resources
 
-### Before Deleting `green-bier-ncaam`:
+All resources in `ncaam-stable-rg`:
 
-**Check what's in it:**
-```powershell
-# List all resources in the legacy group
-az resource list --resource-group green-bier-ncaam --output table
-
-# Check container apps
-az containerapp list --resource-group green-bier-ncaam --output table
-
-# Check databases
-az postgres flexible-server list --resource-group green-bier-ncaam --output table
-
-# Check Redis
-az redis list --resource-group green-bier-ncaam --output table
+```
+ncaam-stable-rg/
+├── ncaamstableacr           # Container Registry
+├── ncaam-stable-postgres    # PostgreSQL Flexible Server
+├── ncaam-stable-redis       # Azure Cache for Redis
+├── ncaam-stable-env         # Container Apps Environment
+├── ncaam-stable-prediction  # Container App
+└── ncaam-stable-logs        # Log Analytics Workspace
 ```
 
-### If `green-bier-ncaam` is Empty/Unused:
+---
 
-**Delete it:**
+## 🚀 Deployment
+
+Use the standard deployment script:
+
 ```powershell
-# WARNING: This will delete ALL resources in the group!
-az group delete --name green-bier-ncaam --yes --no-wait
+cd azure
+.\deploy.ps1 -OddsApiKey "YOUR_KEY"
 ```
 
-### If `green-bier-ncaam` Has Active Resources:
-
-**Option 1: Migrate resources** (if needed)
-- Move resources to `ncaam-prod-rg` if they're still needed
-
-**Option 2: Keep both** (if you need different environments)
-- Rename to follow naming convention: `ncaam-{env}-rg`
-- Use different locations for different purposes
+Default values:
+- **Resource Group:** `ncaam-stable-rg`
+- **Location:** `centralus`
+- **Environment:** `prod`
 
 ---
 
-## ✅ Standard Resource Group Naming
+## 📝 Naming Convention
 
-Going forward, use this naming convention:
-- **Production:** `ncaam-prod-rg`
-- **Staging:** `ncaam-staging-rg`
-- **Development:** `ncaam-dev-rg`
+Going forward, use this standard:
 
----
-
-## 🎯 Recommendation
-
-1. **Check resources** in `green-bier-ncaam`
-2. **If empty/unused:** Delete it
-3. **If has resources:** Decide if they're needed
-   - If needed: Keep or migrate to `ncaam-prod-rg`
-   - If not needed: Delete the resource group
+| Resource Type | Name |
+|---------------|------|
+| Resource Group | `ncaam-stable-rg` |
+| Container Registry | `ncaamstableacr` |
+| PostgreSQL | `ncaam-stable-postgres` |
+| Redis | `ncaam-stable-redis` |
+| Container Apps Env | `ncaam-stable-env` |
+| Container App | `ncaam-stable-prediction` |
+| Log Analytics | `ncaam-stable-logs` |
 
 ---
 
-**Remember:** Only `ncaam-prod-rg` should be used for production deployments going forward.
+## ✅ CI/CD Pipeline
 
+GitHub Actions automatically builds and pushes to `ncaamstableacr.azurecr.io`:
+
+- **Trigger:** Push to `main` branch
+- **Image:** `ncaamstableacr.azurecr.io/ncaam-prediction:{version}`
+- **Latest Version:** See `docker-compose.yml` line 134
+
+---
+
+**Cleanup Completed:** December 23, 2025  
+**Maintained By:** Development Team

@@ -1,6 +1,6 @@
 # Configuration Guide - Avoiding Port and Resource Conflicts
 
-**Date:** December 19, 2025  
+**Date:** December 23, 2025  
 **Purpose:** Make ports, locations, and resource names configurable to avoid conflicts with other projects
 
 ---
@@ -62,28 +62,23 @@ POSTGRES_HOST_PORT=5451 REDIS_HOST_PORT=6391 PREDICTION_HOST_PORT=8093 docker co
 ## 🌍 Azure Location Configuration
 
 ### Default Location
-- **Azure Region:** `eastus`
+- **Azure Region:** `centralus`
+- **Resource Group:** `ncaam-stable-rg`
 
 ### Changing Azure Location
 
-**Before running enterprise-deploy.sh:**
-```bash
-export AZURE_LOCATION="westus2"
-./azure/enterprise-deploy.sh
-```
-
-**Or edit enterprise-deploy.sh:**
-```bash
-LOCATION="${AZURE_LOCATION:-westus2}"
+**Using deploy.ps1:**
+```powershell
+.\azure\deploy.ps1 -Location "eastus" -OddsApiKey "YOUR_KEY"
 ```
 
 **Available Regions:**
-- `eastus` (default)
+- `centralus` (default)
+- `eastus`
 - `eastus2`
 - `westus`
 - `westus2`
 - `westus3`
-- `centralus`
 - `southcentralus`
 - `northcentralus`
 - See: `az account list-locations --output table`
@@ -107,18 +102,16 @@ This changes:
 
 ### Azure Resource Names
 
-**All Azure resources are configurable:**
+**Standard Production Resources (ncaam-stable-rg):**
 
-```bash
-export AZURE_RESOURCE_GROUP="my-ncaam-rg"
-export AZURE_ACR_NAME="myregistry"
-export AZURE_KEY_VAULT_NAME="my-secrets"
-export AZURE_CONTAINER_APP_ENV="my-env"
-export AZURE_POSTGRES_NAME="my-postgres"
-export AZURE_REDIS_NAME="my-redis"
-export AZURE_PREDICTION_NAME="my-prediction"
-./azure/enterprise-deploy.sh
-```
+| Resource | Name |
+|----------|------|
+| Resource Group | `ncaam-stable-rg` |
+| Container Registry | `ncaamstableacr` |
+| PostgreSQL | `ncaam-stable-postgres` |
+| Redis | `ncaam-stable-redis` |
+| Container App | `ncaam-stable-prediction` |
+| Log Analytics | `ncaam-stable-logs` |
 
 ---
 
@@ -165,18 +158,11 @@ export NETWORK_DATA_SUBNET="10.60.3.0/24"
 docker compose up -d
 ```
 
-### Azure Deployment (Custom Location/Names)
+### Azure Deployment
 
-```bash
-# Set Azure configuration
-export AZURE_LOCATION="westus2"
-export AZURE_RESOURCE_GROUP="ncaam-prod-rg"
-export AZURE_ACR_NAME="ncaamprodregistry"
-export AZURE_KEY_VAULT_NAME="ncaam-prod-secrets"
-export AZURE_CONTAINER_APP_ENV="ncaam-prod-env"
-
-# Deploy
-./azure/enterprise-deploy.sh
+```powershell
+# Deploy to production (ncaam-stable-rg)
+.\azure\deploy.ps1 -OddsApiKey "YOUR_KEY"
 ```
 
 ---
@@ -196,15 +182,6 @@ netstat -ano | findstr :8092
 lsof -i :5450
 lsof -i :6390
 lsof -i :8092
-```
-
-**Find available ports:**
-```bash
-# Windows PowerShell
-Get-NetTCPConnection | Where-Object {$_.LocalPort -notin 5450,6390,8092} | Select-Object LocalPort | Sort-Object -Unique
-
-# Linux/Mac
-comm -23 <(seq 5000 9000) <(ss -tan | awk '{print $4}' | cut -d':' -f2 | sort -u) | head -3
 ```
 
 ### Docker Resource Conflicts
@@ -236,11 +213,6 @@ az group list --query "[].name" -o table
 az acr list --query "[].name" -o table
 ```
 
-**Check existing Key Vaults:**
-```bash
-az keyvault list --query "[].name" -o table
-```
-
 ---
 
 ## 🛠️ Troubleshooting
@@ -269,17 +241,6 @@ docker compose down
 docker compose up -d
 ```
 
-### Azure Resource Name Conflict
-
-**Error:** `The resource name 'greenbier-enterprise-rg' is already taken`
-
-**Solution:**
-```bash
-# Use different name
-export AZURE_RESOURCE_GROUP="greenbier-enterprise-rg-$(date +%s)"
-./azure/enterprise-deploy.sh
-```
-
 ### Container Name Conflict
 
 **Error:** `Conflict. The container name "/ncaam_v6_model_postgres" is already in use`
@@ -299,7 +260,7 @@ docker compose up -d
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `COMPOSE_PROJECT_NAME` | `ncaam_v6_model_final` | Project name (affects all resource names) |
+| `COMPOSE_PROJECT_NAME` | `ncaam_v6_model` | Project name (affects all resource names) |
 | `POSTGRES_HOST_PORT` | `5450` | PostgreSQL host port |
 | `REDIS_HOST_PORT` | `6390` | Redis host port |
 | `PREDICTION_HOST_PORT` | `8092` | Prediction API host port |
@@ -310,15 +271,10 @@ docker compose up -d
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `AZURE_LOCATION` | `eastus` | Azure region |
-| `AZURE_RESOURCE_GROUP` | `greenbier-enterprise-rg` | Resource group name |
-| `AZURE_ACR_NAME` | `greenbieracr` | Container registry name |
-| `AZURE_KEY_VAULT_NAME` | `greenbier-keyvault` | Key Vault name |
-| `AZURE_CONTAINER_APP_ENV` | `greenbier-ncaam-env` | Container Apps environment |
-| `AZURE_POSTGRES_NAME` | `ncaam-postgres` | PostgreSQL container name |
-| `AZURE_REDIS_NAME` | `ncaam-redis` | Redis container name |
-| `AZURE_PREDICTION_NAME` | `ncaam-prediction` | Prediction service name |
-| `IMAGE_TAG` | `v6.0` | Container image tag |
+| `Location` | `centralus` | Azure region |
+| `ResourceGroup` | `ncaam-stable-rg` | Resource group name |
+| `Environment` | `stable` | Deployment environment |
+| `ImageTag` | `v6.3.35` | Container image tag |
 
 ---
 
@@ -335,13 +291,16 @@ docker compose up -d
 ## 📚 Related Documentation
 
 - `README.md` - Quick start guide
-- `docs/AZURE_MIGRATION.md` - Azure deployment guide
-- `config.example` - Configuration template
+- `azure/README.md` - Azure deployment guide
+- `docs/NAMING_STANDARDS.md` - Naming conventions
 
 ---
 
-**Last Updated:** December 19, 2025  
-**Version:** v6.0 ENTERPRISE
+**Last Updated:** December 23, 2025  
+**Version:** v6.3
+
+---
+
 # Ingestion Healthcheck
 
 This guide helps quickly validate external API ingestion is operational and resilient.

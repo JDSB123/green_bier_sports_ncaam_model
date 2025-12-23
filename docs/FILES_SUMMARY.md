@@ -1,96 +1,108 @@
-# Files Summary - Recent Changes
+# Files Summary - NCAAM Model
 
-**Date:** December 21, 2025  
-**Purpose:** Quick reference of files created/modified for enterprise resource organization
+**Date:** December 23, 2025  
+**Purpose:** Quick reference of key files in the repository
 
 ---
 
 ## 🎯 Essential Files (Required for Functionality)
 
 ### Deployment Files (Core)
-1. **`azure/deploy.ps1`** ✏️ Modified
-   - Added `-EnterpriseMode` flag
-   - Supports deploying to `greenbier-enterprise-rg`
-   - **Why:** Enables enterprise resource organization
+1. **`azure/deploy.ps1`** - One-click Azure deployment script
+   - Deploys to `ncaam-stable-rg`
+   - **Usage:** `.\deploy.ps1 -OddsApiKey "YOUR_KEY"`
 
-2. **`azure/main.bicep`** ✏️ Modified
-   - Added tags to all resources (`Model=ncaam`)
-   - **Why:** Organizes resources for filtering in enterprise RG
+2. **`azure/main.bicep`** - Azure infrastructure as code
+   - Defines all Azure resources
+   - Tags resources for organization
+
+3. **`docker-compose.yml`** - Local development/deployment
+   - Pulls from `ncaamstableacr.azurecr.io`
+   - **Usage:** `docker compose up -d`
+
+4. **`.github/workflows/build-and-push.yml`** - CI/CD pipeline
+   - Builds and pushes images on merge to main
+   - Updates docker-compose.yml with new version
 
 ---
 
 ## 📚 Documentation Files (Reference Only)
 
-3. **`docs/ENTERPRISE_RESOURCE_ORGANIZATION.md`** ✨ New
-   - Guide for enterprise resource organization
-   - **Why:** Documents how to use enterprise mode
-   - **Can review later:** ✅ Yes
-
-4. **`docs/AZURE_RESOURCE_CLEANUP.md`** ✨ New
-   - Guide for cleaning up duplicate resource groups
-   - **Why:** Helps identify which resources to keep/delete
-   - **Can review later:** ✅ Yes
-
-5. **`docs/DEVELOPMENT_WORKFLOW.md`** ✨ New
-   - Explains local/GitHub/Azure workflow
-   - **Why:** Clarifies where development happens
-   - **Can review later:** ✅ Yes
-
-6. **`azure/README.md`** ✏️ Modified
-   - Added enterprise mode deployment instructions
-   - **Why:** Updated deployment docs
-   - **Can review later:** ✅ Yes (if you remember the command)
+| File | Purpose |
+|------|---------|
+| `docs/AZURE_RESOURCE_CLEANUP.md` | Cleanup status and production standards |
+| `docs/NAMING_STANDARDS.md` | Resource naming conventions |
+| `docs/CONFIGURATION.md` | Port and environment configuration |
+| `azure/README.md` | Azure deployment guide |
+| `README.md` | Project overview |
 
 ---
 
-## 🛠️ Utility Scripts (Optional)
+## 🔧 Service Code
 
-7. **`scripts/cleanup-duplicate-azure-resources.ps1`** ✨ New
-   - Script to clean up duplicate resource groups
-   - **Why:** Helps remove `green-bier-ncaam` duplicate RG
-   - **Can review later:** ✅ Yes (use when ready to clean up)
+### Prediction Service (Python)
+- `services/prediction-service-python/` - Core prediction engine
+  - `app/predictor.py` - BarttorvikPredictor model
+  - `app/main.py` - FastAPI endpoints
+  - `run_today.py` - Daily picks orchestrator
+
+### Ratings Sync (Go)
+- `services/ratings-sync-go/` - Barttorvik ratings fetcher
+  - `main.go` - Ratings sync logic
+
+### Odds Ingestion (Rust)
+- `services/odds-ingestion-rust/` - The Odds API integration
+  - `src/main.rs` - Odds ingestion logic
 
 ---
 
-## 📋 Quick Summary
+## 📋 Quick Reference
 
-### What You Actually Need to Know:
-
-**To deploy to enterprise RG:**
+### Deploy to Azure
 ```powershell
-.\azure\deploy.ps1 -Environment prod -EnterpriseMode -OddsApiKey "YOUR_KEY"
+cd azure
+.\deploy.ps1 -OddsApiKey "YOUR_KEY"
 ```
 
-**That's it!** The rest is documentation for reference.
+### Run Locally
+```bash
+docker compose up -d
+```
 
-### What Changed?
-
-1. **Deployment script** now supports `-EnterpriseMode`
-2. **All resources** get tagged with `Model=ncaam`
-3. **Documentation** created for future reference
-
-### Files You Can Ignore for Now:
-
-- All `docs/*.md` files (documentation, review when needed)
-- `scripts/cleanup-*.ps1` (utility, use when cleaning up)
-
-### Files You Need:
-
-- `azure/deploy.ps1` (to deploy)
-- `azure/main.bicep` (infrastructure template)
+### Generate Daily Picks
+```bash
+docker compose exec prediction-service python /app/run_today.py --teams
+```
 
 ---
 
-## 🗑️ Want to Clean Up Documentation?
+## 🗂️ Project Structure
 
-If you want fewer files, we can:
-1. **Consolidate** multiple docs into one file
-2. **Delete** optional utility scripts (you can recreate if needed)
-3. **Keep only** essential deployment files
-
-Just let me know what you'd prefer!
+```
+/workspace/
+├── azure/                      # Azure deployment files
+│   ├── deploy.ps1             # Deployment script
+│   ├── main.bicep             # Infrastructure template
+│   └── parameters.prod.json   # Production parameters
+├── services/
+│   ├── prediction-service-python/  # Python prediction engine
+│   ├── ratings-sync-go/            # Go ratings fetcher
+│   └── odds-ingestion-rust/        # Rust odds ingestion
+├── database/
+│   └── migrations/            # SQL migrations
+├── docs/                      # Documentation
+├── testing/                   # Test scripts
+├── docker-compose.yml         # Container orchestration
+└── README.md                  # Project overview
+```
 
 ---
 
-**TL;DR:** Only 2 files actually matter for deployment (`deploy.ps1` and `main.bicep`). The rest is documentation you can review later.
+**TL;DR:** 
+- Deploy with `azure/deploy.ps1`
+- Run locally with `docker compose up -d`
+- Generate picks with `run_today.py`
 
+---
+
+**Last Updated:** December 23, 2025

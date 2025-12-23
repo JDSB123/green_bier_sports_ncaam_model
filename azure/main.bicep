@@ -15,9 +15,9 @@ targetScope = 'resourceGroup'
 // PARAMETERS
 // ─────────────────────────────────────────────────────────────────────────────────
 
-@description('Environment name (dev, staging, prod)')
-@allowed(['dev', 'staging', 'prod'])
-param environment string = 'prod'
+@description('Environment name (dev, staging, prod, stable)')
+@allowed(['dev', 'staging', 'prod', 'stable'])
+param environment string = 'stable'
 
 @description('Azure region for all resources')
 param location string = resourceGroup().location
@@ -42,7 +42,7 @@ param oddsApiKey string
 param teamsWebhookUrl string = ''
 
 @description('Container image tag')
-param imageTag string = 'v6.3.1'
+param imageTag string = 'v6.3.35'
 
 @description('Suffix for resource names (e.g. -gbe for enterprise resources)')
 param resourceNameSuffix string = ''

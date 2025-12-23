@@ -11,23 +11,23 @@ This directory contains everything needed to deploy the NCAAM prediction model t
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        Azure Resource Group                              │
-│                        (ncaam-prod-rg)                                  │
+│                        (ncaam-stable-rg)                                │
 │                                                                          │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐ │
 │  │ Azure Container │  │ Azure Database  │  │ Azure Cache for Redis  │ │
 │  │ Registry (ACR)  │  │ for PostgreSQL  │  │                        │ │
 │  │                 │  │                 │  │                        │ │
-│  │ ncaamprodacr    │  │ Flexible Server │  │ ncaam-prod-redis       │ │
-│  └────────┬────────┘  │ ncaam-prod-pg   │  └────────────────────────┘ │
+│  │ ncaamstableacr  │  │ Flexible Server │  │ ncaam-stable-redis     │ │
+│  └────────┬────────┘  │ ncaam-stable-pg │  └────────────────────────┘ │
 │           │           └────────┬────────┘              │               │
 │           │                    │                       │               │
 │           ▼                    ▼                       ▼               │
 │  ┌─────────────────────────────────────────────────────────────────┐  │
 │  │                   Container Apps Environment                     │  │
-│  │                   (ncaam-prod-env)                              │  │
+│  │                   (ncaam-stable-env)                            │  │
 │  │                                                                  │  │
 │  │  ┌────────────────────────────────────────────────────────────┐ │  │
-│  │  │            ncaam-prod-prediction                           │ │  │
+│  │  │            ncaam-stable-prediction                         │ │  │
 │  │  │                                                            │ │  │
 │  │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────────┐  │ │  │
 │  │  │  │ ratings-sync │ │ odds-ingest  │ │ prediction-svc   │  │ │  │
@@ -60,12 +60,11 @@ az account set --subscription "Your Subscription Name"
 ```powershell
 cd azure
 # Replace YOUR_ACTUAL_KEY with your real API key from https://the-odds-api.com/
-# The code will read from environment variable THE_ODDS_API_KEY
-.\deploy.ps1 -Environment prod -OddsApiKey "YOUR_ACTUAL_KEY"
+.\deploy.ps1 -OddsApiKey "YOUR_ACTUAL_KEY"
 ```
 
 This will:
-- Create Azure Resource Group
+- Create Azure Resource Group (`ncaam-stable-rg`)
 - Deploy Azure Container Registry
 - Deploy Azure Database for PostgreSQL
 - Deploy Azure Cache for Redis
@@ -78,53 +77,43 @@ This will:
 
 ```powershell
 # Check health
-curl https://ncaam-prod-prediction.azurecontainerapps.io/health
+curl https://ncaam-stable-prediction.azurecontainerapps.io/health
 
 # View logs
-az containerapp logs show -n ncaam-prod-prediction -g ncaam-prod-rg --follow
+az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --follow
 ```
 
 ## Deployment Options
 
-### Full Deployment (Default - Dedicated Resource Group)
+### Full Deployment (Default)
 
 ```powershell
-# Replace YOUR_ACTUAL_KEY with your real API key (sets env var THE_ODDS_API_KEY)
-.\deploy.ps1 -Environment prod -OddsApiKey "YOUR_ACTUAL_KEY"
-# Deploys to: ncaam-prod-rg (centralus)
-```
-
-### Enterprise Mode Deployment (greenbier-enterprise-rg)
-
-```powershell
-# Deploy to enterprise resource group with NCAAM model organization
-.\deploy.ps1 -Environment prod -EnterpriseMode -OddsApiKey "YOUR_ACTUAL_KEY"
-# Deploys to: greenbier-enterprise-rg (eastus)
-# Resources tagged with Model=ncaam for organization
+.\deploy.ps1 -OddsApiKey "YOUR_ACTUAL_KEY"
+# Deploys to: ncaam-stable-rg (centralus)
 ```
 
 ### Skip Infrastructure (Image Update Only)
 
 ```powershell
-.\deploy.ps1 -Environment prod -OddsApiKey "your-key" -SkipInfra
+.\deploy.ps1 -OddsApiKey "your-key" -SkipInfra
 ```
 
 ### Skip Docker Build (Redeploy Existing Image)
 
 ```powershell
-.\deploy.ps1 -Environment prod -OddsApiKey "your-key" -SkipBuild
+.\deploy.ps1 -OddsApiKey "your-key" -SkipBuild
 ```
 
 ### Custom Location
 
 ```powershell
-.\deploy.ps1 -Environment prod -OddsApiKey "your-key" -Location "eastus"
+.\deploy.ps1 -OddsApiKey "your-key" -Location "eastus"
 ```
 
 ### Custom Image Tag
 
 ```powershell
-.\deploy.ps1 -Environment prod -OddsApiKey "your-key" -ImageTag "v6.3.1"
+.\deploy.ps1 -OddsApiKey "your-key" -ImageTag "v6.3.35"
 ```
 
 ## Manual Deployment Steps
@@ -134,43 +123,43 @@ If you prefer to deploy manually:
 ### 1. Create Resource Group
 
 ```powershell
-az group create --name ncaam-prod-rg --location centralus
+az group create --name ncaam-stable-rg --location centralus
 ```
 
 ### 2. Deploy Bicep Template
 
 ```powershell
 az deployment group create `
-    --resource-group ncaam-prod-rg `
+    --resource-group ncaam-stable-rg `
     --template-file main.bicep `
     --parameters `
-        environment=prod `
+        environment=stable `
         postgresPassword="$(openssl rand -base64 24)" `
         redisPassword="$(openssl rand -base64 24)" `
-        oddsApiKey="YOUR_ACTUAL_KEY"  # Replace with real key - sets env var THE_ODDS_API_KEY
+        oddsApiKey="YOUR_ACTUAL_KEY"
 ```
 
 ### 3. Build and Push Image
 
 ```powershell
 # Login to ACR
-az acr login --name ncaamprodacr
+az acr login --name ncaamstableacr
 
 # Build
-docker build -t ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1 `
+docker build -t ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35 `
     -f services/prediction-service-python/Dockerfile.hardened .
 
 # Push
-docker push ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1
+docker push ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35
 ```
 
 ### 4. Update Container App
 
 ```powershell
 az containerapp update `
-    --name ncaam-prod-prediction `
-    --resource-group ncaam-prod-rg `
-    --image ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1
+    --name ncaam-stable-prediction `
+    --resource-group ncaam-stable-rg `
+    --image ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35
 ```
 
 ## Files
@@ -202,12 +191,10 @@ The container receives these environment variables:
 |----------|--------|-------------|
 | `DATABASE_URL` | Constructed | PostgreSQL connection string |
 | `REDIS_URL` | Constructed | Redis connection string |
-| `THE_ODDS_API_KEY` | **Environment Variable** | Odds API key (set via `-OddsApiKey` parameter) |
-| `TEAMS_WEBHOOK_URL` | Optional | Microsoft Teams Incoming Webhook URL (only needed for `run_today.py --teams`) |
+| `THE_ODDS_API_KEY` | Secret | Odds API key |
+| `TEAMS_WEBHOOK_URL` | Optional | Microsoft Teams Incoming Webhook URL |
 | `SPORT` | Config | Sport identifier (ncaam) |
 | `TZ` | Config | Timezone (America/Chicago) |
-
-**Note:** Code reads API key from environment variable `THE_ODDS_API_KEY`. The `-OddsApiKey` deployment parameter sets this environment variable.
 
 ## Secrets Management
 
@@ -226,7 +213,7 @@ Azure does **not** auto-run daily picks. When you want picks, run them manually 
 1. Open a shell:
 
 ```powershell
-az containerapp exec -n ncaam-prod-prediction -g greenbier-enterprise-rg --command sh
+az containerapp exec -n ncaam-stable-prediction -g ncaam-stable-rg --command sh
 ```
 
 2. Inside the shell, run:
@@ -254,8 +241,8 @@ To modify scaling:
 
 ```powershell
 az containerapp update `
-    --name ncaam-prod-prediction `
-    --resource-group ncaam-prod-rg `
+    --name ncaam-stable-prediction `
+    --resource-group ncaam-stable-rg `
     --min-replicas 1 `
     --max-replicas 3
 ```
@@ -265,20 +252,20 @@ az containerapp update `
 ### View Logs
 
 ```powershell
-az containerapp logs show -n ncaam-prod-prediction -g ncaam-prod-rg --follow
+az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --follow
 ```
 
 ### View Metrics
 
 ```powershell
 az monitor metrics list `
-    --resource /subscriptions/{sub}/resourceGroups/ncaam-prod-rg/providers/Microsoft.App/containerApps/ncaam-prod-prediction `
+    --resource /subscriptions/{sub}/resourceGroups/ncaam-stable-rg/providers/Microsoft.App/containerApps/ncaam-stable-prediction `
     --metric "Requests"
 ```
 
 ### Azure Portal
 
-Navigate to: **Azure Portal > Container Apps > ncaam-prod-prediction > Monitoring**
+Navigate to: **Azure Portal > Container Apps > ncaam-stable-prediction > Monitoring**
 
 ## Troubleshooting
 
@@ -286,10 +273,10 @@ Navigate to: **Azure Portal > Container Apps > ncaam-prod-prediction > Monitorin
 
 ```powershell
 # Check container app status
-az containerapp show -n ncaam-prod-prediction -g ncaam-prod-rg --query "properties.runningStatus"
+az containerapp show -n ncaam-stable-prediction -g ncaam-stable-rg --query "properties.runningStatus"
 
 # View system logs
-az containerapp logs show -n ncaam-prod-prediction -g ncaam-prod-rg --type system
+az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --type system
 ```
 
 ### Database Connection Issues
@@ -297,8 +284,8 @@ az containerapp logs show -n ncaam-prod-prediction -g ncaam-prod-rg --type syste
 ```powershell
 # Test PostgreSQL connectivity
 az postgres flexible-server execute `
-    -n ncaam-prod-postgres `
-    -g ncaam-prod-rg `
+    -n ncaam-stable-postgres `
+    -g ncaam-stable-rg `
     -u ncaam `
     -p "password" `
     -d ncaam `
@@ -309,10 +296,10 @@ az postgres flexible-server execute `
 
 ```powershell
 # Verify ACR credentials
-az acr credential show --name ncaamprodacr
+az acr credential show --name ncaamstableacr
 
 # Verify image exists
-az acr repository show-tags --name ncaamprodacr --repository ncaam-prediction
+az acr repository show-tags --name ncaamstableacr --repository ncaam-prediction
 ```
 
 ## Cleanup
@@ -320,7 +307,7 @@ az acr repository show-tags --name ncaamprodacr --repository ncaam-prediction
 To delete all Azure resources:
 
 ```powershell
-az group delete --name ncaam-prod-rg --yes --no-wait
+az group delete --name ncaam-stable-rg --yes --no-wait
 ```
 
 **Warning:** This deletes ALL resources including the database. Data will be lost.
@@ -336,9 +323,16 @@ az group delete --name ncaam-prod-rg --yes --no-wait
 | Scaling | Manual | Automatic |
 | SSL | Manual | Automatic |
 
+## CI/CD Pipeline
+
+GitHub Actions automatically builds and pushes images on merge to `main`:
+
+- **Workflow:** `.github/workflows/build-and-push.yml`
+- **ACR:** `ncaamstableacr.azurecr.io`
+- **Image:** `ncaam-prediction:{version}`
+
 ## Next Steps
 
 1. Set up custom domain (optional)
 2. Configure alerts for monitoring
-3. Set up CI/CD pipeline with GitHub Actions
-4. Configure backup retention for PostgreSQL
+3. Configure backup retention for PostgreSQL

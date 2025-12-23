@@ -1,6 +1,6 @@
 # Naming Standards - NCAAM Model
 
-**Date:** December 20, 2025  
+**Date:** December 23, 2025  
 **Purpose:** Standardize all resource naming across local, GitHub, and Azure
 
 ---
@@ -13,16 +13,16 @@
 
 ### Format Pattern
 ```
-{baseName}-{environment}-{resourceType}
+{baseName}-stable-{resourceType}
 ```
 
 **Examples:**
-- Resource Group: `ncaam-prod-rg`
-- Container Registry: `ncaamprodacr` (no hyphens - Azure requirement)
-- PostgreSQL: `ncaam-prod-postgres`
-- Redis: `ncaam-prod-redis`
-- Container App: `ncaam-prod-prediction`
-- Container Environment: `ncaam-prod-env`
+- Resource Group: `ncaam-stable-rg`
+- Container Registry: `ncaamstableacr` (no hyphens - Azure requirement)
+- PostgreSQL: `ncaam-stable-postgres`
+- Redis: `ncaam-stable-redis`
+- Container App: `ncaam-stable-prediction`
+- Container Environment: `ncaam-stable-env`
 
 ---
 
@@ -63,12 +63,6 @@
 - **Fix branches:** `fix/{description}`
 - **Hotfix branches:** `hotfix/{description}`
 
-**Deprecated/Removed:**
-- ❌ `ncaam-codex-review` (merged, deleted)
-- ❌ `ncaam_model_dev` (review before deletion)
-- ❌ `ncaam_model_testing` (review before deletion)
-- ❌ `temp-test` (deleted)
-
 ### Repository Name
 - **Current:** `green_bier_sports_ncaam_model`
 - **Standard:** Keep as-is (descriptive)
@@ -77,56 +71,34 @@
 
 ## ☁️ Azure Resources
 
-### Resource Group
-- **Format:** `{baseName}-{environment}-rg`
-- **Examples:**
-  - Production: `ncaam-prod-rg`
-  - Development: `ncaam-dev-rg`
-  - Staging: `ncaam-staging-rg`
+### Production Resource Group
+- **Name:** `ncaam-stable-rg`
+- **Location:** `centralus`
 
 ### Container Registry (ACR)
-- **Format:** `{baseName}{environment}acr` (no hyphens)
-- **Examples:**
-  - Production: `ncaamprodacr`
-  - Development: `ncaamdevacr`
+- **Name:** `ncaamstableacr` (no hyphens - Azure requirement)
+- **Login Server:** `ncaamstableacr.azurecr.io`
 
 ### PostgreSQL
-- **Format:** `{baseName}-{environment}-postgres`
+- **Server:** `ncaam-stable-postgres`
 - **Database Name:** `ncaam`
 - **Admin User:** `ncaam`
-- **Examples:**
-  - Production: `ncaam-prod-postgres`
-  - Development: `ncaam-dev-postgres`
 
 ### Redis Cache
-- **Format:** `{baseName}-{environment}-redis`
-- **Examples:**
-  - Production: `ncaam-prod-redis`
-  - Development: `ncaam-dev-redis`
+- **Name:** `ncaam-stable-redis`
 
 ### Container Apps Environment
-- **Format:** `{baseName}-{environment}-env`
-- **Examples:**
-  - Production: `ncaam-prod-env`
-  - Development: `ncaam-dev-env`
+- **Name:** `ncaam-stable-env`
 
 ### Container App
-- **Format:** `{baseName}-{environment}-prediction`
-- **Examples:**
-  - Production: `ncaam-prod-prediction`
-  - Development: `ncaam-dev-prediction`
+- **Name:** `ncaam-stable-prediction`
 
 ### Log Analytics
-- **Format:** `{baseName}-{environment}-logs`
-- **Examples:**
-  - Production: `ncaam-prod-logs`
-  - Development: `ncaam-dev-logs`
+- **Name:** `ncaam-stable-logs`
 
 ### Container Image
-- **Format:** `{acrName}.azurecr.io/ncaam-prediction:{tag}`
-- **Examples:**
-  - Production: `ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1`
-  - Development: `ncaamdevacr.azurecr.io/ncaam-prediction:v6.3.1`
+- **Format:** `ncaamstableacr.azurecr.io/ncaam-prediction:{tag}`
+- **Example:** `ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35`
 
 ---
 
@@ -134,36 +106,40 @@
 
 ### Azure Bicep (`azure/main.bicep`)
 - **baseName parameter:** `'ncaam'` (default)
-- **environment parameter:** `'prod'`, `'dev'`, `'staging'`
+- **environment parameter:** `'prod'` (default)
 
 ### Azure Deploy Script (`azure/deploy.ps1`)
 - **$baseName:** `'ncaam'`
-- **$resourcePrefix:** `"{baseName}-{environment}"`
-- **$acrName:** `"{resourcePrefix}acr"` (hyphens removed)
+- **$ResourceGroup:** `'ncaam-stable-rg'` (default)
+- **$acrName:** `'ncaamstableacr'`
 
 ### Docker Compose (`docker-compose.yml`)
 - **COMPOSE_PROJECT_NAME:** `ncaam_v6_model` (default)
 - **SPORT:** `ncaam` (default)
 - **DB_NAME:** `ncaam` (default, uses SPORT)
 - **DB_USER:** `ncaam` (default, uses SPORT)
+- **Image:** `ncaamstableacr.azurecr.io/ncaam-prediction:{version}`
+
+### GitHub Actions (`.github/workflows/build-and-push.yml`)
+- **ACR_NAME:** `ncaamstableacr`
+- **ACR_LOGIN_SERVER:** `ncaamstableacr.azurecr.io`
+- **IMAGE_NAME:** `ncaam-prediction`
 
 ---
 
 ## ✅ Validation Checklist
 
 ### Before Deployment
-- [ ] All resource names follow `{baseName}-{environment}-{resourceType}` pattern
-- [ ] ACR names have no hyphens (Azure requirement)
+- [ ] All resource names follow `ncaam-stable-{resourceType}` pattern
+- [ ] ACR name is `ncaamstableacr` (no hyphens)
 - [ ] Database name is `ncaam` (lowercase)
 - [ ] Database user is `ncaam` (lowercase)
 - [ ] SPORT environment variable is `ncaam` (lowercase)
-- [ ] No underscores in Azure resource names (use hyphens)
 - [ ] Container image repository is `ncaam-prediction`
 
 ### After Deployment
-- [ ] Verify all resources created with correct names
-- [ ] Check resource group contains all expected resources
-- [ ] Verify container app can connect to database
+- [ ] Verify all resources created in `ncaam-stable-rg`
+- [ ] Check container app can connect to database
 - [ ] Confirm Redis connection works
 - [ ] Test container app health endpoint
 
@@ -174,63 +150,31 @@
 - ❌ `NCAAM` (uppercase)
 - ❌ `ncaam_model` (underscore in Azure)
 - ❌ `ncaamModel` (camelCase)
-- ❌ `ncaam-prod-rg-prod` (redundant)
-- ❌ `ncaamprod` (missing environment)
-- ❌ `ncaam_prod_rg` (underscores instead of hyphens)
+- ❌ `ncaam-prod-rg` (deprecated)
+- ❌ `greenbier-enterprise-rg` (deprecated)
+- ❌ `green-bier-ncaam` (deprecated)
 
 ---
 
-## 📝 Examples
+## 📝 Production Deployment Example
 
-### Full Production Deployment
 ```powershell
 # Resource Group
-ncaam-prod-rg
+ncaam-stable-rg
 
 # Resources
-ncaamprodacr (ACR)
-ncaam-prod-postgres (PostgreSQL)
-ncaam-prod-redis (Redis)
-ncaam-prod-env (Container Apps Environment)
-ncaam-prod-prediction (Container App)
-ncaam-prod-logs (Log Analytics)
+ncaamstableacr (ACR)
+ncaam-stable-postgres (PostgreSQL)
+ncaam-stable-redis (Redis)
+ncaam-stable-env (Container Apps Environment)
+ncaam-stable-prediction (Container App)
+ncaam-stable-logs (Log Analytics)
 
 # Container Image
-ncaamprodacr.azurecr.io/ncaam-prediction:v6.3.1
-```
-
-### Full Development Deployment
-```powershell
-# Resource Group
-ncaam-dev-rg
-
-# Resources
-ncaamdevacr (ACR)
-ncaam-dev-postgres (PostgreSQL)
-ncaam-dev-redis (Redis)
-ncaam-dev-env (Container Apps Environment)
-ncaam-dev-prediction (Container App)
-ncaam-dev-logs (Log Analytics)
-
-# Container Image
-ncaamdevacr.azurecr.io/ncaam-prediction:v6.3.1
+ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35
 ```
 
 ---
 
-## 🔄 Migration Guide
-
-If you have existing resources with non-standard names:
-
-1. **Document current names** in a migration plan
-2. **Create new resources** with standard names
-3. **Migrate data** from old to new resources
-4. **Update configuration** to use new names
-5. **Delete old resources** after verification
-6. **Update documentation** with new names
-
----
-
-**Last Updated:** December 20, 2025  
+**Last Updated:** December 23, 2025  
 **Maintained By:** Development Team
-

@@ -38,6 +38,6 @@ Write-Host "GRAPH_CLIENT_SECRET: $clientSecret"
 Write-Host "GRAPH_TENANT_ID: $tenantId"
 Write-Host ""
 Write-Host "Run these commands to set secrets in your container app:"
-Write-Host "az containerapp secret set -n ncaam-prod-prediction -g greenbier-enterprise-rg --secrets graph-client-id=$appId graph-client-secret=$clientSecret graph-tenant-id=$tenantId"
-Write-Host "az containerapp update -n ncaam-prod-prediction -g greenbier-enterprise-rg --set-env-vars GRAPH_CLIENT_ID=secretref:graph-client-id GRAPH_CLIENT_SECRET=secretref:graph-client-secret GRAPH_TENANT_ID=secretref:graph-tenant-id"
+Write-Host "az containerapp secret set -n ncaam-stable-prediction -g ncaam-stable-rg --secrets graph-client-id=$appId graph-client-secret=$clientSecret graph-tenant-id=$tenantId"
+Write-Host "az containerapp update -n ncaam-stable-prediction -g ncaam-stable-rg --set-env-vars GRAPH_CLIENT_ID=secretref:graph-client-id GRAPH_CLIENT_SECRET=secretref:graph-client-secret GRAPH_TENANT_ID=secretref:graph-tenant-id"
 

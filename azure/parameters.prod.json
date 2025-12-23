@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "environment": {
-      "value": "prod"
+      "value": "stable"
     },
     "location": {
       "value": "centralus"
@@ -12,7 +12,7 @@
       "value": "ncaam"
     },
     "imageTag": {
-      "value": "v6.3.1"
+      "value": "v6.3.35"
     }
   }
 }
