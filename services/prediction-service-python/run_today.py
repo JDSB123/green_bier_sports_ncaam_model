@@ -939,55 +939,84 @@ def get_fire_rating(edge: float, bet_tier: str) -> str:
 
 
 def print_executive_table(all_picks: list, target_date) -> None:
-    """Print bottom-line-up-front executive summary table."""
+    """
+    Print executive summary table with format:
+    DATE/TIME CST | MATCHUP (Away vs Home w/records) | PICK (w/live odds) | MODEL | MARKET | EDGE | FIRE
+    """
     if not all_picks:
         print("\n⚠️  No bets meet minimum edge thresholds")
         return
     
-    # Sort by game time ascending (earliest games first)
-    sorted_picks = sorted(all_picks, key=lambda p: p['time_cst'])
+    # Sort by fire rating (descending), then edge (descending), then time
+    def sort_key(p):
+        fire_score = p['fire_rating'].count('◆')  # Count filled diamonds
+        return (-fire_score, -p['edge'], p['time_cst'])
+    
+    sorted_picks = sorted(all_picks, key=sort_key)
+    
+    # Count max plays
+    max_plays = sum(1 for p in sorted_picks if p.get('bet_tier') == 'max' or p['edge'] >= 5.0)
     
     # Header
     print()
-    print("┏" + "━" * 158 + "┓")
-    print("┃" + f"  🎯 EXECUTIVE BETTING SUMMARY - {target_date} ({len(sorted_picks)} PICKS)".ljust(158) + "┃")
-    print("┣" + "━" * 158 + "┫")
+    print("┏" + "━" * 145 + "┓")
+    print("┃" + f"  🎯 NCAAM PICKS - {target_date} | {len(sorted_picks)} PLAYS | {max_plays} MAX BETS".ljust(145) + "┃")
+    print("┣" + "━" * 145 + "┫")
     
-    # Column headers
+    # Column headers - simplified for clarity
     header = (
-        f"┃ {'TIME CST':<10} │ {'MATCHUP':<35} │ {'PERIOD':<6} │ {'MARKET':<8} │ "
-        f"{'PICK':<25} │ {'MODEL':<10} │ {'MARKET':<15} │ {'EDGE':<8} │ {'FIRE':<6} ┃"
+        f"┃ {'DATE/TIME':<12} │ {'MATCHUP (Away vs Home)':<40} │ "
+        f"{'RECOMMENDED PICK':<28} │ {'MODEL':<12} │ {'MARKET':<14} │ {'EDGE':<8} │ {'FIRE':<6} ┃"
     )
     print(header)
-    print("┣" + "━" * 158 + "┫")
+    print("┣" + "━" * 145 + "┫")
     
     # Data rows
     for pick in sorted_picks:
+        # Date/Time
+        date_str = pick.get('date_cst', str(target_date))[-5:]  # MM-DD format
         time_str = pick['time_cst']
-        matchup = f"{pick['away'][:15]} @ {pick['home'][:15]}"
-        period = pick['period']
-        market = pick['market']
+        datetime_str = f"{date_str} {time_str}"
         
-        # Format pick with team name and odds
+        # Matchup with records: "Away (W-L) vs Home (W-L)"
+        away_rec = f"({pick.get('away_record', '?')})" if pick.get('away_record') else ""
+        home_rec = f"({pick.get('home_record', '?')})" if pick.get('home_record') else ""
+        matchup = f"{pick['away'][:14]} {away_rec} vs {pick['home'][:14]} {home_rec}"
+        if len(matchup) > 40:
+            matchup = matchup[:37] + "..."
+        
+        # Recommended pick with live odds (already formatted)
         pick_str = pick['pick_display']
+        if len(pick_str) > 28:
+            pick_str = pick_str[:25] + "..."
         
-        # Model and market predictions
+        # Model prediction
         model_str = pick['model_line']
+        if len(model_str) > 12:
+            model_str = model_str[:12]
+        
+        # Market price
         market_str = pick['market_line']
+        if len(market_str) > 14:
+            market_str = market_str[:14]
         
         # Edge
-        edge_str = f"{pick['edge']:.1f} pts" if pick['market'] != "ML" else f"{pick['edge']:.1f}%"
+        edge_str = f"{pick['edge']:.1f}pts"
         
         # Fire rating
         fire = pick['fire_rating']
         
         row = (
-            f"┃ {time_str:<10} │ {matchup:<35} │ {period:<6} │ {market:<8} │ "
-            f"{pick_str:<25} │ {model_str:<10} │ {market_str:<15} │ {edge_str:<8} │ {fire:<6} ┃"
+            f"┃ {datetime_str:<12} │ {matchup:<40} │ "
+            f"{pick_str:<28} │ {model_str:<12} │ {market_str:<14} │ {edge_str:<8} │ {fire:<6} ┃"
         )
         print(row)
     
-    print("┗" + "━" * 158 + "┛")
+    print("┗" + "━" * 145 + "┛")
+    
+    # Legend
+    print()
+    print("  LEGEND: ◆◆◆◆◆ = MAX BET (5+ pts edge) | ◆◆◆◆◇ = STRONG (4+ pts) | ◆◆◆◇◇ = SOLID (3.5+ pts)")
     print()
 
 
@@ -1039,30 +1068,36 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         csv_path = out_dir / f"ncaam_picks_{target_date}_{ts}.csv"
         with csv_path.open("w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
+            # Header row matches the new table format
             w.writerow(
                 [
-                    "date_time_cst",
-                    "matchup_away_vs_home",
-                    "segment",
-                    "recommended_pick_live_odds",
-                    "market_pricing",
-                    "model_expectation",
-                    "edge",
-                    "fire_rating",
+                    "Date/Time CST",
+                    "Matchup (Away vs Home)",
+                    "Recommended Pick (Live Odds)",
+                    "Model Prediction",
+                    "Market Price",
+                    "Edge",
+                    "Fire Rating",
                 ]
             )
             for p in sorted_picks:
-                matchup = f"{p['away']} ({p.get('away_record') or '?'}) vs {p['home']} ({p.get('home_record') or '?'})"
+                # Date/Time CST
                 date_time = f"{p.get('date_cst', target_date)} {p.get('time_cst','')}".strip()
+                
+                # Matchup with records
+                away_rec = p.get('away_record') or '?'
+                home_rec = p.get('home_record') or '?'
+                matchup = f"{p['away']} ({away_rec}) vs {p['home']} ({home_rec})"
+                
+                # Write row
                 w.writerow(
                     [
                         date_time,
                         matchup,
-                        p.get("period", ""),
                         p.get("pick_display", ""),
-                        p.get("market_line", ""),
                         p.get("model_line", ""),
-                        f"{p.get('edge', 0.0):.2f}",
+                        p.get("market_line", ""),
+                        f"{p.get('edge', 0.0):.1f} pts",
                         p.get("fire_rating", ""),
                     ]
                 )
@@ -1078,38 +1113,68 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         html_path = out_dir / "latest_picks.html"
         
         # Simple CSS-styled HTML table
+        # Count max plays for summary
+        max_plays = sum(1 for p in sorted_picks if p.get('bet_tier') == 'max' or p.get('edge', 0) >= 5.0)
+        
         html_content = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <title>NCAAM Picks - {target_date}</title>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
-                h1 {{ color: #333; }}
-                .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background: #1a1a2e; color: #eee; }}
+                h1 {{ color: #fff; margin-bottom: 5px; }}
+                .container {{ max-width: 1400px; margin: 0 auto; background: #16213e; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }}
+                .summary {{ background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%); padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }}
+                .summary h2 {{ margin: 0; font-size: 1.5em; }}
+                .summary .stats {{ display: flex; gap: 30px; margin-top: 10px; }}
+                .summary .stat {{ text-align: center; }}
+                .summary .stat-value {{ font-size: 2em; font-weight: bold; color: #e94560; }}
+                .summary .stat-label {{ font-size: 0.8em; color: #888; }}
                 table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-                th {{ background: #2c3e50; color: white; padding: 12px; text-align: left; }}
-                td {{ padding: 12px; border-bottom: 1px solid #ddd; }}
-                tr:hover {{ background-color: #f9f9f9; }}
-                .fire {{ color: #e74c3c; font-weight: bold; }}
-                .edge-high {{ color: #27ae60; font-weight: bold; }}
-                .timestamp {{ color: #7f8c8d; font-size: 0.9em; margin-bottom: 20px; }}
+                th {{ background: #0f3460; color: #fff; padding: 14px 10px; text-align: left; font-weight: 600; }}
+                td {{ padding: 12px 10px; border-bottom: 1px solid #2a2a4a; }}
+                tr:hover {{ background-color: #1f2b4d; }}
+                .fire {{ color: #e94560; font-weight: bold; letter-spacing: 1px; }}
+                .edge-max {{ color: #00ff88; font-weight: bold; }}
+                .edge-high {{ color: #00cc6a; font-weight: bold; }}
+                .edge-med {{ color: #ffa600; }}
+                .pick {{ font-weight: 600; color: #4fc3f7; }}
+                .matchup {{ font-size: 0.95em; }}
+                .record {{ color: #888; font-size: 0.85em; }}
+                .timestamp {{ color: #666; font-size: 0.85em; margin-bottom: 15px; }}
+                .legend {{ margin-top: 20px; padding: 15px; background: #0f3460; border-radius: 8px; font-size: 0.9em; }}
+                .legend span {{ margin-right: 20px; }}
             </style>
         </head>
         <body>
             <div class="container">
-                <h1>🏀 NCAAM Predictions</h1>
+                <h1>🏀 NCAAM PICKS</h1>
                 <div class="timestamp">Generated: {datetime.now(CST).strftime("%Y-%m-%d %H:%M CST")} | Target Date: {target_date}</div>
+                
+                <div class="summary">
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value">{len(sorted_picks)}</div>
+                            <div class="stat-label">TOTAL PICKS</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">{max_plays}</div>
+                            <div class="stat-label">MAX BETS</div>
+                        </div>
+                    </div>
+                </div>
+                
                 <table>
                     <thead>
                         <tr>
-                            <th>Time</th>
-                            <th>Matchup</th>
-                            <th>Seg</th>
-                            <th>Pick</th>
-                            <th>Market</th>
+                            <th>Date/Time</th>
+                            <th>Matchup (Away vs Home)</th>
+                            <th>Recommended Pick</th>
                             <th>Model</th>
+                            <th>Market</th>
                             <th>Edge</th>
                             <th>Fire</th>
                         </tr>
@@ -1118,19 +1183,32 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         """
         
         for p in sorted_picks:
-            matchup = f"{p['away']} vs {p['home']}"
+            # Date/Time
+            date_time = f"{p.get('date_cst', str(target_date))[-5:]} {p.get('time_cst', '')}"
+            
+            # Matchup with records
+            away_rec = f"<span class='record'>({p.get('away_record', '?')})</span>" if p.get('away_record') else ""
+            home_rec = f"<span class='record'>({p.get('home_record', '?')})</span>" if p.get('home_record') else ""
+            matchup = f"{p['away']} {away_rec} vs {p['home']} {home_rec}"
+            
             edge_val = p.get('edge', 0.0)
-            edge_class = "edge-high" if edge_val > 3.0 else ""
+            if edge_val >= 5.0:
+                edge_class = "edge-max"
+            elif edge_val >= 4.0:
+                edge_class = "edge-high"
+            elif edge_val >= 3.0:
+                edge_class = "edge-med"
+            else:
+                edge_class = ""
             
             html_content += f"""
                         <tr>
-                            <td>{p.get('time_cst', '')}</td>
-                            <td>{matchup}</td>
-                            <td>{p.get('period', '')}</td>
-                            <td>{p.get('pick_display', '')}</td>
-                            <td>{p.get('market_line', '')}</td>
+                            <td>{date_time}</td>
+                            <td class="matchup">{matchup}</td>
+                            <td class="pick">{p.get('pick_display', '')}</td>
                             <td>{p.get('model_line', '')}</td>
-                            <td class="{edge_class}">{edge_val:.1f}</td>
+                            <td>{p.get('market_line', '')}</td>
+                            <td class="{edge_class}">{edge_val:.1f} pts</td>
                             <td class="fire">{p.get('fire_rating', '')}</td>
                         </tr>
             """
@@ -1138,6 +1216,14 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         html_content += """
                     </tbody>
                 </table>
+                
+                <div class="legend">
+                    <strong>FIRE RATING:</strong>
+                    <span>◆◆◆◆◆ = MAX BET (5+ pts edge)</span>
+                    <span>◆◆◆◆◇ = STRONG (4+ pts)</span>
+                    <span>◆◆◆◇◇ = SOLID (3.5+ pts)</span>
+                    <span>◆◆◇◇◇ = STANDARD (3+ pts)</span>
+                </div>
             </div>
         </body>
         </html>
@@ -1604,6 +1690,12 @@ def main():
                 # Fire rating
                 fire = get_fire_rating(rec['edge'], rec.get('bet_tier', 'STANDARD'))
                 
+                # Determine pick side for display purposes
+                if market == "SPREAD" or market == "ML":
+                    pick_side = "home" if pick_val == "HOME" else "away"
+                else:
+                    pick_side = "over" if pick_val == "OVER" else "under"
+                
                 all_picks.append({
                     "date_cst": game.get("date_cst"),
                     "time_cst": game["time_cst"],
@@ -1614,6 +1706,7 @@ def main():
                     "period": period,
                     "market": market,
                     "pick_display": pick_display,
+                    "pick_side": pick_side,
                     "model_line": model_str,
                     "market_line": market_str,
                     "edge": rec['edge'],
