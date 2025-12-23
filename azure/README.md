@@ -336,3 +336,23 @@ GitHub Actions automatically builds and pushes images on merge to `main`:
 1. Set up custom domain (optional)
 2. Configure alerts for monitoring
 3. Configure backup retention for PostgreSQL
+
+## Custom domain (www.greenbiersportventures.com)
+
+This repo can host a simple website via Azure Container Apps (`ncaam-stable-web`). To bind your domain:
+
+1) Deploy infra (and the web app) first:
+
+- `cd azure`
+- `./deploy.ps1 -OddsApiKey "YOUR_KEY"`
+
+2) Create DNS records at your registrar:
+
+- **CNAME**: `www` → the web app FQDN (shown in Azure Portal or via `az containerapp show`)
+- **TXT**: `asuid.www` → token returned by the hostname add step
+
+3) Run the binding script:
+
+- `./bind-domain.ps1 -Hostname www.greenbiersportventures.com`
+
+It will print the required DNS records (first run) and then bind a managed TLS certificate once DNS is verified.

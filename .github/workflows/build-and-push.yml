@@ -7,12 +7,20 @@ on:
       - 'services/prediction-service-python/**'
       - 'services/ratings-sync-go/**'
       - 'services/odds-ingestion-rust/**'
+      - 'services/web-frontend/**'
+      - 'azure/**'
       - '.github/workflows/build-and-push.yml'
 
 env:
   ACR_NAME: ncaamstableacr
   ACR_LOGIN_SERVER: ncaamstableacr.azurecr.io
-  IMAGE_NAME: ncaam-prediction
+
+  PRED_IMAGE: ncaam-prediction
+  WEB_IMAGE: gbsv-web
+  RATINGS_IMAGE: ncaam-ratings-sync
+  ODDS_IMAGE: ncaam-odds-ingestion
+
+  RESOURCE_GROUP: ncaam-stable-rg
 
 jobs:
   build-and-push:
@@ -29,7 +37,7 @@ jobs:
       - name: Get version from commit
         id: version
         run: |
-          # Generate version: v6.3.{25 + run_number} to continue from v6.3.25b
+          # Generate version: v6.3.{25 + run_number} to continue from v6.3.25
           VERSION="v6.3.$((25 + ${{ github.run_number }}))"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
@@ -42,26 +50,82 @@ jobs:
       - name: Log in to ACR
         run: az acr login --name ${{ env.ACR_NAME }}
 
-      - name: Build and push prediction-service
+      - name: Build and push images
         run: |
+          set -euo pipefail
+
+          echo "Building and pushing images to $ACR_LOGIN_SERVER"
+
+          # Prediction (hardened Dockerfile uses repo root context)
           docker build --no-cache \
-            -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
-            -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest \
-            ./services/prediction-service-python
+            -f services/prediction-service-python/Dockerfile.hardened \
+            -t $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.version }} \
+            -t $ACR_LOGIN_SERVER/$PRED_IMAGE:latest \
+            .
 
-          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+          docker push $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.version }}
+          docker push $ACR_LOGIN_SERVER/$PRED_IMAGE:latest
 
-      - name: Deploy to Azure Container Apps
+          # Web
+          docker build --no-cache \
+            -f services/web-frontend/Dockerfile \
+            -t $ACR_LOGIN_SERVER/$WEB_IMAGE:${{ steps.version.outputs.version }} \
+            -t $ACR_LOGIN_SERVER/$WEB_IMAGE:latest \
+            services/web-frontend
+
+          docker push $ACR_LOGIN_SERVER/$WEB_IMAGE:${{ steps.version.outputs.version }}
+          docker push $ACR_LOGIN_SERVER/$WEB_IMAGE:latest
+
+          # Ratings sync
+          docker build --no-cache \
+            -f services/ratings-sync-go/Dockerfile \
+            -t $ACR_LOGIN_SERVER/$RATINGS_IMAGE:${{ steps.version.outputs.version }} \
+            -t $ACR_LOGIN_SERVER/$RATINGS_IMAGE:latest \
+            services/ratings-sync-go
+
+          docker push $ACR_LOGIN_SERVER/$RATINGS_IMAGE:${{ steps.version.outputs.version }}
+          docker push $ACR_LOGIN_SERVER/$RATINGS_IMAGE:latest
+
+          # Odds ingestion
+          docker build --no-cache \
+            -f services/odds-ingestion-rust/Dockerfile \
+            -t $ACR_LOGIN_SERVER/$ODDS_IMAGE:${{ steps.version.outputs.version }} \
+            -t $ACR_LOGIN_SERVER/$ODDS_IMAGE:latest \
+            services/odds-ingestion-rust
+
+          docker push $ACR_LOGIN_SERVER/$ODDS_IMAGE:${{ steps.version.outputs.version }}
+          docker push $ACR_LOGIN_SERVER/$ODDS_IMAGE:latest
+
+      - name: Deploy to Azure Container Apps (best-effort)
         run: |
-          # Update the container app with the new image
-          # Note: Fails gracefully if the container app doesn't exist yet (first run requires deploy.ps1)
+          # Prediction API
           az containerapp update \
             --name ncaam-stable-prediction \
-            --resource-group ncaam-stable-rg \
-            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} || echo "Container App not found or update failed. Skipping deployment."
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.version }} \
+            --output none || echo "Prediction Container App not found or update failed. Skipping."
 
-      - name: Update docker-compose.yml with new version
+          # Web
+          az containerapp update \
+            --name ncaam-stable-web \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.version }} \
+            --output none || echo "Web Container App not found or update failed. Skipping."
+
+          # Manual jobs
+          az containerapp job update \
+            --name ncaam-stable-ratings-sync \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.version }} \
+            --output none || echo "Ratings job not found or update failed. Skipping."
+
+          az containerapp job update \
+            --name ncaam-stable-odds-ingestion \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.version }} \
+            --output none || echo "Odds ingestion job not found or update failed. Skipping."
+
+      - name: Update docker-compose.yml with new prediction-service version
         run: |
           sed -i "s|image: ncaamstableacr.azurecr.io/ncaam-prediction:.*|image: ncaamstableacr.azurecr.io/ncaam-prediction:${{ steps.version.outputs.version }}|" docker-compose.yml
 
@@ -78,6 +142,9 @@ jobs:
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Prediction:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ratings Job:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Odds Job:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Run \`.\predict.bat\` to use the new version." >> $GITHUB_STEP_SUMMARY
+          echo "If infra isn't deployed yet, run \\`azure/deploy.ps1\\` first." >> $GITHUB_STEP_SUMMARY

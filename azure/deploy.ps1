@@ -42,6 +42,9 @@ $ErrorActionPreference = 'Stop'
 # ─────────────────────────────────────────────────────────────────────────────────
 
 $baseName = 'ncaam'
+$webImageName = 'gbsv-web'
+$ratingsImageName = "$baseName-ratings-sync"
+$oddsImageName = "$baseName-odds-ingestion"
 $resourcePrefix = "$baseName-$Environment"
 $acrName = 'ncaamstableacr'
 
@@ -221,29 +224,50 @@ if (-not $SkipBuild) {
     Write-Host "  Logging in to ACR..." -ForegroundColor Gray
     az acr login --name $acrName
 
-    # Build image
-    $imageName = "$acrLoginServer/$baseName-prediction:$ImageTag"
-    Write-Host "  Building image: $imageName" -ForegroundColor Gray
-
     Push-Location "$PSScriptRoot\.."
-    docker build -t $imageName -f services/prediction-service-python/Dockerfile.hardened .
 
-    if ($LASTEXITCODE -ne 0) {
-        Pop-Location
-        Write-Error "Docker build failed!"
-    }
+    $images = @(
+        @{ Name = "$acrLoginServer/$baseName-prediction:$ImageTag"; Context = "."; Dockerfile = "services/prediction-service-python/Dockerfile.hardened" },
+        @{ Name = "$acrLoginServer/$webImageName:$ImageTag"; Context = "services/web-frontend"; Dockerfile = "services/web-frontend/Dockerfile" },
+        @{ Name = "$acrLoginServer/$ratingsImageName:$ImageTag"; Context = "services/ratings-sync-go"; Dockerfile = "services/ratings-sync-go/Dockerfile" },
+        @{ Name = "$acrLoginServer/$oddsImageName:$ImageTag"; Context = "services/odds-ingestion-rust"; Dockerfile = "services/odds-ingestion-rust/Dockerfile" }
+    )
 
-    # Push image
-    Write-Host "  Pushing image to ACR..." -ForegroundColor Gray
-    docker push $imageName
+    foreach ($img in $images) {
+        Write-Host "  Building image: $($img.Name)" -ForegroundColor Gray
+        docker build --no-cache -t $($img.Name) -f $($img.Dockerfile) $($img.Context)
+        if ($LASTEXITCODE -ne 0) {
+            Pop-Location
+            Write-Error "Docker build failed for $($img.Name)!"
+        }
 
-    if ($LASTEXITCODE -ne 0) {
-        Pop-Location
-        Write-Error "Docker push failed!"
+        Write-Host "  Pushing image: $($img.Name)" -ForegroundColor Gray
+        docker push $($img.Name)
+        if ($LASTEXITCODE -ne 0) {
+            Pop-Location
+            Write-Error "Docker push failed for $($img.Name)!"
+        }
     }
 
     Pop-Location
-    Write-Host "  [OK] Image pushed: $imageName" -ForegroundColor Gray
+    Write-Host "  [OK] Images pushed to ACR" -ForegroundColor Gray
+
+    # Best-effort: update running Container Apps (useful with --SkipInfra)
+    try {
+        az containerapp update --name "$resourcePrefix-prediction" --resource-group $ResourceGroup --image "$acrLoginServer/$baseName-prediction:$ImageTag" --output none
+    } catch { }
+
+    try {
+        az containerapp update --name "$resourcePrefix-web" --resource-group $ResourceGroup --image "$acrLoginServer/$webImageName:$ImageTag" --output none
+    } catch { }
+
+    try {
+        az containerapp job update --name "$resourcePrefix-ratings-sync" --resource-group $ResourceGroup --image "$acrLoginServer/$ratingsImageName:$ImageTag" --output none
+    } catch { }
+
+    try {
+        az containerapp job update --name "$resourcePrefix-odds-ingestion" --resource-group $ResourceGroup --image "$acrLoginServer/$oddsImageName:$ImageTag" --output none
+    } catch { }
 } else {
     Write-Host ""
     Write-Host "[4/6] Skipping Docker build (--SkipBuild)" -ForegroundColor Yellow
