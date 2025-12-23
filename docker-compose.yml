@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# GREEN BIER SPORT VENTURES - NCAAM v6.3.1 FINAL
+# GREEN BIER SPORT VENTURES - NCAAM v33.0 FINAL
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enterprise-ready sports prediction model with:
 # - Dynamic port allocation (no conflicts with other sports)
@@ -8,7 +8,7 @@
 # - Self-contained Docker secrets (no .env dependencies)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}
+name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # DOCKER SECRETS - ALL SECRETS FROM FILES (NO ENV VAR FALLBACKS)
@@ -59,7 +59,7 @@ services:
 
   postgres:
     image: timescale/timescaledb:latest-pg15
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_postgres
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_postgres
     <<: *common-env
     secrets:
       - db_password
@@ -102,7 +102,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_redis
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_redis
     <<: [*resource-limits, *security-opts]
     secrets:
       - redis_password
@@ -131,8 +131,8 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
-    image: ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.41
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_prediction
+    image: ncaamstableacr.azurecr.io/ncaam-prediction:v33.0
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
       - db_password
@@ -196,8 +196,8 @@ services:
     build:
       context: ./services/ratings-sync-go
       dockerfile: ./Dockerfile
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_ratings_sync:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_ratings_sync
+    image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_ratings_sync:33.0
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_ratings_sync
     <<: [*common-env, *resource-limits]
     secrets:
       - db_password
@@ -234,8 +234,8 @@ services:
     build:
       context: ./services/odds-ingestion-rust
       dockerfile: ./Dockerfile
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_odds_ingestion:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_odds_full_once
+    image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_ingestion:33.0
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_full_once
     <<: [*common-env, *security-opts, *resource-limits]
     secrets:
       - db_password
@@ -267,8 +267,8 @@ services:
     restart: "no"
 
   odds-1h-once:
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_odds_ingestion:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_odds_h1_once
+    image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_ingestion:33.0
+    container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_h1_once
     <<: [*common-env, *security-opts, *resource-limits]
     secrets:
       - db_password
@@ -301,20 +301,21 @@ services:
 
 volumes:
   ncaam_v6_postgres_data:
-    name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_postgres_data
+    name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_postgres_data
 
 networks:
   ncaam_v6_backend:
-    name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_backend
+    name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_backend
     driver: bridge
     ipam:
       config:
         - subnet: ${NETWORK_BACKEND_SUBNET:-10.51.2.0/24}
 
   ncaam_v6_data:
-    name: ${COMPOSE_PROJECT_NAME:-ncaam_v6_model}_data
+    name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_data
     driver: bridge
     ipam:
       config:
         - subnet: ${NETWORK_DATA_SUBNET:-10.51.3.0/24}
+
 
