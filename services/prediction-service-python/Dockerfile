@@ -25,9 +25,9 @@ COPY start.sh /app/start.sh
 EXPOSE 8082
 
 # Default environment (override via compose/env)
-# Using psycopg2 (sync) driver - NOT asyncpg
-ENV DATABASE_URL=postgresql+psycopg2://ncaam:ncaam@postgres:5432/ncaam \
-    REDIS_URL=redis://redis:6379
+# NOTE: DATABASE_URL and REDIS_URL are constructed from secrets at runtime
+# Do NOT set them here - they would override secret-based construction in run_today.py
+ENV PYTHONPATH=/app
 
 # Run FastAPI with uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8082"]
