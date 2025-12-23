@@ -212,21 +212,19 @@ class OddsSyncService:
 
     def _parse_market(
         self, market: Dict[str, Any], home_team: str, away_team: str
-    ) -> Dict[str, Any]:
+    ) -> Optional[Dict[str, Any]]:
         """Parse a market into normalized odds fields."""
         market_key = market.get("key", "")
         outcomes = market.get("outcomes", [])
         
-        # Normalize market_type to base type (strip _h1/_h2 suffix)
+        # Only spreads/totals are supported
         if "spreads" in market_key:
             normalized_market = "spreads"
         elif "totals" in market_key:
             normalized_market = "totals"
-        elif "h2h" in market_key:
-            normalized_market = "h2h"
         else:
-            normalized_market = market_key
-        
+            return None
+
         result = {
             "market_type": normalized_market,
             "period": self._get_period(market_key),
@@ -257,14 +255,7 @@ class OddsSyncService:
                     result["over_price"] = outcome.get("price")
                 elif name == "under":
                     result["under_price"] = outcome.get("price")
-        elif "h2h" in market_key:
-            for outcome in outcomes:
-                name = outcome.get("name", "")
-                if name == home_team:
-                    result["home_price"] = outcome.get("price")
-                elif name == away_team:
-                    result["away_price"] = outcome.get("price")
-        
+
         return result
 
     def _get_period(self, market_key: str) -> str:
@@ -361,6 +352,8 @@ class OddsSyncService:
                     
                     for market in bookmaker.get("markets", []):
                         parsed = self._parse_market(market, home_team, away_team)
+                        if not parsed:
+                            continue
                         
                         snapshots.append({
                             "time": now,
@@ -416,6 +409,8 @@ class OddsSyncService:
                     
                     for market in bookmaker.get("markets", []):
                         parsed = self._parse_market(market, home_team, away_team)
+                        if not parsed:
+                            continue
                         
                         # Only store 1H markets
                         if parsed["period"] == "1h":
@@ -473,6 +468,8 @@ class OddsSyncService:
                     
                     for market in bookmaker.get("markets", []):
                         parsed = self._parse_market(market, home_team, away_team)
+                        if not parsed:
+                            continue
                         
                         # Only store 2H markets
                         if parsed["period"] == "2h":

@@ -177,9 +177,9 @@ impl Config {
                 .unwrap_or(8083),
             regions: env::var("REGIONS").unwrap_or_else(|_| "us".to_string()),
             odds_format: env::var("ODDS_FORMAT").unwrap_or_else(|_| "american".to_string()),
-            markets_full: env::var("MARKETS_FULL").unwrap_or_else(|_| "spreads,totals,h2h".to_string()),
-            markets_h1: env::var("MARKETS_H1").unwrap_or_else(|_| "spreads_h1,totals_h1,h2h_h1".to_string()),
-            markets_h2: env::var("MARKETS_H2").unwrap_or_else(|_| "spreads_h2,totals_h2,h2h_h2".to_string()),
+            markets_full: env::var("MARKETS_FULL").unwrap_or_else(|_| "spreads,totals".to_string()),
+            markets_h1: env::var("MARKETS_H1").unwrap_or_else(|_| "spreads_h1,totals_h1".to_string()),
+            markets_h2: env::var("MARKETS_H2").unwrap_or_else(|_| "spreads_h2,totals_h2".to_string()),
             bookmakers_h1: env::var("BOOKMAKERS_H1").unwrap_or_else(|_| "bovada,pinnacle,circa,bookmaker".to_string()),
             bookmakers_h2: env::var("BOOKMAKERS_H2").unwrap_or_else(|_| "draftkings,fanduel,pinnacle,bovada".to_string()),
             // MANUAL-ONLY: Always run once and exit (no continuous polling)
@@ -877,13 +877,10 @@ impl OddsIngestionService {
         let (market_type, period) = match market.key.as_str() {
             "spreads" => ("spreads", "full"),
             "totals" => ("totals", "full"),
-            "h2h" => ("h2h", "full"),
             "spreads_h1" => ("spreads", "1h"),
             "totals_h1" => ("totals", "1h"),
-            "h2h_h1" => ("h2h", "1h"),
             "spreads_h2" => ("spreads", "2h"),
             "totals_h2" => ("totals", "2h"),
-            "h2h_h2" => ("h2h", "2h"),
             _ => return None,
         };
 
@@ -920,13 +917,6 @@ impl OddsIngestionService {
                         snapshot.over_price = outcome.price;
                     } else if outcome.name == "Under" {
                         snapshot.under_price = outcome.price;
-                    }
-                }
-                "h2h" => {
-                    if outcome.name == home_team {
-                        snapshot.home_price = outcome.price;
-                    } else {
-                        snapshot.away_price = outcome.price;
                     }
                 }
                 _ => {}

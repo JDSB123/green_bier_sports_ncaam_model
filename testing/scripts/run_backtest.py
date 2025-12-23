@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-NCAAM Backtesting Engine - 6 Market Types
+NCAAM Backtesting Engine - 4 Market Types
 
-Run backtests across all 6 betting markets:
-- 1H Spread, 1H Total, 1H Moneyline
-- FG Spread, FG Total, FG Moneyline
+Run backtests across betting markets:
+- 1H Spread, 1H Total
+- FG Spread, FG Total
 
 Usage:
     python testing/scripts/run_backtest.py --market fg_spread
@@ -39,13 +39,11 @@ RESULTS_DIR = ROOT_DIR / "testing" / "data" / "backtest_results"
 
 
 class MarketType(str, Enum):
-    """Six independent markets for backtesting."""
+    """Four independent markets for backtesting."""
     SPREAD_1H = "1h_spread"
     TOTAL_1H = "1h_total"
-    ML_1H = "1h_ml"
     SPREAD_FG = "fg_spread"
     TOTAL_FG = "fg_total"
-    ML_FG = "fg_ml"
 
 
 class BetOutcome(str, Enum):
@@ -192,18 +190,6 @@ class NCAAMPredictor:
         away_score_1h = away.adj_o * avg_tempo * first_half_tempo_pct / 100.0
         h1_total = home_score_1h + away_score_1h + hca_total_1h
 
-        # ─────────────────────────────────────────────────────────────────
-        # MONEYLINE: Normal CDF from spread
-        # ─────────────────────────────────────────────────────────────────
-        sigma = self.config.sigma_spread
-        z_fg = -fg_spread / sigma
-        home_win_prob_fg = 0.5 * (1 + math.erf(z_fg / math.sqrt(2)))
-        home_win_prob_fg = max(0.01, min(0.99, home_win_prob_fg))
-
-        z_1h = -h1_spread / sigma
-        home_win_prob_1h = 0.5 * (1 + math.erf(z_1h / math.sqrt(2)))
-        home_win_prob_1h = max(0.01, min(0.99, home_win_prob_1h))
-
         # Derive final scores
         home_score = (fg_total - fg_spread) / 2
         away_score = (fg_total + fg_spread) / 2
@@ -211,11 +197,9 @@ class NCAAMPredictor:
         return {
             "fg_spread": fg_spread,
             "fg_total": fg_total,
-            "fg_ml_prob": home_win_prob_fg,
-            "1h_spread": h1_spread,
+                        "1h_spread": h1_spread,
             "1h_total": h1_total,
-            "1h_ml_prob": home_win_prob_1h,
-            "home_score": home_score,
+                        "home_score": home_score,
             "away_score": away_score,
         }
 
@@ -252,11 +236,6 @@ class MarketSimulator:
             # Totals also in 0.5 increments
             noise = self.rng.normal(0, uncertainty * 0.7)
             market_line = round(true_line * 2) / 2 + round(noise * 2) / 2
-        else:  # Moneyline
-            # Return implied probability, will convert to odds later
-            noise = self.rng.normal(0, 0.03)  # ~3% noise on probability
-            market_line = max(0.05, min(0.95, true_line + noise))
-
         return market_line
 
     def simulate_game_result(
@@ -313,10 +292,6 @@ class KellyCalculator:
         odds_prob = 0.5238
         b = 100 / 110  # Win/loss ratio at -110
 
-        if market_type in [MarketType.ML_FG, MarketType.ML_1H]:
-            # Edge is already a probability
-            p = min(0.99, max(0.01, 0.5 + edge))
-        else:
             # Convert point edge to probability edge
             # Roughly 2.5 points = 10% edge shift
             edge_prob = edge / 25.0
@@ -459,20 +434,7 @@ def determine_outcome(
         else:
             diff = market_line - actual_total
         actual_val = actual_total
-    elif market_type == MarketType.ML_FG:
-        home_wins = actual["home_wins_fg"]
-        if bet_side == "HOME":
-            diff = 1 if home_wins else -1
-        else:
-            diff = -1 if home_wins else 1
-        actual_val = 1 if home_wins else 0
-    else:  # ML_1H
-        home_wins = actual["home_wins_1h"]
-        if bet_side == "HOME":
-            diff = 1 if home_wins else -1
-        else:
-            diff = -1 if home_wins else 1
-        actual_val = 1 if home_wins else 0
+
 
     if abs(diff) < 0.001:  # Push
         return BetOutcome.PUSH, actual_val
@@ -532,10 +494,6 @@ def run_market_backtest(config: BacktestConfig) -> BacktestSummary:
                 pred_line = predictions["fg_total"]
             elif config.market == MarketType.TOTAL_1H:
                 pred_line = predictions["1h_total"]
-            elif config.market == MarketType.ML_FG:
-                pred_line = predictions["fg_ml_prob"]
-            else:  # ML_1H
-                pred_line = predictions["1h_ml_prob"]
 
             # Generate market line
             market_line = simulator.generate_market_line(
@@ -543,13 +501,7 @@ def run_market_backtest(config: BacktestConfig) -> BacktestSummary:
             )
 
             # Calculate edge
-            if config.market in [MarketType.ML_FG, MarketType.ML_1H]:
-                edge = pred_line - market_line  # Probability difference
-                bet_side = "HOME" if edge > 0 else "AWAY"
-                edge = abs(edge)
-                # For ML, edge is probability - use 0.03 (3%) as min threshold
-                min_edge_threshold = 0.03
-            elif config.market in [MarketType.SPREAD_FG, MarketType.SPREAD_1H]:
+            if config.market in [MarketType.SPREAD_FG, MarketType.SPREAD_1H]:
                 edge = market_line - pred_line  # Positive = home covers
                 bet_side = "HOME" if edge > 0 else "AWAY"
                 edge = abs(edge)
@@ -586,9 +538,7 @@ def run_market_backtest(config: BacktestConfig) -> BacktestSummary:
 
             # Calculate CLV (simulated - assume market moves toward true line)
             closing_line = (market_line + pred_line) / 2  # Market corrects halfway
-            if config.market in [MarketType.ML_FG, MarketType.ML_1H]:
-                clv = (closing_line - market_line) if bet_side == "HOME" else (market_line - closing_line)
-            elif config.market in [MarketType.SPREAD_FG, MarketType.SPREAD_1H]:
+            if config.market in [MarketType.SPREAD_FG, MarketType.SPREAD_1H]:
                 clv = (closing_line - market_line) if bet_side == "HOME" else (market_line - closing_line)
             else:
                 clv = (closing_line - market_line) if bet_side == "OVER" else (market_line - closing_line)
@@ -774,7 +724,7 @@ def run_single_market(market: MarketType, seasons: List[int], seed: int) -> Back
 
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="NCAAM Backtesting Engine - 6 Market Types"
+        description="NCAAM Backtesting Engine - 4 Market Types"
     )
     parser.add_argument(
         "--market",
@@ -785,7 +735,7 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument(
         "--all-parallel",
         action="store_true",
-        help="Run all 6 markets in parallel",
+        help="Run all 4 markets in parallel",
     )
     parser.add_argument(
         "--seasons",
@@ -811,10 +761,10 @@ def main(argv: List[str] | None = None) -> int:
 
     if args.all_parallel:
         # Run all 6 markets in parallel
-        print("Running all 6 markets in parallel...")
+        print("Running all 4 markets in parallel...")
         markets = list(MarketType)
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=6) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=len(markets)) as executor:
             futures = {
                 executor.submit(run_single_market, m, seasons, args.seed + i): m
                 for i, m in enumerate(markets)

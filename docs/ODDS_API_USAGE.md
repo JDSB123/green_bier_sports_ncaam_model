@@ -178,7 +178,7 @@ def validate_game(game):
     assert game["away_team"]
     for bookmaker in game["bookmakers"]:
         for market in bookmaker["markets"]:
-            assert market["key"] in ["spreads", "totals", "h2h"]
+            assert market["key"] in ["spreads", "totals"]
 ```
 
 ---
@@ -242,18 +242,17 @@ params = {
 ### Observation #3: Market Type Filtering
 
 **Finding:**
-You request all markets: `spreads,totals,h2h`
+You request all markets: `spreads,totals`
 
 But your CLV calculation uses:
 - Spreads (to compare vs model point spread prediction)
 - Totals (to compare vs model total prediction)
-- Moneyline (less critical)
 
 **Opportunity:**
 Could optimize to just what's needed:
 ```python
 params = {
-    "markets": "spreads,totals"  # Skip h2h if not used
+    "markets": "spreads,totals"  # spreads/totals only
 }
 ```
 
@@ -525,9 +524,9 @@ This guide defines a clear, configurable, and repeatable path to pull all availa
 
 ## Sport & Markets
 - Default `sport_key`: `basketball_ncaab`
-- Full-game markets: spreads, totals, h2h
-- First half markets (premium): spreads_h1, totals_h1, h2h_h1
-- Second half markets: spreads_h2, totals_h2, h2h_h2
+- Full-game markets: spreads, totals
+- First half markets (premium): spreads_h1, totals_h1
+- Second half markets: spreads_h2, totals_h2
 - Bookmaker preferences:
   - H1: `bovada,pinnacle,circa,bookmaker`
   - H2: `draftkings,fanduel,pinnacle,bovada`
@@ -539,9 +538,9 @@ Set these to tailor coverage without code changes:
 - `SPORT_KEY`: override sport key (default: `basketball_ncaab`)
 - `REGIONS`: odds regions (default: `us`)
 - `ODDS_FORMAT`: odds format (default: `american`)
-- `MARKETS_FULL`: full-game markets comma list (default: `spreads,totals,h2h`)
-- `MARKETS_H1`: first-half markets (default: `spreads_h1,totals_h1,h2h_h1`)
-- `MARKETS_H2`: second-half markets (default: `spreads_h2,totals_h2,h2h_h2`)
+- `MARKETS_FULL`: full-game markets comma list (default: `spreads,totals`)
+- `MARKETS_H1`: first-half markets (default: `spreads_h1,totals_h1`)
+- `MARKETS_H2`: second-half markets (default: `spreads_h2,totals_h2`)
 - `BOOKMAKERS_H1`: preferred books for H1 (default: `bovada,pinnacle,circa,bookmaker`)
 - `BOOKMAKERS_H2`: preferred books for H2 (default: `draftkings,fanduel,pinnacle,bovada`)
 - `RUN_ONCE`: **manual-only** (always `true` in this repo; service runs once and exits)
@@ -570,7 +569,7 @@ Get your The Odds API key from: https://the-odds-api.com/
 ```bash
 export RUN_ONCE=true
 # Optional overrides
-export MARKETS_FULL="spreads,totals,h2h" # add/remove markets as needed
+export MARKETS_FULL="spreads,totals" # add/remove markets as needed
 python services/prediction-service-python/run_today.py
 ```
 
@@ -581,9 +580,9 @@ python services/prediction-service-python/run_today.py
 # Example overrides; adjust to cover remaining markets/books supported by premium plan
 export REGIONS="us"
 export ODDS_FORMAT="american"
-export MARKETS_FULL="spreads,totals,h2h"
-export MARKETS_H1="spreads_h1,totals_h1,h2h_h1"
-export MARKETS_H2="spreads_h2,totals_h2,h2h_h2"
+export MARKETS_FULL="spreads,totals"
+export MARKETS_H1="spreads_h1,totals_h1"
+export MARKETS_H2="spreads_h2,totals_h2"
 export BOOKMAKERS_H1="bovada,pinnacle,circa,bookmaker"
 export BOOKMAKERS_H2="draftkings,fanduel,pinnacle,bovada"
 # Start app per your orchestrator (Compose/K8s/ACA)

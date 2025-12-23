@@ -336,7 +336,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 over_price,
                 under_price
             FROM odds_snapshots
-            WHERE market_type IN ('spreads', 'totals', 'h2h')
+            WHERE market_type IN ('spreads', 'totals')
               AND period = 'full'
             ORDER BY
               game_id, market_type, period,
@@ -358,7 +358,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 over_price,
                 under_price
             FROM odds_snapshots
-            WHERE market_type IN ('spreads', 'totals', 'h2h')
+            WHERE market_type IN ('spreads', 'totals')
               AND period = '1h'
             ORDER BY
               game_id, market_type, period,
@@ -435,8 +435,6 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             MAX(CASE WHEN lo.market_type = 'totals' THEN lo.total_line END) as total,
             MAX(CASE WHEN lo.market_type = 'totals' THEN lo.over_price END) as over_juice,
             MAX(CASE WHEN lo.market_type = 'totals' THEN lo.under_price END) as under_juice,
-            MAX(CASE WHEN lo.market_type = 'h2h' THEN lo.home_price END) as home_ml,
-            MAX(CASE WHEN lo.market_type = 'h2h' THEN lo.away_price END) as away_ml,
             -- First half odds
             MAX(CASE WHEN lo1h.market_type = 'spreads' THEN lo1h.home_line END) as spread_1h,
             MAX(CASE WHEN lo1h.market_type = 'spreads' THEN lo1h.home_price END) as spread_1h_home_juice,
@@ -444,8 +442,6 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.total_line END) as total_1h,
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.over_price END) as over_1h_juice,
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.under_price END) as under_1h_juice,
-            MAX(CASE WHEN lo1h.market_type = 'h2h' THEN lo1h.home_price END) as home_ml_1h,
-            MAX(CASE WHEN lo1h.market_type = 'h2h' THEN lo1h.away_price END) as away_ml_1h,
             -- Sharp book reference (Pinnacle)
             MAX(CASE WHEN so.market_type = 'spreads' THEN so.sharp_home_line END) as sharp_spread,
             MAX(CASE WHEN so.market_type = 'totals' THEN so.sharp_total_line END) as sharp_total,
@@ -640,16 +636,12 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 "total": float(row.total) if row.total is not None else None,
                 "over_juice": int(row.over_juice) if row.over_juice else None,
                 "under_juice": int(row.under_juice) if row.under_juice else None,
-                "home_ml": int(row.home_ml) if row.home_ml else None,
-                "away_ml": int(row.away_ml) if row.away_ml else None,
                 "spread_1h": float(row.spread_1h) if row.spread_1h is not None else None,
                 "spread_1h_home_juice": int(row.spread_1h_home_juice) if row.spread_1h_home_juice else None,
                 "spread_1h_away_juice": int(row.spread_1h_away_juice) if row.spread_1h_away_juice else None,
                 "total_1h": float(row.total_1h) if row.total_1h is not None else None,
                 "over_1h_juice": int(row.over_1h_juice) if row.over_1h_juice else None,
                 "under_1h_juice": int(row.under_1h_juice) if row.under_1h_juice else None,
-                "home_ml_1h": int(row.home_ml_1h) if row.home_ml_1h else None,
-                "away_ml_1h": int(row.away_ml_1h) if row.away_ml_1h else None,
                 # Sharp book reference (Pinnacle)
                 "sharp_spread": float(row.sharp_spread) if row.sharp_spread is not None else None,
                 "sharp_total": float(row.sharp_total) if row.sharp_total is not None else None,
@@ -816,15 +808,11 @@ def get_prediction(
             total=market_odds.get("total"),
             over_price=market_odds.get("over_price") or -110,
             under_price=market_odds.get("under_price") or -110,
-            home_ml=market_odds.get("home_ml"),
-            away_ml=market_odds.get("away_ml"),
             spread_1h=market_odds.get("spread_1h"),
             spread_price_1h=market_odds.get("spread_price_1h"),
             total_1h=market_odds.get("total_1h"),
             over_price_1h=market_odds.get("over_price_1h"),
             under_price_1h=market_odds.get("under_price_1h"),
-            home_ml_1h=market_odds.get("home_ml_1h"),
-            away_ml_1h=market_odds.get("away_ml_1h"),
             # Sharp book reference (Pinnacle) for CLV tracking
             sharp_spread=market_odds.get("sharp_spread"),
             sharp_total=market_odds.get("sharp_total"),
@@ -1538,15 +1526,11 @@ def main():
             "total": game["total"],
             "over_price": game.get("over_juice"),
             "under_price": game.get("under_juice"),
-            "home_ml": game["home_ml"],
-            "away_ml": game["away_ml"],
             "spread_1h": game.get("spread_1h"),
             "spread_price_1h": game.get("spread_1h_home_juice") or game.get("spread_1h_away_juice"),
             "total_1h": game.get("total_1h"),
             "over_price_1h": game.get("over_1h_juice"),
             "under_price_1h": game.get("under_1h_juice"),
-            "home_ml_1h": game.get("home_ml_1h"),
-            "away_ml_1h": game.get("away_ml_1h"),
             # Sharp book reference (Pinnacle) for CLV tracking
             "sharp_spread": game.get("sharp_spread"),
             "sharp_total": game.get("sharp_total"),
@@ -1641,15 +1625,9 @@ def main():
                     else:
                         juice = game.get("under_juice") if not is_1h else game.get("under_1h_juice")
                         pick_display = f"UNDER {total_line:.1f} ({format_odds(juice)})"
-                else:  # Moneyline
-                    if pick_val == "HOME":
-                        team_name = game["home"]
-                        ml_odds = game["home_ml"] if not is_1h else game.get("home_ml_1h")
-                    else:
-                        team_name = game["away"]
-                        ml_odds = game["away_ml"] if not is_1h else game.get("away_ml_1h")
-                    pick_display = f"{team_name[:12]} ML ({format_odds(ml_odds)})"
-                
+                else:
+                    continue
+
                 # Model line display (show from PICK perspective for spreads)
                 if market == "SPREAD":
                     model_line_val_home = pred["predicted_spread"] if not is_1h else pred["predicted_spread_1h"]
@@ -1659,15 +1637,8 @@ def main():
                     model_line_val = pred["predicted_total"] if not is_1h else pred["predicted_total_1h"]
                     model_str = f"{model_line_val:.1f}"
                 else:
-                    # Moneyline expectation: show model fair odds for the chosen side + implied win prob
-                    if pick_val == "HOME":
-                        model_ml = pred.get("predicted_home_ml" if not is_1h else "predicted_home_ml_1h")
-                        prob = pred.get("home_win_prob" if not is_1h else "home_win_prob_1h", 0.5)
-                    else:
-                        model_ml = pred.get("predicted_away_ml" if not is_1h else "predicted_away_ml_1h")
-                        prob = 1 - pred.get("home_win_prob" if not is_1h else "home_win_prob_1h", 0.5)
-                    model_str = f"{format_odds(model_ml)} ({prob*100:.1f}%)" if model_ml is not None else f"{prob*100:.1f}%"
-                
+                    continue
+
                 # Market line display with juice (show from PICK perspective)
                 if market == "SPREAD":
                     mkt_line_home = game["spread"] if not is_1h else game.get("spread_1h")
@@ -1685,7 +1656,7 @@ def main():
                         mkt_juice = game.get("over_1h_juice", -110) if pick_val == "OVER" else game.get("under_1h_juice", -110)
                     market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
                 else:
-                    market_str = f"{format_odds(ml_odds)}" if ml_odds is not None else "N/A"
+                    continue
                 
                 # Fire rating
                 fire = get_fire_rating(rec['edge'], rec.get('bet_tier', 'STANDARD'))

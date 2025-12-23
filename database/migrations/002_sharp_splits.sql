@@ -5,15 +5,12 @@
 CREATE TABLE sharp_consensus (
     time            TIMESTAMPTZ NOT NULL,
     game_id         UUID NOT NULL,
-    market_type     TEXT NOT NULL,      -- 'spread', 'total', 'moneyline'
+    market_type     TEXT NOT NULL,      -- 'spreads', 'totals'
     period          TEXT NOT NULL,      -- 'full', 'first_half'
 
     -- Sharp lines (Pinnacle, Circa, Bookmaker)
     sharp_spread    DECIMAL(5,2),
     sharp_total     DECIMAL(5,2),
-    sharp_home_ml   INTEGER,
-    sharp_away_ml   INTEGER,
-
     -- Prices
     sharp_spread_price INTEGER,
     sharp_over_price   INTEGER,
@@ -33,7 +30,7 @@ CREATE INDEX idx_sharp_consensus_game ON sharp_consensus(game_id, time DESC);
 CREATE TABLE public_sharp_splits (
     time            TIMESTAMPTZ NOT NULL,
     game_id         UUID NOT NULL,
-    market_type     TEXT NOT NULL,      -- 'spread', 'total', 'moneyline'
+    market_type     TEXT NOT NULL,      -- 'spreads', 'totals'
     period          TEXT NOT NULL,      -- 'full', 'first_half'
 
     -- Public betting %
@@ -69,8 +66,6 @@ SELECT DISTINCT ON (game_id, market_type, period)
     period,
     sharp_spread,
     sharp_total,
-    sharp_home_ml,
-    sharp_away_ml,
     time
 FROM sharp_consensus
 ORDER BY game_id, market_type, period, time DESC;

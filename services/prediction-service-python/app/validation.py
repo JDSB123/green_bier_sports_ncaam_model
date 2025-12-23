@@ -66,8 +66,6 @@ SPREAD_MIN = -50.0   # Max point spread (no team is 50+ point favorite)
 SPREAD_MAX = 50.0
 TOTAL_MIN = 80.0     # Minimum plausible total
 TOTAL_MAX = 220.0    # Maximum plausible total (high tempo + OT possible)
-ML_MIN = -10000      # Heavy favorites (-10000 = 99% implied prob)
-ML_MAX = 10000       # Heavy underdogs (+10000 = ~1% implied prob)
 PRICE_MIN = -300     # Standard juice range
 PRICE_MAX = -100     # Standard juice range (worse than -300 is suspicious)
 
@@ -210,45 +208,7 @@ def validate_total_1h(
     return issues
 
 
-def validate_moneyline(
-    ml: Optional[int],
-    field_name: str = "moneyline",
-) -> List[ValidationIssue]:
-    """Validate a moneyline value is within plausible bounds."""
-    issues = []
-    
-    if ml is None:
-        return issues
-    
-    if not isinstance(ml, (int, float)):
-        issues.append(ValidationIssue(
-            field=field_name,
-            value=ml,
-            message=f"Moneyline must be numeric, got {type(ml).__name__}",
-            severity=ValidationSeverity.ERROR,
-        ))
-        return issues
-    
-    ml = int(ml)
-    
-    # Moneylines cannot be between -100 and +100 (exclusive)
-    if -100 < ml < 100 and ml != 0:
-        issues.append(ValidationIssue(
-            field=field_name,
-            value=ml,
-            message=f"Invalid moneyline {ml} (cannot be between -100 and +100)",
-            severity=ValidationSeverity.ERROR,
-        ))
-    
-    if ml < ML_MIN or ml > ML_MAX:
-        issues.append(ValidationIssue(
-            field=field_name,
-            value=ml,
-            message=f"Moneyline {ml} outside valid range [{ML_MIN}, {ML_MAX}]",
-            severity=ValidationSeverity.ERROR,
-        ))
-    
-    return issues
+
 
 
 def validate_price(
@@ -296,8 +256,6 @@ def validate_price(
 def validate_market_odds(
     spread: Optional[float] = None,
     total: Optional[float] = None,
-    home_ml: Optional[int] = None,
-    away_ml: Optional[int] = None,
     spread_1h: Optional[float] = None,
     total_1h: Optional[float] = None,
     spread_price: Optional[int] = None,
@@ -314,8 +272,6 @@ def validate_market_odds(
     # Full game odds
     issues.extend(validate_spread(spread, "spread"))
     issues.extend(validate_total(total, "total"))
-    issues.extend(validate_moneyline(home_ml, "home_ml"))
-    issues.extend(validate_moneyline(away_ml, "away_ml"))
     issues.extend(validate_price(spread_price, "spread_price"))
     issues.extend(validate_price(over_price, "over_price"))
     
@@ -352,23 +308,6 @@ def validate_market_odds(
                 severity=ValidationSeverity.WARNING,
             ))
     
-    # Moneylines should be opposite signs (one favorite, one underdog)
-    if home_ml is not None and away_ml is not None:
-        if home_ml > 0 and away_ml > 0:
-            issues.append(ValidationIssue(
-                field="moneylines",
-                value=(home_ml, away_ml),
-                message=f"Both teams are underdogs? home={home_ml}, away={away_ml}",
-                severity=ValidationSeverity.WARNING,
-            ))
-        if home_ml < 0 and away_ml < 0:
-            # Both favorites is possible (pick 'em games) but unusual
-            issues.append(ValidationIssue(
-                field="moneylines",
-                value=(home_ml, away_ml),
-                message=f"Both teams are favorites? home={home_ml}, away={away_ml}",
-                severity=ValidationSeverity.WARNING,
-            ))
     
     is_valid = not any(i.severity in (ValidationSeverity.ERROR, ValidationSeverity.CRITICAL) for i in issues)
     result = ValidationResult(is_valid=is_valid, issues=issues)

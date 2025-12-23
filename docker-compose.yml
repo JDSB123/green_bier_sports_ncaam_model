@@ -254,7 +254,7 @@ services:
       ENABLE_H2: "false"
       REGIONS: "us"
       ODDS_FORMAT: "american"
-      MARKETS_FULL: "spreads,totals,h2h"
+      MARKETS_FULL: "spreads,totals"
     networks:
       - ncaam_v6_backend
       - ncaam_v6_data
@@ -287,7 +287,7 @@ services:
       ENABLE_H2: "false"
       REGIONS: "us"
       ODDS_FORMAT: "american"
-      MARKETS_H1: "spreads_h1,totals_h1,h2h_h1"
+      MARKETS_H1: "spreads_h1,totals_h1"
       BOOKMAKERS_H1: "bovada,pinnacle,circa,bookmaker"
     networks:
       - ncaam_v6_backend
@@ -317,3 +317,4 @@ networks:
     ipam:
       config:
         - subnet: ${NETWORK_DATA_SUBNET:-10.51.3.0/24}
+

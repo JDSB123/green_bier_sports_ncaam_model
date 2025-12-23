@@ -12,13 +12,11 @@ from uuid import UUID
 
 
 class BetType(str, Enum):
-    """Types of bets we can recommend."""
+    """Types of bets we can recommend (spreads/totals only)."""
     SPREAD = "SPREAD"
     TOTAL = "TOTAL"
-    MONEYLINE = "MONEYLINE"
     SPREAD_1H = "SPREAD_1H"
     TOTAL_1H = "TOTAL_1H"
-    MONEYLINE_1H = "MONEYLINE_1H"
 
 
 class Pick(str, Enum):
@@ -157,14 +155,10 @@ class MarketOdds:
     total: Optional[float] = None
     over_price: int = -110
     under_price: int = -110
-    home_ml: Optional[int] = None
-    away_ml: Optional[int] = None
 
     # First half
     spread_1h: Optional[float] = None
     total_1h: Optional[float] = None
-    home_ml_1h: Optional[int] = None
-    away_ml_1h: Optional[int] = None
     spread_price_1h: Optional[int] = None
     over_price_1h: Optional[int] = None
     under_price_1h: Optional[int] = None
@@ -202,14 +196,6 @@ class Prediction:
     predicted_away_score_1h: float
     spread_confidence_1h: float
     total_confidence_1h: float
-
-    # Moneyline (American odds)
-    predicted_home_ml: int
-    predicted_away_ml: int
-    predicted_home_ml_1h: int
-    predicted_away_ml_1h: int
-    home_win_prob: float            # 0.0 to 1.0
-    home_win_prob_1h: float
 
     # Market comparison
     market_spread: Optional[float] = None
@@ -320,16 +306,15 @@ class BettingRecommendation:
         period = "1H" if "1H" in self.bet_type.value else "FG"
         bet_desc = self.bet_type.value.replace("_1H", "")
 
-        # For spreads/totals show line, for moneylines show odds
-        if "MONEYLINE" in self.bet_type.value:
-            line_display = f"{self.line:+d}"  # Show as American odds
-        else:
+        if self.bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
             line_display = f"{self.line:+.1f}"
+        else:
+            line_display = f"{self.line:.1f}"
 
         return (
             f"{self.away_team} @ {self.home_team} | "
             f"{period} {bet_desc} {direction} {line_display} | "
-            f"Edge: {self.edge:.1f}{'%' if 'MONEYLINE' in self.bet_type.value else 'pts'} | "
+            f"Edge: {self.edge:.1f}pts | "
             f"EV: {self.ev_percent:+.1f}% | "
             f"{self.bet_tier.value.upper()} ({self.recommended_units:.1f}u)"
         )
@@ -358,15 +343,9 @@ class BettingRecommendation:
 
         # Model vs Market
         lines.append("MODEL VS MARKET:")
-        if "MONEYLINE" in self.bet_type.value:
-            lines.append(f"  Our Win Probability: {self.implied_prob:.1%}")
-            lines.append(f"  Market Probability: {self.market_prob:.1%}")
-            lines.append(f"  Probability Edge: {(self.implied_prob - self.market_prob):.1%}")
-            lines.append(f"  Market Odds: {self.market_line:+d}")
-        else:
-            lines.append(f"  Model Line: {self.model_line:+.1f}")
-            lines.append(f"  Market Line: {self.market_line:+.1f}")
-            lines.append(f"  Edge: {self.edge:.1f} points")
+        lines.append(f"  Model Line: {self.model_line:+.1f}")
+        lines.append(f"  Market Line: {self.market_line:+.1f}")
+        lines.append(f"  Edge: {self.edge:.1f} points")
 
         lines.append("")
 
@@ -399,20 +378,14 @@ class BettingRecommendation:
         lines.append("RATIONALE:")
 
         # Build specific rationale based on bet type
-        if "MONEYLINE" in self.bet_type.value:
-            prob_diff = (self.implied_prob - self.market_prob) * 100
-            lines.append(f"  Our model projects {team_display} to win {self.implied_prob:.1%} of the time,")
-            lines.append(f"  while the market implies only {self.market_prob:.1%}. This {prob_diff:.1f}%")
-            lines.append(f"  probability edge translates to {self.ev_percent:+.1f}% expected value.")
-        else:
-            if self.bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
-                lines.append(f"  Our efficiency-based model predicts a spread of {self.model_line:+.1f},")
-                lines.append(f"  giving us {self.edge:.1f} points of value vs the market line of {self.market_line:+.1f}.")
-                lines.append(f"  This represents {self.ev_percent:+.1f}% expected value.")
-            else:  # TOTAL
-                lines.append(f"  Our tempo-adjusted model projects a total of {self.model_line:.1f} points,")
-                lines.append(f"  creating {self.edge:.1f} points of edge vs the market total of {self.market_line:.1f}.")
-                lines.append(f"  This translates to {self.ev_percent:+.1f}% expected value on the {direction}.")
+        if self.bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+            lines.append(f"  Our efficiency-based model predicts a spread of {self.model_line:+.1f},")
+            lines.append(f"  giving us {self.edge:.1f} points of value vs the market line of {self.market_line:+.1f}.")
+            lines.append(f"  This represents {self.ev_percent:+.1f}% expected value.")
+        else:  # TOTAL
+            lines.append(f"  Our tempo-adjusted model projects a total of {self.model_line:.1f} points,")
+            lines.append(f"  creating {self.edge:.1f} points of edge vs the market total of {self.market_line:.1f}.")
+            lines.append(f"  This translates to {self.ev_percent:+.1f}% expected value on the {direction}.")
 
         return "\n".join(lines)
 
@@ -426,12 +399,7 @@ class BettingRecommendation:
         score = 0
 
         # Edge component (0-40 points)
-        if "MONEYLINE" in self.bet_type.value:
-            # For moneylines, use EV percentage
-            edge_score = min(40, self.ev_percent * 4)  # 10% EV = 40 points
-        else:
-            # For spreads/totals, use point edge
-            edge_score = min(40, self.edge * 8)  # 5 pt edge = 40 points
+        edge_score = min(40, self.edge * 8)  # 5 pt edge = 40 points
         score += edge_score
 
         # EV component (0-30 points)
@@ -461,7 +429,7 @@ class BettingRecommendation:
             team_display = direction
 
         period = "FG" if "1H" not in self.bet_type.value else "1H"
-        bet_type_short = self.bet_type.value.replace("_1H", "").replace("MONEYLINE", "ML")
+        bet_type_short = self.bet_type.value.replace("_1H", "")
 
         smoke_score = self._calculate_smoke_score()
         quality = "ELITE" if smoke_score >= 85 else "STRONG" if smoke_score >= 70 else "SOLID" if smoke_score >= 55 else "SPECULATIVE"
@@ -470,7 +438,7 @@ class BettingRecommendation:
             f">>> {quality} {self.bet_tier.value.upper()} BET ({smoke_score}/100) <<<\n"
             f"{self.away_team} @ {self.home_team}\n"
             f"PLAY: {team_display} {bet_type_short} {period}\n"
-            f"EDGE: {self.edge:.1f}{'%' if 'MONEYLINE' in self.bet_type.value else 'pts'} | "
+            f"EDGE: {self.edge:.1f}pts | "
             f"EV: {self.ev_percent:+.1f}% | UNITS: {self.recommended_units:.1f}"
         )
 

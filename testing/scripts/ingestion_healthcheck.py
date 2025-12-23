@@ -117,7 +117,7 @@ def check_odds_api(sport_key: str) -> Tuple[bool, str]:
     params = {
         "apiKey": api_key,
         "regions": "us",
-        "markets": "spreads,totals,h2h",
+        "markets": "spreads,totals",
         "oddsFormat": "american",
     }
     url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds"
@@ -148,3 +148,4 @@ if __name__ == "__main__":
     print(f"Odds API:  {'PASS' if o_ok else 'FAIL'} - {o_msg}")
 
     sys.exit(0 if (b_ok and o_ok) else 1)
+

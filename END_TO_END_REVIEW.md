@@ -292,7 +292,6 @@ total_1h = home_score_1h + away_score_1h + hca_total_1h
 **Assessment:** ✅ **Excellent** - Comprehensive recommendation system
 
 **Issues Found:**
-1. ⚠️ **Moneyline EV threshold:** Hardcoded at 3.0% (line 522) - should be configurable
 2. ✅ **Market probability:** Fixed in v6.3 to use actual odds prices (line 708-722) - Good fix!
 
 ---
