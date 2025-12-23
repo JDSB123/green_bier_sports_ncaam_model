@@ -30,3 +30,4 @@ ENV DATABASE_URL=postgresql+asyncpg://ncaam:ncaam@postgres:5432/ncaam \
 
 # Run FastAPI with uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8082"]
+# Force rebuild Mon, Dec 22, 2025  8:12:43 PM
