@@ -104,11 +104,36 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
+	// Format validation: check first row structure
+	if len(rawTeams) > 0 {
+		first := rawTeams[0]
+		r.logger.Info("Barttorvik format check",
+			zap.Int("field_count", len(first)),
+			zap.String("sample_team", toString(first[1])),
+		)
+		// Expected: 45 fields for 2025-26. Log warning if format changed.
+		if len(first) < 25 {
+			r.logger.Error("Barttorvik format changed - too few fields",
+				zap.Int("expected_min", 25),
+				zap.Int("actual", len(first)),
+			)
+			return nil, fmt.Errorf("barttorvik format changed: expected >=25 fields, got %d", len(first))
+		}
+		if len(first) < 40 || len(first) > 50 {
+			r.logger.Warn("Barttorvik format may have changed - unusual field count",
+				zap.Int("expected_range", 45),
+				zap.Int("actual", len(first)),
+			)
+		}
+	}
+
 	var teams []BarttorkvikTeam
+	skipped := 0
 	for _, raw := range rawTeams {
 		// 2025-26 season: Barttorvik returns 45 fields (indices 0-44)
 		// AdjTempo is at index 44 (last element)
 		if len(raw) < 25 {
+			skipped++
 			continue // Skip incomplete records - need at least basic metrics
 		}
 
@@ -180,11 +205,72 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 			ThreePR:  toFloat(raw[23]),
 			ThreePRD: toFloat(raw[24]),
 		}
+
+		// Validate parsed values are in reasonable ranges
+		if !validateTeamRatings(&team, r.logger) {
+			r.logger.Warn("Skipping team with invalid ratings",
+				zap.String("team", team.Team),
+				zap.Float64("adj_o", team.AdjOE),
+				zap.Float64("adj_d", team.AdjDE),
+			)
+			skipped++
+			continue
+		}
+
 		teams = append(teams, team)
+	}
+
+	if skipped > 0 {
+		r.logger.Warn("Skipped teams with incomplete/invalid data", zap.Int("skipped", skipped))
 	}
 
 	r.logger.Info("Fetched ratings", zap.Int("team_count", len(teams)))
 	return teams, nil
+}
+
+// validateTeamRatings checks that parsed ratings are within valid bounds
+// Returns false if critical values are missing or invalid
+func validateTeamRatings(team *BarttorkvikTeam, logger *zap.Logger) bool {
+	// Efficiency bounds: NCAA D1 teams range roughly 70-140
+	const effMin, effMax = 70.0, 140.0
+	// Tempo bounds: slowest ~55, fastest ~85
+	const tempoMin, tempoMax = 55.0, 85.0
+	// Percentage bounds
+	const pctMin, pctMax = 0.0, 100.0
+
+	// Team name is required
+	if team.Team == "" {
+		return false
+	}
+
+	// Core efficiency metrics - must be present and reasonable
+	if team.AdjOE < effMin || team.AdjOE > effMax {
+		logger.Debug("Invalid AdjOE", zap.String("team", team.Team), zap.Float64("adj_o", team.AdjOE))
+		return false
+	}
+	if team.AdjDE < effMin || team.AdjDE > effMax {
+		logger.Debug("Invalid AdjDE", zap.String("team", team.Team), zap.Float64("adj_d", team.AdjDE))
+		return false
+	}
+
+	// Tempo validation (allow default if not parsed)
+	if team.AdjTempo != 70.0 && (team.AdjTempo < tempoMin || team.AdjTempo > tempoMax) {
+		logger.Debug("Invalid tempo, using default", zap.String("team", team.Team), zap.Float64("tempo", team.AdjTempo))
+		team.AdjTempo = 70.0 // Reset to safe default
+	}
+
+	// Barthag should be 0-1 probability
+	if team.Barthag < 0 || team.Barthag > 1 {
+		logger.Debug("Invalid Barthag", zap.String("team", team.Team), zap.Float64("barthag", team.Barthag))
+		// Not fatal, can still use team
+	}
+
+	// Four factors - soft validation (warn but don't skip)
+	if team.EFG < 30 || team.EFG > 70 {
+		logger.Debug("Unusual EFG%", zap.String("team", team.Team), zap.Float64("efg", team.EFG))
+	}
+
+	return true
 }
 
 // doRequestWithRetry executes an HTTP request with retries on transient errors.

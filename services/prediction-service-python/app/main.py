@@ -13,6 +13,7 @@ from pathlib import Path
 from app.predictor import prediction_engine
 from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendation
 from app.config import settings
+from app.validation import validate_market_odds, validate_team_ratings
 
 logger = logging.getLogger("api")
 
@@ -571,6 +572,20 @@ async def teams_webhook_handler(request: Request):
                         sharp_spread=game.get("sharp_spread"),
                         sharp_total=game.get("sharp_total")
                     )
+                    
+                    # Validate market odds (log warnings/errors but continue)
+                    odds_validation = validate_market_odds(
+                        spread=game.get("spread"),
+                        total=game.get("total"),
+                        home_ml=game.get("home_ml"),
+                        away_ml=game.get("away_ml"),
+                        spread_1h=game.get("spread_1h"),
+                        total_1h=game.get("total_1h"),
+                        context=f"{game['away']} @ {game['home']}"
+                    )
+                    if not odds_validation.is_valid:
+                        logger.warning(f"⚠️ Invalid odds for {game['away']} @ {game['home']}, skipping game")
+                        continue
                     
                     # Get rest info
                     home_rest = None
