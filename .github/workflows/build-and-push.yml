@@ -29,8 +29,8 @@ jobs:
       - name: Get version from commit
         id: version
         run: |
-          # Generate version: v6.3.{run_number}
-          VERSION="v6.3.${{ github.run_number }}"
+          # Generate version: v6.3.{25 + run_number} to continue from v6.3.25b
+          VERSION="v6.3.$((25 + ${{ github.run_number }}))"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
 
