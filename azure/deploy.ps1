@@ -59,11 +59,13 @@ if ($EnterpriseMode) {
     # In enterprise mode, prefix all resource names with 'ncaam-' to organize within RG
     # Resource names stay the same, just organized in enterprise RG
     
-    # HARDCODED: Enforce the 'gbe' naming convention for existing Enterprise resources
+    # HARDCODED: Enforce the correct naming convention for existing resources
     # This prevents duplicate resource creation (e.g. ncaamprodacr vs ncaamprodgbeacr)
     if ($Environment -eq 'prod') {
         $acrName = 'ncaamprodgbeacr'
-        # Bicep parameters will need to match this convention via overrides or updates
+    } elseif ($Environment -eq 'stable') {
+        # Stable environment uses dedicated RG without 'gbe' suffix
+        $acrName = 'ncaamstableacr'
     } else {
         $acrName = ($resourcePrefix -replace '-', '') + 'gbeacr'
     }
@@ -108,7 +110,7 @@ if ([string]::IsNullOrEmpty($OddsApiKey)) {
             
             if ($fetchedKey) {
                 $OddsApiKey = $fetchedKey
-                Write-Host "  ✓ Successfully retrieved Odds API Key from Azure!" -ForegroundColor Green
+                Write-Host "  [OK] Successfully retrieved Odds API Key from Azure!" -ForegroundColor Green
             } else {
                 Write-Warning "  ! Could not retrieve key (secret 'odds-api-key' not found)."
             }
@@ -137,7 +139,7 @@ Write-Host "[1/6] Checking prerequisites..." -ForegroundColor Green
 # Check Azure CLI
 try {
     $azVersion = az version --output json | ConvertFrom-Json
-    Write-Host "  ✓ Azure CLI: $($azVersion.'azure-cli')" -ForegroundColor Gray
+    Write-Host "  [OK] Azure CLI: $($azVersion.'azure-cli')" -ForegroundColor Gray
 } catch {
     Write-Error "Azure CLI not found. Install from https://aka.ms/installazurecliwindows"
 }
@@ -145,7 +147,7 @@ try {
 # Check Docker
 try {
     docker version --format '{{.Server.Version}}' | Out-Null
-    Write-Host "  ✓ Docker: Running" -ForegroundColor Gray
+    Write-Host "  [OK] Docker: Running" -ForegroundColor Gray
 } catch {
     Write-Error "Docker not running. Start Docker Desktop."
 }
@@ -157,7 +159,7 @@ if (-not $account) {
     az login
     $account = az account show --output json | ConvertFrom-Json
 }
-Write-Host "  ✓ Azure Account: $($account.name)" -ForegroundColor Gray
+Write-Host "  [OK] Azure Account: $($account.name)" -ForegroundColor Gray
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # GENERATE PASSWORDS
@@ -170,8 +172,8 @@ Write-Host "[2/6] Generating secure passwords..." -ForegroundColor Green
 $postgresPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
 $redisPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | ForEach-Object {[char]$_})
 
-Write-Host "  ✓ PostgreSQL password generated (32 chars)" -ForegroundColor Gray
-Write-Host "  ✓ Redis password generated (32 chars)" -ForegroundColor Gray
+Write-Host "  [OK] PostgreSQL password generated (32 chars)" -ForegroundColor Gray
+Write-Host "  [OK] Redis password generated (32 chars)" -ForegroundColor Gray
 
 # Optional: Load Teams webhook from repo secret file if not explicitly provided
 if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
@@ -188,7 +190,7 @@ if ($TeamsWebhookUrl) {
         Write-Host "  [INFO] Teams webhook not configured (placeholder). Skipping Teams webhook env var." -ForegroundColor Gray
         $TeamsWebhookUrl = ''
     } else {
-        Write-Host "  ✓ Teams webhook configured (will enable run_today.py --teams)" -ForegroundColor Gray
+        Write-Host "  [OK] Teams webhook configured (will enable run_today.py --teams)" -ForegroundColor Gray
     }
 }
 
@@ -236,9 +238,9 @@ if (-not $SkipInfra) {
     $postgresHost = $deploymentOutput.properties.outputs.postgresHost.value
     $containerAppUrl = $deploymentOutput.properties.outputs.containerAppUrl.value
 
-    Write-Host "  ✓ ACR: $acrLoginServer" -ForegroundColor Gray
-    Write-Host "  ✓ PostgreSQL: $postgresHost" -ForegroundColor Gray
-    Write-Host "  ✓ Container App URL: https://$containerAppUrl" -ForegroundColor Gray
+    Write-Host "  [OK] ACR: $acrLoginServer" -ForegroundColor Gray
+    Write-Host "  [OK] PostgreSQL: $postgresHost" -ForegroundColor Gray
+    Write-Host "  [OK] Container App URL: https://$containerAppUrl" -ForegroundColor Gray
 } else {
     Write-Host ""
     Write-Host "[3/6] Skipping infrastructure deployment (--SkipInfra)" -ForegroundColor Yellow
@@ -282,7 +284,7 @@ if (-not $SkipBuild) {
     }
 
     Pop-Location
-    Write-Host "  ✓ Image pushed: $imageName" -ForegroundColor Gray
+    Write-Host "  [OK] Image pushed: $imageName" -ForegroundColor Gray
 } else {
     Write-Host ""
     Write-Host "[4/6] Skipping Docker build (--SkipBuild)" -ForegroundColor Yellow
@@ -303,7 +305,7 @@ Write-Host "  Running migrations via container exec..." -ForegroundColor Gray
 
 # Note: Container Apps doesn't support direct exec like Kubernetes
 # Migrations are run on container startup via run_migrations.py
-Write-Host "  ✓ Migrations will run automatically on container startup" -ForegroundColor Gray
+Write-Host "  [OK] Migrations will run automatically on container startup" -ForegroundColor Gray
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # VERIFY DEPLOYMENT
@@ -327,7 +329,7 @@ if ($containerAppUrl) {
     Write-Host "  Testing health endpoint..." -ForegroundColor Gray
     try {
         $health = Invoke-RestMethod -Uri "https://$containerAppUrl/health" -TimeoutSec 30
-        Write-Host "  ✓ Health check passed: $($health.status)" -ForegroundColor Green
+        Write-Host "  [OK] Health check passed: $($health.status)" -ForegroundColor Green
     } catch {
         Write-Host "  ! Health check failed (container may still be starting)" -ForegroundColor Yellow
     }
