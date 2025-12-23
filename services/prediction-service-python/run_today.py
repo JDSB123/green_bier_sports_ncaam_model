@@ -101,7 +101,8 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     DB_PASSWORD = _read_secret_file("/run/secrets/db_password", "db_password")
-    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    # Explicitly use psycopg2 driver (sync) to avoid asyncpg conflicts
+    DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 REDIS_URL = os.getenv("REDIS_URL")
 if not REDIS_URL:
