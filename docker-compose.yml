@@ -131,7 +131,8 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
-    image: ncaamstableacr.azurecr.io/ncaam-prediction:v33.0
+    image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction:33.0
+    build:       context: ./services/prediction-service-python       dockerfile: ./Dockerfile
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
