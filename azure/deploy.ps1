@@ -81,7 +81,7 @@ $webImageName = 'gbsv-web'
 $ratingsImageName = "$baseName-ratings-sync"
 $oddsImageName = "$baseName-odds-ingestion"
 $resourcePrefix = "$baseName-$Environment"
-$acrName = 'ncaamgbsvacr'
+$acrName = 'ncaamstablegbsvacr'
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
