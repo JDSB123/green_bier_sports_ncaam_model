@@ -45,10 +45,7 @@ class SettlementSummary:
     missing_closing_line: int
 
 
-def _american_odds_to_prob(odds: int) -> float:
-    if odds < 0:
-        return abs(odds) / (abs(odds) + 100.0)
-    return 100.0 / (odds + 100.0)
+
 
 
 def _profit_per_unit(odds: int) -> float:
@@ -198,14 +195,10 @@ def _market_mapping(bet_type: str) -> Tuple[str, str]:
         return "spreads", "full"
     if bet_type == "TOTAL":
         return "totals", "full"
-    if bet_type == "MONEYLINE":
-        return "h2h", "full"
     if bet_type == "SPREAD_1H":
         return "spreads", "1h"
     if bet_type == "TOTAL_1H":
         return "totals", "1h"
-    if bet_type == "MONEYLINE_1H":
-        return "h2h", "1h"
     # Unknown: best effort
     return "unknown", "full"
 
@@ -243,11 +236,7 @@ def _settle_total(pick: str, line: float, home_score: int, away_score: int) -> s
     return "push"
 
 
-def _settle_moneyline(pick: str, home_score: int, away_score: int) -> str:
-    pick = (pick or "").upper()
-    if pick == "HOME":
-        return "won" if home_score > away_score else "lost"
-    return "won" if away_score > home_score else "lost"
+
 
 
 def settle_pending_bets(engine: Engine) -> SettlementSummary:
@@ -358,18 +347,11 @@ def settle_pending_bets(engine: Engine) -> SettlementSummary:
                     price_for_pnl = int(snap["under_price"] or -110)
                     clv_val = round(line - closing_line, 3)  # bet higher than closing is good for UNDER
             else:
-                # MONEYLINE: store CLV as implied probability delta in percentage points (positive = beat close)
-                closing_odds = int(snap["home_price"]) if pick_u == "HOME" else int(snap["away_price"])
-                bet_odds = int(round(line))
-                clv_val = round((_american_odds_to_prob(closing_odds) - _american_odds_to_prob(bet_odds)) * 100.0, 3)
-                closing_line = float(closing_odds)
-                price_for_pnl = bet_odds  # use the bet odds we recorded as the payout basis
+                # Unsupported market type
+                pass
         else:
-            # No closing snapshot: still settle outcome; assume -110 for spread/total
-            if bet_type_u.startswith("SPREAD") or bet_type_u.startswith("TOTAL"):
-                price_for_pnl = -110
-            else:
-                price_for_pnl = int(round(line))
+            # No closing snapshot: still settle outcome; assume -110
+            price_for_pnl = -110
 
         # Settle outcome
         if bet_type_u.startswith("SPREAD"):
@@ -379,8 +361,8 @@ def settle_pending_bets(engine: Engine) -> SettlementSummary:
             status = _settle_total(pick_u, line, home_score, away_score)
             actual_result = f"{home_score + away_score} total ({home_score}-{away_score})"
         else:
-            status = _settle_moneyline(pick_u, home_score, away_score)
-            actual_result = f"{home_score}-{away_score}"
+            # Unsupported market type
+            continue
 
         pnl = 0.0
         if status == "won":

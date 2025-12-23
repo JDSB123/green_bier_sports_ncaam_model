@@ -145,12 +145,6 @@ CREATE TABLE predictions (
     spread_confidence_1h    DECIMAL(4,3),
     total_confidence_1h     DECIMAL(4,3),
 
-    -- Moneyline (American odds)
-    predicted_home_ml       INTEGER,
-    predicted_away_ml       INTEGER,
-    predicted_home_ml_1h    INTEGER,
-    predicted_away_ml_1h    INTEGER,
-
     -- Market comparison (at prediction time)
     market_spread           DECIMAL(5,2),
     market_total            DECIMAL(5,2),
@@ -183,7 +177,7 @@ CREATE TABLE betting_recommendations (
     game_id             UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,
 
     -- Bet details
-    bet_type            TEXT NOT NULL,      -- 'SPREAD', 'TOTAL', 'SPREAD_1H', 'TOTAL_1H', 'ML', 'ML_1H'
+    bet_type            TEXT NOT NULL,      -- 'SPREAD', 'TOTAL', 'SPREAD_1H', 'TOTAL_1H'
     pick                TEXT NOT NULL,      -- 'HOME', 'AWAY', 'OVER', 'UNDER'
     line                DECIMAL(5,2),       -- The line at recommendation time
 
@@ -227,11 +221,11 @@ CREATE TABLE odds_snapshots (
     time            TIMESTAMPTZ NOT NULL,
     game_id         UUID NOT NULL,
     bookmaker       TEXT NOT NULL,
-    market_type     TEXT NOT NULL,      -- 'spread', 'total', 'moneyline'
+    market_type     TEXT NOT NULL,      -- 'spreads', 'totals'
     period          TEXT NOT NULL,      -- 'full', 'first_half'
 
     -- Lines
-    home_line       DECIMAL(5,2),       -- Spread or ML odds
+    home_line       DECIMAL(5,2),       -- Spread
     away_line       DECIMAL(5,2),
     total_line      DECIMAL(5,2),       -- For totals
 
@@ -469,3 +463,4 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trigger_team_ratings_net
     BEFORE INSERT OR UPDATE ON team_ratings
     FOR EACH ROW EXECUTE FUNCTION calculate_net_rating();
+

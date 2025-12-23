@@ -77,14 +77,10 @@ class MarketOddsInput(BaseModel):
     total: Optional[float] = None
     over_price: int = -110
     under_price: int = -110
-    home_ml: Optional[int] = None
-    away_ml: Optional[int] = None
 
     # First half
     spread_1h: Optional[float] = None
     total_1h: Optional[float] = None
-    home_ml_1h: Optional[int] = None
-    away_ml_1h: Optional[int] = None
     spread_price_1h: Optional[int] = None
     over_price_1h: Optional[int] = None
     under_price_1h: Optional[int] = None
@@ -100,12 +96,8 @@ class MarketOddsInput(BaseModel):
             total=self.total,
             over_price=self.over_price,
             under_price=self.under_price,
-            home_ml=self.home_ml,
-            away_ml=self.away_ml,
             spread_1h=self.spread_1h,
             total_1h=self.total_1h,
-            home_ml_1h=self.home_ml_1h,
-            away_ml_1h=self.away_ml_1h,
             spread_price_1h=self.spread_price_1h,
             over_price_1h=self.over_price_1h,
             under_price_1h=self.under_price_1h,
@@ -560,12 +552,8 @@ async def teams_webhook_handler(request: Request):
                         total=game.get("total"),
                         over_price=game.get("over_price", -110),
                         under_price=game.get("under_price", -110),
-                        home_ml=game.get("home_ml"),
-                        away_ml=game.get("away_ml"),
                         spread_1h=game.get("spread_1h"),
                         total_1h=game.get("total_1h"),
-                        home_ml_1h=game.get("home_ml_1h"),
-                        away_ml_1h=game.get("away_ml_1h"),
                         spread_price_1h=game.get("spread_price_1h"),
                         over_price_1h=game.get("over_price_1h"),
                         under_price_1h=game.get("under_price_1h"),
@@ -577,8 +565,6 @@ async def teams_webhook_handler(request: Request):
                     odds_validation = validate_market_odds(
                         spread=game.get("spread"),
                         total=game.get("total"),
-                        home_ml=game.get("home_ml"),
-                        away_ml=game.get("away_ml"),
                         spread_1h=game.get("spread_1h"),
                         total_1h=game.get("total_1h"),
                         context=f"{game['away']} @ {game['home']}"
@@ -650,7 +636,6 @@ async def teams_webhook_handler(request: Request):
                         min_edge_points = settings.model.min_spread_edge
                         if market == "TOTAL":
                             min_edge_points = settings.model.min_total_edge
-                        # For ML (now in points-equivalent), use spread threshold for consistency
                         if edge_points < min_edge_points:
                             continue
                         
@@ -674,15 +659,9 @@ async def teams_webhook_handler(request: Request):
                             else:
                                 juice = game.get("under_juice", -110) if not is_1h else game.get("under_1h_juice", -110)
                                 pick_display = f"UNDER {total_line:.1f} ({format_odds(juice)})"
-                        else:  # Moneyline
-                            if pick_val == "HOME":
-                                team_name = game["home"]
-                                ml_odds = game["home_ml"] if not is_1h else game.get("home_ml_1h")
-                            else:
-                                team_name = game["away"]
-                                ml_odds = game["away_ml"] if not is_1h else game.get("away_ml_1h")
-                            pick_display = f"{team_name[:20]} ML ({format_odds(ml_odds)})"
-                        
+                        else:
+                            continue
+
                         # Model line display
                         if market == "SPREAD":
                             # Show model from PICK perspective (home-perspective lines are confusing for AWAY picks)
@@ -693,14 +672,8 @@ async def teams_webhook_handler(request: Request):
                             model_line_val = pred.predicted_total if not is_1h else pred.predicted_total_1h
                             model_str = f"{model_line_val:.1f}"
                         else:
-                            if pick_val == "HOME":
-                                model_ml = pred.predicted_home_ml if not is_1h else pred.predicted_home_ml_1h
-                                prob = pred.home_win_prob if not is_1h else pred.home_win_prob_1h
-                            else:
-                                model_ml = pred.predicted_away_ml if not is_1h else pred.predicted_away_ml_1h
-                                prob = 1 - (pred.home_win_prob if not is_1h else pred.home_win_prob_1h)
-                            model_str = f"{format_odds(model_ml)} ({prob*100:.1f}%)" if model_ml is not None else f"{prob*100:.1f}%"
-                        
+                            continue
+
                         # Market line display with juice
                         if market == "SPREAD":
                             mkt_line_home = game["spread"] if not is_1h else game.get("spread_1h")
@@ -719,9 +692,8 @@ async def teams_webhook_handler(request: Request):
                                 mkt_juice = game.get("over_1h_juice", -110) if pick_val == "OVER" else game.get("under_1h_juice", -110)
                             market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
                         else:
-                            ml_odds = game["home_ml"] if pick_val == "HOME" and not is_1h else (game.get("home_ml_1h") if pick_val == "HOME" else (game["away_ml"] if not is_1h else game.get("away_ml_1h")))
-                            market_str = f"{format_odds(ml_odds)}" if ml_odds is not None else "N/A"
-                        
+                            continue
+
                         # Fire rating
                         bet_tier_value = rec.bet_tier.value if hasattr(rec.bet_tier, 'value') else str(rec.bet_tier) if hasattr(rec, 'bet_tier') else 'standard'
 

@@ -7,7 +7,6 @@ import pytest
 from app.validation import (
     validate_spread,
     validate_total,
-    validate_moneyline,
     validate_price,
     validate_market_odds,
     validate_team_ratings,
@@ -96,41 +95,6 @@ class TestTotalValidation:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MONEYLINE VALIDATION TESTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class TestMoneylineValidation:
-    """Test moneyline value validation."""
-
-    def test_valid_favorite_ml(self):
-        """Normal favorite ML should have no issues."""
-        issues = validate_moneyline(-150)
-        assert len(issues) == 0
-
-    def test_valid_underdog_ml(self):
-        """Normal underdog ML should have no issues."""
-        issues = validate_moneyline(200)
-        assert len(issues) == 0
-
-    def test_none_ml_allowed(self):
-        """None is valid (no odds available)."""
-        issues = validate_moneyline(None)
-        assert len(issues) == 0
-
-    def test_invalid_range_ml_error(self):
-        """ML between -100 and +100 is invalid."""
-        issues = validate_moneyline(-50)
-        assert len(issues) > 0
-        assert issues[0].severity == ValidationSeverity.ERROR
-
-    def test_extreme_ml_error(self):
-        """ML beyond bounds should error."""
-        issues = validate_moneyline(-20000)
-        assert len(issues) > 0
-        assert issues[0].severity == ValidationSeverity.ERROR
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # PRICE (JUICE) VALIDATION TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -170,8 +134,6 @@ class TestMarketOddsValidation:
         result = validate_market_odds(
             spread=-5.5,
             total=145.0,
-            home_ml=-200,
-            away_ml=170,
             spread_1h=-2.5,
             total_1h=69.5,  # ~48% of FG total is realistic for 1H
         )
@@ -203,13 +165,6 @@ class TestMarketOddsValidation:
         )
         assert result.has_warnings
 
-    def test_both_underdogs_warning(self):
-        """Both teams having positive ML should warn."""
-        result = validate_market_odds(
-            home_ml=120,
-            away_ml=105,
-        )
-        assert result.has_warnings
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

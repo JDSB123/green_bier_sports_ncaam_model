@@ -39,12 +39,10 @@ Core Formulas (v6.3.25):
 - Spread (HOME perspective) = -( (Home_Base - Away_Base) + HCA_spread + Situational_spread_adj + Matchup_adj )
 - 1H Spread = -( (raw_margin + situational + matchup) * margin_scale + HCA_1H )  [dynamic margin_scale]
 - 1H Total = (Home_Base + Away_Base) * tempo_factor + HCA_1H + situational_1H  [dynamic tempo_factor]
-- Moneylines: Normal CDF conversion (dynamic sigma based on 3PR/tempo)
 
-All 6 markets: FG Spread/Total/ML, 1H Spread/Total/ML
+Markets: FG Spread/Total, 1H Spread/Total
 """
 
-import math
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -77,13 +75,6 @@ class PredictorOutput:
     total_1h: float
     home_score_1h: float
     away_score_1h: float
-    home_win_prob: float
-    home_win_prob_1h: float
-    home_ml: int
-    away_ml: int
-    home_ml_1h: int
-    away_ml_1h: int
-
     # Enhancement tracking (v6.2)
     variance: float = 11.0  # Dynamic sigma used
     variance_1h: float = 12.65  # 1H variance
@@ -269,18 +260,6 @@ class BarttorkvikPredictor:
         total_1h = home_score_1h + away_score_1h + hca_total_1h + situational_total_adj_1h
 
         # ─────────────────────────────────────────────────────────────────────
-        # WIN PROBABILITY & MONEYLINE - DYNAMIC VARIANCE (v6.2)
-        # ─────────────────────────────────────────────────────────────────────
-
-        home_win_prob = self._spread_to_win_prob(spread, sigma=game_sigma)
-        home_win_prob_1h = self._spread_to_win_prob(spread_1h, sigma=h1_sigma)
-
-        home_ml = self._prob_to_american_odds(home_win_prob)
-        away_ml = self._prob_to_american_odds(1 - home_win_prob)
-
-        home_ml_1h = self._prob_to_american_odds(home_win_prob_1h)
-        away_ml_1h = self._prob_to_american_odds(1 - home_win_prob_1h)
-
         return PredictorOutput(
             spread=round(spread, 1),
             total=round(total, 1),
@@ -290,12 +269,6 @@ class BarttorkvikPredictor:
             total_1h=round(total_1h, 1),
             home_score_1h=round(home_score_1h, 1),
             away_score_1h=round(away_score_1h, 1),
-            home_win_prob=round(home_win_prob, 3),
-            home_win_prob_1h=round(home_win_prob_1h, 3),
-            home_ml=home_ml,
-            away_ml=away_ml,
-            home_ml_1h=home_ml_1h,
-            away_ml_1h=away_ml_1h,
             # v6.2 enhancement tracking
             variance=game_sigma,
             variance_1h=h1_sigma,
@@ -352,39 +325,7 @@ class BarttorkvikPredictor:
 
         return adjustment
 
-    def _spread_to_win_prob(self, spread: float, sigma: Optional[float] = None) -> float:
-        """
-        Convert spread to win probability using normal CDF.
 
-        Spread is HOME-perspective (same convention as market odds in this repo):
-        - spread < 0 => home favored by |spread|
-        - spread > 0 => away favored by spread
-
-        Args:
-            spread: Predicted spread
-            sigma: Standard deviation for conversion (default from config)
-        """
-        # Use dynamic sigma if provided, otherwise use config default
-        if sigma is None:
-            sigma = self.config.spread_to_ml_sigma
-
-        # CDF of normal distribution
-        # Positive spread = home favored = higher home win probability
-        # BUT: Our spread convention is Negative = Home Favored.
-        # So we invert the spread for this calculation.
-        z = -spread / sigma
-        prob = 0.5 * (1 + math.erf(z / math.sqrt(2)))
-
-        return max(0.01, min(0.99, prob))
-
-    def _prob_to_american_odds(self, prob: float) -> int:
-        """Convert probability to American odds."""
-        if prob >= 0.5:
-            # Favorite: negative odds
-            return int(-100 * prob / (1 - prob))
-        else:
-            # Underdog: positive odds
-            return int(100 * (1 - prob) / prob)
 
 
 class PredictionEngine:
@@ -469,12 +410,6 @@ class PredictionEngine:
             predicted_away_score_1h=output.away_score_1h,
             spread_confidence_1h=spread_confidence_1h,
             total_confidence_1h=total_confidence_1h,
-            predicted_home_ml=output.home_ml,
-            predicted_away_ml=output.away_ml,
-            predicted_home_ml_1h=output.home_ml_1h,
-            predicted_away_ml_1h=output.away_ml_1h,
-            home_win_prob=output.home_win_prob,
-            home_win_prob_1h=output.home_win_prob_1h,
             model_version="v6.3.25",
         )
 
@@ -484,108 +419,7 @@ class PredictionEngine:
 
         return prediction
 
-    def _ev_and_kelly_from_prob(self, model_prob: float, odds: int) -> tuple[float, float, float]:
-        """Return (ev_percent, kelly_fraction, market_implied_prob) for a moneyline."""
-        market_prob = self._american_odds_to_prob(odds)
 
-        # Profit multiple for 1 unit stake
-        if odds >= 0:
-            b = odds / 100.0
-        else:
-            b = 100.0 / abs(odds)
-
-        ev_percent = (model_prob * b - (1 - model_prob)) * 100.0
-        kelly = max(0.0, (b * model_prob - (1 - model_prob)) / b)
-
-        return round(ev_percent, 2), round(kelly, 4), market_prob
-
-    def _check_moneyline_value(
-        self,
-        prediction: Prediction,
-        market_odds: MarketOdds,
-    ) -> list[tuple]:
-        """
-        Check if moneylines offer value.
-
-        Returns list of (bet_type, pick, ev_percent, model_prob, market_prob, kelly, odds, confidence).
-        
-        NOTE: Moneylines are currently DISABLED - they were generating too many false positives.
-        """
-        # DISABLED: Moneylines screwing up the model output
-        return []
-        
-        recommendations = []
-        min_ev_pct = 3.0  # Require at least +3% EV relative to stake
-
-        # Full game moneyline
-        if market_odds.home_ml is not None and market_odds.away_ml is not None:
-            home_ev, home_kelly, home_market_prob = self._ev_and_kelly_from_prob(
-                prediction.home_win_prob,
-                market_odds.home_ml,
-            )
-            away_ev, away_kelly, away_market_prob = self._ev_and_kelly_from_prob(
-                1 - prediction.home_win_prob,
-                market_odds.away_ml,
-            )
-
-            if home_ev >= min_ev_pct:
-                recommendations.append((
-                    BetType.MONEYLINE,
-                    Pick.HOME,
-                    home_ev,
-                    prediction.spread_confidence,
-                    prediction.home_win_prob,
-                    home_market_prob,
-                    home_kelly,
-                    market_odds.home_ml,
-                ))
-            if away_ev >= min_ev_pct:
-                recommendations.append((
-                    BetType.MONEYLINE,
-                    Pick.AWAY,
-                    away_ev,
-                    prediction.spread_confidence,
-                    1 - prediction.home_win_prob,
-                    away_market_prob,
-                    away_kelly,
-                    market_odds.away_ml,
-                ))
-
-        # 1H moneyline
-        if market_odds.home_ml_1h is not None and market_odds.away_ml_1h is not None:
-            home_ev_1h, home_kelly_1h, home_market_prob_1h = self._ev_and_kelly_from_prob(
-                prediction.home_win_prob_1h,
-                market_odds.home_ml_1h,
-            )
-            away_ev_1h, away_kelly_1h, away_market_prob_1h = self._ev_and_kelly_from_prob(
-                1 - prediction.home_win_prob_1h,
-                market_odds.away_ml_1h,
-            )
-
-            if home_ev_1h >= min_ev_pct:
-                recommendations.append((
-                    BetType.MONEYLINE_1H,
-                    Pick.HOME,
-                    home_ev_1h,
-                    prediction.spread_confidence_1h,
-                    prediction.home_win_prob_1h,
-                    home_market_prob_1h,
-                    home_kelly_1h,
-                    market_odds.home_ml_1h,
-                ))
-            if away_ev_1h >= min_ev_pct:
-                recommendations.append((
-                    BetType.MONEYLINE_1H,
-                    Pick.AWAY,
-                    away_ev_1h,
-                    prediction.spread_confidence_1h,
-                    1 - prediction.home_win_prob_1h,
-                    away_market_prob_1h,
-                    away_kelly_1h,
-                    market_odds.away_ml_1h,
-                ))
-
-        return recommendations
 
     def _american_odds_to_prob(self, odds: int) -> float:
         """Convert American odds to implied probability (without vig)."""
@@ -642,9 +476,6 @@ class PredictionEngine:
             ),
         ]
 
-        # Add moneyline checks if market odds available
-        moneyline_checks = self._check_moneyline_value(prediction, market_odds)
-
         # Initialize sharp line tracking (used across all bet types)
         sharp_line = None
         is_sharp_aligned = True
@@ -691,9 +522,6 @@ class PredictionEngine:
                 sharp_line = market_odds.sharp_spread
             elif bet_type in (BetType.TOTAL, BetType.TOTAL_1H):
                 sharp_line = market_odds.sharp_total
-            elif bet_type in (BetType.MONEYLINE, BetType.MONEYLINE_1H):
-                # For moneyline, use sharp spread as proxy for game outcome
-                sharp_line = market_odds.sharp_spread
 
             if sharp_line is not None:
                 # Check if we're aligned with sharp movement
@@ -757,59 +585,7 @@ class PredictionEngine:
 
             recommendations.append(rec)
 
-        # Process moneyline recommendations
-        # FIX: Initialize sharp alignment for ML bets (use spread as proxy)
-        ml_sharp_line = market_odds.sharp_spread
-        ml_sharp_aligned = True  # Default to aligned if no sharp data
 
-        for (
-            bet_type,
-            pick,
-            ev_percent,
-            confidence,
-            model_prob,
-            market_prob,
-            kelly,
-            market_odds_value,
-        ) in moneyline_checks:
-            if confidence < self.config.min_confidence:
-                continue
-
-            # Determine bet tier based on EV
-            if ev_percent >= 10.0:
-                bet_tier = BetTier.MAX
-            elif ev_percent >= 6.0:
-                bet_tier = BetTier.MEDIUM
-            else:
-                bet_tier = BetTier.STANDARD
-
-            recommended_units = min(
-                kelly * self.config.kelly_fraction * 10,
-                self.config.max_bet_units,
-            )
-            rec = BettingRecommendation(
-                game_id=prediction.game_id,
-                home_team=prediction.home_team,
-                away_team=prediction.away_team,
-                commence_time=prediction.commence_time,
-                bet_type=bet_type,
-                pick=pick,
-                line=market_odds_value,  # For moneyline, "line" is the odds
-                model_line=market_odds_value,  # Not really applicable for ML
-                market_line=market_odds_value,
-                edge=ev_percent,  # For ML, edge is EV %
-                confidence=confidence,
-                ev_percent=ev_percent,
-                implied_prob=model_prob,
-                market_prob=market_prob,
-                kelly_fraction=kelly,
-                recommended_units=round(recommended_units, 1),
-                bet_tier=bet_tier,
-                sharp_line=ml_sharp_line,  # FIX: Use dedicated ML sharp line
-                is_sharp_aligned=ml_sharp_aligned,  # FIX: Use dedicated ML alignment
-            )
-
-            recommendations.append(rec)
 
         return recommendations
 

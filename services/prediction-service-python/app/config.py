@@ -106,22 +106,6 @@ class ModelConfig(BaseSettings):
     )
 
     # ─────────────────────────────────────────────────────────────────────────
-    # MONEYLINE CONVERSION
-    # ─────────────────────────────────────────────────────────────────────────
-
-    # Pythagorean exponent for win probability
-    pythagorean_exponent: float = Field(
-        default=11.5,
-        description="Exponent for Pythagorean win probability. Calibrated for NCAAB."
-    )
-
-    # Spread to moneyline conversion sigma
-    spread_to_ml_sigma: float = Field(
-        default=11.0,
-        description="Standard deviation for spread-to-win-probability conversion."
-    )
-
-    # ─────────────────────────────────────────────────────────────────────────
     # SHARP BOOK HANDLING
     # ─────────────────────────────────────────────────────────────────────────
 

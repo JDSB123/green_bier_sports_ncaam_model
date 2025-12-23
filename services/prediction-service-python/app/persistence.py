@@ -56,11 +56,6 @@ def upsert_prediction(engine: Engine, prediction: Prediction, features: Optional
             spread_confidence_1h,
             total_confidence_1h,
 
-            predicted_home_ml,
-            predicted_away_ml,
-            predicted_home_ml_1h,
-            predicted_away_ml_1h,
-
             market_spread,
             market_total,
             market_spread_1h,
@@ -92,11 +87,6 @@ def upsert_prediction(engine: Engine, prediction: Prediction, features: Optional
             :spread_confidence_1h,
             :total_confidence_1h,
 
-            :predicted_home_ml,
-            :predicted_away_ml,
-            :predicted_home_ml_1h,
-            :predicted_away_ml_1h,
-
             :market_spread,
             :market_total,
             :market_spread_1h,
@@ -124,11 +114,6 @@ def upsert_prediction(engine: Engine, prediction: Prediction, features: Optional
             predicted_away_score_1h = EXCLUDED.predicted_away_score_1h,
             spread_confidence_1h = EXCLUDED.spread_confidence_1h,
             total_confidence_1h = EXCLUDED.total_confidence_1h,
-
-            predicted_home_ml = EXCLUDED.predicted_home_ml,
-            predicted_away_ml = EXCLUDED.predicted_away_ml,
-            predicted_home_ml_1h = EXCLUDED.predicted_home_ml_1h,
-            predicted_away_ml_1h = EXCLUDED.predicted_away_ml_1h,
 
             market_spread = EXCLUDED.market_spread,
             market_total = EXCLUDED.market_total,
@@ -161,10 +146,6 @@ def upsert_prediction(engine: Engine, prediction: Prediction, features: Optional
         "predicted_away_score_1h": prediction.predicted_away_score_1h,
         "spread_confidence_1h": prediction.spread_confidence_1h,
         "total_confidence_1h": prediction.total_confidence_1h,
-        "predicted_home_ml": prediction.predicted_home_ml,
-        "predicted_away_ml": prediction.predicted_away_ml,
-        "predicted_home_ml_1h": prediction.predicted_home_ml_1h,
-        "predicted_away_ml_1h": prediction.predicted_away_ml_1h,
         "market_spread": prediction.market_spread,
         "market_total": prediction.market_total,
         "market_spread_1h": prediction.market_spread_1h,

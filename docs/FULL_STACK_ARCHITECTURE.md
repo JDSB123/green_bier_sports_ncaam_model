@@ -424,7 +424,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 
 ### 2. The Odds API
 
-**Purpose:** Betting odds (spreads, totals, moneylines)  
+**Purpose:** Betting odds (spreads and totals)  
 **URL:** `https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds`  
 **Frequency:** **On-demand only** (manual-only mode; one-shot sync when you run predictions)  
 **Authentication:** API key required (stored in Docker secret)  
@@ -694,3 +694,4 @@ Before deployment, ensure:
 
 **Last Updated:** December 19, 2025  
 **Version:** v6.0 FINAL
+

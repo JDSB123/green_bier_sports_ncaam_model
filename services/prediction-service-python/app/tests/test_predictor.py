@@ -7,7 +7,6 @@ Tests cover:
 3. Matchup adjustments (ORB/TOR/FTR edge)
 4. Situational adjustments (rest days, B2B)
 5. Dynamic variance calculations
-6. Win probability / moneyline conversion
 7. Edge cases and boundary conditions
 """
 
@@ -346,72 +345,6 @@ class TestSituationalAdjustments:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# WIN PROBABILITY & MONEYLINE TESTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class TestWinProbability:
-    """Test win probability and moneyline conversion."""
-
-    def test_home_favorite_has_high_win_prob(self, predictor: BarttorkvikPredictor):
-        """Big home favorite should have high win probability."""
-        home = make_team("Duke", adj_o=120.0, adj_d=90.0)  # Elite
-        away = make_team("Weak", adj_o=95.0, adj_d=110.0)  # Bad
-        
-        result = predictor.predict(home, away)
-        
-        assert result.home_win_prob > 0.85
-
-    def test_home_underdog_has_low_win_prob(self, predictor: BarttorkvikPredictor):
-        """Home underdog should have low win probability."""
-        home = make_team("Weak", adj_o=95.0, adj_d=110.0)  # Bad
-        away = make_team("Duke", adj_o=120.0, adj_d=90.0)  # Elite
-        
-        result = predictor.predict(home, away)
-        
-        assert result.home_win_prob < 0.25
-
-    def test_win_prob_bounds(self, predictor: BarttorkvikPredictor):
-        """Win probability should be between 0.01 and 0.99."""
-        home = make_team("Duke")
-        away = make_team("UNC")
-        
-        result = predictor.predict(home, away)
-        
-        assert 0.01 <= result.home_win_prob <= 0.99
-        assert 0.01 <= result.home_win_prob_1h <= 0.99
-
-    def test_moneyline_favorite_is_negative(self, predictor: BarttorkvikPredictor):
-        """Home favorite should have negative moneyline."""
-        home = make_team("Duke", adj_o=115.0, adj_d=95.0)
-        away = make_team("UNC", adj_o=105.0, adj_d=105.0)
-        
-        result = predictor.predict(home, away)
-        
-        assert result.home_ml < 0  # Favorite has negative ML
-        assert result.away_ml > 0  # Underdog has positive ML
-
-    def test_moneyline_sum_reflects_no_vig(self, predictor: BarttorkvikPredictor):
-        """Model moneylines should be fair (implied probs sum to ~1)."""
-        home = make_team("Duke")
-        away = make_team("UNC")
-        
-        result = predictor.predict(home, away)
-        
-        # Convert ML to implied probability
-        def ml_to_prob(ml: int) -> float:
-            if ml < 0:
-                return abs(ml) / (abs(ml) + 100)
-            else:
-                return 100 / (ml + 100)
-        
-        home_prob = ml_to_prob(result.home_ml)
-        away_prob = ml_to_prob(result.away_ml)
-        
-        # Should sum to approximately 1 (no vig)
-        assert home_prob + away_prob == pytest.approx(1.0, abs=0.02)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # DYNAMIC VARIANCE TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -567,8 +500,6 @@ class TestEdgeCases:
         
         # Strong team should be favored (negative spread)
         assert result.spread < -10
-        # Home team with big edge should have high win probability
-        assert result.home_win_prob > 0.75
 
     def test_prediction_is_reproducible(self, predictor: BarttorkvikPredictor):
         """Same inputs should produce same outputs."""
@@ -580,5 +511,4 @@ class TestEdgeCases:
         
         assert result1.spread == result2.spread
         assert result1.total == result2.total
-        assert result1.home_win_prob == result2.home_win_prob
 

@@ -56,9 +56,9 @@ class OddsApiClient:
         self.regions = regions or os.getenv("REGIONS", "us")
         self.odds_format = odds_format or os.getenv("ODDS_FORMAT", "american")
 
-        self.markets_full = os.getenv("MARKETS_FULL", "spreads,totals,h2h")
-        self.markets_h1 = os.getenv("MARKETS_H1", "spreads_h1,totals_h1,h2h_h1")
-        self.markets_h2 = os.getenv("MARKETS_H2", "spreads_h2,totals_h2,h2h_h2")
+        self.markets_full = os.getenv("MARKETS_FULL", "spreads,totals")
+        self.markets_h1 = os.getenv("MARKETS_H1", "spreads_h1,totals_h1")
+        self.markets_h2 = os.getenv("MARKETS_H2", "spreads_h2,totals_h2")
 
         self.bookmakers_h1 = os.getenv(
             "BOOKMAKERS_H1", "bovada,pinnacle,circa,bookmaker"
@@ -227,3 +227,4 @@ class OddsApiClient:
             except OddsApiError:
                 continue
         return out
+

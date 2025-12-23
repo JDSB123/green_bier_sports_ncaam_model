@@ -42,10 +42,6 @@ CREATE TABLE IF NOT EXISTS predictions (
     predicted_away_score_1h DECIMAL(5,2),
     spread_confidence_1h    DECIMAL(4,3),
     total_confidence_1h     DECIMAL(4,3),
-    predicted_home_ml       INTEGER,
-    predicted_away_ml       INTEGER,
-    predicted_home_ml_1h    INTEGER,
-    predicted_away_ml_1h    INTEGER,
     market_spread           DECIMAL(5,2),
     market_total            DECIMAL(5,2),
     market_spread_1h        DECIMAL(5,2),
@@ -153,15 +149,6 @@ CREATE TABLE IF NOT EXISTS public_sharp_splits (
     total_sharp_money_pct       DECIMAL(5,2),
     total_public_side           TEXT,
     total_sharp_side            TEXT,
-    
-    -- Moneyline
-    ml_public_bets_pct          DECIMAL(5,2),
-    ml_public_money_pct         DECIMAL(5,2),
-    ml_sharp_bets_pct           DECIMAL(5,2),
-    ml_sharp_money_pct          DECIMAL(5,2),
-    ml_public_side              TEXT,
-    ml_sharp_side               TEXT,
-    
     source          TEXT NOT NULL,
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );

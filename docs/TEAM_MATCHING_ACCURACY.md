@@ -103,7 +103,6 @@ VALUES (home_team_id, away_team_id, ...)
 ### Backtest Results (Placeholder)
 - Spread Mean Absolute Error (MAE): 8.2 points (2023 season, n=1200 games)
 - Total Over/Under Hit Rate: 54% (above 52.4% breakeven)
-- Moneyline Accuracy: 72% for favorites
 - ROI on Recommended Bets: +5.2% (Kelly sizing)
 
 ### Team Matching Accuracy
