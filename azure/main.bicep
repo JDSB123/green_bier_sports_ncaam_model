@@ -41,6 +41,10 @@ param oddsApiKey string
 @secure()
 param teamsWebhookUrl string = ''
 
+@description('Basketball API key (api-basketball.com)')
+@secure()
+param basketballApiKey string = ''
+
 @description('Container image tag')
 param imageTag string = 'v6.3.35'
 
@@ -246,6 +250,12 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
             value: oddsApiKey
           }
         ],
+        (basketballApiKey != '') ? [
+          {
+            name: 'basketball-api-key'
+            value: basketballApiKey
+          }
+        ] : [],
         (teamsWebhookUrl != '') ? [
           {
             name: 'teams-webhook-url'
@@ -298,6 +308,12 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
                 secretRef: 'odds-api-key'
               }
             ],
+            (basketballApiKey != '') ? [
+              {
+                name: 'BASKETBALL_API_KEY'
+                secretRef: 'basketball-api-key'
+              }
+            ] : [],
             (teamsWebhookUrl != '') ? [
               {
                 name: 'TEAMS_WEBHOOK_URL'

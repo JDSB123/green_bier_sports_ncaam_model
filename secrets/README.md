@@ -26,6 +26,10 @@ openssl rand -hex 32 | tr -d '\n' > master_api_key.txt
 # Replace YOUR_ACTUAL_KEY with your real API key from the website
 echo -n "YOUR_ACTUAL_KEY" > odds_api_key.txt
 
+# Basketball API key (get from https://api-basketball.com/)
+# Code reads from: /run/secrets/basketball_api_key (Docker) or env var BASKETBALL_API_KEY (Azure)
+echo -n "YOUR_BASKETBALL_API_KEY" > basketball_api_key.txt
+
 # Microsoft Teams Incoming Webhook URL (OPTIONAL - only needed for --teams)
 # Code reads from: /run/secrets/teams_webhook_url (Docker) or env var TEAMS_WEBHOOK_URL (Azure)
 echo -n "YOUR_TEAMS_WEBHOOK_URL" > teams_webhook_url.txt

@@ -2,10 +2,22 @@
 # NCAAM v6.3 - Azure Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════════
 # Usage:
-#   .\deploy.ps1 -OddsApiKey "YOUR_ACTUAL_KEY"
-#   .\deploy.ps1 -OddsApiKey "YOUR_ACTUAL_KEY" -SkipInfra
-#   Note: -OddsApiKey parameter sets environment variable THE_ODDS_API_KEY in the container
-#   Optional: -TeamsWebhookUrl sets TEAMS_WEBHOOK_URL secret/env var for run_today.py --teams
+#   .\deploy.ps1 -OddsApiKey "YOUR_KEY"              # Full deployment
+#   .\deploy.ps1 -QuickDeploy                        # Fast code-only update (RECOMMENDED)
+#   .\deploy.ps1 -SkipInfra -ParallelBuild           # Skip infra + parallel builds
+#   .\deploy.ps1 -SkipInfra -SkipBuild               # Update container apps only
+#
+# Performance Flags:
+#   -QuickDeploy    Fastest option for code updates (implies -SkipInfra -ParallelBuild)
+#   -SkipInfra      Skip Azure resource provisioning (use after initial deploy)
+#   -SkipBuild      Skip Docker build/push (only update container app config)
+#   -ParallelBuild  Build all 4 Docker images concurrently
+#   -NoCache        Force full Docker rebuild (slower, use for dependency changes)
+#
+# Other Options:
+#   -OddsApiKey     The Odds API key (auto-fetched from existing app if omitted)
+#   -TeamsWebhookUrl  Microsoft Teams webhook for notifications
+#   -ImageTag       Container image tag (default: v6.3.35)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(
@@ -17,13 +29,16 @@ param(
     [string]$OddsApiKey,
 
     [Parameter(Mandatory=$false)]
+    [string]$BasketballApiKey = '',
+
+    [Parameter(Mandatory=$false)]
     [string]$TeamsWebhookUrl = '',
 
     [Parameter(Mandatory=$false)]
     [string]$Location = 'centralus',
 
     [Parameter(Mandatory=$false)]
-    [string]$ResourceGroup = 'ncaam-stable-rg',
+    [string]$ResourceGroup = 'NCAAM-GBSV-MODEL-RG',
 
     [Parameter(Mandatory=$false)]
     [switch]$SkipInfra,
@@ -32,8 +47,28 @@ param(
     [switch]$SkipBuild,
 
     [Parameter(Mandatory=$false)]
+    [switch]$NoCache,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$ParallelBuild,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$QuickDeploy,
+
+    [Parameter(Mandatory=$false)]
     [string]$ImageTag = 'v6.3.35'
 )
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# QUICK DEPLOY MODE
+# ─────────────────────────────────────────────────────────────────────────────────
+# QuickDeploy automatically enables optimizations for fast code-only updates
+if ($QuickDeploy) {
+    $SkipInfra = $true
+    $ParallelBuild = $true
+    Write-Host ""
+    Write-Host "  [QUICK DEPLOY MODE] Skipping infra, using parallel builds" -ForegroundColor Magenta
+}
 
 $ErrorActionPreference = 'Stop'
 
@@ -46,7 +81,7 @@ $webImageName = 'gbsv-web'
 $ratingsImageName = "$baseName-ratings-sync"
 $oddsImageName = "$baseName-odds-ingestion"
 $resourcePrefix = "$baseName-$Environment"
-$acrName = 'ncaamstableacr'
+$acrName = 'ncaamgbsvacr'
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
@@ -144,6 +179,15 @@ $redisPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 |
 Write-Host "  [OK] PostgreSQL password generated (32 chars)" -ForegroundColor Gray
 Write-Host "  [OK] Redis password generated (32 chars)" -ForegroundColor Gray
 
+# Optional: Load Basketball API key from repo secret file if not explicitly provided
+if ([string]::IsNullOrWhiteSpace($BasketballApiKey)) {
+    $basketballSecretPath = Join-Path $PSScriptRoot "..\secrets\basketball_api_key.txt"
+    if (Test-Path $basketballSecretPath) {
+        $BasketballApiKey = (Get-Content $basketballSecretPath -Raw).Trim()
+        Write-Host "  [OK] Basketball API key loaded from secrets file" -ForegroundColor Gray
+    }
+}
+
 # Optional: Load Teams webhook from repo secret file if not explicitly provided
 if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
     $teamsSecretPath = Join-Path $PSScriptRoot "..\secrets\teams_webhook_url.txt"
@@ -188,6 +232,7 @@ if (-not $SkipInfra) {
             postgresPassword=$postgresPassword `
             redisPassword=$redisPassword `
             oddsApiKey=$OddsApiKey `
+            basketballApiKey=$BasketballApiKey `
             teamsWebhookUrl=$TeamsWebhookUrl `
             imageTag=$ImageTag `
         --output json | ConvertFrom-Json
@@ -233,19 +278,99 @@ if (-not $SkipBuild) {
         @{ Name = "$acrLoginServer/$oddsImageName:$ImageTag"; Context = "services/odds-ingestion-rust"; Dockerfile = "services/odds-ingestion-rust/Dockerfile" }
     )
 
-    foreach ($img in $images) {
-        Write-Host "  Building image: $($img.Name)" -ForegroundColor Gray
-        docker build --no-cache -t $($img.Name) -f $($img.Dockerfile) $($img.Context)
-        if ($LASTEXITCODE -ne 0) {
-            Pop-Location
-            Write-Error "Docker build failed for $($img.Name)!"
+    # Determine cache flag
+    $cacheFlag = if ($NoCache) { "--no-cache" } else { "" }
+    if ($NoCache) {
+        Write-Host "  [INFO] Building with --no-cache (full rebuild)" -ForegroundColor Yellow
+    } else {
+        Write-Host "  [INFO] Building with Docker cache (faster)" -ForegroundColor Gray
+    }
+
+    if ($ParallelBuild) {
+        # ─────────────────────────────────────────────────────────────────────────
+        # PARALLEL BUILD MODE - Build all images concurrently
+        # ─────────────────────────────────────────────────────────────────────────
+        Write-Host "  [PARALLEL] Starting concurrent builds for $($images.Count) images..." -ForegroundColor Cyan
+
+        $buildJobs = @()
+        $repoRoot = (Get-Location).Path
+
+        foreach ($img in $images) {
+            $imgName = $img.Name
+            $imgContext = $img.Context
+            $imgDockerfile = $img.Dockerfile
+            $useNoCache = $NoCache
+
+            $job = Start-Job -ScriptBlock {
+                param($name, $context, $dockerfile, $noCache, $root)
+                Set-Location $root
+                $cacheArg = if ($noCache) { "--no-cache" } else { "" }
+                if ($cacheArg) {
+                    docker build $cacheArg -t $name -f $dockerfile $context 2>&1
+                } else {
+                    docker build -t $name -f $dockerfile $context 2>&1
+                }
+                return @{ ExitCode = $LASTEXITCODE; Image = $name }
+            } -ArgumentList $imgName, $imgContext, $imgDockerfile, $useNoCache, $repoRoot
+
+            $buildJobs += @{ Job = $job; Image = $imgName }
+            Write-Host "    Started: $imgName" -ForegroundColor Gray
         }
 
-        Write-Host "  Pushing image: $($img.Name)" -ForegroundColor Gray
-        docker push $($img.Name)
-        if ($LASTEXITCODE -ne 0) {
+        # Wait for all builds to complete
+        Write-Host "  [PARALLEL] Waiting for builds to complete..." -ForegroundColor Cyan
+        $failedBuilds = @()
+
+        foreach ($buildJob in $buildJobs) {
+            $result = Receive-Job -Job $buildJob.Job -Wait
+            Remove-Job -Job $buildJob.Job
+
+            # Check if build failed
+            if ($result.ExitCode -ne 0) {
+                $failedBuilds += $buildJob.Image
+                Write-Host "    FAILED: $($buildJob.Image)" -ForegroundColor Red
+            } else {
+                Write-Host "    OK: $($buildJob.Image)" -ForegroundColor Green
+            }
+        }
+
+        if ($failedBuilds.Count -gt 0) {
             Pop-Location
-            Write-Error "Docker push failed for $($img.Name)!"
+            Write-Error "Docker build failed for: $($failedBuilds -join ', ')"
+        }
+
+        # Push images (can also be parallelized but ACR handles sequential better)
+        Write-Host "  [PARALLEL] Pushing images to ACR..." -ForegroundColor Cyan
+        foreach ($img in $images) {
+            Write-Host "    Pushing: $($img.Name)" -ForegroundColor Gray
+            docker push $($img.Name)
+            if ($LASTEXITCODE -ne 0) {
+                Pop-Location
+                Write-Error "Docker push failed for $($img.Name)!"
+            }
+        }
+    } else {
+        # ─────────────────────────────────────────────────────────────────────────
+        # SEQUENTIAL BUILD MODE - Build images one at a time
+        # ─────────────────────────────────────────────────────────────────────────
+        foreach ($img in $images) {
+            Write-Host "  Building image: $($img.Name)" -ForegroundColor Gray
+            if ($NoCache) {
+                docker build --no-cache -t $($img.Name) -f $($img.Dockerfile) $($img.Context)
+            } else {
+                docker build -t $($img.Name) -f $($img.Dockerfile) $($img.Context)
+            }
+            if ($LASTEXITCODE -ne 0) {
+                Pop-Location
+                Write-Error "Docker build failed for $($img.Name)!"
+            }
+
+            Write-Host "  Pushing image: $($img.Name)" -ForegroundColor Gray
+            docker push $($img.Name)
+            if ($LASTEXITCODE -ne 0) {
+                Pop-Location
+                Write-Error "Docker push failed for $($img.Name)!"
+            }
         }
     }
 
@@ -297,10 +422,6 @@ Write-Host "  [OK] Migrations will run automatically on container startup" -Fore
 Write-Host ""
 Write-Host "[6/6] Verifying deployment..." -ForegroundColor Green
 
-# Wait for container to be ready
-Write-Host "  Waiting for container to be ready (60s)..." -ForegroundColor Gray
-Start-Sleep -Seconds 60
-
 # Get container app URL
 $containerAppUrl = az containerapp show `
     --name $containerAppName `
@@ -309,13 +430,33 @@ $containerAppUrl = az containerapp show `
     --output tsv
 
 if ($containerAppUrl) {
-    Write-Host "  Testing health endpoint..." -ForegroundColor Gray
-    try {
-        $health = Invoke-RestMethod -Uri "https://$containerAppUrl/health" -TimeoutSec 30
-        Write-Host "  [OK] Health check passed: $($health.status)" -ForegroundColor Green
-    } catch {
-        Write-Host "  ! Health check failed (container may still be starting)" -ForegroundColor Yellow
+    # Smart health check loop - exits early when healthy
+    $maxAttempts = 12
+    $attemptInterval = 10
+    $healthy = $false
+
+    Write-Host "  Waiting for container to be ready (polling every ${attemptInterval}s, max ${maxAttempts} attempts)..." -ForegroundColor Gray
+
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        try {
+            $health = Invoke-RestMethod -Uri "https://$containerAppUrl/health" -TimeoutSec 5
+            Write-Host "  [OK] Health check passed on attempt $attempt : $($health.status)" -ForegroundColor Green
+            $healthy = $true
+            break
+        } catch {
+            if ($attempt -lt $maxAttempts) {
+                Write-Host "    Attempt $attempt/$maxAttempts - not ready yet, waiting..." -ForegroundColor Gray
+                Start-Sleep -Seconds $attemptInterval
+            }
+        }
     }
+
+    if (-not $healthy) {
+        Write-Host "  ! Health check did not pass after $maxAttempts attempts (container may still be starting)" -ForegroundColor Yellow
+        Write-Host "    Check logs: az containerapp logs show -n $containerAppName -g $ResourceGroup --follow" -ForegroundColor Gray
+    }
+} else {
+    Write-Host "  ! Could not retrieve container app URL" -ForegroundColor Yellow
 }
 
 # ─────────────────────────────────────────────────────────────────────────────────

@@ -13,6 +13,9 @@
     },
     "imageTag": {
       "value": "v6.3.35"
+    },
+    "resourceNameSuffix": {
+      "value": "-gbsv"
     }
   }
 }
