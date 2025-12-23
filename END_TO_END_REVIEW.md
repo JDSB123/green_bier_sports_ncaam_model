@@ -1,7 +1,7 @@
 # End-to-End Model/Stack Review
 **Date:** December 23, 2025  
 **Version:** v6.3  
-**Status:** ✅ PRODUCTION READY (ncaam-stable-rg)
+**Status:** ✅ PRODUCTION READY (NCAAM-GBSV-MODEL-RG)
 
 ---
 
@@ -15,11 +15,11 @@ This is a **well-architected, production-ready** NCAA basketball prediction syst
 - Comprehensive data validation
 - Containerized deployment with proper secrets management
 - Multiple market predictions (Full game + First half)
-- **Consolidated production environment** (`ncaam-stable-rg`)
+- **Consolidated production environment** (`NCAAM-GBSV-MODEL-RG`)
 - **CI/CD pipeline** automatically builds and pushes to ACR
 
 ✅ **Recent Cleanup (December 23, 2025):**
-- Consolidated all resources to `ncaam-stable-rg`
+- Consolidated all resources to `NCAAM-GBSV-MODEL-RG`
 - Removed deprecated resource groups (`ncaam-prod-rg`, `green-bier-ncaam`, `greenbier-enterprise-rg`)
 - Standardized all documentation and scripts
 - HCA values standardized to 3.2 across all configs

@@ -9,9 +9,9 @@
 
 All NCAAM resources are now consolidated in a single resource group:
 
-- **Resource Group:** `ncaam-stable-rg`
+- **Resource Group:** `NCAAM-GBSV-MODEL-RG`
 - **Location:** `centralus`
-- **Container Registry:** `ncaamstableacr.azurecr.io`
+- **Container Registry:** `ncaamstablegbsvacr.azurecr.io`
 
 ---
 
@@ -21,7 +21,7 @@ The following legacy/duplicate resource groups have been cleaned up:
 
 | Resource Group | Status | Notes |
 |----------------|--------|-------|
-| `ncaam-prod-rg` | ❌ Deleted | Replaced by ncaam-stable-rg |
+| `ncaam-prod-rg` | ❌ Deleted | Replaced by NCAAM-GBSV-MODEL-RG |
 | `green-bier-ncaam` | ❌ Deleted | Legacy deployment |
 | `greenbier-enterprise-rg` | ❌ Deleted | Enterprise mode deprecated |
 
@@ -29,11 +29,11 @@ The following legacy/duplicate resource groups have been cleaned up:
 
 ## 📋 Current Production Resources
 
-All resources in `ncaam-stable-rg`:
+All resources in `NCAAM-GBSV-MODEL-RG`:
 
 ```
-ncaam-stable-rg/
-├── ncaamstableacr           # Container Registry
+NCAAM-GBSV-MODEL-RG/
+├── ncaamstablegbsvacr           # Container Registry
 ├── ncaam-stable-postgres    # PostgreSQL Flexible Server
 ├── ncaam-stable-redis       # Azure Cache for Redis
 ├── ncaam-stable-env         # Container Apps Environment

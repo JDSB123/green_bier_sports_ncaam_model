@@ -9,7 +9,7 @@
 
 ### Deployment Files (Core)
 1. **`azure/deploy.ps1`** - One-click Azure deployment script
-   - Deploys to `ncaam-stable-rg`
+   - Deploys to `NCAAM-GBSV-MODEL-RG`
    - **Usage:** `.\deploy.ps1 -OddsApiKey "YOUR_KEY"`
 
 2. **`azure/main.bicep`** - Azure infrastructure as code

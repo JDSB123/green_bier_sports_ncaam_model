@@ -12,13 +12,13 @@ on:
       - '.github/workflows/build-and-push.yml'
 
 env:
-  ACR_NAME: ncaamgbsvacr
-  ACR_LOGIN_SERVER: ncaamgbsvacr.azurecr.io
+  ACR_NAME: ncaamstablegbsvacr
+  ACR_LOGIN_SERVER: ncaamstablegbsvacr.azurecr.io
   PRED_IMAGE: ncaam-prediction
   WEB_IMAGE: gbsv-web
   RATINGS_IMAGE: ncaam-ratings-sync
   ODDS_IMAGE: ncaam-odds-ingestion
-  RESOURCE_GROUP: ncaam-gbsv-model
+  RESOURCE_GROUP: NCAAM-GBSV-MODEL-RG
 
 jobs:
   build-and-push:

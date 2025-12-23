@@ -63,7 +63,7 @@ POSTGRES_HOST_PORT=5451 REDIS_HOST_PORT=6391 PREDICTION_HOST_PORT=8093 docker co
 
 ### Default Location
 - **Azure Region:** `centralus`
-- **Resource Group:** `ncaam-stable-rg`
+- **Resource Group:** `NCAAM-GBSV-MODEL-RG`
 
 ### Changing Azure Location
 
@@ -102,11 +102,11 @@ This changes:
 
 ### Azure Resource Names
 
-**Standard Production Resources (ncaam-stable-rg):**
+**Standard Production Resources (NCAAM-GBSV-MODEL-RG):**
 
 | Resource | Name |
 |----------|------|
-| Resource Group | `ncaam-stable-rg` |
+| Resource Group | `NCAAM-GBSV-MODEL-RG` |
 | Container Registry | `ncaamstableacr` |
 | PostgreSQL | `ncaam-stable-postgres` |
 | Redis | `ncaam-stable-redis` |
@@ -161,7 +161,7 @@ docker compose up -d
 ### Azure Deployment
 
 ```powershell
-# Deploy to production (ncaam-stable-rg)
+# Deploy to production (NCAAM-GBSV-MODEL-RG)
 .\azure\deploy.ps1 -OddsApiKey "YOUR_KEY"
 ```
 
@@ -272,7 +272,7 @@ docker compose up -d
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `Location` | `centralus` | Azure region |
-| `ResourceGroup` | `ncaam-stable-rg` | Resource group name |
+| `ResourceGroup` | `NCAAM-GBSV-MODEL-RG` | Resource group name |
 | `Environment` | `stable` | Deployment environment |
 | `ImageTag` | `v6.3.35` | Container image tag |
 

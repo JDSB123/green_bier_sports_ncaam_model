@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NCAAM v6.3 - Azure Container Apps Deployment
+// NCAAM v33.0 - Azure Container Apps Deployment
 // ═══════════════════════════════════════════════════════════════════════════════
 // Deploys:
 // - Azure Container Registry (ACR)
@@ -46,7 +46,7 @@ param teamsWebhookUrl string = ''
 param basketballApiKey string = ''
 
 @description('Container image tag')
-param imageTag string = 'v6.3.35'
+param imageTag string = 'v33.0.0'
 
 @description('Suffix for resource names (e.g. -gbe for enterprise resources)')
 param resourceNameSuffix string = ''

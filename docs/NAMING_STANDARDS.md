@@ -17,7 +17,7 @@
 ```
 
 **Examples:**
-- Resource Group: `ncaam-stable-rg`
+- Resource Group: `NCAAM-GBSV-MODEL-RG`
 - Container Registry: `ncaamstableacr` (no hyphens - Azure requirement)
 - PostgreSQL: `ncaam-stable-postgres`
 - Redis: `ncaam-stable-redis`
@@ -72,12 +72,12 @@
 ## ☁️ Azure Resources
 
 ### Production Resource Group
-- **Name:** `ncaam-stable-rg`
+- **Name:** `NCAAM-GBSV-MODEL-RG`
 - **Location:** `centralus`
 
 ### Container Registry (ACR)
-- **Name:** `ncaamstableacr` (no hyphens - Azure requirement)
-- **Login Server:** `ncaamstableacr.azurecr.io`
+- **Name:** `ncaamstablegbsvacr` (no hyphens - Azure requirement)
+- **Login Server:** `ncaamstablegbsvacr.azurecr.io`
 
 ### PostgreSQL
 - **Server:** `ncaam-stable-postgres`
@@ -97,8 +97,8 @@
 - **Name:** `ncaam-stable-logs`
 
 ### Container Image
-- **Format:** `ncaamstableacr.azurecr.io/ncaam-prediction:{tag}`
-- **Example:** `ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35`
+- **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:{tag}`
+- **Example:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.0.0`
 
 ---
 
@@ -110,19 +110,19 @@
 
 ### Azure Deploy Script (`azure/deploy.ps1`)
 - **$baseName:** `'ncaam'`
-- **$ResourceGroup:** `'ncaam-stable-rg'` (default)
-- **$acrName:** `'ncaamstableacr'`
+- **$ResourceGroup:** `'NCAAM-GBSV-MODEL-RG'` (default)
+- **$acrName:** `'ncaamstablegbsvacr'`
 
 ### Docker Compose (`docker-compose.yml`)
 - **COMPOSE_PROJECT_NAME:** `ncaam_v6_model` (default)
 - **SPORT:** `ncaam` (default)
 - **DB_NAME:** `ncaam` (default, uses SPORT)
 - **DB_USER:** `ncaam` (default, uses SPORT)
-- **Image:** `ncaamstableacr.azurecr.io/ncaam-prediction:{version}`
+- **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:{version}`
 
 ### GitHub Actions (`.github/workflows/build-and-push.yml`)
-- **ACR_NAME:** `ncaamstableacr`
-- **ACR_LOGIN_SERVER:** `ncaamstableacr.azurecr.io`
+- **ACR_NAME:** `ncaamstablegbsvacr`
+- **ACR_LOGIN_SERVER:** `ncaamstablegbsvacr.azurecr.io`
 - **IMAGE_NAME:** `ncaam-prediction`
 
 ---
@@ -138,7 +138,7 @@
 - [ ] Container image repository is `ncaam-prediction`
 
 ### After Deployment
-- [ ] Verify all resources created in `ncaam-stable-rg`
+- [ ] Verify all resources created in `NCAAM-GBSV-MODEL-RG`
 - [ ] Check container app can connect to database
 - [ ] Confirm Redis connection works
 - [ ] Test container app health endpoint
@@ -160,10 +160,10 @@
 
 ```powershell
 # Resource Group
-ncaam-stable-rg
+NCAAM-GBSV-MODEL-RG
 
 # Resources
-ncaamstableacr (ACR)
+ncaamstablegbsvacr (ACR)
 ncaam-stable-postgres (PostgreSQL)
 ncaam-stable-redis (Redis)
 ncaam-stable-env (Container Apps Environment)
@@ -171,7 +171,7 @@ ncaam-stable-prediction (Container App)
 ncaam-stable-logs (Log Analytics)
 
 # Container Image
-ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35
+ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.0.0
 ```
 
 ---

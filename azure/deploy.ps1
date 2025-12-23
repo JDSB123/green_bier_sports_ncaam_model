@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NCAAM v6.3 - Azure Deployment Script
+# NCAAM v33.0 - Azure Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════════
 # Usage:
 #   .\deploy.ps1 -OddsApiKey "YOUR_KEY"              # Full deployment
@@ -17,7 +17,7 @@
 # Other Options:
 #   -OddsApiKey     The Odds API key (auto-fetched from existing app if omitted)
 #   -TeamsWebhookUrl  Microsoft Teams webhook for notifications
-#   -ImageTag       Container image tag (default: v6.3.35)
+#   -ImageTag       Container image tag (default: v33.0.0)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(
@@ -56,7 +56,7 @@ param(
     [switch]$QuickDeploy,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v6.3.35'
+    [string]$ImageTag = 'v33.0.0'
 )
 
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -235,6 +235,7 @@ if (-not $SkipInfra) {
             basketballApiKey=$BasketballApiKey `
             teamsWebhookUrl=$TeamsWebhookUrl `
             imageTag=$ImageTag `
+            resourceNameSuffix='-gbsv' `
         --output json | ConvertFrom-Json
 
     if ($LASTEXITCODE -ne 0) {
