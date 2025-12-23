@@ -23,6 +23,7 @@ WORKDIR /app
 COPY --from=builder /out/ratings-sync /app/ratings-sync
 
 ENV DATABASE_URL=postgres://ncaam:ncaam@postgres:5432/ncaam \
-    RUN_ONCE=false
+    RUN_ONCE=true
 
 ENTRYPOINT ["/app/ratings-sync"]
+

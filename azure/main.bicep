@@ -57,6 +57,9 @@ var postgresServerName = '${resourcePrefix}${resourceNameSuffix}-postgres'
 var redisName = '${resourcePrefix}${resourceNameSuffix}-redis'
 var containerEnvName = '${resourcePrefix}-env'
 var containerAppName = '${resourcePrefix}-prediction'
+var webAppName = '${resourcePrefix}-web'
+var ratingsJobName = '${resourcePrefix}-ratings-sync'
+var oddsJobName = '${resourcePrefix}-odds-ingestion'
 var logAnalyticsName = '${resourcePrefix}-logs'
 
 // Common tags for resource organization (especially for enterprise resource group)
@@ -356,6 +359,202 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
   }
 }
 
+
+
+// ─────────────────────────────────────────────────────────────────────────────────
+// WEB FRONTEND CONTAINER APP (www.greenbiersportventures.com)
+// ─────────────────────────────────────────────────────────────────────────────────
+
+resource webApp 'Microsoft.App/containerApps@2023-05-01' = {
+  name: webAppName
+  location: location
+  tags: commonTags
+  properties: {
+    managedEnvironmentId: containerEnv.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'http'
+        allowInsecure: false
+      }
+      registries: [
+        {
+          server: acr.properties.loginServer
+          username: acr.listCredentials().username
+          passwordSecretRef: 'acr-password'
+        }
+      ]
+      secrets: [
+        {
+          name: 'acr-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'web'
+          image: '${acr.properties.loginServer}/gbsv-web:${imageTag}'
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/health'
+                port: 8080
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 30
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 2
+        rules: [
+          {
+            name: 'http-rule'
+            http: {
+              metadata: {
+                concurrentRequests: '50'
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
+// MANUAL-ONLY PIPELINE JOBS (Container Apps Jobs)
+// ─────────────────────────────────────────────────────────────────────────────────
+
+resource ratingsSyncJob 'Microsoft.App/jobs@2023-05-01' = {
+  name: ratingsJobName
+  location: location
+  tags: commonTags
+  properties: {
+    environmentId: containerEnv.id
+    configuration: {
+      triggerType: 'Manual'
+      replicaTimeout: 1800
+      replicaRetryLimit: 1
+      registries: [
+        {
+          server: acr.properties.loginServer
+          username: acr.listCredentials().username
+          passwordSecretRef: 'acr-password'
+        }
+      ]
+      secrets: [
+        {
+          name: 'acr-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'ratings-sync'
+          image: '${acr.properties.loginServer}/${baseName}-ratings-sync:${imageTag}'
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          env: [
+            {
+              name: 'SPORT'
+              value: 'ncaam'
+            }
+            {
+              name: 'RUN_ONCE'
+              value: 'true'
+            }
+            {
+              name: 'DATABASE_URL'
+              value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+resource oddsIngestionJob 'Microsoft.App/jobs@2023-05-01' = {
+  name: oddsJobName
+  location: location
+  tags: commonTags
+  properties: {
+    environmentId: containerEnv.id
+    configuration: {
+      triggerType: 'Manual'
+      replicaTimeout: 1800
+      replicaRetryLimit: 1
+      registries: [
+        {
+          server: acr.properties.loginServer
+          username: acr.listCredentials().username
+          passwordSecretRef: 'acr-password'
+        }
+      ]
+      secrets: [
+        {
+          name: 'acr-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+        {
+          name: 'odds-api-key'
+          value: oddsApiKey
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'odds-ingestion'
+          image: '${acr.properties.loginServer}/${baseName}-odds-ingestion:${imageTag}'
+          resources: {
+            cpu: json('1.0')
+            memory: '2Gi'
+          }
+          env: [
+            {
+              name: 'SPORT'
+              value: 'ncaam'
+            }
+            {
+              name: 'RUN_ONCE'
+              value: 'true'
+            }
+            {
+              name: 'DATABASE_URL'
+              value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
+            }
+            {
+              name: 'REDIS_URL'
+              value: 'rediss://:${redis.listKeys().primaryKey}@${redis.properties.hostName}:6380'
+            }
+            {
+              name: 'THE_ODDS_API_KEY'
+              secretRef: 'odds-api-key'
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────────
 // OUTPUTS
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -365,4 +564,7 @@ output acrName string = acr.name
 output postgresHost string = postgres.properties.fullyQualifiedDomainName
 output redisHost string = redis.properties.hostName
 output containerAppUrl string = predictionApp.properties.configuration.ingress.fqdn
+output webAppUrl string = webApp.properties.configuration.ingress.fqdn
+output ratingsJobName string = ratingsSyncJob.name
+output oddsJobName string = oddsIngestionJob.name
 output containerEnvName string = containerEnv.name
