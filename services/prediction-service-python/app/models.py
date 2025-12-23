@@ -10,6 +10,8 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID
 
+from pydantic import BaseModel, field_validator
+
 
 class BetType(str, Enum):
     """Types of bets we can recommend (spreads/totals only)."""
@@ -141,8 +143,7 @@ class TeamRatings:
         )
 
 
-@dataclass(frozen=True)
-class MarketOdds:
+class MarketOdds(BaseModel):
     """
     Current market odds for a game.
 
@@ -150,6 +151,8 @@ class MarketOdds:
     - Negative spread = home team favored
     - Positive spread = away team favored (home is underdog)
     """
+    model_config = {"frozen": True}
+
     spread: Optional[float] = None
     spread_price: int = -110
     total: Optional[float] = None
