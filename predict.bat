@@ -1,7 +1,8 @@
 @echo off
-REM NCAA Basketball Prediction System v6.3
+REM NCAA Basketball Prediction System v33.0
 REM
-REM ONE SOURCE OF TRUTH: Everything runs inside the container
+REM SINGLE ENTRY POINT: This is the ONLY way to run predictions
+REM Everything runs inside the container via run_today.py
 REM
 REM USAGE:
 REM   predict.bat                    - Full slate today
