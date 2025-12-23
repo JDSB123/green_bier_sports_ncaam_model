@@ -25,7 +25,8 @@ COPY start.sh /app/start.sh
 EXPOSE 8082
 
 # Default environment (override via compose/env)
-ENV DATABASE_URL=postgresql+asyncpg://ncaam:ncaam@postgres:5432/ncaam \
+# Using psycopg2 (sync) driver - NOT asyncpg
+ENV DATABASE_URL=postgresql+psycopg2://ncaam:ncaam@postgres:5432/ncaam \
     REDIS_URL=redis://redis:6379
 
 # Run FastAPI with uvicorn
