@@ -22,8 +22,8 @@ RUN apk add --no-cache ca-certificates && update-ca-certificates
 WORKDIR /app
 COPY --from=builder /out/ratings-sync /app/ratings-sync
 
-ENV DATABASE_URL=postgres://ncaam:ncaam@postgres:5432/ncaam \
-    RUN_ONCE=true
+# DATABASE_URL is NOT set here - the Go code builds it from /run/secrets/db_password
+# This allows Docker Compose secrets to work correctly
+ENV RUN_ONCE=true
 
 ENTRYPOINT ["/app/ratings-sync"]
-
