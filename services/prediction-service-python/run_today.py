@@ -37,6 +37,7 @@ from app.models import TeamRatings, MarketOdds
 from app.situational import SituationalAdjuster, RestInfo
 from app.persistence import persist_prediction_and_recommendations
 from app.graph_upload import upload_file_to_teams
+from validate_team_matching import TeamMatchingValidator
 import csv
 from pathlib import Path
 
@@ -169,12 +170,16 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     
     # Sync ratings using existing Go binary (proven normalization logic)
     print("  📊 Syncing ratings from Barttorvik (Go binary)...")
+    
+    # Go/Rust binaries expect standard postgres:// URL, not SQLAlchemy's postgresql+psycopg2://
+    clean_db_url = DATABASE_URL.replace("+psycopg2", "")
+    
     try:
         result = subprocess.run(
             ["/app/bin/ratings-sync"],
             env={
                 **os.environ,
-                "DATABASE_URL": DATABASE_URL,
+                "DATABASE_URL": clean_db_url,
                 "RUN_ONCE": "true",
             },
             capture_output=True,
@@ -212,7 +217,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                 [rust_binary],
                 env={
                     **os.environ,
-                    "DATABASE_URL": DATABASE_URL,
+                    "DATABASE_URL": clean_db_url,
                     "REDIS_URL": REDIS_URL,
                     "THE_ODDS_API_KEY": odds_api_key,
                     # odds-ingestion starts a health server; the container's daemon already
@@ -1413,6 +1418,18 @@ def main():
     print()
     
     # Sync data (unless --no-sync)
+
+    # Validate team matching (CRITICAL for accuracy)
+    if not args.no_sync:
+        print("🔍 Validating team matching...")
+        try:
+            validator = TeamMatchingValidator()
+            if not validator.run_all_validations():
+                print("⚠️ Team matching validation failed or had warnings.")
+            else:
+                print("✓ Team matching validation passed.")
+        except Exception as e:
+            print(f"⚠️ Team matching validation error: {e}")
     sync_fresh_data(skip_sync=args.no_sync)
     
     # Create DB engine once for the entire run (predictions persistence + settlement).
