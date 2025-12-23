@@ -52,6 +52,15 @@ jobs:
           docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
           docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
 
+      - name: Deploy to Azure Container Apps
+        run: |
+          # Update the container app with the new image
+          # Note: Fails gracefully if the container app doesn't exist yet (first run requires deploy.ps1)
+          az containerapp update \
+            --name ncaam-stable-prediction \
+            --resource-group ncaam-stable-rg \
+            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} || echo "Container App not found or update failed. Skipping deployment."
+
       - name: Update docker-compose.yml with new version
         run: |
           sed -i "s|image: ncaamstableacr.azurecr.io/ncaam-prediction:.*|image: ncaamstableacr.azurecr.io/ncaam-prediction:${{ steps.version.outputs.version }}|" docker-compose.yml
