@@ -8,7 +8,7 @@ pydantic==2.5.3
 pydantic-settings==2.1.0
 
 # Database (REQUIRED for self-contained model)
-asyncpg==0.29.0
+# Note: Using psycopg2 only (sync) - asyncpg removed to avoid driver conflicts
 sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
 
