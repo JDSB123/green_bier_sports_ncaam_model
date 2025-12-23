@@ -154,7 +154,7 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 			}
 		}
 
-		// Parse wins/losses from record string "W-L" 
+		// Parse wins/losses from record string "W-L"
 		recordStr := toString(dataMap["record"])
 		wins, losses := parseRecord(recordStr)
 
@@ -190,7 +190,7 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 			TOR:  getFloat(dataMap, "tor", 0.0),
 			TORD: getFloat(dataMap, "tord", 0.0),
 
-			// Four Factors - Rebounding 
+			// Four Factors - Rebounding
 			ORB: getFloat(dataMap, "orb", 0.0),
 			DRB: getFloat(dataMap, "drb", 0.0),
 
@@ -737,8 +737,8 @@ func main() {
 	}
 
 	config := Config{
-		DatabaseURL:  databaseURL,
-		Season:       getCurrentSeason(),
+		DatabaseURL: databaseURL,
+		Season:      getCurrentSeason(),
 		// MANUAL-ONLY: Default to run once and exit (no cron automation)
 		// User triggers via run_today.py when they want fresh picks
 		// Case-insensitive check to match Rust service behavior

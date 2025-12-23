@@ -292,10 +292,10 @@ class KellyCalculator:
         odds_prob = 0.5238
         b = 100 / 110  # Win/loss ratio at -110
 
-            # Convert point edge to probability edge
-            # Roughly 2.5 points = 10% edge shift
-            edge_prob = edge / 25.0
-            p = min(0.99, max(0.01, odds_prob + edge_prob * confidence))
+        # Convert point edge to probability edge
+        # Roughly 2.5 points = 10% edge shift
+        edge_prob = edge / 25.0
+        p = min(0.99, max(0.01, odds_prob + edge_prob * confidence))
 
         q = 1 - p
 
