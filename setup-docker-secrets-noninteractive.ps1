@@ -49,9 +49,9 @@ if (!(Test-Path "secrets")) {
 # Get secret values from environment variables or .env file
 $db_password = Get-SecretValue "DB_PASSWORD" -DefaultValue "ncaam_secure_$(Get-Random)" -Required $false
 $redis_password = Get-SecretValue "REDIS_PASSWORD" -DefaultValue "redis_secure_$(Get-Random)" -Required $false
-$odds_api_key = Get-SecretValue "ODDS_API_KEY" -DefaultValue "test_key" -Required $false
-$teams_url = Get-SecretValue "TEAMS_WEBHOOK_URL" -DefaultValue "https://example.com/webhook" -Required $false
-$teams_secret = Get-SecretValue "TEAMS_WEBHOOK_SECRET" -DefaultValue "webhook_secret" -Required $false
+$odds_api_key = Get-SecretValue "ODDS_API_KEY" -Required $true
+$teams_url = Get-SecretValue "TEAMS_WEBHOOK_URL" -DefaultValue "" -Required $false
+$teams_secret = Get-SecretValue "TEAMS_WEBHOOK_SECRET" -DefaultValue "" -Required $false
 
 # Write secrets to files
 Set-Content -Path "secrets\db_password.txt" -Value $db_password -NoNewline -Encoding UTF8
