@@ -71,10 +71,10 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_INITDB_ARGS: "--auth-local=md5 --auth-host=scram-sha-256"
     volumes:
-      - ncaam_v6_postgres_data:/var/lib/postgresql/data:rw
+      - ncaam_v33_postgres_data:/var/lib/postgresql/data:rw
       - ./database/migrations:/docker-entrypoint-initdb.d:ro
     networks:
-      - ncaam_v6_data
+      - ncaam_v33_data
     ports:
       - "${POSTGRES_HOST_PORT:-5450}:5432"
     security_opt:
@@ -114,7 +114,7 @@ services:
       --stop-writes-on-bgsave-error no
       --requirepass $$(cat /run/secrets/redis_password)"
     networks:
-      - ncaam_v6_data
+      - ncaam_v33_data
     ports:
       - "${REDIS_HOST_PORT:-6390}:6379"
     tmpfs:
@@ -158,8 +158,8 @@ services:
       MODEL__HOME_COURT_ADVANTAGE_SPREAD: 3.2
       MODEL__HOME_COURT_ADVANTAGE_TOTAL: 0.0
     networks:
-      - ncaam_v6_backend
-      - ncaam_v6_data
+      - ncaam_v33_backend
+      - ncaam_v33_data
     ports:
       - "${PREDICTION_HOST_PORT:-8092}:8082"
     volumes:
@@ -215,7 +215,7 @@ services:
       # User triggers via run_today.py when they want fresh picks
       RUN_ONCE: "${RATINGS_RUN_ONCE:-true}"
     networks:
-      - ncaam_v6_data
+      - ncaam_v33_data
     depends_on:
       postgres:
         condition: service_healthy
@@ -256,8 +256,8 @@ services:
       ODDS_FORMAT: "american"
       MARKETS_FULL: "spreads,totals"
     networks:
-      - ncaam_v6_backend
-      - ncaam_v6_data
+      - ncaam_v33_backend
+      - ncaam_v33_data
     depends_on:
       postgres:
         condition: service_healthy
@@ -290,8 +290,8 @@ services:
       MARKETS_H1: "spreads_h1,totals_h1"
       BOOKMAKERS_H1: "bovada,pinnacle,circa,bookmaker"
     networks:
-      - ncaam_v6_backend
-      - ncaam_v6_data
+      - ncaam_v33_backend
+      - ncaam_v33_data
     depends_on:
       postgres:
         condition: service_healthy
@@ -300,18 +300,18 @@ services:
     restart: "no"
 
 volumes:
-  ncaam_v6_postgres_data:
+  ncaam_v33_postgres_data:
     name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_postgres_data
 
 networks:
-  ncaam_v6_backend:
+  ncaam_v33_backend:
     name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_backend
     driver: bridge
     ipam:
       config:
         - subnet: ${NETWORK_BACKEND_SUBNET:-10.51.2.0/24}
 
-  ncaam_v6_data:
+  ncaam_v33_data:
     name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_data
     driver: bridge
     ipam:

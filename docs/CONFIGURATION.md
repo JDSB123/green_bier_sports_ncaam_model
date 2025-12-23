@@ -243,7 +243,7 @@ docker compose up -d
 
 ### Container Name Conflict
 
-**Error:** `Conflict. The container name "/ncaam_v6_model_postgres" is already in use`
+**Error:** `Conflict. The container name "/ncaam_v33_model_postgres" is already in use`
 
 **Solution:**
 ```bash
@@ -260,7 +260,7 @@ docker compose up -d
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `COMPOSE_PROJECT_NAME` | `ncaam_v6_model` | Project name (affects all resource names) |
+| `COMPOSE_PROJECT_NAME` | `ncaam_v33_model` | Project name (affects all resource names) |
 | `POSTGRES_HOST_PORT` | `5450` | PostgreSQL host port |
 | `REDIS_HOST_PORT` | `6390` | Redis host port |
 | `PREDICTION_HOST_PORT` | `8092` | Prediction API host port |
@@ -274,7 +274,7 @@ docker compose up -d
 | `Location` | `centralus` | Azure region |
 | `ResourceGroup` | `NCAAM-GBSV-MODEL-RG` | Resource group name |
 | `Environment` | `stable` | Deployment environment |
-| `ImageTag` | `v6.3.35` | Container image tag |
+| `ImageTag` | `v33.0.0` | Container image tag |
 
 ---
 

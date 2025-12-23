@@ -29,7 +29,7 @@
 ## 📁 Local Repository
 
 ### Docker Compose Project Name
-- **Default:** `ncaam_v6_model`
+- **Default:** `ncaam_v33_model`
 - **Environment Variable:** `COMPOSE_PROJECT_NAME`
 - **Format:** `{baseName}_v{version}_model`
 
@@ -114,7 +114,7 @@
 - **$acrName:** `'ncaamstablegbsvacr'`
 
 ### Docker Compose (`docker-compose.yml`)
-- **COMPOSE_PROJECT_NAME:** `ncaam_v6_model` (default)
+- **COMPOSE_PROJECT_NAME:** `ncaam_v33_model` (default)
 - **SPORT:** `ncaam` (default)
 - **DB_NAME:** `ncaam` (default, uses SPORT)
 - **DB_USER:** `ncaam` (default, uses SPORT)
