@@ -71,7 +71,7 @@ This system is **fully containerized** with **ZERO fallbacks** to local files, e
 
 ### 3. **Prediction Service**
 - **Container:** `ncaam_v6_model_prediction`
-- **Image:** `ncaam_v6_model_prediction:latest` (built from Dockerfile.hardened)
+- **Image:** `ncaam_v6_model_prediction:latest` (built from Dockerfile)
 - **Port:** `8092:8082`
 - **Secrets:** 
   - `db_password` → `/run/secrets/db_password`

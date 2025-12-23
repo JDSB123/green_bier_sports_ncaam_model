@@ -56,7 +56,7 @@ jobs:
 
           # Prediction (hardened Dockerfile uses repo root context)
           docker build --no-cache \
-            -f services/prediction-service-python/Dockerfile.hardened \
+            -f services/prediction-service-python/Dockerfile \
             -t $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.version }} \
             -t $ACR_LOGIN_SERVER/$PRED_IMAGE:latest \
             .

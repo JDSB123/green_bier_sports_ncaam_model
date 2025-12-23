@@ -273,7 +273,7 @@ if (-not $SkipBuild) {
     Push-Location "$PSScriptRoot\.."
 
     $images = @(
-        @{ Name = "${acrLoginServer}/${baseName}-prediction:${ImageTag}"; Context = "."; Dockerfile = "services/prediction-service-python/Dockerfile.hardened" },
+        @{ Name = "${acrLoginServer}/${baseName}-prediction:${ImageTag}"; Context = "."; Dockerfile = "services/prediction-service-python/Dockerfile" },
         @{ Name = "${acrLoginServer}/${webImageName}:${ImageTag}"; Context = "services/web-frontend"; Dockerfile = "services/web-frontend/Dockerfile" },
         @{ Name = "${acrLoginServer}/${ratingsImageName}:${ImageTag}"; Context = "services/ratings-sync-go"; Dockerfile = "services/ratings-sync-go/Dockerfile" },
         @{ Name = "${acrLoginServer}/${oddsImageName}:${ImageTag}"; Context = "services/odds-ingestion-rust"; Dockerfile = "services/odds-ingestion-rust/Dockerfile" }

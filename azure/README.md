@@ -147,7 +147,7 @@ az acr login --name ncaamstableacr
 
 # Build
 docker build -t ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35 `
-    -f services/prediction-service-python/Dockerfile.hardened .
+    -f services/prediction-service-python/Dockerfile .
 
 # Push
 docker push ncaamstableacr.azurecr.io/ncaam-prediction:v6.3.35
