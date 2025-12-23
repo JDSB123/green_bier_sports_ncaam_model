@@ -377,7 +377,7 @@ class TeamMatchingValidator:
 
         with self.engine.connect() as conn:
             result = conn.execute(text("""
-                SELECT canonical_name, COUNT(*) as cnt
+                SELECT LOWER(canonical_name) as canonical_name, COUNT(*) as cnt
                 FROM teams
                 GROUP BY LOWER(canonical_name)
                 HAVING COUNT(*) > 1

@@ -64,6 +64,7 @@ RUN chmod +x /app/bin/odds-ingestion
 # Copy application code with proper ownership
 COPY --chown=ncaam:ncaam services/prediction-service-python/app /app/app
 COPY --chown=ncaam:ncaam services/prediction-service-python/run_today.py /app/run_today.py
+COPY --chown=ncaam:ncaam services/prediction-service-python/validate_team_matching.py /app/validate_team_matching.py
 COPY --chown=ncaam:ncaam services/prediction-service-python/run_migrations.py /app/run_migrations.py
 COPY --chown=ncaam:ncaam services/prediction-service-python/start.sh /app/start.sh
 # Bake DB migrations and seed/verification scripts into the image so the
