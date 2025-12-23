@@ -137,39 +137,40 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 			continue // Skip incomplete records - need at least basic metrics
 		}
 
-		// Parse wins/losses from record string "W-L" at index 3
-		wins, losses := parseRecord(toString(raw[3]))
-
-		// Extract Barttorvik metrics
-		// Array indices for 2026 season structure:
-		// [0]=Rank, [1]=Team, [2]=Conf, [3]=Record, [4]=AdjOE, [5]=AdjOE Rank,
-		// [6]=AdjDE, [7]=AdjDE Rank, [8]=Barthag, [9]=Barthag Rank,
-		// [10]=EFG%, [11]=EFGD%, [12]=TOR, [13]=TORD, [14]=RoadRec (string),
-		// ... [44]=AdjTempo (last element, variable position)
-
-		// Safely get AdjTempo - it's typically the last numeric value
-		adjTempo := 70.0 // Default tempo
-		if len(raw) >= 45 {
-			adjTempo = toFloat(raw[44])
-		} else if len(raw) >= 42 {
-			adjTempo = toFloat(raw[len(raw)-1])
+		// Flexible parsing: Use a map to handle potential index changes
+		dataMap := make(map[string]interface{})
+		expectedFields := []string{
+			"rank", "team", "conf", "record", "adjoe", "adjoe_rank",
+			"adjde", "adjde_rank", "barthag", "barthag_rank",
+			"efg", "efgd", "tor", "tord", "road_rec", "orb", "drb",
+			"ftr", "ftrd", "2p", "2pd", "3p", "3pd", "3pr", "3prd",
+			"adj_t", "wab", // Add more as needed
+		}
+		for i, field := range expectedFields {
+			if i < len(raw) {
+				dataMap[field] = raw[i]
+			} else {
+				r.logger.Warn("Missing expected field", zap.String("field", field))
+			}
 		}
 
-		// WAB is not reliably present in 2026 format
-		wab := 0.0
-		if len(raw) >= 46 {
-			wab = toFloat(raw[45])
-		}
+		// Parse wins/losses from record string "W-L" 
+		recordStr := toString(dataMap["record"])
+		wins, losses := parseRecord(recordStr)
+
+		// Extract with defaults and validation
+		adjTempo := getFloat(dataMap, "adj_t", 70.0)
+		wab := getFloat(dataMap, "wab", 0.0)
 
 		team := BarttorkvikTeam{
 			// Core identifiers
-			Rank: toInt(raw[0]),
-			Team: toString(raw[1]),
-			Conf: toString(raw[2]),
+			Rank: getInt(dataMap, "rank", 0),
+			Team: toString(dataMap["team"]),
+			Conf: toString(dataMap["conf"]),
 
 			// Efficiency ratings (primary prediction inputs)
-			AdjOE:    toFloat(raw[4]),
-			AdjDE:    toFloat(raw[6]),
+			AdjOE:    getFloat(dataMap, "adjoe", 0.0),
+			AdjDE:    getFloat(dataMap, "adjde", 0.0),
 			AdjTempo: adjTempo,
 
 			// Record
@@ -178,24 +179,24 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 			G:      wins + losses,
 
 			// Quality metrics
-			Barthag: toFloat(raw[8]),
+			Barthag: getFloat(dataMap, "barthag", 0.0),
 			WAB:     wab,
 
 			// Four Factors - Shooting
-			EFG:  toFloat(raw[10]),
-			EFGD: toFloat(raw[11]),
+			EFG:  getFloat(dataMap, "efg", 0.0),
+			EFGD: getFloat(dataMap, "efgd", 0.0),
 
 			// Four Factors - Turnovers
-			TOR:  toFloat(raw[12]),
-			TORD: toFloat(raw[13]),
+			TOR:  getFloat(dataMap, "tor", 0.0),
+			TORD: getFloat(dataMap, "tord", 0.0),
 
-			// Four Factors - Rebounding (indices shifted due to road record string)
-			ORB: toFloat(raw[15]),
-			DRB: toFloat(raw[16]),
+			// Four Factors - Rebounding 
+			ORB: getFloat(dataMap, "orb", 0.0),
+			DRB: getFloat(dataMap, "drb", 0.0),
 
 			// Four Factors - Free Throws
-			FTR:  toFloat(raw[17]),
-			FTRD: toFloat(raw[18]),
+			FTR:  getFloat(dataMap, "ftr", 0.0),
+			FTRD: getFloat(dataMap, "ftrd", 0.0),
 
 			// Shooting breakdown
 			TwoP:     toFloat(raw[19]),

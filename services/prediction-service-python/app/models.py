@@ -167,6 +167,24 @@ class MarketOdds:
     sharp_spread: Optional[float] = None
     sharp_total: Optional[float] = None
 
+    @field_validator('total', 'total_1h', mode='before')
+    @classmethod
+    def validate_totals(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None:
+            if v <= 0:
+                raise ValueError("Total must be positive")
+            if v < 100 or v > 200:
+                raise ValueError("Total out of reasonable range (100-200)")
+        return v
+
+    @field_validator('spread', 'spread_1h', mode='before')
+    @classmethod
+    def validate_spreads(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None:
+            if abs(v) > 30:
+                raise ValueError("Spread exceeds reasonable limit (±30)")
+        return v
+
 
 @dataclass
 class Prediction:
