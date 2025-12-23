@@ -383,6 +383,20 @@ func toString(v interface{}) string {
 	return ""
 }
 
+func getFloat(m map[string]interface{}, key string, defaultVal float64) float64 {
+	if v, ok := m[key]; ok {
+		return toFloat(v)
+	}
+	return defaultVal
+}
+
+func getInt(m map[string]interface{}, key string, defaultVal int) int {
+	if v, ok := m[key]; ok {
+		return toInt(v)
+	}
+	return defaultVal
+}
+
 func parseRecord(record string) (wins, losses int) {
 	parts := strings.Split(record, "-")
 	if len(parts) == 2 {
