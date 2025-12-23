@@ -1,0 +1,70 @@
+name: Build and Push to ACR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/prediction-service-python/**'
+      - 'services/ratings-sync-go/**'
+      - 'services/odds-ingestion-rust/**'
+      - '.github/workflows/build-and-push.yml'
+
+env:
+  ACR_NAME: ncaamstableacr
+  ACR_LOGIN_SERVER: ncaamstableacr.azurecr.io
+  IMAGE_NAME: ncaam-prediction
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from commit
+        id: version
+        run: |
+          # Generate version: v6.3.{run_number}
+          VERSION="v6.3.${{ github.run_number }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push prediction-service
+        run: |
+          docker build \
+            -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
+            -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest \
+            ./services/prediction-service-python
+
+          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Update docker-compose.yml with new version
+        run: |
+          sed -i "s|image: ncaamstableacr.azurecr.io/ncaam-prediction:.*|image: ncaamstableacr.azurecr.io/ncaam-prediction:${{ steps.version.outputs.version }}|" docker-compose.yml
+
+      - name: Commit updated docker-compose.yml
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docker-compose.yml
+          git diff --staged --quiet || git commit -m "CI: Update prediction-service image to ${{ steps.version.outputs.version }}"
+          git push
+
+      - name: Summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Run \`.\predict.bat\` to use the new version." >> $GITHUB_STEP_SUMMARY
