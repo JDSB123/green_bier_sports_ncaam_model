@@ -12,15 +12,13 @@ on:
       - '.github/workflows/build-and-push.yml'
 
 env:
-  ACR_NAME: ncaamstableacr
-  ACR_LOGIN_SERVER: ncaamstableacr.azurecr.io
-
+  ACR_NAME: ncaamgbsvacr
+  ACR_LOGIN_SERVER: ncaamgbsvacr.azurecr.io
   PRED_IMAGE: ncaam-prediction
   WEB_IMAGE: gbsv-web
   RATINGS_IMAGE: ncaam-ratings-sync
   ODDS_IMAGE: ncaam-odds-ingestion
-
-  RESOURCE_GROUP: ncaam-stable-rg
+  RESOURCE_GROUP: ncaam-gbsv-model
 
 jobs:
   build-and-push:
@@ -100,34 +98,34 @@ jobs:
         run: |
           # Prediction API
           az containerapp update \
-            --name ncaam-stable-prediction \
+            --name ncaam-gbsv-prediction \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.version }} \
             --output none || echo "Prediction Container App not found or update failed. Skipping."
 
           # Web
           az containerapp update \
-            --name ncaam-stable-web \
+            --name ncaam-gbsv-web \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.version }} \
             --output none || echo "Web Container App not found or update failed. Skipping."
 
           # Manual jobs
           az containerapp job update \
-            --name ncaam-stable-ratings-sync \
+            --name ncaam-gbsv-ratings-sync \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.version }} \
             --output none || echo "Ratings job not found or update failed. Skipping."
 
           az containerapp job update \
-            --name ncaam-stable-odds-ingestion \
+            --name ncaam-gbsv-odds-ingestion \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.version }} \
             --output none || echo "Odds ingestion job not found or update failed. Skipping."
 
       - name: Update docker-compose.yml with new prediction-service version
         run: |
-          sed -i "s|image: ncaamstableacr.azurecr.io/ncaam-prediction:.*|image: ncaamstableacr.azurecr.io/ncaam-prediction:${{ steps.version.outputs.version }}|" docker-compose.yml
+          sed -i "s|image: ncaamgbsvacr.azurecr.io/ncaam-prediction:.*|image: ncaamgbsvacr.azurecr.io/ncaam-prediction:${{ steps.version.outputs.version }}|" docker-compose.yml
 
       - name: Commit updated docker-compose.yml
         run: |
@@ -147,4 +145,4 @@ jobs:
           echo "- **Ratings Job:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Odds Job:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "If infra isn't deployed yet, run \\`azure/deploy.ps1\\` first." >> $GITHUB_STEP_SUMMARY
+          echo "If infra isn't deployed yet, run \`azure/deploy.ps1\` first." >> $GITHUB_STEP_SUMMARY

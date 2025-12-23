@@ -117,3 +117,7 @@ gateway.exe
 *.exe
 !setup.bat
 testing/data/kaggle/
+# NCAAM v33 secrets (do not commit)
+ncaam_v33_model_db_password
+ncaam_v33_model_redis_password
+ncaam_v33_model_odds_api_key
