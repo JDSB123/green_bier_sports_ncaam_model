@@ -272,10 +272,10 @@ if (-not $SkipBuild) {
     Push-Location "$PSScriptRoot\.."
 
     $images = @(
-        @{ Name = "$acrLoginServer/$baseName-prediction:$ImageTag"; Context = "."; Dockerfile = "services/prediction-service-python/Dockerfile.hardened" },
-        @{ Name = "$acrLoginServer/$webImageName:$ImageTag"; Context = "services/web-frontend"; Dockerfile = "services/web-frontend/Dockerfile" },
-        @{ Name = "$acrLoginServer/$ratingsImageName:$ImageTag"; Context = "services/ratings-sync-go"; Dockerfile = "services/ratings-sync-go/Dockerfile" },
-        @{ Name = "$acrLoginServer/$oddsImageName:$ImageTag"; Context = "services/odds-ingestion-rust"; Dockerfile = "services/odds-ingestion-rust/Dockerfile" }
+        @{ Name = "${acrLoginServer}/${baseName}-prediction:${ImageTag}"; Context = "."; Dockerfile = "services/prediction-service-python/Dockerfile.hardened" },
+        @{ Name = "${acrLoginServer}/${webImageName}:${ImageTag}"; Context = "services/web-frontend"; Dockerfile = "services/web-frontend/Dockerfile" },
+        @{ Name = "${acrLoginServer}/${ratingsImageName}:${ImageTag}"; Context = "services/ratings-sync-go"; Dockerfile = "services/ratings-sync-go/Dockerfile" },
+        @{ Name = "${acrLoginServer}/${oddsImageName}:${ImageTag}"; Context = "services/odds-ingestion-rust"; Dockerfile = "services/odds-ingestion-rust/Dockerfile" }
     )
 
     # Determine cache flag
@@ -379,19 +379,19 @@ if (-not $SkipBuild) {
 
     # Best-effort: update running Container Apps (useful with --SkipInfra)
     try {
-        az containerapp update --name "$resourcePrefix-prediction" --resource-group $ResourceGroup --image "$acrLoginServer/$baseName-prediction:$ImageTag" --output none
+        az containerapp update --name "${resourcePrefix}-prediction" --resource-group $ResourceGroup --image "${acrLoginServer}/${baseName}-prediction:${ImageTag}" --output none
     } catch { }
 
     try {
-        az containerapp update --name "$resourcePrefix-web" --resource-group $ResourceGroup --image "$acrLoginServer/$webImageName:$ImageTag" --output none
+        az containerapp update --name "${resourcePrefix}-web" --resource-group $ResourceGroup --image "${acrLoginServer}/${webImageName}:${ImageTag}" --output none
     } catch { }
 
     try {
-        az containerapp job update --name "$resourcePrefix-ratings-sync" --resource-group $ResourceGroup --image "$acrLoginServer/$ratingsImageName:$ImageTag" --output none
+        az containerapp job update --name "${resourcePrefix}-ratings-sync" --resource-group $ResourceGroup --image "${acrLoginServer}/${ratingsImageName}:${ImageTag}" --output none
     } catch { }
 
     try {
-        az containerapp job update --name "$resourcePrefix-odds-ingestion" --resource-group $ResourceGroup --image "$acrLoginServer/$oddsImageName:$ImageTag" --output none
+        az containerapp job update --name "${resourcePrefix}-odds-ingestion" --resource-group $ResourceGroup --image "${acrLoginServer}/${oddsImageName}:${ImageTag}" --output none
     } catch { }
 } else {
     Write-Host ""
