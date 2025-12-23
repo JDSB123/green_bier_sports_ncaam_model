@@ -83,7 +83,7 @@ class PredictorOutput:
     matchup_adj: float = 0.0  # v6.3 Matchup adjustment (ORB/TOR)
 
 
-class BarttorkvikPredictor:
+class BarttorvikPredictor:
     """
     Simplified Barttorvik efficiency-based predictor with v6.3 enhancements.
 
@@ -123,6 +123,7 @@ class BarttorkvikPredictor:
             pace_variance_factor=self.config.pace_variance_factor,
             min_sigma=self.config.min_sigma,
             max_sigma=self.config.max_sigma,
+            league_avg_3pr=self.config.league_avg_3pr,
             enabled=self.config.dynamic_variance_enabled,
         )
 
@@ -299,8 +300,8 @@ class BarttorkvikPredictor:
         away_orb_adv = (away.orb - avg_orb) + ((100 - home.drb) - avg_orb)
         
         net_orb_edge = home_orb_adv - away_orb_adv
-        adjustment += net_orb_edge * 0.15
-
+        adjustment += net_orb_edge * self.config.matchup_rebound_factor
+        
         # 2. Turnover Edge (TO% vs Opponent Forced TO%)
         # Home TO Disadvantage = (Home TOR - Avg) - (Away TORD - Avg)
         # Note: Higher TOR is BAD. Higher TORD is GOOD.
@@ -312,17 +313,17 @@ class BarttorkvikPredictor:
         # Net TO% Edge (Negative diff means Home commits fewer TOs -> Good)
         # If Home commits 15% and Away commits 25%, Home has +10% edge.
         net_tor_edge = exp_away_tor - exp_home_tor
-        adjustment += net_tor_edge * 0.10
-
+        adjustment += net_tor_edge * self.config.matchup_turnover_factor
+        
         # 3. Free Throw Edge (FTR vs Opponent Allowed FTR)
         # FTR = FTA / FGA. Higher is better for offense.
         # Expected Home FTR = Avg + (Home FTR - Avg) + (Away FTRD - Avg)
         exp_home_ftr = avg_ftr + (home.ftr - avg_ftr) + (away.ftrd - avg_ftr)
         exp_away_ftr = avg_ftr + (away.ftr - avg_ftr) + (home.ftrd - avg_ftr)
-
+        
         net_ftr_edge = exp_home_ftr - exp_away_ftr
-        adjustment += net_ftr_edge * 0.15
-
+        adjustment += net_ftr_edge * self.config.matchup_ft_factor
+        
         return adjustment
 
 
@@ -334,7 +335,7 @@ class PredictionEngine:
     """
 
     def __init__(self):
-        self.predictor = BarttorkvikPredictor()
+        self.predictor = BarttorvikPredictor()
         self.config = settings.model
 
     def make_prediction(

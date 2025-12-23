@@ -42,6 +42,7 @@ class DynamicVarianceCalculator:
         pace_variance_factor: float = 0.10,
         min_sigma: float = 9.0,
         max_sigma: float = 14.0,
+        league_avg_3pr: float = 35.0,
         enabled: bool = True,
     ):
         self.base_sigma = base_sigma
@@ -49,6 +50,7 @@ class DynamicVarianceCalculator:
         self.pace_variance_factor = pace_variance_factor
         self.min_sigma = min_sigma
         self.max_sigma = max_sigma
+        self.league_avg_3pr = league_avg_3pr
         self.enabled = enabled
 
     def calculate_game_variance(
@@ -83,12 +85,8 @@ class DynamicVarianceCalculator:
         # 3-point rate adjustment - NO FALLBACKS, data is REQUIRED
         avg_3pr = (home_three_pt_rate + away_three_pt_rate) / 2
 
-        # Higher 3PR = more variance (35% is league average baseline)
-        league_avg_3pr = 35.0
-        three_pt_adj = (avg_3pr - league_avg_3pr) * self.three_pt_variance_factor
-
-        # Pace mismatch adjustment
-        tempo_diff = abs(home_tempo - away_tempo)
+        # Higher 3PR = more variance (league average baseline from config)
+        three_pt_adj = (avg_3pr - self.league_avg_3pr) * self.three_pt_variance_factor
         pace_adj = tempo_diff * self.pace_variance_factor
 
         # Total variance (clamped)

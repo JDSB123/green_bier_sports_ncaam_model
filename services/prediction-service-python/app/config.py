@@ -74,6 +74,26 @@ class ModelConfig(BaseSettings):
         default=33.0,
         description="NCAA D1 average Free Throw Rate (FTA/FGA)."
     )
+    league_avg_3pr: float = Field(
+        default=35.0,
+        description="NCAA D1 average 3-Point Rate (% of FGA)."
+    )
+
+    # ──────────────────────────────────────────────────────────────────────────────
+    # MATCHUP ADJUSTMENT FACTORS (Points per % edge)
+    # ──────────────────────────────────────────────────────────────────────────────
+    matchup_rebound_factor: float = Field(
+        default=0.15,
+        description="Points added to margin per 1% net rebounding edge."
+    )
+    matchup_turnover_factor: float = Field(
+        default=0.10,
+        description="Points added to margin per 1% net turnover edge."
+    )
+    matchup_ft_factor: float = Field(
+        default=0.15,
+        description="Points added to margin per 1% net free throw rate edge."
+    )
 
     # First half scoring factors
     first_half_score_factor: float = Field(
