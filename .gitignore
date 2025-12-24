@@ -117,6 +117,13 @@ gateway.exe
 *.exe
 !setup.bat
 testing/data/kaggle/
+
+# Testing data (large - regenerate with scripts)
+testing/data/historical/
+testing/data/historical_odds/
+testing/data/validation_results/
+testing/data/market_validation/
+
 # NCAAM v33 secrets (do not commit)
 ncaam_v33_model_db_password
 ncaam_v33_model_redis_password

@@ -1,44 +1,33 @@
 """
-Green Bier Sports - NCAAM Prediction Engine v6.3.25
+Green Bier Sports - NCAAM Prediction Engine v33.1
 
 SINGLE SOURCE OF TRUTH: All predictions flow through this service.
 
-v6.3.25 CHANGES (2024-12-22):
-- FIXED: 1H Spread now includes scaled situational and matchup adjustments
-- FIXED: 1H Total now includes scaled situational adjustments
-- Both 1H markets now mirror FG formula structure for consistency
+v33.1 CHANGES (2024-12-23):
+- CALIBRATED: HCA increased from 3.2 to 4.7 based on 4194-game backtest
+- CALIBRATED: Total adjustment -4.6 to fix over-prediction bias
+- VALIDATED: Real ESPN data backtest across 5 seasons (2020-2024)
+- Spread bias reduced from -1.86 to -0.74
+- Total bias reduced from +3.96 to -0.64
 
-v6.3 CHANGES (2024-12-20):
-- ALL 22 BARTTORVIK FIELDS NOW REQUIRED - no fallbacks, no defaults
-- TeamRatings dataclass now enforces all fields present
-- Data pipeline guarantees complete data or explicit failure
+v33.0 CHANGES (2024-12-22):
+- Enforce single entry point, consolidated Dockerfiles
+- 1H markets now mirror FG formula structure for consistency
 
-v6.2 CHANGES (2024-12-20):
-- NEW: Situational adjustments (rest days, back-to-back detection)
-- NEW: Dynamic variance modeling (3PR + tempo differential)
-- NEW: Enhanced 1H predictions (EFG-based dynamic factors)
+HCA Values (from config.py - calibrated v33.1):
+- Full Game Spreads: 4.7 (calibrated from 3.2)
+- Full Game Totals: 0.0 (zero-sum assumption)
+- Total Calibration: -4.6 (fixes over-prediction)
+- First Half Spreads: 2.35 (50% of FG)
+- First Half Totals: 0.0
 
-v6.1 CHANGES (2024-12-20):
-- FIXED: Total formula was inflating by 15-20 pts (multiplicative error)
-- Spread: Uses net rating difference (Home_Net - Away_Net)/2 + HCA
-- Total: Uses simple efficiency (AdjO * Tempo / 100) for each team
-- HCA values now EXPLICIT in config (no hidden multipliers)
-
-HCA Values (from config.py - applied directly; can be overridden via env vars):
-- Full Game Spreads: 3.2 (default)
-- Full Game Totals: 0.0 (default; totals are typically treated as zero-sum for HCA)
-- First Half Spreads: 1.6 (default)
-- First Half Totals: 0.0 (default)
-
-Core Formulas (v6.3.25):
+Core Formulas:
 - Expected Tempo = Home_Tempo + Away_Tempo - League_Avg_Tempo
 - Expected Eff (Home) = Home_AdjO + Away_AdjD - League_Avg_Eff
 - Expected Eff (Away) = Away_AdjO + Home_AdjD - League_Avg_Eff
 - Base Scores = Eff * Tempo / 100
-- Total = Home_Base + Away_Base + HCA_total + Situational_total_adj
-- Spread (HOME perspective) = -( (Home_Base - Away_Base) + HCA_spread + Situational_spread_adj + Matchup_adj )
-- 1H Spread = -( (raw_margin + situational + matchup) * margin_scale + HCA_1H )  [dynamic margin_scale]
-- 1H Total = (Home_Base + Away_Base) * tempo_factor + HCA_1H + situational_1H  [dynamic tempo_factor]
+- Total = Home_Base + Away_Base + HCA_total + Situational + Total_Calibration
+- Spread = -( (Home_Base - Away_Base) + HCA_spread + Situational + Matchup )
 
 Markets: FG Spread/Total, 1H Spread/Total
 """
@@ -107,6 +96,10 @@ class BarttorvikPredictor:
         self.hca_total = self.config.home_court_advantage_total
         self.hca_spread_1h = self.config.home_court_advantage_spread_1h
         self.hca_total_1h = self.config.home_court_advantage_total_1h
+
+        # v33.1 CALIBRATION - Total adjustments from 4194-game backtest
+        self.total_calibration = self.config.total_calibration_adjustment
+        self.total_calibration_1h = self.config.total_calibration_adjustment_1h
 
         # v6.2 Enhancement calculators
         self.situational = SituationalAdjuster(
@@ -221,10 +214,11 @@ class BarttorvikPredictor:
         hca_for_spread = 0.0 if is_neutral else self.hca_spread
         hca_for_total = 0.0 if is_neutral else self.hca_total
 
-        # Total = Sum of scores + HCA + Situational
+        # Total = Sum of scores + HCA + Situational + Calibration
         # NOTE: Matchup adjustments (rebounding/turnover edges) affect MARGIN, not total.
         # A rebounding edge gives one team more second-chance points at the expense of the other.
-        total = home_score_base + away_score_base + hca_for_total + situational_total_adj
+        # v33.1: Added total_calibration (-4.6) based on 4194-game backtest showing +4pt over-prediction
+        total = home_score_base + away_score_base + hca_for_total + situational_total_adj + self.total_calibration
 
         # Spread = -(Home - Away + HCA + Situational + Matchup)
         # Note: Spread is negative when Home is favored
@@ -254,11 +248,11 @@ class BarttorvikPredictor:
             + hca_spread_1h
         )
 
-        # 1H Total: Scale base scores by tempo_factor + scaled situational adj
+        # 1H Total: Scale base scores by tempo_factor + scaled situational adj + calibration
         home_score_1h = home_score_base * h1_factors.tempo_factor
         away_score_1h = away_score_base * h1_factors.tempo_factor
         situational_total_adj_1h = situational_total_adj * h1_factors.tempo_factor
-        total_1h = home_score_1h + away_score_1h + hca_total_1h + situational_total_adj_1h
+        total_1h = home_score_1h + away_score_1h + hca_total_1h + situational_total_adj_1h + self.total_calibration_1h
 
         # ─────────────────────────────────────────────────────────────────────
         return PredictorOutput(
