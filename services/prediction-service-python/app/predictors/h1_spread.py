@@ -47,12 +47,19 @@ class H1SpreadModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Spread"
-    MODEL_VERSION = "33.2.0"
+    MODEL_VERSION = "33.5.1"
     MARKET_TYPE = "spread"
     IS_FIRST_HALF = True
 
-    # 1H HOME COURT ADVANTAGE
-    # Typically ~50% of full game HCA
+    # ═══════════════════════════════════════════════════════════════════════
+    # 1H SPREAD - INDEPENDENT CONSTANTS (not inherited from base)
+    # ═══════════════════════════════════════════════════════════════════════
+    # These are 1H-specific values
+    LEAGUE_AVG_TEMPO: float = 67.6        # FG tempo (used for base calc)
+    LEAGUE_AVG_EFFICIENCY: float = 105.5  # FG efficiency (used for base calc)
+    LEAGUE_AVG_EFG: float = 50.0          # 1H-specific EFG reference
+
+    # 1H HOME COURT ADVANTAGE - ~50% of FG HCA (4.7 * 0.5)
     HCA: float = 2.35
 
     # 1H SCALING FACTORS
@@ -60,18 +67,14 @@ class H1SpreadModel(BasePredictor):
     BASE_MARGIN_SCALE: float = 0.50      # Margins scale by ~50%
 
     # EFG-based adjustments for 1H
-    # Teams with better shooting efficiency show advantage faster
     EFG_TEMPO_ADJUSTMENT: float = 0.005  # Per % EFG above average
     EFG_MARGIN_ADJUSTMENT: float = 0.01  # Per % EFG differential
-
-    # League average EFG for reference
-    LEAGUE_AVG_EFG: float = 50.0
 
     # 1H-specific variance (higher than FG)
     BASE_VARIANCE: float = 12.65  # ~15% higher than FG spread variance
 
-    # Minimum edge to recommend 1H spread bet
-    MIN_EDGE: float = 3.5  # Slightly lower than FG due to higher variance
+    # Betting thresholds - 1H specific
+    MIN_EDGE: float = 3.5
 
     def predict(
         self,

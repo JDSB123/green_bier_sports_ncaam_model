@@ -58,12 +58,13 @@ class BasePredictor(ABC):
     HCA: float = 0.0              # Home court advantage
     CALIBRATION: float = 0.0      # Bias correction
 
-    # League averages (from Barttorvik)
-    LEAGUE_AVG_TEMPO: float = 68.5
-    LEAGUE_AVG_EFFICIENCY: float = 106.0
+    # League averages (from Barttorvik) - FIXED v33.5.1
+    # Each model should override these with market-specific values
+    LEAGUE_AVG_TEMPO: float = 67.6       # Fixed from 68.5 (v33.4)
+    LEAGUE_AVG_EFFICIENCY: float = 105.5  # Fixed from 106.0 (v33.4)
     LEAGUE_AVG_ORB: float = 28.0
     LEAGUE_AVG_TOR: float = 18.5
-    LEAGUE_AVG_FTR: float = 32.0
+    LEAGUE_AVG_FTR: float = 33.0          # Fixed from 32.0
 
     # Matchup adjustment factors
     REBOUND_FACTOR: float = 0.15   # Points per % rebounding edge

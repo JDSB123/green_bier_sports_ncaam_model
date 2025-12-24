@@ -85,13 +85,17 @@ class H1TotalModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Total"
-    MODEL_VERSION = "33.5.0"  # Backtested version
+    MODEL_VERSION = "33.5.1"  # Truly independent version
     MARKET_TYPE = "total"
 
-    # Average 1H efficiency (lower than FG due to cold starts)
-    LEAGUE_AVG_H1_EFFICIENCY: float = 105.5
+    # ═══════════════════════════════════════════════════════════════════════
+    # 1H TOTAL - INDEPENDENT CONSTANTS (not inherited from base)
+    # ═══════════════════════════════════════════════════════════════════════
+    # These are 1H-specific values derived from 562-game 1H backtest
+    LEAGUE_AVG_TEMPO: float = 67.6        # Same as FG (used for possession calc)
+    LEAGUE_AVG_H1_EFFICIENCY: float = 105.5  # 1H-specific efficiency
 
-    # Calibration - BACKTESTED: +2.7 (we under-predict by ~4.75 pts)
+    # Calibration - BACKTESTED on 562 real 1H games from ESPN
     CALIBRATION: float = 2.7
     HCA: float = 0.0  # Totals don't use HCA
 

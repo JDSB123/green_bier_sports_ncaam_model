@@ -60,31 +60,40 @@ class TotalAdjustmentFactors:
 
 class FGTotalModel(BasePredictor):
     """
-    Full Game Total predictor - BACKTESTED on 3,318 games.
+    Full Game Total predictor - TRULY INDEPENDENT model.
+
+    BACKTESTED on 3,318 games with actual ESPN scores.
 
     Formula:
         Total = BaseEfficiencyPrediction + Adjustment + Calibration
 
     Backtest Results:
-        - Calibration: +7.0 (was -4.6, fixed bias)
+        - Calibration: +7.0 (derived from FG backtest data)
         - MAE: 13.1 pts overall
         - Middle games (120-170): MAE = 10.7 (matches market)
     """
 
     MODEL_NAME = "FGTotal"
-    MODEL_VERSION = "33.5.0"
+    MODEL_VERSION = "33.5.1"
     MARKET_TYPE = "total"
 
-    # Calibration - BACKTESTED: +7.0
-    CALIBRATION: float = 7.0
-    HCA: float = 0.0
+    # ═══════════════════════════════════════════════════════════════════════
+    # FG TOTAL - INDEPENDENT CONSTANTS (not inherited from base)
+    # ═══════════════════════════════════════════════════════════════════════
+    # These are FG-specific values derived from FG backtest data
+    LEAGUE_AVG_TEMPO: float = 67.6        # FG tempo from Barttorvik
+    LEAGUE_AVG_EFFICIENCY: float = 105.5  # FG efficiency from Barttorvik
 
-    # Betting thresholds
+    # Calibration - BACKTESTED on 3,318 FG games
+    CALIBRATION: float = 7.0
+    HCA: float = 0.0  # Totals don't use HCA (zero-sum)
+
+    # Betting thresholds - from FG backtest ROI analysis
     MIN_EDGE: float = 2.0
     MAX_EDGE: float = 6.0
     OPTIMAL_EDGE: float = 3.0
 
-    # Variance
+    # Variance - FG-specific
     BASE_VARIANCE: float = 20.0
 
     def __init__(self):
