@@ -1,6 +1,6 @@
 # End-to-End Model/Stack Review
 **Date:** December 23, 2025  
-**Version:** v6.3  
+**Version:** v33.6  
 **Status:** ✅ PRODUCTION READY (NCAAM-GBSV-MODEL-RG)
 
 ---
@@ -21,8 +21,8 @@ This is a **well-architected, production-ready** NCAA basketball prediction syst
 ✅ **Recent Cleanup (December 23, 2025):**
 - Consolidated all resources to `NCAAM-GBSV-MODEL-RG`
 - Removed deprecated resource groups (`ncaam-prod-rg`, `green-bier-ncaam`, `greenbier-enterprise-rg`)
-- Standardized all documentation and scripts
-- HCA values standardized to 3.2 across all configs
+- Standardized documentation and scripts
+- Configuration standardized via `config.py` with env overrides
 
 ⚠️ **Minor Items (Non-blocking):**
 - ML model training incomplete (placeholder - gracefully falls back)
@@ -61,16 +61,14 @@ This is a **well-architected, production-ready** NCAA basketball prediction syst
 ┌─────────────────────────────────────────────────────────────┐
 │                   PREDICTION ENGINE (Python)                 │
 │                                                              │
-│  - BarttorvikPredictor (v6.3)                               │
-│    • Base predictions (AdjOE/AdjDE/Tempo)                   │
-│    • Situational adjustments (rest days, B2B)               │
-│    • Matchup adjustments (ORB/TOR edge)                     │
-│    • Dynamic variance (3PR + tempo)                         │
-│    • Enhanced 1H predictions (EFG-based)                    │
+│  - v33.6 Modular Models                                     │
+│    • FGSpreadModel / FGTotalModel                           │
+│    • H1SpreadModel / H1TotalModel                           │
+│    • Per-market calibration & thresholds                    │
 │                                                              │
-│  - PredictionEngine                                          │
+│  - prediction_engine_v33 (orchestrator/adapter)             │
 │    • Recommendation generation                              │
-│    • Edge calculation                                        │
+│    • Edge calculation                                       │
 │    • Kelly criterion sizing                                 │
 │    • Sharp book alignment                                    │
 └─────────────────────────────────────────────────────────────┘
@@ -191,7 +189,7 @@ This is a **well-architected, production-ready** NCAA basketball prediction syst
 
 ### 3.1 Core Prediction Formulas
 
-**Location:** `services/prediction-service-python/app/predictor.py`
+**Location:** `services/prediction-service-python/app/prediction_engine_v33.py` and `services/prediction-service-python/app/predictors/*.py`
 
 #### Full Game Spread (Line 249-253)
 ```python
@@ -259,7 +257,7 @@ total_1h = home_score_1h + away_score_1h + hca_total_1h
 
 ### 3.3 ML Model Integration
 
-**Location:** `predictor.py` line 137-164
+**Location:** Modular models
 
 **Status:** ⚠️ **Incomplete**
 - Placeholder training code exists
@@ -279,7 +277,7 @@ total_1h = home_score_1h + away_score_1h + hca_total_1h
 
 ### 3.4 Edge Calculation & Recommendations
 
-**Location:** `predictor.py` line 601-919
+**Location:** `prediction_engine_v33` (recommendations layer)
 
 **Process:**
 1. Calculate edges (model - market)

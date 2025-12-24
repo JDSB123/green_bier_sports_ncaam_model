@@ -242,7 +242,7 @@ CREATE TABLE team_ratings (
 
 **Formula:**
 ```python
-# v6.3 formula (matches services/prediction-service-python/app/predictor.py)
+# Base formula (legacy v6.3 reference; v33.6 uses same foundation with per-market calibration)
 league_avg_tempo = 68.5
 league_avg_eff = 106.0
 
