@@ -56,7 +56,7 @@ param(
     [switch]$QuickDeploy,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v33.5.0'
+    [string]$ImageTag = 'v33.6.0'
 )
 
 # ─────────────────────────────────────────────────────────────────────────────────

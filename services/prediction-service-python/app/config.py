@@ -1,5 +1,14 @@
 """
-Configuration for NCAA Basketball Prediction Service v33.5
+Configuration for NCAA Basketball Prediction Service v33.6
+
+v33.6 Changes (2024-12-24):
+- ALL 4 MODELS TRULY INDEPENDENT & BACKTESTED with real ESPN data
+- FG Spread: BACKTESTED on 3,318 games, HCA=5.8 (from actual home margins)
+- FG Total: BACKTESTED on 3,318 games, Calibration=+7.0 (unchanged)
+- H1 Spread: BACKTESTED on 904 real 1H games, HCA=3.6 (from actual 1H margins)
+- H1 Total: BACKTESTED on 562 real 1H games, Calibration=+2.7 (unchanged)
+- Created dedicated backtest scripts: backtest_fg_spread.py, backtest_h1_spread.py
+- Previous spread HCAs (4.7, 2.35) were NOT backtested - now corrected
 
 v33.5 Changes (2024-12-24):
 - CLEANUP: Removed 7 stale/duplicate predictor files (independent_*.py, *_independent.py)
@@ -300,7 +309,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "33.5.0"  # Cleanup: removed stale/duplicate model files
+    service_version: str = "33.6.0"  # All 4 models TRULY INDEPENDENT & BACKTESTED
     debug: bool = False
 
     # Feature Store

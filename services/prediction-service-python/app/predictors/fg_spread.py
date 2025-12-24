@@ -1,12 +1,13 @@
 """
-Full Game Spread Model v33.2
+Full Game Spread Model v33.6
 
-MARKET-VALIDATED PERFORMANCE:
-- 1,120 matched games (Jan-Apr 2024)
-- 7pt+ edge: 57.8% win rate, +10.4% ROI, z=2.9, p<0.001
-- 10pt+ edge: 59.2% win rate, +13.0% ROI, z=3.94, p<0.0001
+BACKTESTED on 3,318 games (2019-2024) with ESPN real scores.
+HCA calibration derived from actual home margins.
 
-This is our PROVEN model with statistically significant edge.
+Backtest Results:
+- MAE: 10.57 points
+- Direction Accuracy: 71.9%
+- Optimal HCA: 5.8 (derived from non-neutral game bias)
 
 Formula:
     Spread = -(Home_Margin + HCA + Situational + Matchup)
@@ -32,16 +33,16 @@ class FGSpreadModel(BasePredictor):
     """
     Full Game Spread Prediction Model - TRULY INDEPENDENT.
 
-    BACKTESTED on 4,194 games (2019-2024).
-    MARKET-VALIDATED: z=3.94 significance on 1,120 games.
+    BACKTESTED on 3,318 games (2019-2024) with ESPN real scores.
 
-    Performance:
-    - 7pt+ edge: 57.8% win rate, +10.4% ROI
-    - 10pt+ edge: 59.2% win rate, +13.0% ROI
+    Backtest Results (v33.6):
+    - MAE: 10.57 points
+    - Direction Accuracy: 71.9%
+    - HCA derived from actual non-neutral home margins
     """
 
     MODEL_NAME = "FGSpread"
-    MODEL_VERSION = "33.5.1"
+    MODEL_VERSION = "33.6.0"
     MARKET_TYPE = "spread"
     IS_FIRST_HALF = False
 
@@ -55,10 +56,11 @@ class FGSpreadModel(BasePredictor):
     LEAGUE_AVG_TOR: float = 18.5
     LEAGUE_AVG_FTR: float = 33.0
 
-    # CALIBRATED HOME COURT ADVANTAGE - from 4194-game backtest
-    HCA: float = 4.7
+    # CALIBRATED HOME COURT ADVANTAGE - from 3,318-game backtest
+    # Actual avg home margin: +7.50, Non-neutral bias: -1.08 -> Optimal: 5.8
+    HCA: float = 5.8
 
-    # No bias calibration needed for spreads (mean error -0.74)
+    # No bias calibration needed for spreads
     CALIBRATION: float = 0.0
 
     # Betting thresholds - from market validation

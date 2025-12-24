@@ -1,5 +1,5 @@
 """
-Full Game Total Prediction Model v33.5
+Full Game Total Prediction Model v33.6
 
 BACKTESTED on 3,318 games with actual scores from ESPN.
 
@@ -74,7 +74,7 @@ class FGTotalModel(BasePredictor):
     """
 
     MODEL_NAME = "FGTotal"
-    MODEL_VERSION = "33.5.1"
+    MODEL_VERSION = "33.6.0"
     MARKET_TYPE = "total"
 
     # ═══════════════════════════════════════════════════════════════════════

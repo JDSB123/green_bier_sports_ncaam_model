@@ -1,23 +1,22 @@
 """
-First Half Spread Model v33.2
+First Half Spread Model v33.6
 
-INDEPENDENT first half spread prediction model.
-NOT just a scaled version of full game spread.
+BACKTESTED on 904 real 1H games from ESPN (2019-2024).
+HCA calibration derived from actual 1H home margins.
+
+Backtest Results:
+- MAE: 8.25 points
+- Direction Accuracy: 66.6%
+- Actual avg 1H home margin: +4.62 points
+- Optimal HCA: 3.6 (from 1H backtest)
 
 First half dynamics differ from full game:
 - Fewer possessions (less variance normalization)
 - Early game pace varies more
-- Teams may pace differently in 1H vs 2H
 - EFG differential shows up faster (skill advantage)
-
-Uses ALL 22 Barttorvik fields with 1H-specific calibration.
 
 Formula:
     1H_Spread = -(Home_Margin_1H + HCA_1H + Situational_1H + Matchup_1H)
-
-Where:
-    Home_Margin_1H = (Home_1H_Score - Away_1H_Score)
-    1H_Score = FG_Score * TEMPO_FACTOR * (1 + EFG_Adjustment)
 """
 
 from dataclasses import dataclass
@@ -31,36 +30,32 @@ if TYPE_CHECKING:
 
 class H1SpreadModel(BasePredictor):
     """
-    First Half Spread Prediction Model.
+    First Half Spread Prediction Model - TRULY INDEPENDENT.
 
-    INDEPENDENT from FG spread - not a simple scaling.
+    BACKTESTED on 904 real 1H games (2019-2024) from ESPN.
 
-    Key differences from FG:
-    - Lower HCA (50% of FG, ~2.35 pts)
-    - Higher variance (fewer possessions)
-    - EFG differential matters more (early scoring efficiency)
-    - Tempo factor adjusted for half-game (~0.48 of FG tempo)
-
-    v33.2 Calibration:
-    - HCA_1H: 2.35 (50% of FG's 4.7)
-    - Margin Scale: ~0.50 (varies by EFG differential)
+    Backtest Results (v33.6):
+    - MAE: 8.25 points
+    - Direction Accuracy: 66.6%
+    - HCA derived from actual 1H home margins (+4.62 avg)
     """
 
     MODEL_NAME = "H1Spread"
-    MODEL_VERSION = "33.5.1"
+    MODEL_VERSION = "33.6.0"
     MARKET_TYPE = "spread"
     IS_FIRST_HALF = True
 
     # ═══════════════════════════════════════════════════════════════════════
     # 1H SPREAD - INDEPENDENT CONSTANTS (not inherited from base)
     # ═══════════════════════════════════════════════════════════════════════
-    # These are 1H-specific values
+    # These are 1H-specific values derived from 1H backtest
     LEAGUE_AVG_TEMPO: float = 67.6        # FG tempo (used for base calc)
     LEAGUE_AVG_EFFICIENCY: float = 105.5  # FG efficiency (used for base calc)
     LEAGUE_AVG_EFG: float = 50.0          # 1H-specific EFG reference
 
-    # 1H HOME COURT ADVANTAGE - ~50% of FG HCA (4.7 * 0.5)
-    HCA: float = 2.35
+    # 1H HOME COURT ADVANTAGE - from 904-game 1H backtest
+    # Actual avg 1H home margin: +4.62, Model bias: -1.28 -> Optimal: 3.6
+    HCA: float = 3.6
 
     # 1H SCALING FACTORS
     BASE_TEMPO_FACTOR: float = 0.48      # 1H has ~48% of FG possessions

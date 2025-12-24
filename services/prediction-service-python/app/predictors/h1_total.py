@@ -1,5 +1,5 @@
 """
-First Half Total Prediction Model v33.5
+First Half Total Prediction Model v33.6
 
 FULLY INDEPENDENT 1H model - does NOT derive from FG Total.
 BACKTESTED on 562 games with actual 1H scores from ESPN.
@@ -85,7 +85,7 @@ class H1TotalModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Total"
-    MODEL_VERSION = "33.5.1"  # Truly independent version
+    MODEL_VERSION = "33.6.0"  # Truly independent & backtested
     MARKET_TYPE = "total"
 
     # ═══════════════════════════════════════════════════════════════════════
