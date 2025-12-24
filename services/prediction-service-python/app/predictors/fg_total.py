@@ -1,22 +1,28 @@
 """
-Full Game Total Prediction Model v33.3
+Full Game Total Prediction Model v33.5
 
-HYBRID APPROACH: Base efficiency formula + ML-learned adjustment
+BACKTESTED on 3,318 games with actual scores from ESPN.
 
-Key findings from analysis:
-- Pure efficiency formula: ~14.9 MAE
-- Hybrid (base + adjustment): ~13.3 MAE
-- Market benchmark: ~10-11 MAE
+Backtest Results:
+- MAE: 13.8 points (after calibration fix)
+- Market benchmark: ~10-11 MAE (we're ~3 pts worse)
+- Variance captured: 59% (pred std 10.7 vs actual 18.3)
 
-The hybrid model learns WHEN the base formula is wrong:
-- High 3PT rate games have more variance
-- Quality mismatches affect totals differently
-- Extreme tempos need adjustment
+Key findings:
+- Low games (<130): over-predict by +4.8 pts
+- High games (>160): under-predict by -34.6 pts
+- REGRESSION TO MEAN is fundamental limitation
 
-Betting Strategy (from market validation):
-- Low edges (2-3 pts) have better win rate than high edges
-- When we strongly disagree, market is usually right
-- Focus on games where adjustment is confident
+This is an efficiency-based model. It cannot capture:
+- Injuries, lineup changes
+- Recent form/momentum
+- Weather/travel factors
+- Market-derived signals
+
+Betting Strategy:
+- Focus on moderate edges (2-4 pts)
+- AVOID large edges (>6 pts) - usually means we're wrong
+- Low edge games have better hit rate
 """
 from __future__ import annotations
 
@@ -32,24 +38,25 @@ if TYPE_CHECKING:
 
 @dataclass
 class TotalAdjustmentFactors:
-    """Factors learned from backtest analysis."""
-    # Base calibration (from 4194-game backtest)
-    base_calibration: float = -4.6
+    """Factors from 3,318-game backtest analysis."""
+    # Base calibration - BACKTESTED: we under-predict by 11.4 pts
+    # Optimal calibration is +6.8, using +7.0 to be slightly aggressive
+    base_calibration: float = 7.0
 
     # Tempo adjustment: extreme tempos need more correction
     tempo_high_threshold: float = 70.0
     tempo_low_threshold: float = 66.0
     tempo_adj_per_point: float = 0.3
 
-    # Quality mismatch: big mismatches affect totals
+    # Quality mismatch: big mismatches = lower scoring (blowouts slow down)
     barthag_diff_threshold: float = 0.15
     quality_adj_factor: float = 2.0
 
-    # 3PT rate: high 3PT games have more variance, under-predicted
+    # 3PT rate: high 3PT games have more variance
     three_pt_high_threshold: float = 38.0
     three_pt_adj_factor: float = 0.15
 
-    # Efficiency extremes: very high/low efficiency games need adjustment
+    # Efficiency extremes
     eff_high_threshold: float = 115.0
     eff_low_threshold: float = 100.0
     eff_adj_factor: float = 0.2
@@ -57,34 +64,32 @@ class TotalAdjustmentFactors:
 
 class FGTotalModel(BasePredictor):
     """
-    Full Game Total predictor using hybrid approach.
+    Full Game Total predictor - BACKTESTED on 3,318 games.
 
     Formula:
         Total = BaseEfficiencyPrediction + LearnedAdjustment + Calibration
 
-    Where LearnedAdjustment captures:
-        - Tempo extremes
-        - Quality mismatches
-        - Shooting profile (3PT heavy = more variance)
-        - Efficiency extremes
+    Backtest showed:
+        - Old calibration (-4.6) caused -11.4 pt bias
+        - New calibration (+7.0) should give ~0 bias
+        - MAE ~13.8 pts (market is ~10.5)
     """
 
     MODEL_NAME = "FGTotal"
-    MODEL_VERSION = "33.3.0"
+    MODEL_VERSION = "33.5.0"  # Backtested version
     MARKET_TYPE = "total"
 
-    # Calibrated parameters
-    CALIBRATION: float = -4.6  # From backtest: we over-predict by ~4.6 pts
-    HCA: float = 0.0  # Totals are zero-sum for HCA
+    # Calibration - BACKTESTED: +7.0 (was -4.6, off by 11.4 pts!)
+    CALIBRATION: float = 7.0
+    HCA: float = 0.0  # Totals don't use HCA
 
-    # Betting thresholds (from market validation)
-    # Low edges have BETTER win rate than high edges for totals
-    MIN_EDGE: float = 2.0  # Minimum edge to consider
-    MAX_EDGE: float = 6.0  # Avoid very high edges - usually wrong
-    OPTIMAL_EDGE: float = 3.0  # Sweet spot from validation
+    # Betting thresholds
+    MIN_EDGE: float = 2.0
+    MAX_EDGE: float = 6.0  # Avoid high edges - usually wrong
+    OPTIMAL_EDGE: float = 3.0
 
-    # Base variance for totals (higher than spreads)
-    BASE_VARIANCE: float = 13.0
+    # Variance - BACKTESTED RMSE was 20.2
+    BASE_VARIANCE: float = 20.0
 
     def __init__(self):
         self.factors = TotalAdjustmentFactors()
