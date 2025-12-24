@@ -1059,6 +1059,30 @@ async def teams_webhook_handler(request: Request):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@app.get("/predict/fh_total_indep")
+async def predict_fh_total_indep(home: str, away: str, neutral: bool = False):
+    # Logic to get ratings and predict using fh_total_indep
+    return {"prediction": fh_total_indep.predict(home, away, neutral)}
+
+
+@app.get("/predict/fh_spread_indep")
+async def predict_fh_spread_indep(home: str, away: str, neutral: bool = False):
+    # Logic to get ratings and predict using fh_spread_indep
+    return {"prediction": fh_spread_indep.predict(home, away, neutral)}
+
+
+@app.get("/predict/full_total_indep")
+async def predict_full_total_indep(home: str, away: str, neutral: bool = False):
+    # Logic to get ratings and predict using full_total_indep
+    return {"prediction": full_total_indep.predict(home, away, neutral)}
+
+
+@app.get("/predict/full_spread_indep")
+async def predict_full_spread_indep(home: str, away: str, neutral: bool = False):
+    # Logic to get ratings and predict using full_spread_indep
+    return {"prediction": full_spread_indep.predict(home, away, neutral)}
+
+
 # Local run helper
 if __name__ == "__main__":
     import uvicorn
