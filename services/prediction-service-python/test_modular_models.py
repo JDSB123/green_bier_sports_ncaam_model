@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """
-Test Modular Spread Models v33.2
+Test Modular Prediction Models v33.3
 
-Verifies that spread models (PROVEN with z=3.94):
-1. Import correctly
-2. Produce valid predictions with real TeamRatings data
-3. Return consistent MarketPrediction objects
-4. Generate reasonable pick recommendations
-
-Tests FG Spread and 1H Spread models only.
-Total models require open source research for proven approaches.
+Tests all 4 market models:
+- FG Spread (PROVEN z=3.94)
+- FG Total (Hybrid approach)
+- 1H Spread (Independent)
+- 1H Total (Independent)
 """
 
 import sys
@@ -18,7 +15,9 @@ sys.path.insert(0, r"c:\Users\JB\green-bier-ventures\NCAAM_main\services\predict
 from app.models import TeamRatings
 from app.predictors import (
     fg_spread_model,
+    fg_total_model,
     h1_spread_model,
+    h1_total_model,
     MarketPrediction,
 )
 
@@ -63,10 +62,108 @@ def create_sample_team(
     )
 
 
+def test_total_predictions():
+    """Test FG and 1H total models."""
+    print("=" * 70)
+    print("TOTAL MODELS v33.3 - TEST SUITE")
+    print("=" * 70)
+
+    home = create_sample_team(
+        name="Strong Home",
+        adj_o=118.5,
+        adj_d=94.2,
+        tempo=69.0,
+        rank=8,
+        barthag=0.92,
+    )
+
+    away = create_sample_team(
+        name="Mid Road",
+        adj_o=112.0,
+        adj_d=100.5,
+        tempo=67.5,
+        rank=35,
+        barthag=0.78,
+    )
+
+    market_total = 152.5
+    market_total_1h = 73.5
+
+    print(f"\nMATCHUP: {away.team_name} @ {home.team_name}")
+
+    print("\n" + "-" * 70)
+    print("FG TOTAL MODEL (Hybrid Approach)")
+    print("-" * 70)
+
+    fg_total_pred = fg_total_model.predict(home, away)
+    fg_total_rec = fg_total_model.get_pick_recommendation(fg_total_pred, market_total)
+
+    print(f"Model Prediction: {fg_total_pred.value:.1f}")
+    print(f"  Home Component: {fg_total_pred.home_component:.1f}")
+    print(f"  Away Component: {fg_total_pred.away_component:.1f}")
+    print(f"  Calibration:    {fg_total_pred.calibration_applied:+.1f}")
+    print(f"  Matchup Adj:    {fg_total_pred.matchup_adj:+.2f}")
+    print(f"  Variance:       {fg_total_pred.variance:.2f}")
+    print(f"  Confidence:     {fg_total_pred.confidence:.1%}")
+    print(f"  Reasoning:      {fg_total_pred.reasoning}")
+    print(f"\nVs Market {market_total:.1f}:")
+    print(f"  Pick: {fg_total_rec['pick']} | Edge: {fg_total_rec['edge']:.1f}pts | Strength: {fg_total_rec['strength']}")
+    print(f"  Recommended: {'YES' if fg_total_rec['recommended'] else 'NO'}")
+    if fg_total_rec.get('warning'):
+        print(f"  WARNING: {fg_total_rec['warning']}")
+
+    print("\n" + "-" * 70)
+    print("1H TOTAL MODEL")
+    print("-" * 70)
+
+    h1_total_pred = h1_total_model.predict(home, away)
+    h1_total_rec = h1_total_model.get_pick_recommendation(h1_total_pred, market_total_1h)
+
+    print(f"Model Prediction: {h1_total_pred.value:.1f}")
+    print(f"  Home Component: {h1_total_pred.home_component:.1f}")
+    print(f"  Away Component: {h1_total_pred.away_component:.1f}")
+    print(f"  Calibration:    {h1_total_pred.calibration_applied:+.1f}")
+    print(f"  Variance:       {h1_total_pred.variance:.2f}")
+    print(f"  Confidence:     {h1_total_pred.confidence:.1%}")
+    print(f"  Reasoning:      {h1_total_pred.reasoning}")
+    print(f"\nVs Market {market_total_1h:.1f}:")
+    print(f"  Pick: {h1_total_rec['pick']} | Edge: {h1_total_rec['edge']:.1f}pts | Strength: {h1_total_rec['strength']}")
+    print(f"  Recommended: {'YES' if h1_total_rec['recommended'] else 'NO'}")
+
+    # Validation
+    print("\n" + "=" * 70)
+    print("TOTAL VALIDATION CHECKS")
+    print("=" * 70)
+
+    errors = []
+
+    # FG/1H ratio should be ~2.08
+    fg_to_1h = fg_total_pred.value / h1_total_pred.value if h1_total_pred.value > 0 else 0
+    if not (1.9 < fg_to_1h < 2.2):
+        errors.append(f"FG/1H total ratio {fg_to_1h:.2f} outside 1.9-2.2 range")
+    print(f"OK FG/1H Total Ratio: {fg_to_1h:.2f} (expected ~2.08)")
+
+    # Calibration values
+    if fg_total_pred.calibration_applied != -4.6:
+        errors.append(f"FG Total calibration should be -4.6, got {fg_total_pred.calibration_applied}")
+    if h1_total_pred.calibration_applied != -2.3:
+        errors.append(f"1H Total calibration should be -2.3, got {h1_total_pred.calibration_applied}")
+    print(f"OK Calibrations: FG={fg_total_pred.calibration_applied:+.1f}, 1H={h1_total_pred.calibration_applied:+.1f}")
+
+    if errors:
+        print(f"FAILED: {len(errors)} errors")
+        for e in errors:
+            print(f"  - {e}")
+        return False
+    else:
+        print("PASSED: All total validation checks passed!")
+        return True
+
+
 def test_spread_predictions():
     """Test FG and 1H spread models with sample matchups."""
     print("=" * 70)
-    print("MODULAR SPREAD MODELS v33.2 - TEST SUITE")
+    print("SPREAD MODELS v33.3 - TEST SUITE")
     print("=" * 70)
 
     # Create sample teams
@@ -230,12 +327,13 @@ if __name__ == "__main__":
 
     success = True
     success = test_spread_predictions() and success
+    success = test_total_predictions() and success
     success = test_neutral_site() and success
     success = test_rest_adjustments() and success
 
     print("\n" + "=" * 70)
     if success:
-        print("ALL TESTS PASSED! Spread models are working correctly.")
+        print("ALL TESTS PASSED! All 4 modular models working correctly.")
     else:
         print("SOME TESTS FAILED! Review errors above.")
     print("=" * 70 + "\n")
