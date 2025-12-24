@@ -3,7 +3,20 @@
 Backtest All Independent Models
 
 Validates FG/FH Totals and Spreads against historical data.
-NO PLACEHOLDERS - Real data, real predictions, real metrics.
+
+WARNING (v33.5):
+- This script uses LOCAL mock model classes, NOT the production models
+- FH "actuals" are SIMULATED as FG * 0.47, NOT real 1H scores
+- For real FH validation, use backtest_h1_total.py which has actual ESPN 1H data
+
+TODO: Refactor to import from app.predictors and use real models:
+- from app.predictors import fg_total_model, h1_total_model, fg_spread_model, h1_spread_model
+
+Production Models (use these):
+- services/prediction-service-python/app/predictors/fg_total.py
+- services/prediction-service-python/app/predictors/fg_spread.py
+- services/prediction-service-python/app/predictors/h1_total.py (truly independent, backtested on 562 games)
+- services/prediction-service-python/app/predictors/h1_spread.py
 """
 from __future__ import annotations
 

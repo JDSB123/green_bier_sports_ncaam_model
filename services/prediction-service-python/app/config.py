@@ -1,5 +1,12 @@
 """
-Configuration for NCAA Basketball Prediction Service v33.4
+Configuration for NCAA Basketball Prediction Service v33.5
+
+v33.5 Changes (2024-12-24):
+- CLEANUP: Removed 7 stale/duplicate predictor files (independent_*.py, *_independent.py)
+- CLEANUP: Removed stale ACR repo (prediction-service) - single source is ncaam-prediction
+- CLEANUP: Removed duplicate backtest file (testing/backtest_independent_models.py)
+- Canonical models: fg_total.py, fg_spread.py, h1_total.py, h1_spread.py
+- h1_total.py is truly independent (backtested on 562 games with real 1H data)
 
 v33.4 Changes (2024-12-24):
 - ROOT CAUSE FIX: Removed total_calibration_adjustment (-4.6) - it was WRONG
@@ -293,7 +300,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "33.2.0"  # Market-validated edge thresholds
+    service_version: str = "33.5.0"  # Cleanup: removed stale/duplicate model files
     debug: bool = False
 
     # Feature Store
