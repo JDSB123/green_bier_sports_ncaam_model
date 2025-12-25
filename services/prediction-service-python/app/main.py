@@ -474,7 +474,7 @@ async def teams_webhook_handler(request: Request):
                 # Import the pick generation logic
                 from datetime import date
                 from sqlalchemy import create_engine, text
-                from app.predictor import prediction_engine
+                from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
                 from app.models import TeamRatings, MarketOdds
                 from app.situational import SituationalAdjuster
                 
