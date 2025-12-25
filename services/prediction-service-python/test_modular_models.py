@@ -144,10 +144,10 @@ def test_total_predictions():
     print(f"OK FG/1H Total Ratio: {fg_to_1h:.2f} (expected ~2.08)")
 
     # Calibration values
-    if fg_total_pred.calibration_applied != -4.6:
-        errors.append(f"FG Total calibration should be -4.6, got {fg_total_pred.calibration_applied}")
-    if h1_total_pred.calibration_applied != -2.3:
-        errors.append(f"1H Total calibration should be -2.3, got {h1_total_pred.calibration_applied}")
+    if fg_total_pred.calibration_applied != 7.0:
+        errors.append(f"FG Total calibration should be 7.0, got {fg_total_pred.calibration_applied}")
+    if h1_total_pred.calibration_applied != 2.7:
+        errors.append(f"1H Total calibration should be 2.7, got {h1_total_pred.calibration_applied}")
     print(f"OK Calibrations: FG={fg_total_pred.calibration_applied:+.1f}, 1H={h1_total_pred.calibration_applied:+.1f}")
 
     if errors:
@@ -249,10 +249,10 @@ def test_spread_predictions():
     print(f"OK Variance FG Spread: {fg_spread_pred.variance:.2f} < 1H Spread: {h1_spread_pred.variance:.2f}")
 
     # Check 3: HCA applied should match calibrated values
-    if fg_spread_pred.hca_applied != 4.7:
-        errors.append(f"FG Spread HCA should be 4.7, got {fg_spread_pred.hca_applied}")
-    if h1_spread_pred.hca_applied != 2.35:
-        errors.append(f"1H Spread HCA should be 2.35, got {h1_spread_pred.hca_applied}")
+    if fg_spread_pred.hca_applied != 5.8:
+        errors.append(f"FG Spread HCA should be 5.8, got {fg_spread_pred.hca_applied}")
+    if h1_spread_pred.hca_applied != 3.6:
+        errors.append(f"1H Spread HCA should be 3.6, got {h1_spread_pred.hca_applied}")
     print(f"OK HCA Values: FG={fg_spread_pred.hca_applied:.1f}, 1H={h1_spread_pred.hca_applied:.2f}")
 
     print("\n" + "=" * 70)

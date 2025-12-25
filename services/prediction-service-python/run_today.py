@@ -31,8 +31,8 @@ import json
 # No need to recreate - just call the proven binaries
 import subprocess
 
-# Import prediction engine (direct, no HTTP)
-from app.predictor import prediction_engine
+# Import prediction engine (v33.6 - modular independent models)
+from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
 from app.models import TeamRatings, MarketOdds
 from app.situational import SituationalAdjuster, RestInfo
 from app.persistence import persist_prediction_and_recommendations
@@ -110,11 +110,7 @@ if not REDIS_URL:
     REDIS_PASSWORD = _read_secret_file("/run/secrets/redis_password", "redis_password")
     REDIS_URL = f"redis://:{REDIS_PASSWORD}@redis:6379"
 
-# Model parameters (from config, but display here for clarity)
-HCA_SPREAD = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_SPREAD', 3.2))
-HCA_TOTAL = float(os.getenv('MODEL__HOME_COURT_ADVANTAGE_TOTAL', 0.0))
-MIN_SPREAD_EDGE = float(os.getenv('MODEL__MIN_SPREAD_EDGE', 2.5))
-MIN_TOTAL_EDGE = float(os.getenv('MODEL__MIN_TOTAL_EDGE', 3.0))
+# Output directory for picks/reports
 PICKS_OUTPUT_DIR = os.getenv("PICKS_OUTPUT_DIR", "/app/output")
 
 # Teams Webhook URL for picks notifications (OPTIONAL)
@@ -1413,7 +1409,7 @@ def main():
     print()
     print("╔" + "═" * 118 + "╗")
     print("║" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "║")
-    print("║" + f"  Model: v6.3 Barttorvik | HCA: Spread={HCA_SPREAD}, Total={HCA_TOTAL} | Min Edge: {MIN_SPREAD_EDGE} pts".ljust(118) + "║")
+    print("║" + "  Model: v33.6 Modular (FG/H1 Spread & Total)".ljust(118) + "║")
     print("╚" + "═" * 118 + "╝")
     print()
     
@@ -1608,21 +1604,19 @@ def main():
         # Collect picks for executive table
         for rec in recs:
             bet_type = rec.get('bet_type', '')
-            # Apply correct thresholds (fix totals being over-selected by spread threshold)
-            threshold = MIN_TOTAL_EDGE if "TOTAL" in bet_type else MIN_SPREAD_EDGE
-            if rec['edge'] >= threshold:
-                # Determine period and market type
-                is_1h = "1H" in bet_type
-                period = "1H" if is_1h else "FULL"
-                
-                if "SPREAD" in bet_type:
-                    market = "SPREAD"
-                elif "TOTAL" in bet_type:
-                    market = "TOTAL"
-                else:
-                    market = "ML"
-                
-                # Format pick display with team name and odds
+            # Engine returns already-thresholded recommendations; no extra filtering
+            # Determine period and market type
+            is_1h = "1H" in bet_type
+            period = "1H" if is_1h else "FULL"
+
+            if "SPREAD" in bet_type:
+                market = "SPREAD"
+            elif "TOTAL" in bet_type:
+                market = "TOTAL"
+            else:
+                market = "ML"
+
+            # Format pick display with team name and odds
                 pick_val = rec['pick']
                 if market == "SPREAD":
                     if pick_val == "HOME":

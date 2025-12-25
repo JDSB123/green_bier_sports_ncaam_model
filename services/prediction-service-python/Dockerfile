@@ -69,9 +69,8 @@ COPY --chown=ncaam:ncaam services/prediction-service-python/run_migrations.py /a
 COPY --chown=ncaam:ncaam services/prediction-service-python/start.sh /app/start.sh
 # Bake DB migrations and seed/verification scripts into the image so the
 # entire team-matching pipeline is self-contained inside the container.
-# Temporarily removed to fix build
-# COPY --chown=ncaam:ncaam database/migrations /app/migrations
-# COPY --chown=ncaam:ncaam database/seeds /app/database/seeds
+COPY --chown=ncaam:ncaam database/migrations /app/migrations
+COPY --chown=ncaam:ncaam database/seeds /app/database/seeds
 # Fix line endings (CRLF -> LF) and make executable
 RUN sed -i 's/\r$//' /app/start.sh 2>/dev/null || true && chmod +x /app/start.sh
 RUN chmod +x /app/run_migrations.py

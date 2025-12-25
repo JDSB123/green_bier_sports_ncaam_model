@@ -10,7 +10,7 @@ import subprocess
 import logging
 import os
 from pathlib import Path
-from app.predictor import prediction_engine
+from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
 from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendation
 from app.config import settings
 from app.validation import validate_market_odds, validate_team_ratings
