@@ -265,6 +265,64 @@ async def debug_game_odds():
         return {"error": str(e)}
 
 
+@app.get("/debug/team-matching")
+async def debug_team_matching():
+    """Check if teams from odds ingestion match ratings teams."""
+    import os
+    from sqlalchemy import create_engine, text
+
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        return {"error": "DATABASE_URL not set"}
+
+    try:
+        engine = create_engine(db_url)
+        with engine.connect() as conn:
+            # Get games with their team info
+            result = conn.execute(text("""
+                SELECT
+                    g.id as game_id,
+                    g.commence_time,
+                    ht.id as home_team_id,
+                    ht.canonical_name as home_team,
+                    at.id as away_team_id,
+                    at.canonical_name as away_team,
+                    (SELECT COUNT(*) FROM team_ratings WHERE team_id = ht.id) as home_ratings_count,
+                    (SELECT COUNT(*) FROM team_ratings WHERE team_id = at.id) as away_ratings_count
+                FROM games g
+                JOIN teams ht ON g.home_team_id = ht.id
+                JOIN teams at ON g.away_team_id = at.id
+                WHERE g.status = 'scheduled'
+                ORDER BY g.commence_time
+                LIMIT 20
+            """))
+
+            games = []
+            for r in result:
+                games.append({
+                    "game_id": str(r.game_id),
+                    "commence_time": str(r.commence_time),
+                    "home_team": r.home_team,
+                    "home_team_id": str(r.home_team_id),
+                    "home_has_ratings": r.home_ratings_count > 0,
+                    "away_team": r.away_team,
+                    "away_team_id": str(r.away_team_id),
+                    "away_has_ratings": r.away_ratings_count > 0,
+                })
+
+            # Get total teams and ratings counts
+            teams_count = conn.execute(text("SELECT COUNT(*) FROM teams")).scalar()
+            ratings_count = conn.execute(text("SELECT COUNT(DISTINCT team_id) FROM team_ratings")).scalar()
+
+            return {
+                "total_teams": teams_count,
+                "teams_with_ratings": ratings_count,
+                "games": games
+            }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/debug/sync-odds")
 async def debug_sync_odds():
     """Test the Python odds sync directly."""
@@ -452,7 +510,7 @@ async def get_picks_json(date_param: str = "today"):
                     hr.ftr as home_ftr, hr.ftrd as home_ftrd, hr.two_pt_pct as home_2pt,
                     hr.two_pt_pct_d as home_2ptd, hr.three_pt_pct as home_3pt, hr.three_pt_pct_d as home_3ptd,
                     hr.three_pt_rate as home_3pr, hr.three_pt_rate_d as home_3prd,
-                    hr.barthag as home_barthag, hr.wab as home_wab, hr.net_rating as home_net,
+                    hr.barthag as home_barthag, hr.wab as home_wab,
                     ar.adj_o as away_adj_o, ar.adj_d as away_adj_d, ar.tempo as away_tempo,
                     200 as away_rank,
                     ar.efg as away_efg, ar.efgd as away_efgd,
@@ -460,7 +518,7 @@ async def get_picks_json(date_param: str = "today"):
                     ar.ftr as away_ftr, ar.ftrd as away_ftrd, ar.two_pt_pct as away_2pt,
                     ar.two_pt_pct_d as away_2ptd, ar.three_pt_pct as away_3pt, ar.three_pt_pct_d as away_3ptd,
                     ar.three_pt_rate as away_3pr, ar.three_pt_rate_d as away_3prd,
-                    ar.barthag as away_barthag, ar.wab as away_wab, ar.net_rating as away_net,
+                    ar.barthag as away_barthag, ar.wab as away_wab,
                     -- Full game odds (latest)
                     (SELECT home_line FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'spreads' ORDER BY time DESC LIMIT 1) as market_spread,
                     (SELECT total_line FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'totals' ORDER BY time DESC LIMIT 1) as market_total,
@@ -477,49 +535,53 @@ async def get_picks_json(date_param: str = "today"):
                 ORDER BY g.commence_time
             """), {"target_date": target_date})
 
+            # Helper to safely convert to float
+            def to_float(v, default=0.0):
+                if v is None:
+                    return default
+                return float(v)
+
             for row in result:
                 # Skip games without ratings
                 if not row.home_adj_o or not row.away_adj_o:
                     continue
 
-                # Build TeamRatings objects
+                # Build TeamRatings objects (convert decimals to floats)
                 home_ratings = TeamRatings(
                     team_name=row.home_team,
-                    adj_o=row.home_adj_o, adj_d=row.home_adj_d, tempo=row.home_tempo,
+                    adj_o=to_float(row.home_adj_o), adj_d=to_float(row.home_adj_d), tempo=to_float(row.home_tempo),
                     rank=row.home_rank or 200,
-                    efg=row.home_efg or 50, efgd=row.home_efgd or 50,
-                    tor=row.home_tor or 18, tord=row.home_tord or 18,
-                    orb=row.home_orb or 28, drb=row.home_drb or 72,
-                    ftr=row.home_ftr or 33, ftrd=row.home_ftrd or 33,
-                    two_pt_pct=row.home_2pt or 50, two_pt_pct_d=row.home_2ptd or 50,
-                    three_pt_pct=row.home_3pt or 35, three_pt_pct_d=row.home_3ptd or 35,
-                    three_pt_rate=row.home_3pr or 35, three_pt_rate_d=row.home_3prd or 35,
-                    barthag=row.home_barthag or 0.5, wab=row.home_wab or 0,
-                    net_rating=row.home_net or 0,
+                    efg=to_float(row.home_efg, 50), efgd=to_float(row.home_efgd, 50),
+                    tor=to_float(row.home_tor, 18), tord=to_float(row.home_tord, 18),
+                    orb=to_float(row.home_orb, 28), drb=to_float(row.home_drb, 72),
+                    ftr=to_float(row.home_ftr, 33), ftrd=to_float(row.home_ftrd, 33),
+                    two_pt_pct=to_float(row.home_2pt, 50), two_pt_pct_d=to_float(row.home_2ptd, 50),
+                    three_pt_pct=to_float(row.home_3pt, 35), three_pt_pct_d=to_float(row.home_3ptd, 35),
+                    three_pt_rate=to_float(row.home_3pr, 35), three_pt_rate_d=to_float(row.home_3prd, 35),
+                    barthag=to_float(row.home_barthag, 0.5), wab=to_float(row.home_wab, 0),
                 )
                 away_ratings = TeamRatings(
                     team_name=row.away_team,
-                    adj_o=row.away_adj_o, adj_d=row.away_adj_d, tempo=row.away_tempo,
+                    adj_o=to_float(row.away_adj_o), adj_d=to_float(row.away_adj_d), tempo=to_float(row.away_tempo),
                     rank=row.away_rank or 200,
-                    efg=row.away_efg or 50, efgd=row.away_efgd or 50,
-                    tor=row.away_tor or 18, tord=row.away_tord or 18,
-                    orb=row.away_orb or 28, drb=row.away_drb or 72,
-                    ftr=row.away_ftr or 33, ftrd=row.away_ftrd or 33,
-                    two_pt_pct=row.away_2pt or 50, two_pt_pct_d=row.away_2ptd or 50,
-                    three_pt_pct=row.away_3pt or 35, three_pt_pct_d=row.away_3ptd or 35,
-                    three_pt_rate=row.away_3pr or 35, three_pt_rate_d=row.away_3prd or 35,
-                    barthag=row.away_barthag or 0.5, wab=row.away_wab or 0,
-                    net_rating=row.away_net or 0,
+                    efg=to_float(row.away_efg, 50), efgd=to_float(row.away_efgd, 50),
+                    tor=to_float(row.away_tor, 18), tord=to_float(row.away_tord, 18),
+                    orb=to_float(row.away_orb, 28), drb=to_float(row.away_drb, 72),
+                    ftr=to_float(row.away_ftr, 33), ftrd=to_float(row.away_ftrd, 33),
+                    two_pt_pct=to_float(row.away_2pt, 50), two_pt_pct_d=to_float(row.away_2ptd, 50),
+                    three_pt_pct=to_float(row.away_3pt, 35), three_pt_pct_d=to_float(row.away_3ptd, 35),
+                    three_pt_rate=to_float(row.away_3pr, 35), three_pt_rate_d=to_float(row.away_3prd, 35),
+                    barthag=to_float(row.away_barthag, 0.5), wab=to_float(row.away_wab, 0),
                 )
 
-                # Build MarketOdds if available
+                # Build MarketOdds if available (convert decimals to floats)
                 market_odds = None
                 if row.market_spread or row.market_total:
                     market_odds = MarketOdds(
-                        spread=row.market_spread,
-                        total=row.market_total,
-                        spread_1h=row.market_spread_1h,
-                        total_1h=row.market_total_1h,
+                        spread=to_float(row.market_spread) if row.market_spread else None,
+                        total=to_float(row.market_total) if row.market_total else None,
+                        spread_1h=to_float(row.market_spread_1h) if row.market_spread_1h else None,
+                        total_1h=to_float(row.market_total_1h) if row.market_total_1h else None,
                     )
 
                 # Generate prediction
