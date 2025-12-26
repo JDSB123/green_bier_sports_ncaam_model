@@ -377,6 +377,234 @@ async def config():
     }
 
 
+# -----------------------------
+# Picks API Endpoint (for frontend integration)
+# -----------------------------
+
+from datetime import date, timedelta
+from zoneinfo import ZoneInfo
+from sqlalchemy import create_engine, text
+
+CST = ZoneInfo("America/Chicago")
+
+
+def _get_target_date(date_param: str) -> date:
+    """Parse date parameter to actual date."""
+    today = datetime.now(CST).date()
+    if date_param == "today":
+        return today
+    elif date_param == "tomorrow":
+        return today + timedelta(days=1)
+    else:
+        return datetime.strptime(date_param, "%Y-%m-%d").date()
+
+
+def _get_db_engine():
+    """Get database engine from environment."""
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        # Try to construct from secrets
+        db_password_file = "/run/secrets/db_password"
+        if os.path.exists(db_password_file):
+            with open(db_password_file) as f:
+                db_password = f.read().strip()
+            db_url = f"postgresql+psycopg2://ncaam:{db_password}@postgres:5432/ncaam"
+    if not db_url:
+        return None
+    return create_engine(db_url)
+
+
+@app.get("/api/picks/{date_param}")
+async def get_picks_json(date_param: str = "today"):
+    """
+    Fetch picks for a specific date in JSON format (for frontend integration).
+
+    Args:
+        date_param: 'today', 'tomorrow', or 'YYYY-MM-DD'
+
+    Returns:
+        JSON with picks array matching frontend expected format
+    """
+    try:
+        target_date = _get_target_date(date_param)
+    except ValueError:
+        return {"error": f"Invalid date format: {date_param}. Use 'today', 'tomorrow', or 'YYYY-MM-DD'"}
+
+    engine = _get_db_engine()
+    if not engine:
+        return {"error": "Database not configured", "picks": []}
+
+    picks = []
+
+    try:
+        with engine.connect() as conn:
+            # Fetch today's games with ratings and odds
+            result = conn.execute(text("""
+                SELECT
+                    g.id as game_id,
+                    g.commence_time,
+                    ht.canonical_name as home_team,
+                    at.canonical_name as away_team,
+                    hr.adj_o as home_adj_o, hr.adj_d as home_adj_d, hr.tempo as home_tempo,
+                    200 as home_rank,
+                    hr.efg as home_efg, hr.efgd as home_efgd,
+                    hr.tor as home_tor, hr.tord as home_tord, hr.orb as home_orb, hr.drb as home_drb,
+                    hr.ftr as home_ftr, hr.ftrd as home_ftrd, hr.two_pt_pct as home_2pt,
+                    hr.two_pt_pct_d as home_2ptd, hr.three_pt_pct as home_3pt, hr.three_pt_pct_d as home_3ptd,
+                    hr.three_pt_rate as home_3pr, hr.three_pt_rate_d as home_3prd,
+                    hr.barthag as home_barthag, hr.wab as home_wab, hr.net_rating as home_net,
+                    ar.adj_o as away_adj_o, ar.adj_d as away_adj_d, ar.tempo as away_tempo,
+                    200 as away_rank,
+                    ar.efg as away_efg, ar.efgd as away_efgd,
+                    ar.tor as away_tor, ar.tord as away_tord, ar.orb as away_orb, ar.drb as away_drb,
+                    ar.ftr as away_ftr, ar.ftrd as away_ftrd, ar.two_pt_pct as away_2pt,
+                    ar.two_pt_pct_d as away_2ptd, ar.three_pt_pct as away_3pt, ar.three_pt_pct_d as away_3ptd,
+                    ar.three_pt_rate as away_3pr, ar.three_pt_rate_d as away_3prd,
+                    ar.barthag as away_barthag, ar.wab as away_wab, ar.net_rating as away_net,
+                    -- Full game odds (latest)
+                    (SELECT home_line FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'spreads' ORDER BY time DESC LIMIT 1) as market_spread,
+                    (SELECT total_line FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'totals' ORDER BY time DESC LIMIT 1) as market_total,
+                    -- 1H odds (latest)
+                    (SELECT home_line FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'spreads' ORDER BY time DESC LIMIT 1) as market_spread_1h,
+                    (SELECT total_line FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'totals' ORDER BY time DESC LIMIT 1) as market_total_1h
+                FROM games g
+                JOIN teams ht ON g.home_team_id = ht.id
+                JOIN teams at ON g.away_team_id = at.id
+                LEFT JOIN team_ratings hr ON ht.id = hr.team_id
+                LEFT JOIN team_ratings ar ON at.id = ar.team_id
+                WHERE DATE(g.commence_time AT TIME ZONE 'America/Chicago') = :target_date
+                  AND g.status = 'scheduled'
+                ORDER BY g.commence_time
+            """), {"target_date": target_date})
+
+            for row in result:
+                # Skip games without ratings
+                if not row.home_adj_o or not row.away_adj_o:
+                    continue
+
+                # Build TeamRatings objects
+                home_ratings = TeamRatings(
+                    team_name=row.home_team,
+                    adj_o=row.home_adj_o, adj_d=row.home_adj_d, tempo=row.home_tempo,
+                    rank=row.home_rank or 200,
+                    efg=row.home_efg or 50, efgd=row.home_efgd or 50,
+                    tor=row.home_tor or 18, tord=row.home_tord or 18,
+                    orb=row.home_orb or 28, drb=row.home_drb or 72,
+                    ftr=row.home_ftr or 33, ftrd=row.home_ftrd or 33,
+                    two_pt_pct=row.home_2pt or 50, two_pt_pct_d=row.home_2ptd or 50,
+                    three_pt_pct=row.home_3pt or 35, three_pt_pct_d=row.home_3ptd or 35,
+                    three_pt_rate=row.home_3pr or 35, three_pt_rate_d=row.home_3prd or 35,
+                    barthag=row.home_barthag or 0.5, wab=row.home_wab or 0,
+                    net_rating=row.home_net or 0,
+                )
+                away_ratings = TeamRatings(
+                    team_name=row.away_team,
+                    adj_o=row.away_adj_o, adj_d=row.away_adj_d, tempo=row.away_tempo,
+                    rank=row.away_rank or 200,
+                    efg=row.away_efg or 50, efgd=row.away_efgd or 50,
+                    tor=row.away_tor or 18, tord=row.away_tord or 18,
+                    orb=row.away_orb or 28, drb=row.away_drb or 72,
+                    ftr=row.away_ftr or 33, ftrd=row.away_ftrd or 33,
+                    two_pt_pct=row.away_2pt or 50, two_pt_pct_d=row.away_2ptd or 50,
+                    three_pt_pct=row.away_3pt or 35, three_pt_pct_d=row.away_3ptd or 35,
+                    three_pt_rate=row.away_3pr or 35, three_pt_rate_d=row.away_3prd or 35,
+                    barthag=row.away_barthag or 0.5, wab=row.away_wab or 0,
+                    net_rating=row.away_net or 0,
+                )
+
+                # Build MarketOdds if available
+                market_odds = None
+                if row.market_spread or row.market_total:
+                    market_odds = MarketOdds(
+                        spread=row.market_spread,
+                        total=row.market_total,
+                        spread_1h=row.market_spread_1h,
+                        total_1h=row.market_total_1h,
+                    )
+
+                # Generate prediction
+                prediction = prediction_engine.make_prediction(
+                    game_id=row.game_id,
+                    home_team=row.home_team,
+                    away_team=row.away_team,
+                    commence_time=row.commence_time,
+                    home_ratings=home_ratings,
+                    away_ratings=away_ratings,
+                    market_odds=market_odds,
+                )
+
+                # Generate recommendations
+                if market_odds:
+                    recs = prediction_engine.generate_recommendations(prediction, market_odds)
+
+                    for rec in recs:
+                        # Format time in CST
+                        game_time = row.commence_time.astimezone(CST)
+                        time_str = game_time.strftime("%m/%d %I:%M %p")
+
+                        # Determine period and market type
+                        bet_type = rec.bet_type.value if hasattr(rec.bet_type, 'value') else str(rec.bet_type)
+                        is_1h = "1H" in bet_type
+                        period = "1H" if is_1h else "FG"
+                        market_type = "SPREAD" if "SPREAD" in bet_type else "TOTAL"
+
+                        # Format edge as percentage
+                        edge_pct = rec.edge if isinstance(rec.edge, (int, float)) else 0
+
+                        # Map confidence to fire rating
+                        if edge_pct >= 5:
+                            fire_rating = "MAX"
+                        elif edge_pct >= 4:
+                            fire_rating = "STRONG"
+                        elif edge_pct >= 3:
+                            fire_rating = "GOOD"
+                        else:
+                            fire_rating = "STANDARD"
+
+                        # Pick display
+                        pick_str = rec.pick.value if hasattr(rec.pick, 'value') else str(rec.pick)
+                        if pick_str == "HOME":
+                            pick_team = row.home_team
+                        elif pick_str == "AWAY":
+                            pick_team = row.away_team
+                        elif pick_str == "OVER":
+                            pick_team = "OVER"
+                        elif pick_str == "UNDER":
+                            pick_team = "UNDER"
+                        else:
+                            pick_team = pick_str
+
+                        picks.append({
+                            "time_cst": time_str,
+                            "matchup": f"{row.away_team} @ {row.home_team}",
+                            "home_team": row.home_team,
+                            "away_team": row.away_team,
+                            "period": period,
+                            "market": market_type,
+                            "pick": pick_team,
+                            "pick_odds": "-110",
+                            "model_line": round(rec.model_line, 1) if rec.model_line else None,
+                            "market_line": round(rec.market_line, 1) if rec.market_line else None,
+                            "edge": f"+{edge_pct:.1f}" if edge_pct > 0 else f"{edge_pct:.1f}",
+                            "confidence": f"{rec.confidence * 100:.0f}%" if rec.confidence else None,
+                            "fire_rating": fire_rating,
+                        })
+
+        # Sort by edge (highest first)
+        picks.sort(key=lambda x: float(x["edge"].replace("+", "")), reverse=True)
+
+        return {
+            "date": target_date.isoformat(),
+            "picks": picks,
+            "total_picks": len(picks),
+            "generated_at": datetime.now(CST).isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching picks: {e}")
+        return {"error": str(e), "picks": []}
+
+
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(req: PredictRequest):
     home = req.home_ratings.to_domain()
