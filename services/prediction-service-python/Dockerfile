@@ -27,18 +27,20 @@ RUN cargo build --release
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Create non-root user FIRST
 RUN groupadd -r ncaam && useradd -r -g ncaam -u 1001 ncaam
 
-# Install system dependencies as root
+# Install system dependencies as root, then clean up to reduce image size
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
-    && rm -rf /tmp/*
+    && rm -rf /tmp/* /var/tmp/* /root/.cache
 
 WORKDIR /app
 

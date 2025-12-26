@@ -2,10 +2,13 @@ from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import subprocess
 import logging
 import os
@@ -16,6 +19,9 @@ from app.config import settings
 from app.validation import validate_market_odds, validate_team_ratings
 
 logger = logging.getLogger("api")
+
+# Rate limiter configuration
+limiter = Limiter(key_func=get_remote_address)
 
 
 # -----------------------------
@@ -127,9 +133,13 @@ class PredictionResponse(BaseModel):
 # -----------------------------
 
 app = FastAPI(
-    title="NCAA Prediction Service", 
+    title="NCAA Prediction Service",
     version=settings.service_version
 )
+
+# Rate limiter setup
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS for local dev
 app.add_middleware(
@@ -367,14 +377,16 @@ def run_picks_task():
 
 
 @app.get("/trigger-picks")
-async def trigger_picks(background_tasks: BackgroundTasks):
+@limiter.limit("5/minute")
+async def trigger_picks(request: Request, background_tasks: BackgroundTasks):
     """Trigger the daily picks generation process and send to Teams."""
     background_tasks.add_task(run_picks_task)
     return {"message": "Picks generation started in background. Check Teams channel shortly."}
 
 
 @app.get("/trigger-picks-sync")
-async def trigger_picks_sync():
+@limiter.limit("3/minute")
+async def trigger_picks_sync(request: Request):
     """Synchronous picks trigger for debugging. Returns result directly."""
     try:
         result = subprocess.run(
@@ -473,7 +485,8 @@ def _get_db_engine():
 
 
 @app.get("/api/picks/{date_param}")
-async def get_picks_json(date_param: str = "today"):
+@limiter.limit("30/minute")
+async def get_picks_json(request: Request, date_param: str = "today"):
     """
     Fetch picks for a specific date in JSON format (for frontend integration).
 
@@ -497,7 +510,24 @@ async def get_picks_json(date_param: str = "today"):
     try:
         with engine.connect() as conn:
             # Fetch today's games with ratings and odds
+            # Use DISTINCT ON to get only the latest rating per team (prevents duplicate rows)
             result = conn.execute(text("""
+                WITH latest_home_ratings AS (
+                    SELECT DISTINCT ON (team_id)
+                        team_id, adj_o, adj_d, tempo, efg, efgd, tor, tord, orb, drb,
+                        ftr, ftrd, two_pt_pct, two_pt_pct_d, three_pt_pct, three_pt_pct_d,
+                        three_pt_rate, three_pt_rate_d, barthag, wab
+                    FROM team_ratings
+                    ORDER BY team_id, rating_date DESC
+                ),
+                latest_away_ratings AS (
+                    SELECT DISTINCT ON (team_id)
+                        team_id, adj_o, adj_d, tempo, efg, efgd, tor, tord, orb, drb,
+                        ftr, ftrd, two_pt_pct, two_pt_pct_d, three_pt_pct, three_pt_pct_d,
+                        three_pt_rate, three_pt_rate_d, barthag, wab
+                    FROM team_ratings
+                    ORDER BY team_id, rating_date DESC
+                )
                 SELECT
                     g.id as game_id,
                     g.commence_time,
@@ -528,8 +558,8 @@ async def get_picks_json(date_param: str = "today"):
                 FROM games g
                 JOIN teams ht ON g.home_team_id = ht.id
                 JOIN teams at ON g.away_team_id = at.id
-                LEFT JOIN team_ratings hr ON ht.id = hr.team_id
-                LEFT JOIN team_ratings ar ON at.id = ar.team_id
+                LEFT JOIN latest_home_ratings hr ON ht.id = hr.team_id
+                LEFT JOIN latest_away_ratings ar ON at.id = ar.team_id
                 WHERE DATE(g.commence_time AT TIME ZONE 'America/Chicago') = :target_date
                   AND g.status = 'scheduled'
                 ORDER BY g.commence_time
@@ -668,7 +698,8 @@ async def get_picks_json(date_param: str = "today"):
 
 
 @app.post("/predict", response_model=PredictionResponse)
-async def predict(req: PredictRequest):
+@limiter.limit("60/minute")
+async def predict(request: Request, req: PredictRequest):
     home = req.home_ratings.to_domain()
     away = req.away_ratings.to_domain()
     market = req.market_odds.to_domain() if req.market_odds else None
@@ -730,6 +761,7 @@ class TeamsWebhookMessage(BaseModel):
 
 
 @app.post("/teams-webhook")
+@limiter.limit("20/minute")
 async def teams_webhook_handler(request: Request):
     """Handle incoming messages from Teams outgoing webhook."""
     try:

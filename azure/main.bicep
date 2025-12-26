@@ -572,6 +572,245 @@ resource oddsIngestionJob 'Microsoft.App/jobs@2023-05-01' = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
+// MONITORING & ALERTING
+// ─────────────────────────────────────────────────────────────────────────────────
+
+// Action Group for alert notifications
+resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
+  name: '${resourcePrefix}-alerts'
+  location: 'global'
+  tags: commonTags
+  properties: {
+    groupShortName: 'NcaamAlerts'
+    enabled: true
+    emailReceivers: []  // Add email addresses as needed
+    // If Teams webhook is configured, add webhook receiver
+  }
+}
+
+// Alert: API Health Check Failures
+resource apiHealthAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: '${resourcePrefix}-api-health-alert'
+  location: 'global'
+  tags: commonTags
+  properties: {
+    description: 'Alert when API health check fails'
+    severity: 1
+    enabled: true
+    scopes: [
+      predictionApp.id
+    ]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'HealthProbeFailure'
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'RestartCount'
+          metricNamespace: 'microsoft.app/containerapps'
+          operator: 'GreaterThan'
+          threshold: 2
+          timeAggregation: 'Total'
+        }
+      ]
+    }
+    actions: [
+      {
+        actionGroupId: actionGroup.id
+      }
+    ]
+  }
+}
+
+// Alert: High Response Time
+resource latencyAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: '${resourcePrefix}-latency-alert'
+  location: 'global'
+  tags: commonTags
+  properties: {
+    description: 'Alert when API response time exceeds threshold'
+    severity: 2
+    enabled: true
+    scopes: [
+      predictionApp.id
+    ]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'HighLatency'
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'RequestDuration'
+          metricNamespace: 'microsoft.app/containerapps'
+          operator: 'GreaterThan'
+          threshold: 5000  // 5 seconds
+          timeAggregation: 'Average'
+        }
+      ]
+    }
+    actions: [
+      {
+        actionGroupId: actionGroup.id
+      }
+    ]
+  }
+}
+
+// Alert: Database Connection Issues
+resource dbConnectionAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: '${resourcePrefix}-db-connection-alert'
+  location: 'global'
+  tags: commonTags
+  properties: {
+    description: 'Alert when database connections are failing'
+    severity: 1
+    enabled: true
+    scopes: [
+      postgres.id
+    ]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'ConnectionFailures'
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'connections_failed'
+          metricNamespace: 'microsoft.dbforpostgresql/flexibleservers'
+          operator: 'GreaterThan'
+          threshold: 5
+          timeAggregation: 'Total'
+        }
+      ]
+    }
+    actions: [
+      {
+        actionGroupId: actionGroup.id
+      }
+    ]
+  }
+}
+
+// Alert: High CPU Usage
+resource cpuAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: '${resourcePrefix}-cpu-alert'
+  location: 'global'
+  tags: commonTags
+  properties: {
+    description: 'Alert when CPU usage is high'
+    severity: 2
+    enabled: true
+    scopes: [
+      predictionApp.id
+    ]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'HighCPU'
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'UsageNanoCores'
+          metricNamespace: 'microsoft.app/containerapps'
+          operator: 'GreaterThan'
+          threshold: 800000000  // 80% of 1 core (in nanocores)
+          timeAggregation: 'Average'
+        }
+      ]
+    }
+    actions: [
+      {
+        actionGroupId: actionGroup.id
+      }
+    ]
+  }
+}
+
+// Alert: High Memory Usage
+resource memoryAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: '${resourcePrefix}-memory-alert'
+  location: 'global'
+  tags: commonTags
+  properties: {
+    description: 'Alert when memory usage is high'
+    severity: 2
+    enabled: true
+    scopes: [
+      predictionApp.id
+    ]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'HighMemory'
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'WorkingSetBytes'
+          metricNamespace: 'microsoft.app/containerapps'
+          operator: 'GreaterThan'
+          threshold: 1717986918  // ~1.6GB (80% of 2GB)
+          timeAggregation: 'Average'
+        }
+      ]
+    }
+    actions: [
+      {
+        actionGroupId: actionGroup.id
+      }
+    ]
+  }
+}
+
+// Log Analytics Query-based Alert: API 5xx Errors
+resource serverErrorAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-15' = {
+  name: '${resourcePrefix}-5xx-errors-alert'
+  location: location
+  tags: commonTags
+  properties: {
+    displayName: 'API 5xx Errors'
+    description: 'Alert when API returns 5xx errors'
+    severity: 1
+    enabled: true
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    scopes: [
+      logAnalytics.id
+    ]
+    criteria: {
+      allOf: [
+        {
+          query: '''
+            ContainerAppConsoleLogs_CL
+            | where ContainerAppName_s == '${containerAppName}'
+            | where Log_s contains "500" or Log_s contains "502" or Log_s contains "503"
+            | summarize ErrorCount = count() by bin(TimeGenerated, 5m)
+          '''
+          timeAggregation: 'Count'
+          operator: 'GreaterThan'
+          threshold: 5
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        actionGroup.id
+      ]
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
 // OUTPUTS
 // ─────────────────────────────────────────────────────────────────────────────────
 
@@ -584,3 +823,4 @@ output webAppUrl string = webApp.properties.configuration.ingress.fqdn
 output ratingsJobName string = ratingsSyncJob.name
 output oddsJobName string = oddsIngestionJob.name
 output containerEnvName string = containerEnv.name
+output actionGroupId string = actionGroup.id
