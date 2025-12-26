@@ -245,41 +245,25 @@ All critical issues from end-to-end review have been addressed:
 
 ---
 
-## 🔒 Manual-Only Mode Enforcement
+# Changelog - 2025-12-26 - Version 33.6
 
-### Problem
-- System had continuous polling loops and cron schedulers
-- Services could run automatically
-- User wanted ZERO automation - manual triggers only
-
-### Solution
-Enforced manual-only mode with compile-time and runtime checks:
-
-**Rust Service (`services/odds-ingestion-rust/src/main.rs`):**
-- Changed default: `RUN_ONCE=true` (was `false`)
-- Errors if `RUN_ONCE=false` is set
-- Continuous polling loop now unreachable (dead code)
-
-**Go Service (`services/ratings-sync-go/main.go`):**
-- Removed cron scheduler import and all cron logic
-- Changed default: `RUN_ONCE=true` (was `false`)
-- Errors if `RUN_ONCE=false` is set
-- Removed automated daily sync
-
-**Start Script (`services/prediction-service-python/start.sh`):**
-- Removed background daemons for ratings-sync and odds-ingestion
-- Only starts API server now
-- Services called directly by `run_today.py` when needed
-
-**Docker Compose (`docker-compose.yml`):**
-- Changed default: `RUN_ONCE: "${RATINGS_RUN_ONCE:-true}"` (was `false`)
-- Removed `POLL_INTERVAL_SECONDS` usage (not needed)
-
-**Result:** ✅ System is 100% manual-only - no automation possible
+## Key Updates
+- Standardized Home Court Advantage (HCA) values based on latest backtests:
+  - Full Game Spread: 5.8
+  - First Half Spread: 3.6 (independent backtest on 904 games)
+  - Full Game Total: +7.0 calibration
+  - First Half Total: +2.7 calibration (independent backtest on 562 games)
+- Implemented fully independent backtesting for first half models (no longer derived by /2)
+- Removed all ML placeholders, graceful fallbacks, and assumptions
+- Deleted stale/deprecated files and references (e.g., independent*.py, backtest_independent_models.py)
+- Cleaned up comments, duplicates, and inconsistencies in predictors and config
+- Fixed logger initialization and other minor bugs
+- Merged changes to main branch and tagged v33.6
+- Deployed to Azure with updated container images
 
 ---
 
-**Date:** December 20, 2025  
-**Version:** v6.3.1  
+**Date:** December 26, 2025  
+**Version:** v33.6  
 **Status:** ✅ Complete
 
