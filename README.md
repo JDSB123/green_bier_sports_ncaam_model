@@ -1,5 +1,7 @@
 # NCAA Basketball v33.0 - PRODUCTION FINAL
 
+<!-- GitHub Actions credentials updated: 2025-12-26 -->
+
 ## Single Point of Entry
 
 ```powershell
