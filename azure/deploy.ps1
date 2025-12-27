@@ -230,7 +230,6 @@ if (-not $SkipInfra) {
             location=$Location `
             baseName=$baseName `
             postgresPassword=$postgresPassword `
-            redisPassword=$redisPassword `
             oddsApiKey=$OddsApiKey `
             basketballApiKey=$BasketballApiKey `
             teamsWebhookUrl=$TeamsWebhookUrl `

@@ -29,10 +29,6 @@ param baseName string = 'ncaam'
 @secure()
 param postgresPassword string
 
-@description('Redis password')
-@secure()
-param redisPassword string
-
 @description('The Odds API key')
 @secure()
 param oddsApiKey string
@@ -625,40 +621,40 @@ resource apiHealthAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
 }
 
 // Alert: High Response Time
-resource latencyAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
-  name: '${resourcePrefix}-latency-alert'
-  location: 'global'
-  tags: commonTags
-  properties: {
-    description: 'Alert when API response time exceeds threshold'
-    severity: 2
-    enabled: true
-    scopes: [
-      predictionApp.id
-    ]
-    evaluationFrequency: 'PT5M'
-    windowSize: 'PT15M'
-    criteria: {
-      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
-      allOf: [
-        {
-          name: 'HighLatency'
-          criterionType: 'StaticThresholdCriterion'
-          metricName: 'RequestDuration'
-          metricNamespace: 'microsoft.app/containerapps'
-          operator: 'GreaterThan'
-          threshold: 5000  // 5 seconds
-          timeAggregation: 'Average'
-        }
-      ]
-    }
-    actions: [
-      {
-        actionGroupId: actionGroup.id
-      }
-    ]
-  }
-}
+// resource latencyAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+//   name: '${resourcePrefix}-latency-alert'
+//   location: 'global'
+//   tags: commonTags
+//   properties: {
+//     description: 'Alert when API response time exceeds threshold'
+//     severity: 2
+//     enabled: true
+//     scopes: [
+//       predictionApp.id
+//     ]
+//     evaluationFrequency: 'PT5M'
+//     windowSize: 'PT15M'
+//     criteria: {
+//       'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+//       allOf: [
+//         {
+//           name: 'HighLatency'
+//           criterionType: 'StaticThresholdCriterion'
+//           metricName: 'RequestDuration'
+//           metricNamespace: 'microsoft.app/containerapps'
+//           operator: 'GreaterThan'
+//           threshold: 5000  // 5 seconds
+//           timeAggregation: 'Average'
+//         }
+//       ]
+//     }
+//     actions: [
+//       {
+//         actionGroupId: actionGroup.id
+//       }
+//     ]
+//   }
+// }
 
 // Alert: Database Connection Issues
 resource dbConnectionAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
