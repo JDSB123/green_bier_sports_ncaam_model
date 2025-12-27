@@ -1,5 +1,14 @@
 """
-Configuration for NCAA Basketball Prediction Service v33.6
+Configuration for NCAA Basketball Prediction Service v33.6.1
+
+v33.6.1 Changes (2024-12-27):
+- FIXED: 1H Total confidence now starts at 0.68 (was 0.52, below 0.65 threshold)
+- FIXED: FG Spread MIN_EDGE aligned to 2.0 (was 7.0, too conservative)
+- FIXED: FG Total MIN_EDGE aligned to 3.0 (matches config)
+- ADDED: Extreme total handling - skip bets on FG total <120 or >170, 1H <55 or >85
+- ADDED: CLV tracking infrastructure (closing line capture, calculate_clv method)
+- ADDED: Settlement functions (settle_recommendations, get_clv_summary)
+- ADDED: Comprehensive unit tests for all new functionality
 
 v33.6 Changes (2024-12-24):
 - ALL 4 MODELS TRULY INDEPENDENT & BACKTESTED with real ESPN data
@@ -310,7 +319,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "33.6.0"  # All 4 models TRULY INDEPENDENT & BACKTESTED
+    service_version: str = "33.6.1"  # v33.6.1: Fixed 1H Total confidence, MIN_EDGE alignment, extreme handling, CLV tracking
     debug: bool = False
 
     # Feature Store

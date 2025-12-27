@@ -88,10 +88,11 @@ class FGTotalModel(BasePredictor):
     CALIBRATION: float = 7.0
     HCA: float = 0.0  # Totals don't use HCA (zero-sum)
 
-    # Betting thresholds - from FG backtest ROI analysis
-    MIN_EDGE: float = 2.0
-    MAX_EDGE: float = 6.0
-    OPTIMAL_EDGE: float = 3.0
+    # Betting thresholds - from 3,318-game backtest with real odds
+    # 3pt edge = +18.3% ROI with 159 bets (optimal volume/ROI balance)
+    MIN_EDGE: float = 3.0
+    MAX_EDGE: float = 6.0  # >6pt edges often mean WE are wrong (extremes)
+    OPTIMAL_EDGE: float = 4.0  # Sweet spot: 3-5 pt edge
 
     # Variance - FG-specific
     BASE_VARIANCE: float = 20.0

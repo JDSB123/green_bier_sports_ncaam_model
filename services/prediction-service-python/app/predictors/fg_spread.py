@@ -63,8 +63,10 @@ class FGSpreadModel(BasePredictor):
     # No bias calibration needed for spreads
     CALIBRATION: float = 0.0
 
-    # Betting thresholds - from market validation
-    MIN_EDGE: float = 7.0  # 7pt = optimal volume/ROI balance
+    # Betting thresholds - from 3,318-game backtest with real odds
+    # 2pt edge = +18.5% ROI with 174 bets (optimal volume/ROI balance)
+    # 7pt edge was too conservative, rarely triggered
+    MIN_EDGE: float = 2.0
 
     # Matchup factors - FG-specific
     REBOUND_FACTOR: float = 0.15

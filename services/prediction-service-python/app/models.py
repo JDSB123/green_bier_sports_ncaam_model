@@ -318,9 +318,53 @@ class BettingRecommendation:
     sharp_line: Optional[float] = None
     is_sharp_aligned: bool = True   # Are we aligned with sharp movement?
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CLV TRACKING (Closing Line Value) - Gold standard for model quality
+    # ═══════════════════════════════════════════════════════════════════════════
+    # CLV measures if our line was better than the closing line
+    # Positive CLV = we got value (line moved in our favor after bet)
+    closing_line: Optional[float] = None           # Final line before game start
+    closing_line_captured_at: Optional[datetime] = None  # When closing line was captured
+    clv: Optional[float] = None                    # Our line - closing line (points)
+    clv_percent: Optional[float] = None            # CLV as % (clv / closing_line * 100)
+
     # Metadata
     model_version: str = "v6.0"
     created_at: datetime = field(default_factory=datetime.utcnow)
+
+    def calculate_clv(self, closing_line: float, captured_at: datetime) -> None:
+        """
+        Calculate Closing Line Value after game starts.
+
+        CLV = (our bet line) - (closing line)
+        For spreads: if we bet HOME -3 and it closed at HOME -5, CLV = +2 (value)
+        For totals: if we bet OVER 140 and it closed at 143, CLV = -3 (no value)
+
+        Positive CLV indicates we got a better line than the market close.
+        This is the gold standard for measuring betting model quality.
+        """
+        self.closing_line = closing_line
+        self.closing_line_captured_at = captured_at
+
+        if self.bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+            # For spreads: CLV = market_line - closing_line (from our pick's perspective)
+            # If we bet HOME and line moved from -3 to -5, that's +2 CLV
+            if self.pick == Pick.HOME:
+                self.clv = self.market_line - closing_line
+            else:  # AWAY
+                # For AWAY, we bet +spread, so line moving up is value
+                self.clv = closing_line - self.market_line
+        else:
+            # For totals: CLV = closing_line - market_line (for OVER)
+            # If we bet OVER 140 and it closed at 143, we got value (line moved up)
+            if self.pick == Pick.OVER:
+                self.clv = closing_line - self.market_line
+            else:  # UNDER
+                self.clv = self.market_line - closing_line
+
+        # Calculate CLV as percentage
+        if closing_line != 0:
+            self.clv_percent = (self.clv / abs(closing_line)) * 100
 
     @property
     def summary(self) -> str:

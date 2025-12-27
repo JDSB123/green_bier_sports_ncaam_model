@@ -35,6 +35,14 @@ from app.config import settings
 import structlog
 
 
+# Extreme total thresholds - predictions outside these ranges are unreliable
+# From backtest: FG model under-predicts high games, over-predicts low games
+FG_TOTAL_MIN_RELIABLE = 120.0  # Below this, model over-predicts
+FG_TOTAL_MAX_RELIABLE = 170.0  # Above this, model under-predicts
+H1_TOTAL_MIN_RELIABLE = 55.0   # Below this, model over-predicts
+H1_TOTAL_MAX_RELIABLE = 85.0   # Above this, model under-predicts
+
+
 class PredictionEngineV33:
     """
     v33.6 Prediction Engine - Modular architecture with 4 independent models.
@@ -225,7 +233,14 @@ class PredictionEngineV33:
         # ─────────────────────────────────────────────────────────────────────
         # FG TOTAL RECOMMENDATIONS
         # ─────────────────────────────────────────────────────────────────────
-        if market_odds.total is not None and prediction.total_edge >= self.fg_total_model.MIN_EDGE:
+        # Skip extreme totals - model is unreliable at extremes (regression to mean)
+        fg_total_in_range = FG_TOTAL_MIN_RELIABLE <= prediction.predicted_total <= FG_TOTAL_MAX_RELIABLE
+        if not fg_total_in_range:
+            self.logger.info(
+                f"Skipping FG total bet - prediction {prediction.predicted_total:.1f} outside reliable range "
+                f"({FG_TOTAL_MIN_RELIABLE}-{FG_TOTAL_MAX_RELIABLE})"
+            )
+        if market_odds.total is not None and prediction.total_edge >= self.fg_total_model.MIN_EDGE and fg_total_in_range:
             if prediction.total_confidence >= self.config.min_confidence:
                 pick = Pick.OVER if prediction.predicted_total > market_odds.total else Pick.UNDER
                 rec = self._create_recommendation(
@@ -263,7 +278,14 @@ class PredictionEngineV33:
         # ─────────────────────────────────────────────────────────────────────
         # 1H TOTAL RECOMMENDATIONS
         # ─────────────────────────────────────────────────────────────────────
-        if market_odds.total_1h is not None and prediction.total_edge_1h >= self.h1_total_model.MIN_EDGE:
+        # Skip extreme 1H totals - model is unreliable at extremes
+        h1_total_in_range = H1_TOTAL_MIN_RELIABLE <= prediction.predicted_total_1h <= H1_TOTAL_MAX_RELIABLE
+        if not h1_total_in_range:
+            self.logger.info(
+                f"Skipping 1H total bet - prediction {prediction.predicted_total_1h:.1f} outside reliable range "
+                f"({H1_TOTAL_MIN_RELIABLE}-{H1_TOTAL_MAX_RELIABLE})"
+            )
+        if market_odds.total_1h is not None and prediction.total_edge_1h >= self.h1_total_model.MIN_EDGE and h1_total_in_range:
             if prediction.total_confidence_1h >= self.config.min_confidence:
                 pick = Pick.OVER if prediction.predicted_total_1h > market_odds.total_1h else Pick.UNDER
                 rec = self._create_recommendation(

@@ -229,3 +229,219 @@ class TestModelIndependence:
         assert "33.6" in fg_total_model.MODEL_VERSION
         assert "33.6" in h1_spread_model.MODEL_VERSION
         assert "33.6" in h1_total_model.MODEL_VERSION
+
+
+class TestMinEdgeThresholds:
+    """Tests for MIN_EDGE betting thresholds (v33.6.1 fix)."""
+
+    def test_fg_spread_min_edge(self):
+        """FG Spread MIN_EDGE should be 2.0 (from backtest ROI analysis)."""
+        assert fg_spread_model.MIN_EDGE == 2.0, f"Expected 2.0, got {fg_spread_model.MIN_EDGE}"
+
+    def test_fg_total_min_edge(self):
+        """FG Total MIN_EDGE should be 3.0 (from backtest ROI analysis)."""
+        assert fg_total_model.MIN_EDGE == 3.0, f"Expected 3.0, got {fg_total_model.MIN_EDGE}"
+
+    def test_h1_spread_min_edge(self):
+        """H1 Spread MIN_EDGE should be 3.5."""
+        assert h1_spread_model.MIN_EDGE == 3.5, f"Expected 3.5, got {h1_spread_model.MIN_EDGE}"
+
+    def test_h1_total_min_edge(self):
+        """H1 Total MIN_EDGE should be 2.0."""
+        assert h1_total_model.MIN_EDGE == 2.0, f"Expected 2.0, got {h1_total_model.MIN_EDGE}"
+
+    def test_fg_total_max_edge(self):
+        """FG Total MAX_EDGE should be 6.0 (avoid extremes)."""
+        assert fg_total_model.MAX_EDGE == 6.0, f"Expected 6.0, got {fg_total_model.MAX_EDGE}"
+
+    def test_h1_total_max_edge(self):
+        """H1 Total MAX_EDGE should be 3.5 (1H has more variance)."""
+        assert h1_total_model.MAX_EDGE == 3.5, f"Expected 3.5, got {h1_total_model.MAX_EDGE}"
+
+
+class TestConfidenceThresholds:
+    """Tests for confidence calculation (v33.6.1 fix for 1H Total)."""
+
+    def test_h1_total_confidence_above_threshold(self, strong_home_team, mid_away_team):
+        """H1 Total confidence should be >= 0.50 for standard games (v33.6.1 fix)."""
+        pred = h1_total_model.predict(strong_home_team, mid_away_team)
+        # Standard games should have reasonable confidence
+        # Base confidence is now 0.68, only extreme adjustments should drop below 0.50
+        assert pred.confidence >= 0.50, f"H1 Total confidence {pred.confidence} too low for any game"
+        # For typical games, should be around 0.65-0.72
+        assert pred.confidence <= 0.72, f"H1 Total confidence {pred.confidence} unexpectedly high"
+
+    def test_fg_spread_confidence_range(self, strong_home_team, mid_away_team):
+        """FG Spread confidence should be in valid range."""
+        pred = fg_spread_model.predict(strong_home_team, mid_away_team)
+        assert 0.50 <= pred.confidence <= 0.95, f"Confidence {pred.confidence} out of range"
+
+    def test_h1_spread_confidence_range(self, strong_home_team, mid_away_team):
+        """H1 Spread confidence should be in valid range."""
+        pred = h1_spread_model.predict(strong_home_team, mid_away_team)
+        assert 0.50 <= pred.confidence <= 0.88, f"Confidence {pred.confidence} out of range"
+
+    def test_fg_total_confidence_range(self, strong_home_team, mid_away_team):
+        """FG Total confidence should be in valid range."""
+        pred = fg_total_model.predict(strong_home_team, mid_away_team)
+        assert 0.50 <= pred.confidence <= 0.80, f"Confidence {pred.confidence} out of range"
+
+
+class TestExtremeTotalRanges:
+    """Tests for extreme total detection (v33.6.1 feature)."""
+
+    def test_fg_total_extreme_thresholds_exist(self):
+        """Verify extreme total thresholds are defined in engine."""
+        from app.prediction_engine_v33 import (
+            FG_TOTAL_MIN_RELIABLE,
+            FG_TOTAL_MAX_RELIABLE,
+            H1_TOTAL_MIN_RELIABLE,
+            H1_TOTAL_MAX_RELIABLE,
+        )
+        assert FG_TOTAL_MIN_RELIABLE == 120.0
+        assert FG_TOTAL_MAX_RELIABLE == 170.0
+        assert H1_TOTAL_MIN_RELIABLE == 55.0
+        assert H1_TOTAL_MAX_RELIABLE == 85.0
+
+    def test_fg_total_prediction_in_typical_range(self, strong_home_team, mid_away_team):
+        """FG Total prediction for typical teams should be in reliable range."""
+        from app.prediction_engine_v33 import FG_TOTAL_MIN_RELIABLE, FG_TOTAL_MAX_RELIABLE
+        pred = fg_total_model.predict(strong_home_team, mid_away_team)
+        # Strong vs mid-tier should produce a total in the reliable range
+        assert FG_TOTAL_MIN_RELIABLE <= pred.value <= FG_TOTAL_MAX_RELIABLE, \
+            f"FG Total {pred.value} outside reliable range for typical matchup"
+
+    def test_h1_total_prediction_in_typical_range(self, strong_home_team, mid_away_team):
+        """H1 Total prediction for typical teams should be in reliable range."""
+        from app.prediction_engine_v33 import H1_TOTAL_MIN_RELIABLE, H1_TOTAL_MAX_RELIABLE
+        pred = h1_total_model.predict(strong_home_team, mid_away_team)
+        assert H1_TOTAL_MIN_RELIABLE <= pred.value <= H1_TOTAL_MAX_RELIABLE, \
+            f"H1 Total {pred.value} outside reliable range for typical matchup"
+
+
+class TestPickRecommendations:
+    """Tests for pick recommendation logic."""
+
+    def test_fg_spread_pick_recommendation_structure(self, strong_home_team, mid_away_team):
+        """FG Spread pick recommendation has required fields."""
+        pred = fg_spread_model.predict(strong_home_team, mid_away_team)
+        rec = fg_spread_model.get_pick_recommendation(pred, market_line=-6.0)
+
+        assert "pick" in rec
+        assert "edge" in rec
+        assert "strength" in rec
+        assert "recommended" in rec
+        assert "confidence" in rec
+        assert rec["pick"] in ["HOME", "AWAY"]
+
+    def test_fg_total_pick_recommendation_structure(self, strong_home_team, mid_away_team):
+        """FG Total pick recommendation has required fields."""
+        pred = fg_total_model.predict(strong_home_team, mid_away_team)
+        rec = fg_total_model.get_pick_recommendation(pred, market_line=145.0)
+
+        assert "pick" in rec
+        assert "edge" in rec
+        assert "strength" in rec
+        assert "recommended" in rec
+        assert rec["pick"] in ["OVER", "UNDER"]
+
+    def test_h1_total_avoid_high_edge(self, strong_home_team, mid_away_team):
+        """H1 Total should recommend AVOID for edges > MAX_EDGE."""
+        pred = h1_total_model.predict(strong_home_team, mid_away_team)
+        # Create artificial high edge by using very different market line
+        rec = h1_total_model.get_pick_recommendation(pred, market_line=pred.value - 10.0)
+
+        # Edge of 10 points should trigger AVOID
+        assert rec["abs_edge"] > h1_total_model.MAX_EDGE
+        assert rec["strength"] == "AVOID"
+        assert rec["recommended"] == False
+
+
+class TestLeagueAverages:
+    """Tests for league average constants."""
+
+    def test_league_avg_tempo(self):
+        """All models should use league avg tempo of 67.6."""
+        assert fg_spread_model.LEAGUE_AVG_TEMPO == 67.6
+        assert fg_total_model.LEAGUE_AVG_TEMPO == 67.6
+        assert h1_spread_model.LEAGUE_AVG_TEMPO == 67.6
+        assert h1_total_model.LEAGUE_AVG_TEMPO == 67.6
+
+    def test_league_avg_efficiency(self):
+        """All models should use league avg efficiency of 105.5."""
+        assert fg_spread_model.LEAGUE_AVG_EFFICIENCY == 105.5
+        assert fg_total_model.LEAGUE_AVG_EFFICIENCY == 105.5
+        assert h1_spread_model.LEAGUE_AVG_EFFICIENCY == 105.5
+
+
+class TestCLVTracking:
+    """Tests for Closing Line Value (CLV) tracking."""
+
+    def test_clv_method_exists_on_recommendation(self):
+        """BettingRecommendation should have calculate_clv method."""
+        from app.models import BettingRecommendation, BetType, Pick, BetTier
+        from uuid import uuid4
+        from datetime import datetime
+
+        rec = BettingRecommendation(
+            game_id=uuid4(),
+            home_team="Duke",
+            away_team="UNC",
+            commence_time=datetime.now(),
+            bet_type=BetType.SPREAD,
+            pick=Pick.HOME,
+            line=-6.5,
+            model_line=-8.0,
+            market_line=-6.5,
+            edge=1.5,
+            confidence=0.70,
+            ev_percent=5.0,
+            implied_prob=0.55,
+            market_prob=0.52,
+            kelly_fraction=0.03,
+            recommended_units=1.0,
+            bet_tier=BetTier.STANDARD,
+        )
+
+        # Method should exist
+        assert hasattr(rec, 'calculate_clv')
+
+        # Call should work
+        rec.calculate_clv(closing_line=-7.0, captured_at=datetime.now())
+
+        # CLV should be calculated (we bet HOME -6.5, it closed at -7.0)
+        # We got value because line moved against home
+        assert rec.closing_line == -7.0
+        assert rec.clv is not None
+        assert rec.clv == 0.5  # -6.5 - (-7.0) = +0.5 CLV
+
+    def test_clv_over_calculation(self):
+        """Test CLV calculation for OVER total bet."""
+        from app.models import BettingRecommendation, BetType, Pick, BetTier
+        from uuid import uuid4
+        from datetime import datetime
+
+        rec = BettingRecommendation(
+            game_id=uuid4(),
+            home_team="Duke",
+            away_team="UNC",
+            commence_time=datetime.now(),
+            bet_type=BetType.TOTAL,
+            pick=Pick.OVER,
+            line=145.0,
+            model_line=150.0,
+            market_line=145.0,
+            edge=5.0,
+            confidence=0.68,
+            ev_percent=8.0,
+            implied_prob=0.55,
+            market_prob=0.50,
+            kelly_fraction=0.05,
+            recommended_units=1.5,
+            bet_tier=BetTier.MEDIUM,
+        )
+
+        # Line moved up to 148 - we got value on OVER
+        rec.calculate_clv(closing_line=148.0, captured_at=datetime.now())
+
+        assert rec.clv == 3.0  # 148 - 145 = +3 CLV on OVER

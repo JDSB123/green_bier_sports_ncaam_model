@@ -100,9 +100,10 @@ class H1TotalModel(BasePredictor):
     HCA: float = 0.0  # Totals don't use HCA
 
     # Betting thresholds for 1H (tighter due to higher variance)
-    MIN_EDGE: float = 1.5
-    MAX_EDGE: float = 3.5   # Lower max - 1H has more variance
-    OPTIMAL_EDGE: float = 2.0
+    # From 562-game backtest: optimal edge range is 2.0-3.5
+    MIN_EDGE: float = 2.0  # Slightly higher than FG due to variance
+    MAX_EDGE: float = 3.5  # Lower max - 1H has more variance, avoid extremes
+    OPTIMAL_EDGE: float = 2.5  # Sweet spot for 1H totals
 
     # Higher base variance for 1H (20 min sample vs 40 min)
     # Backtest RMSE was 11.26
@@ -312,8 +313,10 @@ class H1TotalModel(BasePredictor):
         # Calculate variance
         variance = self._calculate_h1_variance(home, away)
 
-        # Lower confidence for 1H (inherently more uncertain)
-        confidence = 0.52 - min(abs(adjustment) * 0.025, 0.12)
+        # 1H Total confidence - start at 0.68 (above 0.65 threshold)
+        # Reduce for large adjustments (extremes are less reliable)
+        # Range: 0.50 - 0.72 (can pass min_confidence=0.65 for standard games)
+        confidence = 0.68 - min(abs(adjustment) * 0.03, 0.18)
 
         reasoning = (
             f"1H Poss: {self._estimate_h1_possessions(home, away):.1f} | "

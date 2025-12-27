@@ -282,3 +282,312 @@ def persist_prediction_and_recommendations(
     return prediction_id, voided, inserted
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# CLV TRACKING - Closing Line Value capture and calculation
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def capture_closing_lines(
+    engine: Engine,
+    game_id: UUID,
+    closing_spread: Optional[float] = None,
+    closing_total: Optional[float] = None,
+    closing_spread_1h: Optional[float] = None,
+    closing_total_1h: Optional[float] = None,
+) -> int:
+    """
+    Capture closing lines for pending recommendations and calculate CLV.
+
+    Should be called just before game starts (or shortly after tip-off).
+    This is the GOLD STANDARD for measuring betting model quality.
+
+    Returns: number of recommendations updated
+    """
+    now = datetime.utcnow()
+    updated = 0
+
+    # Update each bet type with its closing line
+    bet_type_lines = [
+        ("SPREAD", closing_spread),
+        ("TOTAL", closing_total),
+        ("SPREAD_1H", closing_spread_1h),
+        ("TOTAL_1H", closing_total_1h),
+    ]
+
+    for bet_type, closing_line in bet_type_lines:
+        if closing_line is None:
+            continue
+
+        # Calculate CLV based on bet type and pick
+        stmt = text(
+            """
+            UPDATE betting_recommendations
+            SET
+                closing_line = :closing_line,
+                closing_line_captured_at = :captured_at,
+                clv = CASE
+                    -- For spreads: CLV depends on which side we took
+                    WHEN bet_type IN ('SPREAD', 'SPREAD_1H') AND pick = 'HOME' THEN
+                        line - :closing_line  -- If line moved against home (more negative), we got value
+                    WHEN bet_type IN ('SPREAD', 'SPREAD_1H') AND pick = 'AWAY' THEN
+                        :closing_line - line  -- If line moved toward away (more positive), we got value
+                    -- For totals: CLV depends on OVER/UNDER
+                    WHEN bet_type IN ('TOTAL', 'TOTAL_1H') AND pick = 'OVER' THEN
+                        :closing_line - line  -- If total moved up, we got value on OVER
+                    WHEN bet_type IN ('TOTAL', 'TOTAL_1H') AND pick = 'UNDER' THEN
+                        line - :closing_line  -- If total moved down, we got value on UNDER
+                    ELSE 0
+                END,
+                clv_percent = CASE
+                    WHEN :closing_line != 0 THEN
+                        CASE
+                            WHEN bet_type IN ('SPREAD', 'SPREAD_1H') AND pick = 'HOME' THEN
+                                ((line - :closing_line) / ABS(:closing_line)) * 100
+                            WHEN bet_type IN ('SPREAD', 'SPREAD_1H') AND pick = 'AWAY' THEN
+                                ((:closing_line - line) / ABS(:closing_line)) * 100
+                            WHEN bet_type IN ('TOTAL', 'TOTAL_1H') AND pick = 'OVER' THEN
+                                ((:closing_line - line) / ABS(:closing_line)) * 100
+                            WHEN bet_type IN ('TOTAL', 'TOTAL_1H') AND pick = 'UNDER' THEN
+                                ((line - :closing_line) / ABS(:closing_line)) * 100
+                            ELSE 0
+                        END
+                    ELSE 0
+                END
+            WHERE game_id = :game_id
+              AND bet_type = :bet_type
+              AND status = 'pending'
+              AND closing_line IS NULL
+            """
+        )
+
+        with engine.begin() as conn:
+            res = conn.execute(stmt, {
+                "game_id": game_id,
+                "bet_type": bet_type,
+                "closing_line": closing_line,
+                "captured_at": now,
+            })
+            updated += int(res.rowcount or 0)
+
+    return updated
+
+
+def settle_recommendations(
+    engine: Engine,
+    game_id: UUID,
+    home_score: int,
+    away_score: int,
+    home_score_1h: Optional[int] = None,
+    away_score_1h: Optional[int] = None,
+) -> dict:
+    """
+    Settle all pending recommendations for a game.
+
+    Calculates actual result (WIN/LOSS/PUSH) and P&L for each bet.
+
+    Returns: dict with settlement summary
+    """
+    now = datetime.utcnow()
+    actual_spread = away_score - home_score  # From home perspective (positive = home lost)
+    actual_total = home_score + away_score
+    actual_spread_1h = (away_score_1h - home_score_1h) if home_score_1h is not None and away_score_1h is not None else None
+    actual_total_1h = (home_score_1h + away_score_1h) if home_score_1h is not None and away_score_1h is not None else None
+
+    results = {"wins": 0, "losses": 0, "pushes": 0, "total_pnl": 0.0}
+
+    # Fetch all pending recommendations
+    fetch_stmt = text(
+        """
+        SELECT id, bet_type, pick, line, recommended_units
+        FROM betting_recommendations
+        WHERE game_id = :game_id AND status = 'pending'
+        """
+    )
+
+    with engine.begin() as conn:
+        rows = conn.execute(fetch_stmt, {"game_id": game_id}).fetchall()
+
+        for row in rows:
+            rec_id, bet_type, pick, line, units = row
+            result = None
+            pnl = 0.0
+
+            # Determine result based on bet type
+            if bet_type == "SPREAD":
+                if actual_spread is not None:
+                    if pick == "HOME":
+                        # Home covers if actual_spread < line (they lost by less than spread)
+                        if actual_spread < line:
+                            result = "WIN"
+                            pnl = units * 0.909  # -110 odds
+                        elif actual_spread > line:
+                            result = "LOSS"
+                            pnl = -units
+                        else:
+                            result = "PUSH"
+                            pnl = 0
+                    else:  # AWAY
+                        if actual_spread > -line:
+                            result = "WIN"
+                            pnl = units * 0.909
+                        elif actual_spread < -line:
+                            result = "LOSS"
+                            pnl = -units
+                        else:
+                            result = "PUSH"
+                            pnl = 0
+
+            elif bet_type == "TOTAL":
+                if actual_total is not None:
+                    if pick == "OVER":
+                        if actual_total > line:
+                            result = "WIN"
+                            pnl = units * 0.909
+                        elif actual_total < line:
+                            result = "LOSS"
+                            pnl = -units
+                        else:
+                            result = "PUSH"
+                            pnl = 0
+                    else:  # UNDER
+                        if actual_total < line:
+                            result = "WIN"
+                            pnl = units * 0.909
+                        elif actual_total > line:
+                            result = "LOSS"
+                            pnl = -units
+                        else:
+                            result = "PUSH"
+                            pnl = 0
+
+            elif bet_type == "SPREAD_1H":
+                if actual_spread_1h is not None:
+                    if pick == "HOME":
+                        if actual_spread_1h < line:
+                            result = "WIN"
+                            pnl = units * 0.909
+                        elif actual_spread_1h > line:
+                            result = "LOSS"
+                            pnl = -units
+                        else:
+                            result = "PUSH"
+                            pnl = 0
+                    else:  # AWAY
+                        if actual_spread_1h > -line:
+                            result = "WIN"
+                            pnl = units * 0.909
+                        elif actual_spread_1h < -line:
+                            result = "LOSS"
+                            pnl = -units
+                        else:
+                            result = "PUSH"
+                            pnl = 0
+
+            elif bet_type == "TOTAL_1H":
+                if actual_total_1h is not None:
+                    if pick == "OVER":
+                        if actual_total_1h > line:
+                            result = "WIN"
+                            pnl = units * 0.909
+                        elif actual_total_1h < line:
+                            result = "LOSS"
+                            pnl = -units
+                        else:
+                            result = "PUSH"
+                            pnl = 0
+                    else:  # UNDER
+                        if actual_total_1h < line:
+                            result = "WIN"
+                            pnl = units * 0.909
+                        elif actual_total_1h > line:
+                            result = "LOSS"
+                            pnl = -units
+                        else:
+                            result = "PUSH"
+                            pnl = 0
+
+            # Update the recommendation
+            if result:
+                update_stmt = text(
+                    """
+                    UPDATE betting_recommendations
+                    SET status = 'settled',
+                        actual_result = :result,
+                        pnl = :pnl,
+                        settled_at = :settled_at
+                    WHERE id = :rec_id
+                    """
+                )
+                conn.execute(update_stmt, {
+                    "rec_id": rec_id,
+                    "result": result,
+                    "pnl": pnl,
+                    "settled_at": now,
+                })
+
+                if result == "WIN":
+                    results["wins"] += 1
+                elif result == "LOSS":
+                    results["losses"] += 1
+                else:
+                    results["pushes"] += 1
+                results["total_pnl"] += pnl
+
+    return results
+
+
+def get_clv_summary(engine: Engine, model_version: Optional[str] = None) -> dict:
+    """
+    Get CLV summary statistics for all settled bets.
+
+    This is the GOLD STANDARD metric for model quality.
+    Positive average CLV = model is finding value.
+
+    Returns: dict with CLV statistics
+    """
+    where_clause = "WHERE br.closing_line IS NOT NULL"
+    params = {}
+
+    if model_version:
+        where_clause += " AND p.model_version = :model_version"
+        params["model_version"] = model_version
+
+    stmt = text(
+        f"""
+        SELECT
+            COUNT(*) as total_bets,
+            AVG(br.clv) as avg_clv,
+            AVG(br.clv_percent) as avg_clv_percent,
+            SUM(CASE WHEN br.clv > 0 THEN 1 ELSE 0 END) as positive_clv_count,
+            SUM(CASE WHEN br.clv < 0 THEN 1 ELSE 0 END) as negative_clv_count,
+            AVG(br.pnl) as avg_pnl,
+            SUM(br.pnl) as total_pnl,
+            COUNT(CASE WHEN br.actual_result = 'WIN' THEN 1 END) as wins,
+            COUNT(CASE WHEN br.actual_result = 'LOSS' THEN 1 END) as losses,
+            COUNT(CASE WHEN br.actual_result = 'PUSH' THEN 1 END) as pushes
+        FROM betting_recommendations br
+        JOIN predictions p ON br.prediction_id = p.id
+        {where_clause}
+        """
+    )
+
+    with engine.begin() as conn:
+        row = conn.execute(stmt, params).fetchone()
+        if row:
+            total = row[0] or 0
+            wins = row[7] or 0
+            losses = row[8] or 0
+            return {
+                "total_bets": total,
+                "avg_clv": float(row[1] or 0),
+                "avg_clv_percent": float(row[2] or 0),
+                "positive_clv_rate": (row[3] / total * 100) if total > 0 else 0,
+                "negative_clv_rate": (row[4] / total * 100) if total > 0 else 0,
+                "avg_pnl_per_bet": float(row[5] or 0),
+                "total_pnl": float(row[6] or 0),
+                "wins": wins,
+                "losses": losses,
+                "pushes": row[9] or 0,
+                "win_rate": (wins / (wins + losses) * 100) if (wins + losses) > 0 else 0,
+            }
+        return {}
+
