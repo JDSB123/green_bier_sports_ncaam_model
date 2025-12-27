@@ -61,15 +61,16 @@ class ModelConfig(BaseSettings):
     # ─────────────────────────────────────────────────────────────────────────
 
     # SPREAD HCA - Points added to home team advantage
-    # CALIBRATED v33.1: Increased from 3.2 to 4.7 based on 4194-game backtest
-    # Bias was -1.86 (underestimating home), optimal HCA = 4.66
+    # CALIBRATED v33.6: Backtested on 3,318 FG games and 904 1H games with real ESPN data
+    # FG Spread: HCA = 5.8 (from actual home margins in 3,318-game backtest)
+    # H1 Spread: HCA = 3.6 (from actual 1H home margins in 904-game backtest)
     home_court_advantage_spread: float = Field(
-        default=4.7,
-        description="Points added for home court in spread calc. Calibrated from 4194 games."
+        default=5.8,
+        description="Points added for home court in FG spread. Backtested on 3,318 games."
     )
     home_court_advantage_spread_1h: float = Field(
-        default=2.35,
-        description="1H spread HCA (50% of 4.7). Calibrated proportionally."
+        default=3.6,
+        description="1H spread HCA. Backtested on 904 real 1H games."
     )
 
     # TOTAL HCA - Points added to total score prediction

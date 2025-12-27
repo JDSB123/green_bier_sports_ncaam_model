@@ -206,7 +206,7 @@ class PredictionEngineV33:
         # ─────────────────────────────────────────────────────────────────────
         # FG SPREAD RECOMMENDATIONS
         # ─────────────────────────────────────────────────────────────────────
-        if market_odds.spread is not None and prediction.spread_edge >= 7.0:  # FG min edge: 7.0
+        if market_odds.spread is not None and prediction.spread_edge >= self.fg_spread_model.MIN_EDGE:
             if prediction.spread_confidence >= self.config.min_confidence:
                 pick = Pick.HOME if prediction.predicted_spread < market_odds.spread else Pick.AWAY
                 rec = self._create_recommendation(
@@ -225,7 +225,7 @@ class PredictionEngineV33:
         # ─────────────────────────────────────────────────────────────────────
         # FG TOTAL RECOMMENDATIONS
         # ─────────────────────────────────────────────────────────────────────
-        if market_odds.total is not None and prediction.total_edge >= 2.0:  # FG min edge: 2.0
+        if market_odds.total is not None and prediction.total_edge >= self.fg_total_model.MIN_EDGE:
             if prediction.total_confidence >= self.config.min_confidence:
                 pick = Pick.OVER if prediction.predicted_total > market_odds.total else Pick.UNDER
                 rec = self._create_recommendation(
@@ -244,7 +244,7 @@ class PredictionEngineV33:
         # ─────────────────────────────────────────────────────────────────────
         # 1H SPREAD RECOMMENDATIONS
         # ─────────────────────────────────────────────────────────────────────
-        if market_odds.spread_1h is not None and prediction.spread_edge_1h >= 3.5:  # 1H min edge: 3.5
+        if market_odds.spread_1h is not None and prediction.spread_edge_1h >= self.h1_spread_model.MIN_EDGE:
             if prediction.spread_confidence_1h >= self.config.min_confidence:
                 pick = Pick.HOME if prediction.predicted_spread_1h < market_odds.spread_1h else Pick.AWAY
                 rec = self._create_recommendation(
@@ -263,7 +263,7 @@ class PredictionEngineV33:
         # ─────────────────────────────────────────────────────────────────────
         # 1H TOTAL RECOMMENDATIONS
         # ─────────────────────────────────────────────────────────────────────
-        if market_odds.total_1h is not None and prediction.total_edge_1h >= 1.5:  # 1H min edge: 1.5
+        if market_odds.total_1h is not None and prediction.total_edge_1h >= self.h1_total_model.MIN_EDGE:
             if prediction.total_confidence_1h >= self.config.min_confidence:
                 pick = Pick.OVER if prediction.predicted_total_1h > market_odds.total_1h else Pick.UNDER
                 rec = self._create_recommendation(
