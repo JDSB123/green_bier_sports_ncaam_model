@@ -41,7 +41,7 @@ class H1SpreadModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Spread"
-    MODEL_VERSION = "33.6.0"
+    MODEL_VERSION = "33.6.1"
     MARKET_TYPE = "spread"
     IS_FIRST_HALF = True
 

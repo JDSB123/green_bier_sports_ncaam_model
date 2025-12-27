@@ -74,7 +74,7 @@ class FGTotalModel(BasePredictor):
     """
 
     MODEL_NAME = "FGTotal"
-    MODEL_VERSION = "33.6.0"
+    MODEL_VERSION = "33.6.1"
     MARKET_TYPE = "total"
 
     # ═══════════════════════════════════════════════════════════════════════

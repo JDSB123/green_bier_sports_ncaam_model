@@ -1,5 +1,5 @@
 @echo off
-REM NCAA Basketball Prediction System v33.0
+REM NCAA Basketball Prediction System v33.6.1
 REM
 REM SINGLE ENTRY POINT: This is the ONLY way to run predictions
 REM Everything runs inside the container via run_today.py

@@ -183,7 +183,7 @@ class PredictionEngineV33:
             spread_confidence_1h=h1_spread_pred.confidence,
             total_confidence_1h=h1_total_pred.confidence,
             # Model metadata
-            model_version="v33.6.0",
+            model_version="v33.6.1",
         )
 
         # Calculate edges if market odds available

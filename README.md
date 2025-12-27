@@ -1,4 +1,4 @@
-# NCAA Basketball v33.0 - PRODUCTION FINAL
+# NCAA Basketball v33.6.1 - PRODUCTION FINAL
 
 <!-- GitHub Actions credentials updated: 2025-12-26 -->
 
@@ -86,12 +86,19 @@ That's it. One command. Everything runs inside the container.
                     └─────────────┘
 ```
 
-## Model Parameters
+## Model Parameters (v33.6.1)
 
-- Home Court Advantage (Spread): 3.2 pts (Standard Torvik)
-- Home Court Advantage (Total): 0.0 pts (Standard Efficiency Model)
-- Minimum Spread Edge: 2.5 pts
-- Minimum Total Edge: 3.0 pts
+**Full Game:**
+- Home Court Advantage (Spread): 5.8 pts (backtested from 3,318 games)
+- Home Court Advantage (Total): 0.0 pts (zero-sum)
+- Minimum Spread Edge: 2.0 pts
+- Minimum Total Edge: 3.0 pts (max 6.0)
+
+**First Half:**
+- Home Court Advantage (Spread): 3.6 pts (backtested from 904 1H games)
+- Home Court Advantage (Total): 0.0 pts (zero-sum)
+- Minimum Spread Edge: 3.5 pts
+- Minimum Total Edge: 2.0 pts (max 3.5)
 
 ## Data Sources
 

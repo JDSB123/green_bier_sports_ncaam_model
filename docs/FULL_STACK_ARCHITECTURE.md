@@ -1,4 +1,4 @@
-# NCAAM v33.0 Model FINAL - Complete Self-Contained Stack
+# NCAAM v33.6.1 Model - Complete Self-Contained Stack
 
 ## ✅ **100% Self-Contained - NO Local Dependencies**
 

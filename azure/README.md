@@ -1,4 +1,4 @@
-# NCAAM v33.0 - Azure Deployment (Manual-Only)
+# NCAAM v33.6.1 - Azure Deployment (Manual-Only)
 
 ## Overview
 
@@ -113,7 +113,7 @@ az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --follow
 ### Custom Image Tag
 
 ```powershell
-.\deploy.ps1 -OddsApiKey "your-key" -ImageTag "v33.0.0"
+.\deploy.ps1 -OddsApiKey "your-key" -ImageTag "v33.6.1"
 ```
 
 ## Manual Deployment Steps
@@ -146,11 +146,11 @@ az deployment group create `
 az acr login --name ncaamstableacr
 
 # Build
-docker build -t ncaamstableacr.azurecr.io/ncaam-prediction:v33.0.0 `
+docker build -t ncaamstableacr.azurecr.io/ncaam-prediction:v33.6.1 `
     -f services/prediction-service-python/Dockerfile .
 
 # Push
-docker push ncaamstableacr.azurecr.io/ncaam-prediction:v33.0.0
+docker push ncaamstableacr.azurecr.io/ncaam-prediction:v33.6.1
 ```
 
 ### 4. Update Container App
@@ -159,7 +159,7 @@ docker push ncaamstableacr.azurecr.io/ncaam-prediction:v33.0.0
 az containerapp update `
     --name ncaam-stable-prediction `
     --resource-group ncaam-stable-rg `
-    --image ncaamstableacr.azurecr.io/ncaam-prediction:v33.0.0
+    --image ncaamstableacr.azurecr.io/ncaam-prediction:v33.6.1
 ```
 
 ## Files

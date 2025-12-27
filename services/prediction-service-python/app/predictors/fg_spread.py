@@ -42,7 +42,7 @@ class FGSpreadModel(BasePredictor):
     """
 
     MODEL_NAME = "FGSpread"
-    MODEL_VERSION = "33.6.0"
+    MODEL_VERSION = "33.6.1"
     MARKET_TYPE = "spread"
     IS_FIRST_HALF = False
 

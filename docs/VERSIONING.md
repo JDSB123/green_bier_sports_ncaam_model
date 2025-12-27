@@ -22,9 +22,19 @@ v{MAJOR}.{MINOR}.{PATCH}[-{MODEL_TAG}]
 
 ## Current Version
 
-**v33.6.0** - All 4 models TRULY INDEPENDENT & BACKTESTED
+**v33.6.1** - Model improvements and CLV tracking
 
 ## Version History
+
+### v33.6.1 (2025-12-27)
+- Fixed 1H Total confidence (0.52 → 0.68) - was below 0.65 threshold
+- Fixed MIN_EDGE alignment across all models:
+  - FG Spread: 7.0 → 2.0 (was too conservative)
+  - FG Total: 2.0 → 3.0 (aligned with backtest)
+  - H1 Total: 1.5 → 2.0 (aligned with backtest)
+- Added extreme total handling thresholds
+- Added CLV (Closing Line Value) tracking infrastructure
+- Added comprehensive unit tests for all predictors
 
 ### v33.6.0 (2024-12-24)
 - All 4 models independently backtested with real ESPN data
@@ -110,7 +120,7 @@ The `/health` endpoint returns the current version:
 ```json
 {
   "service": "prediction-service",
-  "version": "33.6.0",
+  "version": "33.6.1",
   "status": "ok"
 }
 ```
@@ -121,10 +131,10 @@ Each prediction model is versioned independently:
 
 | Model | Version | HCA/Calibration | Backtest Games |
 |-------|---------|-----------------|----------------|
-| FG Spread | 33.6.0 | HCA=5.8 | 3,318 |
-| FG Total | 33.6.0 | Cal=+7.0 | 3,318 |
-| H1 Spread | 33.6.0 | HCA=3.6 | 904 |
-| H1 Total | 33.6.0 | Cal=+2.7 | 562 |
+| FG Spread | 33.6.1 | HCA=5.8, MIN_EDGE=2.0 | 3,318 |
+| FG Total | 33.6.1 | Cal=+7.0, MIN_EDGE=3.0 | 3,318 |
+| H1 Spread | 33.6.1 | HCA=3.6, MIN_EDGE=3.5 | 904 |
+| H1 Total | 33.6.1 | Cal=+2.7, MIN_EDGE=2.0 | 562 |
 
 ## Breaking Changes Policy
 

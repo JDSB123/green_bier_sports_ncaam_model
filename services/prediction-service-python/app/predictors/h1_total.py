@@ -85,7 +85,7 @@ class H1TotalModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Total"
-    MODEL_VERSION = "33.6.0"  # Truly independent & backtested
+    MODEL_VERSION = "33.6.1"  # Truly independent & backtested
     MARKET_TYPE = "total"
 
     # ═══════════════════════════════════════════════════════════════════════

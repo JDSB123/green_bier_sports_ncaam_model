@@ -70,8 +70,8 @@ The codebase now uses a single, consistent model versioning scheme:
 
 ### Active Model Version
 - **File:** `services/prediction-service-python/app/__init__.py`
-- **Value:** `33.6.0`
-- **Status:** ✅ Current runtime and outputs reflect v33.6
+- **Value:** `33.6.1`
+- **Status:** ✅ Current runtime and outputs reflect v33.6.1
 
 ### Model Components
 - **Files:** `services/prediction-service-python/app/predictors/*.py`

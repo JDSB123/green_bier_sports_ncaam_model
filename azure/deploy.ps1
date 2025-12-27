@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NCAAM v33.0 - Azure Deployment Script
+# NCAAM v33.6.1 - Azure Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════════
 # Usage:
 #   .\deploy.ps1 -OddsApiKey "YOUR_KEY"              # Full deployment
@@ -17,7 +17,7 @@
 # Other Options:
 #   -OddsApiKey     The Odds API key (auto-fetched from existing app if omitted)
 #   -TeamsWebhookUrl  Microsoft Teams webhook for notifications
-#   -ImageTag       Container image tag (default: v33.0.0)
+#   -ImageTag       Container image tag (default: v33.6.1)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(
@@ -56,7 +56,7 @@ param(
     [switch]$QuickDeploy,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v33.6.0'
+    [string]$ImageTag = 'v33.6.1'
 )
 
 # ─────────────────────────────────────────────────────────────────────────────────

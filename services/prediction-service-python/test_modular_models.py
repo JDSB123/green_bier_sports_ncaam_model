@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test Modular Prediction Models v33.3
+Test Modular Prediction Models v33.6.1
 
 Tests all 4 market models:
 - FG Spread (PROVEN z=3.94)
