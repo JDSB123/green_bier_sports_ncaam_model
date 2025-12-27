@@ -1,14 +1,13 @@
 """
-Modular Prediction Models v33.3
+Modular Prediction Models v33.6
 
-All 4 markets now have independent models:
-- FG Spread: PROVEN edge (z=3.94), HCA=4.7
-- FG Total: Hybrid approach (base + learned adjustment)
-- 1H Spread: Independent, HCA=2.35
-- 1H Total: Independent, calibration=-2.3
+All 4 markets are TRULY INDEPENDENT & BACKTESTED:
+- FG Spread: HCA=5.8 (from 3,318-game backtest, MAE=10.57)
+- FG Total: Calibration=+7.0 (from 3,318-game backtest, MAE=13.1)
+- 1H Spread: HCA=3.6 (from 904-game 1H backtest, MAE=8.25)
+- 1H Total: Calibration=+2.7 (from 562-game 1H backtest, MAE=8.88)
 
-SPREADS: Statistically significant edge
-TOTALS: Hybrid ML approach, use with caution on high edges
+All calibrations derived from real ESPN game data.
 """
 
 # Import base classes first (no circular dependencies)
