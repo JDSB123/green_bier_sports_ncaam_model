@@ -22,6 +22,7 @@ Formula:
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
+from app import __version__ as APP_VERSION
 from app.predictors.base import BasePredictor, MarketPrediction
 
 if TYPE_CHECKING:
@@ -41,7 +42,7 @@ class H1SpreadModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Spread"
-    MODEL_VERSION = "33.6.1"
+    MODEL_VERSION = APP_VERSION
     MARKET_TYPE = "spread"
     IS_FIRST_HALF = True
 

@@ -55,6 +55,8 @@ v33.0 Changes:
 from pydantic_settings import BaseSettings
 from pydantic import Field, field_validator
 
+from . import __version__ as APP_VERSION
+
 
 class ModelConfig(BaseSettings):
     """Model configuration - MODULAR approach (spreads vs totals optimized separately)."""
@@ -319,7 +321,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "33.6.2"  # v33.6.2: Rest-day compatibility helpers and Azure image alignment
+    service_version: str = APP_VERSION  # Single source of truth from VERSION file
     debug: bool = False
 
     # Feature Store

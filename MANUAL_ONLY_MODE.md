@@ -7,7 +7,8 @@
 
 ## Overview
 
-This system is **100% manual-only**. There is **ZERO automation** - no polling, no cron jobs, no scheduled tasks, no GitHub Actions.
+This system keeps prediction runs **100% manual-only**—no polling, cron jobs, or scheduled tasks automatically trigger picks.  
+CI/CD still exists for release discipline: GitHub Actions builds/pushes containers (using the repo `VERSION` file) and redeploys Azure Container Apps whenever `main` changes, but it never runs predictions.
 
 You control when data is synced and predictions are run.
 
@@ -31,11 +32,10 @@ You control when data is synced and predictions are run.
 - Only starts the Python API server for manual predictions
 - Binaries are called directly by `run_today.py` when you want fresh data
 
-### ❌ No GitHub Actions
-- No `.github/workflows/` directory
-- No CI/CD pipelines
-- No automated deployments
-- No automated backtesting workflows
+### ❌ Release Automation is Separate
+- GitHub Actions builds/pushes images and redeploys Azure Container Apps whenever `main` changes
+- CI **never** runs predictions, sync jobs, or backtests automatically
+- Operators still choose when to execute `./predict.bat` or backtesting scripts
 
 ### ❌ No Automated Backtesting
 - No background backtesting tasks
@@ -173,7 +173,7 @@ docker compose exec prediction-service env | grep RUN_ONCE
 ✅ **No polling** - Services run once and exit  
 ✅ **No cron** - No scheduled tasks  
 ✅ **No daemons** - No background sync processes  
-✅ **No GitHub Actions** - No automation pipelines  
+✅ **Release automation only** - CI/CD builds/pushes containers but never runs predictions  
 ✅ **No automated backtesting** - All backtesting is manual-only  
 
 **You run `.\predict.bat` when you want fresh picks. That's it.**

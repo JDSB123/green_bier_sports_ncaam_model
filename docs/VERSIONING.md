@@ -11,6 +11,13 @@ All components follow semantic versioning (SemVer) with model-specific extension
 v{MAJOR}.{MINOR}.{PATCH}[-{MODEL_TAG}]
 ```
 
+## Single Source of Truth
+
+- The repository root contains a `VERSION` file with the current semantic version (e.g., `33.6.2`).
+- Python modules (`app/__init__.py`, predictors, config) read directly from this file at runtime.
+- Tooling that needs the container tag should prefix the raw value with `v` (handled automatically in the GitHub Actions workflow and `azure/deploy.ps1`).
+- When bumping the model, update `VERSION` first, then rerun the workflow so images, documentation, and runtime metadata stay aligned.
+
 ### Components
 
 | Component | Description |

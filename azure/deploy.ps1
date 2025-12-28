@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NCAAM v33.6.2 - Azure Deployment Script
+# NCAAM - Azure Deployment Script (version sourced from VERSION file)
 # ═══════════════════════════════════════════════════════════════════════════════
 # Usage:
 #   .\deploy.ps1 -OddsApiKey "YOUR_KEY"              # Full deployment
@@ -17,7 +17,7 @@
 # Other Options:
 #   -OddsApiKey     The Odds API key (auto-fetched from existing app if omitted)
 #   -TeamsWebhookUrl  Microsoft Teams webhook for notifications
-#   -ImageTag       Container image tag (default: v33.6.2)
+#   -ImageTag       Container image tag (defaults to v<VERSION_FILE>)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(
@@ -56,7 +56,7 @@ param(
     [switch]$QuickDeploy,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v33.6.2'
+    [string]$ImageTag
 )
 
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -71,6 +71,25 @@ if ($QuickDeploy) {
 }
 
 $ErrorActionPreference = 'Stop'
+
+# Resolve version tag if not provided
+if (-not $ImageTag -or [string]::IsNullOrWhiteSpace($ImageTag)) {
+    $versionFile = Join-Path $PSScriptRoot ".." "VERSION"
+    if (Test-Path $versionFile) {
+        $rawVersion = (Get-Content -Path $versionFile -TotalCount 1).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($rawVersion)) {
+            if ($rawVersion.StartsWith('v')) {
+                $ImageTag = $rawVersion
+            } else {
+                $ImageTag = "v$rawVersion"
+            }
+        }
+    }
+
+    if (-not $ImageTag) {
+        $ImageTag = 'v0.0.0'
+    }
+}
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION

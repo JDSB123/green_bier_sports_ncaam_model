@@ -22,6 +22,7 @@ Uses ALL 22 Barttorvik fields for matchup adjustments.
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
+from app import __version__ as APP_VERSION
 from app.predictors.base import BasePredictor, MarketPrediction
 
 # TeamRatings is in app.models (models.py, not the predictors package)
@@ -42,7 +43,7 @@ class FGSpreadModel(BasePredictor):
     """
 
     MODEL_NAME = "FGSpread"
-    MODEL_VERSION = "33.6.1"
+    MODEL_VERSION = APP_VERSION
     MARKET_TYPE = "spread"
     IS_FIRST_HALF = False
 

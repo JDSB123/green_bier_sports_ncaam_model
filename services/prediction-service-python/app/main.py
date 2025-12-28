@@ -52,6 +52,8 @@ class TeamRatingsInput(BaseModel):
     three_pt_pct_d: float
     three_pt_rate: float
     three_pt_rate_d: float
+    barthag: float
+    wab: float
 
     def to_domain(self) -> TeamRatings:
         return TeamRatings(
@@ -74,6 +76,8 @@ class TeamRatingsInput(BaseModel):
             three_pt_pct_d=self.three_pt_pct_d,
             three_pt_rate=self.three_pt_rate,
             three_pt_rate_d=self.three_pt_rate_d,
+            barthag=self.barthag,
+            wab=self.wab,
         )
 
 

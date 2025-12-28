@@ -63,6 +63,9 @@ RUN chmod +x /app/bin/ratings-sync
 COPY --from=rust-builder --chown=ncaam:ncaam /app/odds-ingestion/target/release/odds-ingestion /app/bin/odds-ingestion
 RUN chmod +x /app/bin/odds-ingestion
 
+# Copy repo-level metadata (version) for runtime access
+COPY --chown=ncaam:ncaam VERSION /app/VERSION
+
 # Copy application code with proper ownership
 COPY --chown=ncaam:ncaam services/prediction-service-python/app /app/app
 COPY --chown=ncaam:ncaam services/prediction-service-python/run_today.py /app/run_today.py

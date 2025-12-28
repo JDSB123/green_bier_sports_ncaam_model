@@ -25,6 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
+from app import __version__ as APP_VERSION
 from app.predictors.base import BasePredictor, MarketPrediction
 
 if TYPE_CHECKING:
@@ -85,7 +86,7 @@ class H1TotalModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Total"
-    MODEL_VERSION = "33.6.1"  # Truly independent & backtested
+    MODEL_VERSION = APP_VERSION  # Truly independent & backtested
     MARKET_TYPE = "total"
 
     # ═══════════════════════════════════════════════════════════════════════

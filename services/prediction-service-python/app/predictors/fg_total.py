@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 import math
 
+from app import __version__ as APP_VERSION
 from app.predictors.base import BasePredictor, MarketPrediction
 
 if TYPE_CHECKING:
@@ -74,7 +75,7 @@ class FGTotalModel(BasePredictor):
     """
 
     MODEL_NAME = "FGTotal"
-    MODEL_VERSION = "33.6.1"
+    MODEL_VERSION = APP_VERSION
     MARKET_TYPE = "total"
 
     # ═══════════════════════════════════════════════════════════════════════

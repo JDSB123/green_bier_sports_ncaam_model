@@ -112,17 +112,14 @@ This is the **FINAL** production container. Do not modify unless creating a new 
 
 ## Manual-Only Operation
 
-**ALL operations are user-initiated only. ZERO automation.**
+**Picks are still user-initiated only, but release builds are automated via CI/CD.**
 
-- ✅ No `.github/workflows/` directory exists
-- ✅ No GitHub Actions or CI/CD pipelines
-- ✅ No cron jobs or scheduled tasks
-- ✅ No continuous polling loops
-- ✅ No automated triggers
-- ✅ No automated backtesting workflows
-- ✅ All data fetches are manual via `.\predict.bat`
-- ✅ Services run once and exit (RUN_ONCE=true always)
-- ✅ All backtesting is manual-only (run via `testing/scripts/run_backtest.py` when needed)
+- ✅ GitHub Actions builds/pushes all images to ACR and redeploys Azure Container Apps whenever `main` is updated.
+- ✅ No cron jobs or scheduled tasks kick off predictions.
+- ✅ No continuous polling loops (RUN_ONCE=true enforced in Go/Rust services).
+- ✅ No automated data/backtesting workflows—`.\predict.bat` is still the only way to refresh data and make picks.
+- ✅ Services run once and exit; everything is manual-run + manual-review.
+- ✅ Backtesting remains manual-only (run `testing/scripts/run_backtest.py` when needed).
 
 **To get fresh picks:**
 1. Execute `.\predict.bat` manually when you want fresh data and recommendations

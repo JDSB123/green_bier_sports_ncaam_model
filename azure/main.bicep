@@ -42,7 +42,7 @@ param teamsWebhookUrl string = ''
 param basketballApiKey string = ''
 
 @description('Container image tag')
-param imageTag string = 'v33.6.2'
+param imageTag string = 'v0.0.0'
 
 @description('Suffix for resource names (e.g. -gbe for enterprise resources)')
 param resourceNameSuffix string = ''

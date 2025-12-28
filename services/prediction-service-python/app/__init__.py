@@ -1,3 +1,38 @@
-"""NCAA Basketball Prediction Service v33.6"""
+"""NCAA Basketball Prediction Service - dynamic version loader."""
 
-__version__ = "33.6.1"
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from typing import Iterable
+
+
+def _candidate_version_paths(start: Path) -> Iterable[Path]:
+    """Yield possible VERSION file locations from closest to farthest."""
+    # 1) Custom override via environment variable
+    env_override = os.getenv("NCAAM_VERSION_FILE")
+    if env_override:
+        yield Path(env_override)
+
+    # 2) VERSION file next to this module or up the tree
+    for parent in [start.parent, start.parent.parent, *start.parents]:
+        yield parent / "VERSION"
+
+    # 3) Current working directory fallback
+    yield Path.cwd() / "VERSION"
+
+
+def _load_version() -> str:
+    module_path = Path(__file__).resolve()
+    for version_path in _candidate_version_paths(module_path):
+        try:
+            if version_path.is_file():
+                value = version_path.read_text(encoding="utf-8").strip()
+                if value:
+                    return value
+        except OSError:
+            continue
+    return "0.0.0"
+
+
+__version__ = _load_version()

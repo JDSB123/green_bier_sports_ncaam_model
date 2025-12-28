@@ -16,6 +16,7 @@ from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 
+from app import __version__ as APP_VERSION
 from app.models import (
     BetTier,
     BetType,
@@ -54,6 +55,7 @@ class PredictionEngineV33:
         """Initialize with v33.6 modular models."""
         self.config = settings.model
         self.logger = structlog.get_logger()
+        self.version_tag = f"v{APP_VERSION}"
         
         # Store models for reference
         self.fg_spread_model = fg_spread_model
@@ -108,7 +110,7 @@ class PredictionEngineV33:
             return getattr(rest, "days_since_game", None) or getattr(rest, "days_rest", None)
 
         self.logger.info(
-            f"v33.6: Predicting {home_team} vs {away_team}",
+            f"{self.version_tag}: Predicting {home_team} vs {away_team}",
             game_id=str(game_id),
             models=["FGSpread", "FGTotal", "H1Spread", "H1Total"]
         )
@@ -189,7 +191,7 @@ class PredictionEngineV33:
             spread_confidence_1h=h1_spread_pred.confidence,
             total_confidence_1h=h1_total_pred.confidence,
             # Model metadata
-            model_version="v33.6.2",
+            model_version=self.version_tag,
         )
 
         # Calculate edges if market odds available

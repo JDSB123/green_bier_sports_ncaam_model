@@ -81,6 +81,8 @@ class TestPredictEndpoint:
                 "three_pt_pct_d": 32.0,
                 "three_pt_rate": 37.0,
                 "three_pt_rate_d": 35.0,
+                "barthag": 0.910,
+                "wab": 4.5,
             },
             "away_ratings": {
                 "team_name": "UNC",
@@ -102,6 +104,8 @@ class TestPredictEndpoint:
                 "three_pt_pct_d": 34.5,
                 "three_pt_rate": 35.0,
                 "three_pt_rate_d": 36.0,
+                "barthag": 0.750,
+                "wab": 1.0,
             },
             "market_odds": {
                 "spread": -6.5,
@@ -147,6 +151,7 @@ class TestPredictEndpoint:
                 "two_pt_pct": 50.0, "two_pt_pct_d": 50.0,
                 "three_pt_pct": 35.0, "three_pt_pct_d": 35.0,
                 "three_pt_rate": 35.0, "three_pt_rate_d": 35.0,
+                "barthag": 0.800, "wab": 2.0,
             },
             "away_ratings": {
                 "team_name": "UNC",
@@ -156,6 +161,7 @@ class TestPredictEndpoint:
                 "two_pt_pct": 50.0, "two_pt_pct_d": 50.0,
                 "three_pt_pct": 35.0, "three_pt_pct_d": 35.0,
                 "three_pt_rate": 35.0, "three_pt_rate_d": 35.0,
+                "barthag": 0.800, "wab": 2.0,
             },
             "is_neutral": True,
         }
