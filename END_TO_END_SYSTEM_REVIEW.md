@@ -206,7 +206,7 @@ MODEL__HOME_COURT_ADVANTAGE_TOTAL: 4.5   # NOTE: predictor says 0.0
 ## DEPLOYMENT STATUS
 
 ### Azure Container Apps
-- ✅ Running service in `ncaam-stable-rg`
+- ✅ Running service in `NCAAM-GBSV-MODEL-RG`
 - ✅ CI/CD builds and pushes images to ACR
 - ✅ Secrets properly mounted
 - ✅ Container network configured

@@ -18,7 +18,7 @@
 
 **Examples:**
 - Resource Group: `NCAAM-GBSV-MODEL-RG`
-- Container Registry: `ncaamstableacr` (no hyphens - Azure requirement)
+- Container Registry: `ncaamstablegbsvacr` (no hyphens - Azure requirement)
 - PostgreSQL: `ncaam-stable-postgres`
 - Redis: `ncaam-stable-redis`
 - Container App: `ncaam-stable-prediction`
@@ -131,7 +131,7 @@
 
 ### Before Deployment
 - [ ] All resource names follow `ncaam-stable-{resourceType}` pattern
-- [ ] ACR name is `ncaamstableacr` (no hyphens)
+- [ ] ACR name is `ncaamstablegbsvacr` (no hyphens)
 - [ ] Database name is `ncaam` (lowercase)
 - [ ] Database user is `ncaam` (lowercase)
 - [ ] SPORT environment variable is `ncaam` (lowercase)

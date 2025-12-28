@@ -15,7 +15,7 @@ This script is intentionally best-effort and safe to re-run.
 
 param(
   [Parameter(Mandatory=$false)]
-  [string]$ResourceGroup = 'ncaam-stable-rg',
+  [string]$ResourceGroup = 'NCAAM-GBSV-MODEL-RG',
 
   [Parameter(Mandatory=$false)]
   [string]$WebAppName = 'ncaam-stable-web',

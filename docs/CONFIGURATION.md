@@ -107,7 +107,7 @@ This changes:
 | Resource | Name |
 |----------|------|
 | Resource Group | `NCAAM-GBSV-MODEL-RG` |
-| Container Registry | `ncaamstableacr` |
+| Container Registry | `ncaamstablegbsvacr` |
 | PostgreSQL | `ncaam-stable-postgres` |
 | Redis | `ncaam-stable-redis` |
 | Container App | `ncaam-stable-prediction` |

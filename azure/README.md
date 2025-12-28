@@ -11,13 +11,13 @@ This directory contains everything needed to deploy the NCAAM prediction model t
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        Azure Resource Group                              │
-│                        (ncaam-stable-rg)                                │
+│                        (NCAAM-GBSV-MODEL-RG)                                │
 │                                                                          │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐ │
 │  │ Azure Container │  │ Azure Database  │  │ Azure Cache for Redis  │ │
 │  │ Registry (ACR)  │  │ for PostgreSQL  │  │                        │ │
 │  │                 │  │                 │  │                        │ │
-│  │ ncaamstableacr  │  │ Flexible Server │  │ ncaam-stable-redis     │ │
+│  │ ncaamstablegbsvacr  │  │ Flexible Server │  │ ncaam-stable-redis     │ │
 │  └────────┬────────┘  │ ncaam-stable-pg │  └────────────────────────┘ │
 │           │           └────────┬────────┘              │               │
 │           │                    │                       │               │
@@ -64,7 +64,7 @@ cd azure
 ```
 
 This will:
-- Create Azure Resource Group (`ncaam-stable-rg`)
+- Create Azure Resource Group (`NCAAM-GBSV-MODEL-RG`)
 - Deploy Azure Container Registry
 - Deploy Azure Database for PostgreSQL
 - Deploy Azure Cache for Redis
@@ -80,7 +80,7 @@ This will:
 curl https://ncaam-stable-prediction.azurecontainerapps.io/health
 
 # View logs
-az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --follow
+az containerapp logs show -n ncaam-stable-prediction -g NCAAM-GBSV-MODEL-RG --follow
 ```
 
 ## Deployment Options
@@ -89,7 +89,7 @@ az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --follow
 
 ```powershell
 .\deploy.ps1 -OddsApiKey "YOUR_ACTUAL_KEY"
-# Deploys to: ncaam-stable-rg (centralus)
+# Deploys to: NCAAM-GBSV-MODEL-RG (centralus)
 ```
 
 ### Skip Infrastructure (Image Update Only)
@@ -123,14 +123,14 @@ If you prefer to deploy manually:
 ### 1. Create Resource Group
 
 ```powershell
-az group create --name ncaam-stable-rg --location centralus
+az group create --name NCAAM-GBSV-MODEL-RG --location centralus
 ```
 
 ### 2. Deploy Bicep Template
 
 ```powershell
 az deployment group create `
-    --resource-group ncaam-stable-rg `
+    --resource-group NCAAM-GBSV-MODEL-RG `
     --template-file main.bicep `
     --parameters `
         environment=stable `
@@ -143,16 +143,16 @@ az deployment group create `
 
 ```powershell
 # Login to ACR
-az acr login --name ncaamstableacr
+az acr login --name ncaamstablegbsvacr
 
 # Build
 set tag="v$((Get-Content ..\VERSION).Trim())"
 
-docker build -t ncaamstableacr.azurecr.io/ncaam-prediction:%tag% `
+docker build -t ncaamstablegbsvacr.azurecr.io/ncaam-prediction:%tag% `
     -f services/prediction-service-python/Dockerfile .
 
 # Push
-docker push ncaamstableacr.azurecr.io/ncaam-prediction:%tag%
+docker push ncaamstablegbsvacr.azurecr.io/ncaam-prediction:%tag%
 ```
 
 ### 4. Update Container App
@@ -160,8 +160,8 @@ docker push ncaamstableacr.azurecr.io/ncaam-prediction:%tag%
 ```powershell
 az containerapp update `
     --name ncaam-stable-prediction `
-    --resource-group ncaam-stable-rg `
-    --image ncaamstableacr.azurecr.io/ncaam-prediction:%tag%
+    --resource-group NCAAM-GBSV-MODEL-RG `
+    --image ncaamstablegbsvacr.azurecr.io/ncaam-prediction:%tag%
 ```
 
 ## Files
@@ -215,7 +215,7 @@ Azure does **not** auto-run daily picks. When you want picks, run them manually 
 1. Open a shell:
 
 ```powershell
-az containerapp exec -n ncaam-stable-prediction -g ncaam-stable-rg --command sh
+az containerapp exec -n ncaam-stable-prediction -g NCAAM-GBSV-MODEL-RG --command sh
 ```
 
 2. Inside the shell, run:
@@ -244,7 +244,7 @@ To modify scaling:
 ```powershell
 az containerapp update `
     --name ncaam-stable-prediction `
-    --resource-group ncaam-stable-rg `
+    --resource-group NCAAM-GBSV-MODEL-RG `
     --min-replicas 1 `
     --max-replicas 3
 ```
@@ -254,14 +254,14 @@ az containerapp update `
 ### View Logs
 
 ```powershell
-az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --follow
+az containerapp logs show -n ncaam-stable-prediction -g NCAAM-GBSV-MODEL-RG --follow
 ```
 
 ### View Metrics
 
 ```powershell
 az monitor metrics list `
-    --resource /subscriptions/{sub}/resourceGroups/ncaam-stable-rg/providers/Microsoft.App/containerApps/ncaam-stable-prediction `
+    --resource /subscriptions/{sub}/resourceGroups/NCAAM-GBSV-MODEL-RG/providers/Microsoft.App/containerApps/ncaam-stable-prediction `
     --metric "Requests"
 ```
 
@@ -275,10 +275,10 @@ Navigate to: **Azure Portal > Container Apps > ncaam-stable-prediction > Monitor
 
 ```powershell
 # Check container app status
-az containerapp show -n ncaam-stable-prediction -g ncaam-stable-rg --query "properties.runningStatus"
+az containerapp show -n ncaam-stable-prediction -g NCAAM-GBSV-MODEL-RG --query "properties.runningStatus"
 
 # View system logs
-az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --type system
+az containerapp logs show -n ncaam-stable-prediction -g NCAAM-GBSV-MODEL-RG --type system
 ```
 
 ### Database Connection Issues
@@ -287,7 +287,7 @@ az containerapp logs show -n ncaam-stable-prediction -g ncaam-stable-rg --type s
 # Test PostgreSQL connectivity
 az postgres flexible-server execute `
     -n ncaam-stable-postgres `
-    -g ncaam-stable-rg `
+    -g NCAAM-GBSV-MODEL-RG `
     -u ncaam `
     -p "password" `
     -d ncaam `
@@ -298,10 +298,10 @@ az postgres flexible-server execute `
 
 ```powershell
 # Verify ACR credentials
-az acr credential show --name ncaamstableacr
+az acr credential show --name ncaamstablegbsvacr
 
 # Verify image exists
-az acr repository show-tags --name ncaamstableacr --repository ncaam-prediction
+az acr repository show-tags --name ncaamstablegbsvacr --repository ncaam-prediction
 ```
 
 ## Cleanup
@@ -309,7 +309,7 @@ az acr repository show-tags --name ncaamstableacr --repository ncaam-prediction
 To delete all Azure resources:
 
 ```powershell
-az group delete --name ncaam-stable-rg --yes --no-wait
+az group delete --name NCAAM-GBSV-MODEL-RG --yes --no-wait
 ```
 
 **Warning:** This deletes ALL resources including the database. Data will be lost.
@@ -330,7 +330,7 @@ az group delete --name ncaam-stable-rg --yes --no-wait
 GitHub Actions automatically builds and pushes images on merge to `main`:
 
 - **Workflow:** `.github/workflows/build-and-push.yml`
-- **ACR:** `ncaamstableacr.azurecr.io`
+- **ACR:** `ncaamstablegbsvacr.azurecr.io`
 - **Image:** `ncaam-prediction:{version}`
 
 ## Next Steps

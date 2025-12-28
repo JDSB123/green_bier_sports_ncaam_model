@@ -131,10 +131,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
-    build:
-      context: .
-      dockerfile: ./services/prediction-service-python/Dockerfile
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction:33.6
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-prediction:${IMAGE_TAG:-v33.6.2}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
@@ -196,10 +193,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   ratings-sync:
-    build:
-      context: ./services/ratings-sync-go
-      dockerfile: ./Dockerfile
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_ratings_sync:33.6
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-ratings-sync:${IMAGE_TAG:-v33.6.2}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_ratings_sync
     <<: [*common-env, *resource-limits]
     secrets:
@@ -234,10 +228,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   odds-full-once:
-    build:
-      context: ./services/odds-ingestion-rust
-      dockerfile: ./Dockerfile
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_ingestion:33.6
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.6.2}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_full_once
     <<: [*common-env, *security-opts, *resource-limits]
     secrets:
@@ -270,7 +261,7 @@ services:
     restart: "no"
 
   odds-1h-once:
-    image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_ingestion:33.6
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.6.2}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_h1_once
     <<: [*common-env, *security-opts, *resource-limits]
     secrets:

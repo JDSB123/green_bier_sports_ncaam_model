@@ -53,9 +53,9 @@ cd azure
 ```
 
 Default values:
-- **Resource Group:** `ncaam-stable-rg`
+- **Resource Group:** `NCAAM-GBSV-MODEL-RG`
 - **Location:** `centralus`
-- **Environment:** `prod`
+- **Environment:** `stable`
 
 ---
 
@@ -65,8 +65,8 @@ Going forward, use this standard:
 
 | Resource Type | Name |
 |---------------|------|
-| Resource Group | `ncaam-stable-rg` |
-| Container Registry | `ncaamstableacr` |
+| Resource Group | `NCAAM-GBSV-MODEL-RG` |
+| Container Registry | `ncaamstablegbsvacr` |
 | PostgreSQL | `ncaam-stable-postgres` |
 | Redis | `ncaam-stable-redis` |
 | Container Apps Env | `ncaam-stable-env` |
@@ -77,10 +77,10 @@ Going forward, use this standard:
 
 ## ✅ CI/CD Pipeline
 
-GitHub Actions automatically builds and pushes to `ncaamstableacr.azurecr.io`:
+GitHub Actions automatically builds and pushes to `ncaamstablegbsvacr.azurecr.io`:
 
 - **Trigger:** Push to `main` branch
-- **Image:** `ncaamstableacr.azurecr.io/ncaam-prediction:{version}`
+- **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:{version}`
 - **Latest Version:** See `docker-compose.yml` line 134
 
 ---

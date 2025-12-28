@@ -104,7 +104,7 @@ $acrName = 'ncaamstablegbsvacr'
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  NCAAM v6.3 - Azure Deployment" -ForegroundColor Cyan
+Write-Host "  NCAAM $ImageTag - Azure Deployment" -ForegroundColor Cyan
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Environment:    $Environment" -ForegroundColor Yellow

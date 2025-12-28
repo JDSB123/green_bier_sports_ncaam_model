@@ -17,7 +17,7 @@
    - Tags resources for organization
 
 3. **`docker-compose.yml`** - Local development/deployment
-   - Pulls from `ncaamstableacr.azurecr.io`
+   - Pulls from `ncaamstablegbsvacr.azurecr.io`
    - **Usage:** `docker compose up -d`
 
 4. **`.github/workflows/build-and-push.yml`** - CI/CD pipeline
