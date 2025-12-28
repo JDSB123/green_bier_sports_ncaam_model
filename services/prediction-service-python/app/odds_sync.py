@@ -22,16 +22,103 @@ from .odds_api_client import OddsApiClient, OddsApiError
 register_uuid()
 
 # Default team name mappings for common mismatches
+# These are applied BEFORE database lookup as a fast path
+# The database resolve_team_name() function handles 950+ aliases
 TEAM_NAME_ALIASES = {
+    # Connecticut variants
     "UConn": "Connecticut",
     "UConn Huskies": "Connecticut",
     "UCONN": "Connecticut",
-    # Add more as needed
+    "Connecticut Huskies": "Connecticut",
+    # Florida variants - CRITICAL
+    "Florida A&M Rattlers": "Florida A&M",
+    "FAMU": "Florida A&M",
+    "Fla A&M": "Florida A&M",
+    "Florida AM": "Florida A&M",
+    "FIU Panthers": "FIU",
+    "Florida International": "FIU",
+    "Florida International Panthers": "FIU",
+    "FAU Owls": "FAU",
+    "Florida Atlantic Owls": "FAU",
+    "Florida Atlantic": "FAU",
+    # Oregon variants - CRITICAL
+    "Oregon Ducks": "Oregon",
+    "Oregon State Beavers": "Oregon St.",
+    "Oregon State": "Oregon St.",
+    "OSU Beavers": "Oregon St.",
+    # Common Power 5 aliases
+    "Duke Blue Devils": "Duke",
+    "North Carolina Tar Heels": "North Carolina",
+    "UNC": "North Carolina",
+    "NC State Wolfpack": "NC State",
+    "Kentucky Wildcats": "Kentucky",
+    "Kansas Jayhawks": "Kansas",
+    "Gonzaga Bulldogs": "Gonzaga",
+    "Alabama Crimson Tide": "Alabama",
+    "Auburn Tigers": "Auburn",
+    "Tennessee Volunteers": "Tennessee",
+    "Texas Longhorns": "Texas",
+    "Texas A&M Aggies": "Texas A&M",
+    "Michigan Wolverines": "Michigan",
+    "Ohio State Buckeyes": "Ohio St.",
+    "Purdue Boilermakers": "Purdue",
+    "Houston Cougars": "Houston",
+    # State abbreviations
+    "Florida St. Seminoles": "Florida St.",
+    "Florida State Seminoles": "Florida St.",
+    "Florida State": "Florida St.",
+    "Michigan State Spartans": "Michigan St.",
+    "Michigan State": "Michigan St.",
+    "Penn State Nittany Lions": "Penn St.",
+    "Penn State": "Penn St.",
+    "Ohio State": "Ohio St.",
+    "Kansas State Wildcats": "Kansas St.",
+    "Kansas State": "Kansas St.",
+    "Iowa State Cyclones": "Iowa St.",
+    "Iowa State": "Iowa St.",
+    "Oklahoma State Cowboys": "Oklahoma St.",
+    "Oklahoma State": "Oklahoma St.",
+    # HBCU teams
+    "Grambling State Tigers": "Grambling St.",
+    "Grambling State": "Grambling St.",
+    "Jackson State Tigers": "Jackson St.",
+    "Jackson State": "Jackson St.",
+    "Norfolk State Spartans": "Norfolk St.",
+    "Norfolk State": "Norfolk St.",
+    "Morgan State Bears": "Morgan St.",
+    "Morgan State": "Morgan St.",
+    "Coppin State Eagles": "Coppin St.",
+    "Coppin State": "Coppin St.",
+    "Hampton Pirates": "Hampton",
+    "Alabama State Hornets": "Alabama St.",
+    "Alabama State": "Alabama St.",
+    "Prairie View A&M Panthers": "Prairie View A&M",
+    "Texas Southern Tigers": "Texas Southern",
+    "Mississippi Valley State": "Mississippi Valley St.",
+    "Miss Valley St. Delta Devils": "Mississippi Valley St.",
+    # Other common aliases
+    "Southeastern Louisiana Lions": "Southeastern Louisiana",
+    "SE Louisiana": "Southeastern Louisiana",
+    "SE Louisiana Lions": "Southeastern Louisiana",
+    "Tarleton State Texans": "Tarleton St.",
+    "Tarleton State": "Tarleton St.",
+    "Tarleton St. Texans": "Tarleton St.",
+    "North Alabama Lions": "North Alabama",
+    "California Golden Bears": "California",
+    "Cal Bears": "California",
+    "Cal": "California",
+    "High Point Panthers": "High Point",
+    "La Salle Explorers": "La Salle",
+    "Navy Midshipmen": "Navy",
 }
 
 
 def normalize_team_name(name: str) -> str:
-    """Normalize team name for matching."""
+    """Normalize team name for matching.
+
+    First checks local aliases for fast path, then relies on
+    database resolve_team_name() function for 950+ aliases.
+    """
     return TEAM_NAME_ALIASES.get(name, name)
 
 
@@ -89,13 +176,84 @@ class OddsSyncService:
         """Get a database connection."""
         return psycopg2.connect(**self.db_params)
 
+    def _resolve_team_id(self, cur, team_name: str) -> Optional[uuid.UUID]:
+        """
+        Resolve a team name to its ID using strict matching.
+
+        Priority order (NEVER settle for partial/fuzzy matches):
+        1. Exact canonical_name match (case-insensitive)
+        2. resolve_team_name() database function (uses 950+ aliases)
+        3. Python-side normalization then exact match
+
+        Returns None if no match found - caller must handle.
+        """
+        # Normalize with Python aliases first
+        normalized = normalize_team_name(team_name)
+
+        # Step 1: Try exact match on canonical_name
+        cur.execute(
+            """
+            SELECT t.id FROM teams t
+            LEFT JOIN team_ratings tr ON t.id = tr.team_id
+            WHERE LOWER(t.canonical_name) = LOWER(%s)
+            ORDER BY tr.team_id IS NOT NULL DESC
+            LIMIT 1
+            """,
+            (normalized,)
+        )
+        row = cur.fetchone()
+        if row:
+            return row[0]
+
+        # Step 2: Use database resolve_team_name() function
+        cur.execute("SELECT resolve_team_name(%s)", (team_name,))
+        resolved = cur.fetchone()
+        if resolved and resolved[0]:
+            cur.execute(
+                """
+                SELECT t.id FROM teams t
+                LEFT JOIN team_ratings tr ON t.id = tr.team_id
+                WHERE t.canonical_name = %s
+                ORDER BY tr.team_id IS NOT NULL DESC
+                LIMIT 1
+                """,
+                (resolved[0],)
+            )
+            row = cur.fetchone()
+            if row:
+                return row[0]
+
+        # Step 3: Try normalized name exact match
+        if normalized != team_name:
+            cur.execute(
+                """
+                SELECT t.id FROM teams t
+                LEFT JOIN team_ratings tr ON t.id = tr.team_id
+                WHERE LOWER(t.canonical_name) = LOWER(%s)
+                ORDER BY tr.team_id IS NOT NULL DESC
+                LIMIT 1
+                """,
+                (normalized,)
+            )
+            row = cur.fetchone()
+            if row:
+                return row[0]
+
+        # NO FUZZY/PARTIAL MATCHING - return None
+        return None
+
     def _get_or_create_game_id(
-        self, conn, external_id: str, home_team: str, away_team: str, commence_time: Optional[datetime]
+        self,
+        conn,
+        external_id: str,
+        home_team: str,
+        away_team: str,
+        commence_time: Optional[datetime]
     ) -> uuid.UUID:
         """Get or create a game_id for an external event."""
         if external_id in self.game_cache:
             return self.game_cache[external_id]
-        
+
         with conn.cursor() as cur:
             # First try to find existing game by external_id
             cur.execute(
@@ -107,28 +265,23 @@ class OddsSyncService:
                 game_id = row[0]
                 self.game_cache[external_id] = game_id
                 return game_id
-            
-            # Try to match by team names and date
-            # The games table uses team_id references, so we need to join with teams
-            if commence_time:
+
+            # Resolve team IDs using strict matching
+            home_team_id = self._resolve_team_id(cur, home_team)
+            away_team_id = self._resolve_team_id(cur, away_team)
+
+            # Try to match existing game by resolved teams and date
+            if home_team_id and away_team_id and commence_time:
                 game_date = commence_time.date()
                 cur.execute(
                     """
                     SELECT g.id FROM games g
-                    JOIN teams ht ON g.home_team_id = ht.id
-                    JOIN teams at ON g.away_team_id = at.id
                     WHERE g.commence_time::date = %s
-                      AND (
-                        ht.canonical_name = resolve_team_name(%s)
-                        OR ht.canonical_name ILIKE %s
-                      )
-                      AND (
-                        at.canonical_name = resolve_team_name(%s)
-                        OR at.canonical_name ILIKE %s
-                      )
+                      AND g.home_team_id = %s
+                      AND g.away_team_id = %s
                     LIMIT 1
                     """,
-                    (game_date, home_team, f"%{home_team}%", away_team, f"%{away_team}%")
+                    (game_date, home_team_id, away_team_id)
                 )
                 row = cur.fetchone()
                 if row:
@@ -141,47 +294,23 @@ class OddsSyncService:
                     conn.commit()
                     self.game_cache[external_id] = game_id
                     return game_id
-            
-            # Need to create a new game - first resolve team IDs
-            cur.execute(
-                """
-                SELECT id FROM teams 
-                WHERE canonical_name = resolve_team_name(%s)
-                   OR canonical_name ILIKE %s
-                LIMIT 1
-                """,
-                (home_team, f"%{home_team}%")
-            )
-            home_row = cur.fetchone()
-            
-            cur.execute(
-                """
-                SELECT id FROM teams 
-                WHERE canonical_name = resolve_team_name(%s)
-                   OR canonical_name ILIKE %s
-                LIMIT 1
-                """,
-                (away_team, f"%{away_team}%")
-            )
-            away_row = cur.fetchone()
-            
-            if not home_row or not away_row:
-                # Teams not found - create them
-                if not home_row:
-                    cur.execute(
-                        "INSERT INTO teams (canonical_name) VALUES (%s) RETURNING id",
-                        (home_team,)
-                    )
-                    home_row = cur.fetchone()
-                if not away_row:
-                    cur.execute(
-                        "INSERT INTO teams (canonical_name) VALUES (%s) RETURNING id",
-                        (away_team,)
-                    )
-                    away_row = cur.fetchone()
-            
-            home_team_id = home_row[0]
-            away_team_id = away_row[0]
+
+            # Create teams if not found (log warning - these won't have ratings)
+            if not home_team_id:
+                print(f"    WARNING: Creating new team '{home_team}' (no ratings)")
+                cur.execute(
+                    "INSERT INTO teams (canonical_name) VALUES (%s) RETURNING id",
+                    (home_team,)
+                )
+                home_team_id = cur.fetchone()[0]
+
+            if not away_team_id:
+                print(f"    WARNING: Creating new team '{away_team}' (no ratings)")
+                cur.execute(
+                    "INSERT INTO teams (canonical_name) VALUES (%s) RETURNING id",
+                    (away_team,)
+                )
+                away_team_id = cur.fetchone()[0]
             
             # Create new game
             game_id = uuid.uuid4()
