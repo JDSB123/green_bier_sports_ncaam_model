@@ -19,6 +19,11 @@ class RestInfo:
     is_back_to_back: bool
     last_game_datetime: Optional[datetime] = None
 
+    @property
+    def days_since_game(self) -> int:
+        """Legacy alias used by models; equals days_rest."""
+        return self.days_rest
+
 
 @dataclass
 class SituationalAdjustment:

@@ -101,6 +101,12 @@ class PredictionEngineV33:
         if home_ratings is None or away_ratings is None:
             raise ValueError("home_ratings and away_ratings are required")
 
+        def _rest_days(rest: Optional['RestInfo']) -> Optional[int]:
+            """Gracefully handle both legacy and current rest attributes."""
+            if rest is None:
+                return None
+            return getattr(rest, "days_since_game", None) or getattr(rest, "days_rest", None)
+
         self.logger.info(
             f"v33.6: Predicting {home_team} vs {away_team}",
             game_id=str(game_id),
@@ -116,8 +122,8 @@ class PredictionEngineV33:
             home=home_ratings,
             away=away_ratings,
             is_neutral=is_neutral,
-            home_rest_days=home_rest.days_since_game if home_rest else None,
-            away_rest_days=away_rest.days_since_game if away_rest else None,
+            home_rest_days=_rest_days(home_rest),
+            away_rest_days=_rest_days(away_rest),
         )
 
         # FG Total (independent, backtested on 3,318 games)
@@ -125,8 +131,8 @@ class PredictionEngineV33:
             home=home_ratings,
             away=away_ratings,
             is_neutral=is_neutral,
-            home_rest_days=home_rest.days_since_game if home_rest else None,
-            away_rest_days=away_rest.days_since_game if away_rest else None,
+            home_rest_days=_rest_days(home_rest),
+            away_rest_days=_rest_days(away_rest),
         )
 
         # 1H Spread (independent, backtested on 904 games)
@@ -134,8 +140,8 @@ class PredictionEngineV33:
             home=home_ratings,
             away=away_ratings,
             is_neutral=is_neutral,
-            home_rest_days=home_rest.days_since_game if home_rest else None,
-            away_rest_days=away_rest.days_since_game if away_rest else None,
+            home_rest_days=_rest_days(home_rest),
+            away_rest_days=_rest_days(away_rest),
         )
 
         # 1H Total (independent, backtested on 562 games)
@@ -143,8 +149,8 @@ class PredictionEngineV33:
             home=home_ratings,
             away=away_ratings,
             is_neutral=is_neutral,
-            home_rest_days=home_rest.days_since_game if home_rest else None,
-            away_rest_days=away_rest.days_since_game if away_rest else None,
+            home_rest_days=_rest_days(home_rest),
+            away_rest_days=_rest_days(away_rest),
         )
 
         # ═══════════════════════════════════════════════════════════════════════
@@ -183,7 +189,7 @@ class PredictionEngineV33:
             spread_confidence_1h=h1_spread_pred.confidence,
             total_confidence_1h=h1_total_pred.confidence,
             # Model metadata
-            model_version="v33.6.1",
+            model_version="v33.6.2",
         )
 
         # Calculate edges if market odds available

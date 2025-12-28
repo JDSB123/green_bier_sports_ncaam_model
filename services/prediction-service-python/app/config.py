@@ -1,7 +1,7 @@
 """
-Configuration for NCAA Basketball Prediction Service v33.6.1
+Configuration for NCAA Basketball Prediction Service v33.6.2
 
-v33.6.1 Changes (2024-12-27):
+v33.6.2 Changes (2025-12-28):
 - FIXED: 1H Total confidence now starts at 0.68 (was 0.52, below 0.65 threshold)
 - FIXED: FG Spread MIN_EDGE aligned to 2.0 (was 7.0, too conservative)
 - FIXED: FG Total MIN_EDGE aligned to 3.0 (matches config)
@@ -319,7 +319,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = "33.6.1"  # v33.6.1: Fixed 1H Total confidence, MIN_EDGE alignment, extreme handling, CLV tracking
+    service_version: str = "33.6.2"  # v33.6.2: Rest-day compatibility helpers and Azure image alignment
     debug: bool = False
 
     # Feature Store

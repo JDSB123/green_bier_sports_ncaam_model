@@ -132,31 +132,50 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 	for _, raw := range rawTeams {
 		// 2025-26 season: Barttorvik returns 45 fields (indices 0-44)
 		// AdjTempo is at index 44 (last element)
-		if len(raw) < 25 {
+		if len(raw) < 45 {
 			skipped++
-			continue // Skip incomplete records - need at least basic metrics
+			continue // Skip incomplete records - need all metrics
 		}
 
-		// Flexible parsing: Use a map to handle potential index changes
+		// Direct index mapping based on actual Barttorvik 2025 JSON format:
+		// [0]=rank, [1]=team, [2]=conf, [3]=record, [4]=adjoe, [5]=adjoe_rank,
+		// [6]=adjde, [7]=adjde_rank, [8]=barthag, [9]=barthag_rank,
+		// [10]=wins, [11]=losses, [12]=conf_wins, [13]=conf_losses, [14]=conf_record,
+		// [15]=efg_o, [16]=efg_d, [17]=tor, [18]=tord, [19]=orb_o, [20]=drb_d,
+		// [21]=ftr_o, [22]=ftr_d, [23]=2p_o, [24]=2p_d, [25]=3p_o, [26]=3p_d,
+		// [27]=3pr_o, [28]=3pr_d, [29-43]=various advanced stats,
+		// [44]=adj_tempo (LAST FIELD)
 		dataMap := make(map[string]interface{})
-		expectedFields := []string{
-			"rank", "team", "conf", "record", "adjoe", "adjoe_rank",
-			"adjde", "adjde_rank", "barthag", "barthag_rank",
-			"efg", "efgd", "tor", "tord", "road_rec", "orb", "drb",
-			"ftr", "ftrd", "2p", "2pd", "3p", "3pd", "3pr", "3prd",
-			"adj_t", "wab", // Add more as needed
-		}
-		for i, field := range expectedFields {
-			if i < len(raw) {
-				dataMap[field] = raw[i]
-			} else {
-				r.logger.Warn("Missing expected field", zap.String("field", field))
-			}
-		}
+		dataMap["rank"] = raw[0]
+		dataMap["team"] = raw[1]
+		dataMap["conf"] = raw[2]
+		dataMap["record"] = raw[3]
+		dataMap["adjoe"] = raw[4]
+		dataMap["adjde"] = raw[6]
+		dataMap["barthag"] = raw[8]
+		dataMap["wins"] = raw[10]
+		dataMap["losses"] = raw[11]
+		dataMap["efg"] = raw[15]
+		dataMap["efgd"] = raw[16]
+		dataMap["tor"] = raw[17]
+		dataMap["tord"] = raw[18]
+		dataMap["orb"] = raw[19]
+		dataMap["drb"] = raw[20]
+		dataMap["ftr"] = raw[21]
+		dataMap["ftrd"] = raw[22]
+		dataMap["2p"] = raw[23]
+		dataMap["2pd"] = raw[24]
+		dataMap["3p"] = raw[25]
+		dataMap["3pd"] = raw[26]
+		dataMap["3pr"] = raw[27]
+		dataMap["3prd"] = raw[28]
+		dataMap["adj_t"] = raw[44] // TEMPO IS THE LAST FIELD
+		// WAB doesn't have a consistent position, use default
+		dataMap["wab"] = 0.0
 
-		// Parse wins/losses from record string "W-L"
-		recordStr := toString(dataMap["record"])
-		wins, losses := parseRecord(recordStr)
+		// Parse wins/losses from the dedicated fields (more reliable than record string)
+		wins := getInt(dataMap, "wins", 0)
+		losses := getInt(dataMap, "losses", 0)
 
 		// Extract with defaults and validation
 		adjTempo := getFloat(dataMap, "adj_t", 70.0)
@@ -198,13 +217,13 @@ func (r *RatingsSync) FetchRatings(ctx context.Context) ([]BarttorkvikTeam, erro
 			FTR:  getFloat(dataMap, "ftr", 0.0),
 			FTRD: getFloat(dataMap, "ftrd", 0.0),
 
-			// Shooting breakdown
-			TwoP:     toFloat(raw[19]),
-			TwoPD:    toFloat(raw[20]),
-			ThreeP:   toFloat(raw[21]),
-			ThreePD:  toFloat(raw[22]),
-			ThreePR:  toFloat(raw[23]),
-			ThreePRD: toFloat(raw[24]),
+			// Shooting breakdown (using dataMap which has correct indices)
+			TwoP:     getFloat(dataMap, "2p", 0.0),
+			TwoPD:    getFloat(dataMap, "2pd", 0.0),
+			ThreeP:   getFloat(dataMap, "3p", 0.0),
+			ThreePD:  getFloat(dataMap, "3pd", 0.0),
+			ThreePR:  getFloat(dataMap, "3pr", 0.0),
+			ThreePRD: getFloat(dataMap, "3prd", 0.0),
 		}
 
 		// Validate parsed values are in reasonable ranges

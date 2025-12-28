@@ -35,8 +35,8 @@ jobs:
       - name: Get version from commit
         id: version
         run: |
-          # Generate version: v6.3.{25 + run_number} to continue from v6.3.25
-          VERSION="v6.3.$((25 + ${{ github.run_number }}))"
+          # Keep production pin at v33.6.2 for discipline
+          VERSION="v33.6.2"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
 
@@ -47,6 +47,11 @@ jobs:
 
       - name: Log in to ACR
         run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Ensure Container Apps extension
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          az extension add -n containerapp --yes || az extension update -n containerapp --yes
 
       - name: Build and push images
         run: |
@@ -98,34 +103,34 @@ jobs:
         run: |
           # Prediction API
           az containerapp update \
-            --name ncaam-gbsv-prediction \
+            --name ncaam-stable-prediction \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.version }} \
             --output none || echo "Prediction Container App not found or update failed. Skipping."
 
           # Web
           az containerapp update \
-            --name ncaam-gbsv-web \
+            --name ncaam-stable-web \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.version }} \
             --output none || echo "Web Container App not found or update failed. Skipping."
 
           # Manual jobs
           az containerapp job update \
-            --name ncaam-gbsv-ratings-sync \
+            --name ncaam-stable-ratings-sync \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.version }} \
             --output none || echo "Ratings job not found or update failed. Skipping."
 
           az containerapp job update \
-            --name ncaam-gbsv-odds-ingestion \
+            --name ncaam-stable-odds-ingestion \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.version }} \
             --output none || echo "Odds ingestion job not found or update failed. Skipping."
 
       - name: Update docker-compose.yml with new prediction-service version
         run: |
-          sed -i "s|image: ncaamgbsvacr.azurecr.io/ncaam-prediction:.*|image: ncaamgbsvacr.azurecr.io/ncaam-prediction:${{ steps.version.outputs.version }}|" docker-compose.yml
+          sed -i "s|image: .*/$PRED_IMAGE:.*|image: $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.version }}|" docker-compose.yml
 
       - name: Commit updated docker-compose.yml
         run: |

@@ -1,4 +1,4 @@
-# NCAA Basketball v33.6.1 - PRODUCTION FINAL
+# NCAA Basketball v33.6.2 - PRODUCTION FINAL
 
 <!-- GitHub Actions credentials updated: 2025-12-26 -->
 
@@ -86,7 +86,7 @@ That's it. One command. Everything runs inside the container.
                     └─────────────┘
 ```
 
-## Model Parameters (v33.6.1)
+## Model Parameters (v33.6.2)
 
 **Full Game:**
 - Home Court Advantage (Spread): 5.8 pts (backtested from 3,318 games)

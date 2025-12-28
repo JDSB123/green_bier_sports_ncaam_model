@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# NCAAM v33.6.1 - Azure Deployment Script
+# NCAAM v33.6.2 - Azure Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════════
 # Usage:
 #   .\deploy.ps1 -OddsApiKey "YOUR_KEY"              # Full deployment
@@ -17,7 +17,7 @@
 # Other Options:
 #   -OddsApiKey     The Odds API key (auto-fetched from existing app if omitted)
 #   -TeamsWebhookUrl  Microsoft Teams webhook for notifications
-#   -ImageTag       Container image tag (default: v33.6.1)
+#   -ImageTag       Container image tag (default: v33.6.2)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(
@@ -56,7 +56,7 @@ param(
     [switch]$QuickDeploy,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag = 'v33.6.1'
+    [string]$ImageTag = 'v33.6.2'
 )
 
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -191,7 +191,7 @@ if ([string]::IsNullOrWhiteSpace($BasketballApiKey)) {
 # Optional: Load Teams webhook from repo secret file if not explicitly provided
 if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
     $teamsSecretPath = Join-Path $PSScriptRoot "..\secrets\teams_webhook_url.txt"
-    if (Test-Path $teamsSecretPath) {
+    if (Test-Path $teamsSecretPath -PathType Leaf) {
         $TeamsWebhookUrl = (Get-Content $teamsSecretPath -Raw).Trim()
     }
 }

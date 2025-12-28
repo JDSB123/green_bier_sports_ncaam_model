@@ -1617,84 +1617,84 @@ def main():
                 market = "ML"
 
             # Format pick display with team name and odds
-                pick_val = rec['pick']
-                if market == "SPREAD":
-                    if pick_val == "HOME":
-                        team_name = game["home"]
-                        line = game["spread"] if not is_1h else game.get("spread_1h")
-                        juice = game.get("spread_home_juice") if not is_1h else game.get("spread_1h_home_juice")
-                    else:
-                        team_name = game["away"]
-                        line = -(game["spread"]) if game["spread"] and not is_1h else (-(game.get("spread_1h")) if game.get("spread_1h") else None)
-                        juice = game.get("spread_away_juice") if not is_1h else game.get("spread_1h_away_juice")
-                    pick_display = f"{team_name[:12]} {format_spread(line)} ({format_odds(juice)})"
-                elif market == "TOTAL":
-                    total_line = game["total"] if not is_1h else game.get("total_1h")
-                    if pick_val == "OVER":
-                        juice = game.get("over_juice") if not is_1h else game.get("over_1h_juice")
-                        pick_display = f"OVER {total_line:.1f} ({format_odds(juice)})"
-                    else:
-                        juice = game.get("under_juice") if not is_1h else game.get("under_1h_juice")
-                        pick_display = f"UNDER {total_line:.1f} ({format_odds(juice)})"
+            pick_val = rec['pick']
+            if market == "SPREAD":
+                if pick_val == "HOME":
+                    team_name = game["home"]
+                    line = game["spread"] if not is_1h else game.get("spread_1h")
+                    juice = game.get("spread_home_juice") if not is_1h else game.get("spread_1h_home_juice")
                 else:
-                    continue
+                    team_name = game["away"]
+                    line = -(game["spread"]) if game["spread"] and not is_1h else (-(game.get("spread_1h")) if game.get("spread_1h") else None)
+                    juice = game.get("spread_away_juice") if not is_1h else game.get("spread_1h_away_juice")
+                pick_display = f"{team_name[:12]} {format_spread(line)} ({format_odds(juice)})"
+            elif market == "TOTAL":
+                total_line = game["total"] if not is_1h else game.get("total_1h")
+                if pick_val == "OVER":
+                    juice = game.get("over_juice") if not is_1h else game.get("over_1h_juice")
+                    pick_display = f"OVER {total_line:.1f} ({format_odds(juice)})"
+                else:
+                    juice = game.get("under_juice") if not is_1h else game.get("under_1h_juice")
+                    pick_display = f"UNDER {total_line:.1f} ({format_odds(juice)})"
+            else:
+                continue
 
-                # Model line display (show from PICK perspective for spreads)
-                if market == "SPREAD":
-                    model_line_val_home = pred["predicted_spread"] if not is_1h else pred["predicted_spread_1h"]
-                    model_line_val = model_line_val_home if pick_val == "HOME" else -model_line_val_home
-                    model_str = f"{format_spread(model_line_val)}"
-                elif market == "TOTAL":
-                    model_line_val = pred["predicted_total"] if not is_1h else pred["predicted_total_1h"]
-                    model_str = f"{model_line_val:.1f}"
-                else:
-                    continue
+            # Model line display (show from PICK perspective for spreads)
+            if market == "SPREAD":
+                model_line_val_home = pred["predicted_spread"] if not is_1h else pred["predicted_spread_1h"]
+                model_line_val = model_line_val_home if pick_val == "HOME" else -model_line_val_home
+                model_str = f"{format_spread(model_line_val)}"
+            elif market == "TOTAL":
+                model_line_val = pred["predicted_total"] if not is_1h else pred["predicted_total_1h"]
+                model_str = f"{model_line_val:.1f}"
+            else:
+                continue
 
-                # Market line display with juice (show from PICK perspective)
-                if market == "SPREAD":
-                    mkt_line_home = game["spread"] if not is_1h else game.get("spread_1h")
-                    mkt_line = mkt_line_home if pick_val == "HOME" else (-(mkt_line_home) if mkt_line_home is not None else None)
-                    if not is_1h:
-                        mkt_juice = game.get("spread_home_juice", -110) if pick_val == "HOME" else game.get("spread_away_juice", -110)
-                    else:
-                        mkt_juice = game.get("spread_1h_home_juice", -110) if pick_val == "HOME" else game.get("spread_1h_away_juice", -110)
-                    market_str = f"{format_spread(mkt_line)} ({format_odds(mkt_juice)})"
-                elif market == "TOTAL":
-                    mkt_line = game["total"] if not is_1h else game.get("total_1h")
-                    if not is_1h:
-                        mkt_juice = game.get("over_juice", -110) if pick_val == "OVER" else game.get("under_juice", -110)
-                    else:
-                        mkt_juice = game.get("over_1h_juice", -110) if pick_val == "OVER" else game.get("under_1h_juice", -110)
-                    market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
+            # Market line display with juice (show from PICK perspective)
+            if market == "SPREAD":
+                mkt_line_home = game["spread"] if not is_1h else game.get("spread_1h")
+                mkt_line = mkt_line_home if pick_val == "HOME" else (-(mkt_line_home) if mkt_line_home is not None else None)
+                if not is_1h:
+                    mkt_juice = game.get("spread_home_juice", -110) if pick_val == "HOME" else game.get("spread_away_juice", -110)
                 else:
-                    continue
-                
-                # Fire rating
-                fire = get_fire_rating(rec['edge'], rec.get('bet_tier', 'STANDARD'))
-                
-                # Determine pick side for display purposes
-                if market == "SPREAD" or market == "ML":
-                    pick_side = "home" if pick_val == "HOME" else "away"
+                    mkt_juice = game.get("spread_1h_home_juice", -110) if pick_val == "HOME" else game.get("spread_1h_away_juice", -110)
+                market_str = f"{format_spread(mkt_line)} ({format_odds(mkt_juice)})"
+            elif market == "TOTAL":
+                mkt_line = game["total"] if not is_1h else game.get("total_1h")
+                if not is_1h:
+                    mkt_juice = game.get("over_juice", -110) if pick_val == "OVER" else game.get("under_juice", -110)
                 else:
-                    pick_side = "over" if pick_val == "OVER" else "under"
-                
-                all_picks.append({
-                    "date_cst": game.get("date_cst"),
-                    "time_cst": game["time_cst"],
-                    "home": game["home"],
-                    "away": game["away"],
-                    "home_record": game.get("home_record"),
-                    "away_record": game.get("away_record"),
-                    "period": period,
-                    "market": market,
-                    "pick_display": pick_display,
-                    "pick_side": pick_side,
-                    "model_line": model_str,
-                    "market_line": market_str,
-                    "edge": rec['edge'],
-                    "bet_tier": rec.get('bet_tier', 'STANDARD'),
-                    "fire_rating": fire,
-                })
+                    mkt_juice = game.get("over_1h_juice", -110) if pick_val == "OVER" else game.get("under_1h_juice", -110)
+                market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
+            else:
+                continue
+            
+            # Fire rating
+            fire = get_fire_rating(rec['edge'], rec.get('bet_tier', 'STANDARD'))
+            
+            # Determine pick side for display purposes
+            if market == "SPREAD" or market == "ML":
+                pick_side = "home" if pick_val == "HOME" else "away"
+            else:
+                pick_side = "over" if pick_val == "OVER" else "under"
+            
+            all_picks.append({
+                "date_cst": game.get("date_cst"),
+                "time_cst": game["time_cst"],
+                "home": game["home"],
+                "away": game["away"],
+                "home_record": game.get("home_record"),
+                "away_record": game.get("away_record"),
+                "period": period,
+                "market": market,
+                "pick_display": pick_display,
+                "pick_side": pick_side,
+                "model_line": model_str,
+                "market_line": market_str,
+                "edge": rec['edge'],
+                "bet_tier": rec.get('bet_tier', 'STANDARD'),
+                "fire_rating": fire,
+            })
     
     print(f"✓ Processed {games_processed} games ({games_skipped} skipped - missing data)")
     if args.debug_skips and skipped_reasons:

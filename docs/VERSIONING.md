@@ -22,9 +22,13 @@ v{MAJOR}.{MINOR}.{PATCH}[-{MODEL_TAG}]
 
 ## Current Version
 
-**v33.6.1** - Model improvements and CLV tracking
+**v33.6.2** - Rest-day compatibility and Azure image alignment
 
 ## Version History
+
+### v33.6.2 (2025-12-28)
+- Added backward-compatible rest-day accessors (supports `days_rest` and legacy `days_since_game`).
+- Updated Azure defaults and docs to deploy image tag v33.6.2 (prevents rollback to v33.6.1).
 
 ### v33.6.1 (2025-12-27)
 - Fixed 1H Total confidence (0.52 → 0.68) - was below 0.65 threshold

@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# GREEN BIER SPORT VENTURES - NCAAM v33.6.1
+# GREEN BIER SPORT VENTURES - NCAAM v33.6.2
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enterprise-ready sports prediction model with:
 # - Dynamic port allocation (no conflicts with other sports)
@@ -131,6 +131,9 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
+    build:
+      context: .
+      dockerfile: ./services/prediction-service-python/Dockerfile
     image: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction:33.6
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction
     <<: [*common-env, *security-opts]

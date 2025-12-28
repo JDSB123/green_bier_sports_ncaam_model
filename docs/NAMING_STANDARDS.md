@@ -98,7 +98,7 @@
 
 ### Container Image
 - **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:{tag}`
-- **Example:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.6.1`
+- **Example:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.6.2`
 
 ---
 
@@ -171,7 +171,7 @@ ncaam-stable-prediction (Container App)
 ncaam-stable-logs (Log Analytics)
 
 # Container Image
-ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.6.1
+ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.6.2
 ```
 
 ---
