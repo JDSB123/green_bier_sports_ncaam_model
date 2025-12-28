@@ -131,7 +131,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
-    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-prediction:${IMAGE_TAG:-v33.6.2}
+    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.6.2
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
