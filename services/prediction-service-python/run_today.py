@@ -33,7 +33,9 @@ import subprocess
 
 # Import prediction engine (v33.6 - modular independent models)
 from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
-from app.models import TeamRatings, MarketOdds
+from app.models import TeamRatings, MarketOdds, BetType
+from app.config import settings
+from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_total_model
 from app.situational import SituationalAdjuster, RestInfo
 from app.persistence import persist_prediction_and_recommendations
 from app.graph_upload import upload_file_to_teams
@@ -43,6 +45,71 @@ from pathlib import Path
 
 # Central Time Zone
 CST = ZoneInfo("America/Chicago")
+
+def _pct(numerator: int, denominator: int) -> float:
+    return (numerator / denominator) if denominator else 0.0
+
+
+def _summarize_data_quality(games: List[Dict]) -> Dict[str, int]:
+    total = len(games)
+    ratings_ok = sum(1 for g in games if g.get("home_ratings") and g.get("away_ratings"))
+    odds_ok = sum(1 for g in games if g.get("spread") is not None or g.get("total") is not None)
+    ready_ok = sum(
+        1
+        for g in games
+        if g.get("home_ratings")
+        and g.get("away_ratings")
+        and (g.get("spread") is not None or g.get("total") is not None)
+    )
+    h1_odds_ok = sum(
+        1
+        for g in games
+        if g.get("spread_1h") is not None or g.get("total_1h") is not None
+    )
+    return {
+        "total": total,
+        "ratings_ok": ratings_ok,
+        "odds_ok": odds_ok,
+        "ready_ok": ready_ok,
+        "h1_odds_ok": h1_odds_ok,
+    }
+
+
+def _enforce_data_quality(summary: Dict[str, int], args: argparse.Namespace) -> List[str]:
+    total = summary["total"]
+    if total <= 0:
+        return []
+
+    ratings_pct = _pct(summary["ratings_ok"], total)
+    odds_pct = _pct(summary["odds_ok"], total)
+    ready_pct = _pct(summary["ready_ok"], total)
+    h1_pct = _pct(summary["h1_odds_ok"], total)
+
+    print(" Data Quality")
+    print(f"   Ratings coverage: {summary['ratings_ok']}/{total} ({ratings_pct:.1%})")
+    print(f"   Odds coverage:    {summary['odds_ok']}/{total} ({odds_pct:.1%})")
+    print(f"   Ready coverage:   {summary['ready_ok']}/{total} ({ready_pct:.1%})")
+    if args.min_1h_odds_pct > 0:
+        print(f"   1H odds coverage: {summary['h1_odds_ok']}/{total} ({h1_pct:.1%})")
+
+    failures = []
+    if ratings_pct < args.min_ratings_pct:
+        failures.append(f"ratings {ratings_pct:.1%} < {args.min_ratings_pct:.1%}")
+    if odds_pct < args.min_odds_pct:
+        failures.append(f"odds {odds_pct:.1%} < {args.min_odds_pct:.1%}")
+    if ready_pct < args.min_ready_pct:
+        failures.append(f"ready {ready_pct:.1%} < {args.min_ready_pct:.1%}")
+    if args.min_1h_odds_pct > 0 and h1_pct < args.min_1h_odds_pct:
+        failures.append(f"1H odds {h1_pct:.1%} < {args.min_1h_odds_pct:.1%}")
+
+    if failures:
+        print("[WARN]  Data quality below thresholds:")
+        for failure in failures:
+            print(f"   - {failure}")
+        print("   Re-run with --allow-data-degrade to proceed anyway.")
+
+    return failures
+
 
 def _configure_stdout() -> None:
     """
@@ -59,9 +126,9 @@ def _configure_stdout() -> None:
         # Best effort only; never fail due to stdout wrapping.
         return
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 # CONFIGURATION - Always uses container network
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 # ALWAYS use container network (postgres:5432)
 # No local vs container distinction - ONE source of truth
@@ -148,9 +215,9 @@ def _is_placeholder_teams_webhook(url: str) -> bool:
     return False
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 # DATA SYNC - Uses existing Go/Rust binaries (REUSE proven logic)
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 def sync_fresh_data(skip_sync: bool = False) -> bool:
     """
@@ -158,14 +225,14 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     REUSES all the hard work: 900+ team variants, normalization, first half logic.
     """
     if skip_sync:
-        print("⏭️  Skipping data sync (--no-sync flag)")
+        print("[SKIP]  Skipping data sync (--no-sync flag)")
         return True
     
-    print("🔄 Syncing fresh data...")
+    print(" Syncing fresh data...")
     print()
     
     # Sync ratings using existing Go binary (proven normalization logic)
-    print("  📊 Syncing ratings from Barttorvik (Go binary)...")
+    print("   Syncing ratings from Barttorvik (Go binary)...")
     
     # Go/Rust binaries expect standard postgres:// URL, not SQLAlchemy's postgresql+psycopg2://
     clean_db_url = DATABASE_URL.replace("+psycopg2", "")
@@ -183,20 +250,20 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
             timeout=120,
         )
         if result.returncode == 0:
-            print("  ✓ Ratings synced successfully")
+            print("  [OK] Ratings synced successfully")
             ratings_success = True
         else:
-            print(f"  ⚠️  Ratings sync returned code {result.returncode}")
+            print(f"  [WARN]  Ratings sync returned code {result.returncode}")
             if result.stderr:
                 error_lines = result.stderr.strip().split('\n')[-3:]
                 for line in error_lines:
                     print(f"      {line}")
             ratings_success = False
     except subprocess.TimeoutExpired:
-        print("  ⚠️  Ratings sync timed out (>2 min)")
+        print("  [WARN]  Ratings sync timed out (>2 min)")
         ratings_success = False
     except Exception as e:
-        print(f"  ⚠️  Ratings sync error: {e}")
+        print(f"  [WARN]  Ratings sync error: {e}")
         ratings_success = False
     
     # Sync odds - try Rust binary first, fall back to Python if not available
@@ -204,7 +271,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     rust_binary = "/app/bin/odds-ingestion"
     
     if os.path.exists(rust_binary):
-        print("  📈 Syncing odds from The Odds API (Rust binary)...")
+        print("  [INFO] Syncing odds from The Odds API (Rust binary)...")
         try:
             # Get API key from env (Azure: ODDS_API_KEY or THE_ODDS_API_KEY) or Docker secret file (Compose)
             odds_api_key = os.getenv("ODDS_API_KEY") or os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
@@ -216,6 +283,10 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                     "DATABASE_URL": clean_db_url,
                     "REDIS_URL": REDIS_URL,
                     "THE_ODDS_API_KEY": odds_api_key,
+                    "ENABLE_FULL": "true",
+                    "ENABLE_H1": "true",
+                    "ENABLE_H2": "false",
+                    "STRICT_TEAM_MATCHING": "true",
                     # odds-ingestion starts a health server; the container's daemon already
                     # binds the default 8083, so use an ephemeral port for one-shot runs.
                     "HEALTH_PORT": "0",
@@ -226,22 +297,22 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                 timeout=120,
             )
             if result.returncode == 0:
-                print("  ✓ Odds synced successfully (Rust)")
+                print("  [OK] Odds synced successfully (Rust)")
                 odds_success = True
             else:
-                print(f"  ⚠️  Rust odds sync returned code {result.returncode}")
+                print(f"  [WARN]  Rust odds sync returned code {result.returncode}")
                 if result.stderr:
                     error_lines = result.stderr.strip().split('\n')[-3:]
                     for line in error_lines:
                         print(f"      {line}")
         except subprocess.TimeoutExpired:
-            print("  ⚠️  Rust odds sync timed out (>2 min)")
+            print("  [WARN]  Rust odds sync timed out (>2 min)")
         except Exception as e:
-            print(f"  ⚠️  Rust odds sync error: {e}")
+            print(f"  [WARN]  Rust odds sync error: {e}")
     
     # Fall back to Python-based odds sync if Rust binary not available or failed
     if not odds_success:
-        print("  📈 Syncing odds from The Odds API (Python fallback)...")
+        print("  [INFO] Syncing odds from The Odds API (Python fallback)...")
         try:
             from app.odds_sync import sync_odds
             sync_result = sync_odds(
@@ -251,16 +322,16 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                 enable_h2=False,
             )
             if sync_result["success"]:
-                print(f"  ✓ Odds synced successfully (Python): {sync_result['total_snapshots']} snapshots")
+                print(f"  [OK] Odds synced successfully (Python): {sync_result['total_snapshots']} snapshots")
                 odds_success = True
             else:
-                print(f"  ⚠️  Python odds sync error: {sync_result.get('error', 'unknown')}")
+                print(f"  [WARN]  Python odds sync error: {sync_result.get('error', 'unknown')}")
         except Exception as e:
-            print(f"  ⚠️  Python odds sync error: {e}")
+            print(f"  [WARN]  Python odds sync error: {e}")
 
     # Basic resilience: if either sync failed, attempt one quick retry for transient issues
     if not (ratings_success and odds_success):
-        print("  🔁 One quick retry for transient sync issues...")
+        print("  [RETRY] One quick retry for transient sync issues...")
         try:
             # Retry ratings using Go binary if available
             if not ratings_success and os.path.exists("/app/bin/ratings-sync"):
@@ -291,21 +362,21 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                 except Exception:
                     pass
         except Exception as e:
-            print(f"  ⚠️  Retry failed: {e}")
+            print(f"  [WARN]  Retry failed: {e}")
     
     print()
     if ratings_success and odds_success:
-        print("✓ Data sync complete")
+        print("[OK] Data sync complete")
     else:
-        print("⚠️  Some data sync issues - predictions may use cached data")
+        print("[WARN]  Some data sync issues - predictions may use cached data")
     print()
     
     return ratings_success and odds_success
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 # DATABASE FETCHING
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List[Dict]:
     """
@@ -366,6 +437,57 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
               (bookmaker = 'pinnacle') DESC,
               (bookmaker = 'bovada') DESC,
               time DESC
+        ),
+        -- Opening odds (earliest snapshot)
+        open_odds AS (
+            SELECT DISTINCT ON (game_id, market_type, period)
+                game_id,
+                market_type,
+                period,
+                home_line,
+                away_line,
+                total_line,
+                home_price,
+                away_price,
+                over_price,
+                under_price
+            FROM odds_snapshots
+            WHERE market_type IN ('spreads', 'totals')
+              AND period = 'full'
+            ORDER BY
+              game_id, market_type, period,
+              time ASC
+        ),
+        open_odds_1h AS (
+            SELECT DISTINCT ON (game_id, market_type, period)
+                game_id,
+                market_type,
+                period,
+                home_line,
+                away_line,
+                total_line,
+                home_price,
+                away_price,
+                over_price,
+                under_price
+            FROM odds_snapshots
+            WHERE market_type IN ('spreads', 'totals')
+              AND period = '1h'
+            ORDER BY
+              game_id, market_type, period,
+              time ASC
+        ),
+        sharp_open_odds AS (
+            SELECT DISTINCT ON (game_id, market_type)
+                game_id,
+                market_type,
+                home_line as sharp_home_line_open,
+                total_line as sharp_total_line_open
+            FROM odds_snapshots
+            WHERE bookmaker = 'pinnacle'
+              AND period = 'full'
+              AND market_type IN ('spreads', 'totals')
+            ORDER BY game_id, market_type, time ASC
         ),
         -- Sharp book reference (Pinnacle ONLY) for CLV tracking
         sharp_odds AS (
@@ -443,6 +565,14 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.total_line END) as total_1h,
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.over_price END) as over_1h_juice,
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.under_price END) as under_1h_juice,
+            -- Opening lines (consensus)
+            MAX(CASE WHEN oo.market_type = 'spreads' THEN oo.home_line END) as spread_open,
+            MAX(CASE WHEN oo.market_type = 'totals' THEN oo.total_line END) as total_open,
+            MAX(CASE WHEN oo1h.market_type = 'spreads' THEN oo1h.home_line END) as spread_1h_open,
+            MAX(CASE WHEN oo1h.market_type = 'totals' THEN oo1h.total_line END) as total_1h_open,
+            -- Opening sharp lines (Pinnacle)
+            MAX(CASE WHEN soo.market_type = 'spreads' THEN soo.sharp_home_line_open END) as sharp_spread_open,
+            MAX(CASE WHEN soo.market_type = 'totals' THEN soo.sharp_total_line_open END) as sharp_total_open,
             -- Sharp book reference (Pinnacle)
             MAX(CASE WHEN so.market_type = 'spreads' THEN so.sharp_home_line END) as sharp_spread,
             MAX(CASE WHEN so.market_type = 'totals' THEN so.sharp_total_line END) as sharp_total,
@@ -498,6 +628,9 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         JOIN teams at ON g.away_team_id = at.id
         LEFT JOIN latest_odds lo ON g.id = lo.game_id
         LEFT JOIN latest_odds_1h lo1h ON g.id = lo1h.game_id
+        LEFT JOIN open_odds oo ON g.id = oo.game_id
+        LEFT JOIN open_odds_1h oo1h ON g.id = oo1h.game_id
+        LEFT JOIN sharp_open_odds soo ON g.id = soo.game_id
         LEFT JOIN sharp_odds so ON g.id = so.game_id
         LEFT JOIN latest_ratings htr ON ht.id = htr.team_id
         LEFT JOIN latest_ratings atr ON at.id = atr.team_id
@@ -524,11 +657,11 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         
         games = []
         for row in rows:
-            # ═══════════════════════════════════════════════════════════════════════
+            # 
             # v6.3: ALL 22 BARTTORVIK FIELDS ARE REQUIRED - NO FALLBACKS
             # If any field is missing, we log an error and skip the game.
             # The data pipeline must ensure complete data before predictions run.
-            # ═══════════════════════════════════════════════════════════════════════
+            # 
 
             # Check home team has ALL required fields
             home_required_fields = [
@@ -646,6 +779,14 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 # Sharp book reference (Pinnacle)
                 "sharp_spread": float(row.sharp_spread) if row.sharp_spread is not None else None,
                 "sharp_total": float(row.sharp_total) if row.sharp_total is not None else None,
+                # Opening lines (consensus)
+                "spread_open": float(row.spread_open) if row.spread_open is not None else None,
+                "total_open": float(row.total_open) if row.total_open is not None else None,
+                "spread_1h_open": float(row.spread_1h_open) if row.spread_1h_open is not None else None,
+                "total_1h_open": float(row.total_1h_open) if row.total_1h_open is not None else None,
+                # Opening sharp lines (Pinnacle)
+                "sharp_spread_open": float(row.sharp_spread_open) if row.sharp_spread_open is not None else None,
+                "sharp_total_open": float(row.sharp_total_open) if row.sharp_total_open is not None else None,
                 "home_ratings": home_ratings,
                 "away_ratings": away_ratings,
             }
@@ -654,9 +795,9 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         return games
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 # GAME HISTORY FOR REST CALCULATION (v6.2)
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 def fetch_team_game_history(team_name: str, before_date: datetime, engine) -> List[Dict]:
     """
@@ -704,9 +845,258 @@ def fetch_team_game_history(team_name: str, before_date: datetime, engine) -> Li
         return games
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ----------------------------------------------------------------------------
+# LEAGUE AVERAGES / TEAM HCA / HEALTH OVERRIDES
+# ----------------------------------------------------------------------------
+def _load_league_averages(engine, target_date: date) -> Optional[Dict[str, float]]:
+    """Compute seasonal league averages from latest team ratings."""
+    query = text("""
+        WITH latest_ratings AS (
+            SELECT DISTINCT ON (team_id)
+                team_id,
+                adj_o,
+                adj_d,
+                tempo,
+                orb,
+                tor,
+                ftr,
+                three_pt_rate,
+                efg
+            FROM team_ratings
+            WHERE rating_date <= :target_date
+            ORDER BY team_id, rating_date DESC
+        )
+        SELECT
+            AVG(adj_o) as avg_adj_o,
+            AVG(adj_d) as avg_adj_d,
+            AVG(tempo) as avg_tempo,
+            AVG(orb) as avg_orb,
+            AVG(tor) as avg_tor,
+            AVG(ftr) as avg_ftr,
+            AVG(three_pt_rate) as avg_3pr,
+            AVG(efg) as avg_efg
+        FROM latest_ratings
+    """)
+
+    with engine.connect() as conn:
+        row = conn.execute(query, {"target_date": target_date}).fetchone()
+        if not row:
+            return None
+
+    avg_adj_o = float(row.avg_adj_o) if row.avg_adj_o is not None else None
+    avg_adj_d = float(row.avg_adj_d) if row.avg_adj_d is not None else None
+    avg_tempo = float(row.avg_tempo) if row.avg_tempo is not None else None
+    avg_orb = float(row.avg_orb) if row.avg_orb is not None else None
+    avg_tor = float(row.avg_tor) if row.avg_tor is not None else None
+    avg_ftr = float(row.avg_ftr) if row.avg_ftr is not None else None
+    avg_3pr = float(row.avg_3pr) if row.avg_3pr is not None else None
+    avg_efg = float(row.avg_efg) if row.avg_efg is not None else None
+
+    if avg_adj_o is None or avg_adj_d is None or avg_tempo is None:
+        return None
+
+    avg_eff = (avg_adj_o + avg_adj_d) / 2
+
+    return {
+        "tempo": avg_tempo,
+        "efficiency": avg_eff,
+        "orb": avg_orb,
+        "tor": avg_tor,
+        "ftr": avg_ftr,
+        "three_pt_rate": avg_3pr,
+        "efg": avg_efg,
+    }
+
+
+def _apply_league_averages(averages: Dict[str, float]) -> None:
+    """Apply league averages to config + predictor instances."""
+    settings.model.league_avg_tempo = averages["tempo"]
+    settings.model.league_avg_efficiency = averages["efficiency"]
+    if averages.get("orb") is not None:
+        settings.model.league_avg_orb = averages["orb"]
+    if averages.get("tor") is not None:
+        settings.model.league_avg_tor = averages["tor"]
+    if averages.get("ftr") is not None:
+        settings.model.league_avg_ftr = averages["ftr"]
+    if averages.get("three_pt_rate") is not None:
+        settings.model.league_avg_3pr = averages["three_pt_rate"]
+
+    for model in (fg_spread_model, fg_total_model, h1_spread_model, h1_total_model):
+        model.LEAGUE_AVG_TEMPO = averages["tempo"]
+        if hasattr(model, "LEAGUE_AVG_EFFICIENCY"):
+            model.LEAGUE_AVG_EFFICIENCY = averages["efficiency"]
+        if hasattr(model, "LEAGUE_AVG_ORB") and averages.get("orb") is not None:
+            model.LEAGUE_AVG_ORB = averages["orb"]
+        if hasattr(model, "LEAGUE_AVG_TOR") and averages.get("tor") is not None:
+            model.LEAGUE_AVG_TOR = averages["tor"]
+        if hasattr(model, "LEAGUE_AVG_FTR") and averages.get("ftr") is not None:
+            model.LEAGUE_AVG_FTR = averages["ftr"]
+        if hasattr(model, "LEAGUE_AVG_3PR") and averages.get("three_pt_rate") is not None:
+            model.LEAGUE_AVG_3PR = averages["three_pt_rate"]
+
+    if averages.get("efg") is not None:
+        h1_spread_model.LEAGUE_AVG_EFG = averages["efg"]
+    h1_total_model.LEAGUE_AVG_H1_EFFICIENCY = averages["efficiency"]
+
+
+def _load_team_hca(
+    engine,
+    target_date: date,
+    lookback_days: int,
+    min_games: int,
+    cap: float,
+) -> Dict[str, float]:
+    """Compute team-specific HCA using home vs away margins."""
+    start_date = datetime.combine(target_date, datetime.min.time()) - timedelta(days=lookback_days)
+    end_date = datetime.combine(target_date + timedelta(days=1), datetime.min.time())
+
+    query = text("""
+        WITH home_stats AS (
+            SELECT
+                home_team_id as team_id,
+                AVG(home_score - away_score) as home_margin,
+                COUNT(*) as home_games
+            FROM games
+            WHERE status IN ('completed', 'final')
+              AND home_score IS NOT NULL
+              AND away_score IS NOT NULL
+              AND commence_time >= :start_date
+              AND commence_time < :end_date
+            GROUP BY home_team_id
+        ),
+        away_stats AS (
+            SELECT
+                away_team_id as team_id,
+                AVG(away_score - home_score) as away_margin,
+                COUNT(*) as away_games
+            FROM games
+            WHERE status IN ('completed', 'final')
+              AND home_score IS NOT NULL
+              AND away_score IS NOT NULL
+              AND commence_time >= :start_date
+              AND commence_time < :end_date
+            GROUP BY away_team_id
+        )
+        SELECT
+            t.canonical_name,
+            hs.home_margin,
+            hs.home_games,
+            aw.away_margin,
+            aw.away_games
+        FROM teams t
+        LEFT JOIN home_stats hs ON t.id = hs.team_id
+        LEFT JOIN away_stats aw ON t.id = aw.team_id
+    """)
+
+    team_hca = {}
+    with engine.connect() as conn:
+        rows = conn.execute(
+            query,
+            {"start_date": start_date, "end_date": end_date},
+        ).fetchall()
+
+    for row in rows:
+        if not row.canonical_name:
+            continue
+        if row.home_games is None or row.away_games is None:
+            continue
+        if row.home_games < min_games or row.away_games < min_games:
+            continue
+        if row.home_margin is None or row.away_margin is None:
+            continue
+        hca = (float(row.home_margin) - float(row.away_margin)) / 2
+        hca = max(-cap, min(cap, hca))
+        team_hca[row.canonical_name] = hca
+
+    return team_hca
+
+
+def _load_team_health_file(path: Optional[str]) -> Dict[str, Dict[str, float]]:
+    """Load optional team health adjustments from CSV/JSON."""
+    if not path:
+        return {}
+    health_path = Path(path)
+    if not health_path.exists():
+        return {}
+
+    def _parse_float(value, default=0.0):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    payload = []
+    if health_path.suffix.lower() == ".json":
+        payload = json.loads(health_path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            payload = list(payload.values())
+    elif health_path.suffix.lower() == ".csv":
+        with health_path.open("r", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            payload = list(reader)
+    else:
+        return {}
+
+    health = {}
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+        team = entry.get("team") or entry.get("canonical_name") or entry.get("name")
+        if not team:
+            continue
+        key = str(team).strip().lower()
+        health[key] = {
+            "status": entry.get("status") or "",
+            "spread_adjustment": _parse_float(entry.get("spread_adjustment") or entry.get("spread_adj")),
+            "total_adjustment": _parse_float(entry.get("total_adjustment") or entry.get("total_adj")),
+        }
+
+    return health
+
+
+# ----------------------------------------------------------------------------
+# RECENT PERFORMANCE FOR BAYESIAN CALIBRATION
+# ----------------------------------------------------------------------------
+def _load_recent_hit_rates(engine, lookback_days: int) -> Dict[str, Dict[str, float]]:
+    """Load recent settled recommendation results for Bayesian calibration."""
+    since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+    query = text(
+        """
+        SELECT
+            bet_type,
+            SUM(CASE WHEN status = 'won' THEN 1 ELSE 0 END) AS wins,
+            SUM(CASE WHEN status = 'lost' THEN 1 ELSE 0 END) AS losses,
+            SUM(CASE WHEN status = 'push' THEN 1 ELSE 0 END) AS pushes
+        FROM betting_recommendations
+        WHERE created_at >= :since
+          AND status IN ('won', 'lost', 'push')
+        GROUP BY bet_type
+        """
+    )
+
+    stats: Dict[str, Dict[str, float]] = {}
+    with engine.begin() as conn:
+        rows = conn.execute(query, {"since": since}).fetchall()
+
+    for row in rows:
+        wins = int(row.wins or 0)
+        losses = int(row.losses or 0)
+        pushes = int(row.pushes or 0)
+        samples = wins + losses
+        hit_rate = (wins / samples) if samples else None
+        stats[str(row.bet_type)] = {
+            "wins": wins,
+            "losses": losses,
+            "pushes": pushes,
+            "samples": samples,
+            "hit_rate": hit_rate,
+        }
+
+    return stats
+
+# ==============================================================================
 # PREDICTION - Direct import (no HTTP)
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 def get_prediction(
     home_team: str,
@@ -717,6 +1107,10 @@ def get_prediction(
     is_neutral: bool = False,
     home_rest: Optional[RestInfo] = None,
     away_rest: Optional[RestInfo] = None,
+    home_hca: Optional[float] = None,
+    home_hca_1h: Optional[float] = None,
+    home_health: Optional[Dict[str, float]] = None,
+    away_health: Optional[Dict[str, float]] = None,
     game_id: Optional[UUID] = None,
     commence_time: Optional[datetime] = None,
     engine=None,
@@ -817,6 +1211,13 @@ def get_prediction(
             # Sharp book reference (Pinnacle) for CLV tracking
             sharp_spread=market_odds.get("sharp_spread"),
             sharp_total=market_odds.get("sharp_total"),
+            # Opening lines (consensus + sharp)
+            spread_open=market_odds.get("spread_open"),
+            total_open=market_odds.get("total_open"),
+            spread_1h_open=market_odds.get("spread_1h_open"),
+            total_1h_open=market_odds.get("total_1h_open"),
+            sharp_spread_open=market_odds.get("sharp_spread_open"),
+            sharp_total_open=market_odds.get("sharp_total_open"),
         )
     
     # Generate prediction (v6.2: pass rest info for situational adjustments)
@@ -836,6 +1237,10 @@ def get_prediction(
         is_neutral=is_neutral,
         home_rest=home_rest,
         away_rest=away_rest,
+        home_hca=home_hca,
+        home_hca_1h=home_hca_1h,
+        home_health=home_health,
+        away_health=away_health,
     )
     
     # Generate recommendations
@@ -855,6 +1260,10 @@ def get_prediction(
                 "is_neutral": is_neutral,
                 "home_rest": vars(home_rest) if home_rest else None,
                 "away_rest": vars(away_rest) if away_rest else None,
+                "home_hca": home_hca,
+                "home_hca_1h": home_hca_1h,
+                "home_health": home_health,
+                "away_health": away_health,
                 "generated_at": datetime.now(timezone.utc).isoformat(),
             }
             persist_prediction_and_recommendations(
@@ -865,7 +1274,7 @@ def get_prediction(
             )
         except Exception as e:
             # Do not fail the whole run if persistence has a transient issue.
-            print(f"  ⚠️  Persistence warning for {away_team} @ {home_team}: {type(e).__name__}: {e}")
+            print(f"  [WARN]  Persistence warning for {away_team} @ {home_team}: {type(e).__name__}: {e}")
     
     # Convert to dict
     prediction_dict = {
@@ -894,9 +1303,9 @@ def get_prediction(
     }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 # DISPLAY HELPERS
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 def format_spread(spread: Optional[float]) -> str:
     """Format spread for display."""
@@ -914,17 +1323,17 @@ def format_odds(odds: Optional[int]) -> str:
 
 def get_fire_rating(edge: float, bet_tier: str) -> str:
     """Get fire rating 1-5 based on edge and tier. 5 = MAX."""
-    # Rating scale: ◆ = filled, ◇ = empty
+    # Rating scale: * = filled, - = empty
     if bet_tier == "max" or edge >= 5.0:
-        return "◆◆◆◆◆"  # 5/5 MAX
+        return "*****"  # 5/5 MAX
     elif bet_tier == "medium" or edge >= 4.0:
-        return "◆◆◆◆◇"  # 4/5
+        return "****-"  # 4/5
     elif edge >= 3.5:
-        return "◆◆◆◇◇"  # 3/5
+        return "***--"  # 3/5
     elif edge >= 3.0:
-        return "◆◆◇◇◇"  # 2/5
+        return "**---"  # 2/5
     else:
-        return "◆◇◇◇◇"  # 1/5
+        return "*----"  # 1/5
 
 
 def print_executive_table(all_picks: list, target_date) -> None:
@@ -933,12 +1342,12 @@ def print_executive_table(all_picks: list, target_date) -> None:
     DATE/TIME CST | MATCHUP (Away vs Home w/records) | PICK (w/live odds) | MODEL | MARKET | EDGE | FIRE
     """
     if not all_picks:
-        print("\n⚠️  No bets meet minimum edge thresholds")
+        print("\n[WARN]  No bets meet minimum edge thresholds")
         return
     
     # Sort by fire rating (descending), then edge (descending), then time
     def sort_key(p):
-        fire_score = p['fire_rating'].count('◆')  # Count filled diamonds
+        fire_score = p['fire_rating'].count('*')  # Count filled diamonds
         return (-fire_score, -p['edge'], p['time_cst'])
     
     sorted_picks = sorted(all_picks, key=sort_key)
@@ -948,17 +1357,17 @@ def print_executive_table(all_picks: list, target_date) -> None:
     
     # Header
     print()
-    print("┏" + "━" * 145 + "┓")
-    print("┃" + f"  🎯 NCAAM PICKS - {target_date} | {len(sorted_picks)} PLAYS | {max_plays} MAX BETS".ljust(145) + "┃")
-    print("┣" + "━" * 145 + "┫")
+    print("+" + "-" * 145 + "+")
+    print("|" + f"   NCAAM PICKS - {target_date} | {len(sorted_picks)} PLAYS | {max_plays} MAX BETS".ljust(145) + "|")
+    print("+" + "-" * 145 + "+")
     
     # Column headers - simplified for clarity
     header = (
-        f"┃ {'DATE/TIME':<12} │ {'MATCHUP (Away vs Home)':<40} │ "
-        f"{'RECOMMENDED PICK':<28} │ {'MODEL':<12} │ {'MARKET':<14} │ {'EDGE':<8} │ {'FIRE':<6} ┃"
+        f"| {'DATE/TIME':<12} | {'MATCHUP (Away vs Home)':<40} | "
+        f"{'RECOMMENDED PICK':<28} | {'MODEL':<12} | {'MARKET':<14} | {'EDGE':<8} | {'FIRE':<6} |"
     )
     print(header)
-    print("┣" + "━" * 145 + "┫")
+    print("+" + "-" * 145 + "+")
     
     # Data rows
     for pick in sorted_picks:
@@ -996,16 +1405,16 @@ def print_executive_table(all_picks: list, target_date) -> None:
         fire = pick['fire_rating']
         
         row = (
-            f"┃ {datetime_str:<12} │ {matchup:<40} │ "
-            f"{pick_str:<28} │ {model_str:<12} │ {market_str:<14} │ {edge_str:<8} │ {fire:<6} ┃"
+            f"| {datetime_str:<12} | {matchup:<40} | "
+            f"{pick_str:<28} | {model_str:<12} | {market_str:<14} | {edge_str:<8} | {fire:<6} |"
         )
         print(row)
     
-    print("┗" + "━" * 145 + "┛")
+    print("+" + "-" * 145 + "+")
     
     # Legend
     print()
-    print("  LEGEND: ◆◆◆◆◆ = MAX BET (5+ pts edge) | ◆◆◆◆◇ = STRONG (4+ pts) | ◆◆◆◇◇ = SOLID (3.5+ pts)")
+    print("  LEGEND: ***** = MAX BET (5+ pts edge) | ****- = STRONG (4+ pts) | ***-- = SOLID (3.5+ pts)")
     print()
 
 
@@ -1019,9 +1428,9 @@ def format_team_display(team: str, record: Optional[str] = None, rank: Optional[
     return " ".join(parts)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 # TEAMS WEBHOOK NOTIFICATION
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_WEBHOOK_URL) -> bool:
     """
@@ -1036,11 +1445,11 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         True if successful, False otherwise
     """
     if not all_picks:
-        print("  ⚠️  No picks to send to Teams")
+        print("  [WARN]  No picks to send to Teams")
         return False
     
     if _is_placeholder_teams_webhook(webhook_url):
-        print("  ⚠️  No Teams webhook URL configured")
+        print("  [WARN]  No Teams webhook URL configured")
         return False
     
     # Sort picks by game time ascending (earliest games first)
@@ -1090,9 +1499,9 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
                         p.get("fire_rating", ""),
                     ]
                 )
-        print(f"  ✓ CSV saved: {csv_path}")
+        print(f"  [OK] CSV saved: {csv_path}")
     except Exception as e:
-        print(f"  ⚠️  Failed to write CSV: {type(e).__name__}: {e}")
+        print(f"  [WARN]  Failed to write CSV: {type(e).__name__}: {e}")
 
     # Generate HTML Report
     html_url = ""
@@ -1140,7 +1549,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         </head>
         <body>
             <div class="container">
-                <h1>🏀 NCAAM PICKS</h1>
+                <h1> NCAAM PICKS</h1>
                 <div class="timestamp">Generated: {datetime.now(CST).strftime("%Y-%m-%d %H:%M CST")} | Target Date: {target_date}</div>
                 
                 <div class="summary">
@@ -1208,10 +1617,10 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
                 
                 <div class="legend">
                     <strong>FIRE RATING:</strong>
-                    <span>◆◆◆◆◆ = MAX BET (5+ pts edge)</span>
-                    <span>◆◆◆◆◇ = STRONG (4+ pts)</span>
-                    <span>◆◆◆◇◇ = SOLID (3.5+ pts)</span>
-                    <span>◆◆◇◇◇ = STANDARD (3+ pts)</span>
+                    <span>***** = MAX BET (5+ pts edge)</span>
+                    <span>****- = STRONG (4+ pts)</span>
+                    <span>***-- = SOLID (3.5+ pts)</span>
+                    <span>**--- = STANDARD (3+ pts)</span>
                 </div>
             </div>
         </body>
@@ -1228,15 +1637,15 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         # Hardcoding the base URL for now based on your deployment
         base_url = "https://ncaam-prod-prediction.bluecoast-4efaeaba.centralus.azurecontainerapps.io"
         html_url = f"{base_url}/picks/html"
-        print(f"  ✓ HTML saved: {html_path}")
+        print(f"  [OK] HTML saved: {html_path}")
         
         # Upload to Microsoft Graph (SharePoint/Teams)
         upload_success = upload_file_to_teams(html_path, target_date)
         if upload_success:
-            print("  ✓ HTML uploaded to Teams Shared Documents")
+            print("  [OK] HTML uploaded to Teams Shared Documents")
         
     except Exception as e:
-        print(f"  ⚠️  Failed to generate HTML: {e}")
+        print(f"  [WARN]  Failed to generate HTML: {e}")
 
     # Build simple Adaptive Card format (ColumnSet tables don't render in Teams Workflow webhooks)
     now_cst = datetime.now(CST)
@@ -1247,7 +1656,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         pick_display = p.get('pick_display', '')
         edge_str = f"{p['edge']:.1f}"
         fire = p.get('fire_rating', '')
-        # Format: "🔥🔥 Siena +23.5 @ Indiana (31 pts edge)"
+        # Format: " Siena +23.5 @ Indiana (31 pts edge)"
         matchup = f"@ {p['home']}" if p.get('pick_side') == 'away' else f"vs {p['away']}"
         top_picks_lines.append(f"{fire} {pick_display} {matchup} ({edge_str} edge)")
     
@@ -1271,7 +1680,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
                             "type": "TextBlock",
                             "size": "Large",
                             "weight": "Bolder",
-                            "text": f"🏀 NCAAM PICKS - {target_date}"
+                            "text": f" NCAAM PICKS - {target_date}"
                         },
                         {
                             "type": "TextBlock",
@@ -1297,7 +1706,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
                     "actions": [
                         {
                             "type": "Action.OpenUrl",
-                            "title": "📄 Full Report",
+                            "title": " Full Report",
                             "url": html_url or "https://ncaam-stable-prediction.lemondesert-405ee2f3.centralus.azurecontainerapps.io/picks/html"
                         }
                     ]
@@ -1315,23 +1724,149 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         )
         
         if response.status_code == 200 or response.status_code == 202:
-            print(f"  ✓ Picks sent to Teams successfully ({len(sorted_picks)} picks)")
+            print(f"  [OK] Picks sent to Teams successfully ({len(sorted_picks)} picks)")
             return True
         else:
-            print(f"  ⚠️  Teams webhook returned status {response.status_code}: {response.text[:200]}")
+            print(f"  [WARN]  Teams webhook returned status {response.status_code}: {response.text[:200]}")
             return False
             
     except requests.exceptions.Timeout:
-        print("  ⚠️  Teams webhook timed out")
+        print("  [WARN]  Teams webhook timed out")
         return False
     except requests.exceptions.RequestException as e:
-        print(f"  ⚠️  Teams webhook error: {e}")
+        print(f"  [WARN]  Teams webhook error: {e}")
         return False
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 # MAIN
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
+
+
+def _format_health_summary(summary: Dict[str, object]) -> str:
+    lines: List[str] = []
+    timestamp = str(summary.get("timestamp", "")).strip()
+    mode = str(summary.get("mode", "")).strip()
+    title = "NCAAM Health Summary"
+    if timestamp:
+        title = f"{title} - {timestamp}"
+    if mode:
+        title = f"{title} ({mode})"
+    lines.append(title)
+
+    status = summary.get("status") or "unknown"
+    lines.append(f"Status: {status}")
+
+    model = summary.get("model_version")
+    if model:
+        lines.append(f"Model: {model}")
+
+    sync_ok = summary.get("sync_ok")
+    if sync_ok is not None:
+        lines.append(f"Sync: {'OK' if sync_ok else 'FAIL'}")
+
+    tm = summary.get("team_matching")
+    if isinstance(tm, dict):
+        tm_status = "OK" if tm.get("ok") else "FAIL"
+        if tm.get("warned"):
+            tm_status = f"{tm_status} (WARN)"
+        lines.append(f"Team matching: {tm_status}")
+
+    dq = summary.get("data_quality")
+    if isinstance(dq, dict) and dq.get("total") is not None:
+        total = dq.get("total", 0)
+        lines.append(
+            "Coverage: "
+            f"ratings {dq.get('ratings_ok', 0)}/{total}, "
+            f"odds {dq.get('odds_ok', 0)}/{total}, "
+            f"ready {dq.get('ready_ok', 0)}/{total}"
+        )
+        if dq.get("h1_odds_ok") is not None:
+            lines.append(f"1H odds: {dq.get('h1_odds_ok', 0)}/{total}")
+
+    league_avgs = summary.get("league_avgs")
+    if isinstance(league_avgs, dict):
+        tempo = league_avgs.get("tempo")
+        eff = league_avgs.get("efficiency")
+        if tempo is not None and eff is not None:
+            lines.append(f"League avgs: tempo={tempo} eff={eff}")
+
+    team_hca = summary.get("team_hca")
+    if isinstance(team_hca, dict):
+        lines.append(
+            f"Team HCA: teams={team_hca.get('teams', 0)} "
+            f"lookback={team_hca.get('lookback_days', 0)}d"
+        )
+
+    team_health = summary.get("team_health")
+    if isinstance(team_health, dict) and team_health:
+        lines.append(
+            f"Team health: teams={team_health.get('teams', 0)} "
+            f"source={team_health.get('source', '')}"
+        )
+
+    bayes = summary.get("bayes_priors")
+    if isinstance(bayes, dict):
+        window_days = bayes.get("window_days", 0)
+        min_samples = bayes.get("min_samples", 0)
+        samples = bayes.get("samples")
+        sample_text = ""
+        if isinstance(samples, dict) and samples:
+            sample_text = ", " + ", ".join(f"{k}={v}" for k, v in samples.items())
+        lines.append(f"Bayes priors: window={window_days}d min={min_samples}{sample_text}")
+
+    settlement = summary.get("settlement")
+    if isinstance(settlement, dict) and settlement:
+        lines.append(
+            "Settlement: "
+            f"{settlement.get('settled', 0)} "
+            f"W-L-P={settlement.get('wins', 0)}-"
+            f"{settlement.get('losses', 0)}-"
+            f"{settlement.get('pushes', 0)} "
+            f"skipped_1H={settlement.get('skipped_1h', 0)}"
+        )
+
+    picks = summary.get("picks")
+    if isinstance(picks, dict):
+        lines.append(f"Picks: total={picks.get('total', 0)} max={picks.get('max', 0)}")
+
+    notes = summary.get("notes")
+    if notes:
+        if isinstance(notes, list):
+            lines.append("Notes: " + "; ".join(str(n) for n in notes))
+        else:
+            lines.append(f"Notes: {notes}")
+
+    return "\n".join([line for line in lines if line])
+
+
+def send_health_summary_to_teams(
+    summary: Dict[str, object],
+    webhook_url: str = TEAMS_WEBHOOK_URL,
+) -> bool:
+    if _is_placeholder_teams_webhook(webhook_url):
+        print("  - No Teams webhook URL configured (health summary)")
+        return False
+
+    payload = {"text": _format_health_summary(summary)}
+    try:
+        response = requests.post(
+            webhook_url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        if response.status_code in (200, 202):
+            return True
+        print(f"  - Health summary webhook returned {response.status_code}: {response.text[:200]}")
+        return False
+    except requests.exceptions.Timeout:
+        print("  - Health summary webhook timed out")
+        return False
+    except requests.exceptions.RequestException as e:
+        print(f"  - Health summary webhook error: {e}")
+        return False
+
 
 def main():
     """Main entry point - handles all prompts."""
@@ -1359,6 +1894,35 @@ def main():
         "--debug-skips",
         action="store_true",
         help="Print skipped games and why (missing ratings vs missing odds)"
+    )
+    parser.add_argument(
+        "--allow-data-degrade",
+        action="store_true",
+        help="Allow running even if data quality checks fail"
+    )
+    parser.add_argument(
+        "--min-ratings-pct",
+        type=float,
+        default=0.9,
+        help="Minimum % of games with ratings (default: 0.9)"
+    )
+    parser.add_argument(
+        "--min-odds-pct",
+        type=float,
+        default=0.7,
+        help="Minimum % of games with full-game odds (default: 0.7)"
+    )
+    parser.add_argument(
+        "--min-ready-pct",
+        type=float,
+        default=0.6,
+        help="Minimum % of games ready (ratings + odds) (default: 0.6)"
+    )
+    parser.add_argument(
+        "--min-1h-odds-pct",
+        type=float,
+        default=0.0,
+        help="Minimum % of games with 1H odds (default: 0.0)"
     )
     parser.add_argument(
         "--teams",
@@ -1394,39 +1958,82 @@ def main():
     )
     
     args = parser.parse_args()
-    
+
+    now_cst = datetime.now(CST)
+    health_summary: Dict[str, object] = {
+        "timestamp": now_cst.strftime("%Y-%m-%d %H:%M %Z"),
+        "status": "ok",
+        "mode": "settle-only" if args.settle_only else "full",
+        "model_version": getattr(prediction_engine, "version_tag", ""),
+        "notes": [],
+    }
+
+    def exit_with_health(code: int, note: str = "") -> None:
+        if note:
+            health_summary.setdefault("notes", []).append(note)
+        if code != 0 and health_summary.get("status") == "ok":
+            health_summary["status"] = "blocked"
+        health_summary.setdefault("picks", {"total": 0, "max": 0})
+        send_health_summary_to_teams(health_summary)
+        sys.exit(code)
+
     # Parse target date
     target_date = date.today()
     if args.date:
         try:
             target_date = datetime.strptime(args.date, "%Y-%m-%d").date()
         except ValueError:
-            print(f"✗ Invalid date format: {args.date}. Use YYYY-MM-DD")
-            sys.exit(1)
+            print(f" Invalid date format: {args.date}. Use YYYY-MM-DD")
+            exit_with_health(1, "invalid date format")
     
-    now_cst = datetime.now(CST)
     
     print()
-    print("╔" + "═" * 118 + "╗")
-    print("║" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "║")
-    print("║" + "  Model: v33.6 Modular (FG/H1 Spread & Total)".ljust(118) + "║")
-    print("╚" + "═" * 118 + "╝")
+    print("" + "" * 118 + "")
+    print("" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "")
+    print("" + "  Model: v33.6 Modular (FG/H1 Spread & Total)".ljust(118) + "")
+    print("" + "" * 118 + "")
     print()
     
     # Sync data (unless --no-sync)
 
     # Validate team matching (CRITICAL for accuracy)
     if not args.no_sync:
-        print("🔍 Validating team matching...")
+        print("[INFO] Validating team matching...")
         try:
             validator = TeamMatchingValidator()
-            if not validator.run_all_validations():
-                print("⚠️ Team matching validation failed or had warnings.")
+            validation_ok = validator.run_all_validations()
+            validation_warned = any(r.status == "WARN" for r in getattr(validator, "results", []))
+            health_summary["team_matching"] = {"ok": validation_ok, "warned": validation_warned}
+
+            if not validation_ok:
+                print("[WARN] Team matching validation failed.")
+                if not args.allow_data_degrade:
+                    exit_with_health(2, "team matching validation failed")
+                health_summary["status"] = "warn"
+                health_summary.setdefault("notes", []).append("team matching validation failed")
+            elif validation_warned:
+                print("[WARN] Team matching validation reported warnings.")
+                if not args.allow_data_degrade:
+                    exit_with_health(2, "team matching validation warnings")
+                health_summary["status"] = "warn"
+                health_summary.setdefault("notes", []).append("team matching validation warnings")
             else:
-                print("✓ Team matching validation passed.")
+                print("[OK] Team matching validation passed.")
         except Exception as e:
-            print(f"⚠️ Team matching validation error: {e}")
-    sync_fresh_data(skip_sync=args.no_sync)
+            print(f"[WARN] Team matching validation error: {e}")
+            if not args.allow_data_degrade:
+                exit_with_health(2, f"team matching validation error: {e}")
+            health_summary["status"] = "warn"
+            health_summary.setdefault("notes", []).append(f"team matching validation error: {e}")
+
+    sync_ok = sync_fresh_data(skip_sync=args.no_sync)
+    health_summary["sync_ok"] = sync_ok
+    if not sync_ok:
+        if not args.allow_data_degrade:
+            exit_with_health(2, "data sync failed")
+        health_summary["status"] = "warn"
+        health_summary.setdefault("notes", []).append("data sync failed")
+
     
     # Create DB engine once for the entire run (predictions persistence + settlement).
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
@@ -1434,42 +2041,109 @@ def main():
     # Optional: score sync + settlement + ROI report (production auditing)
     if not args.no_settle:
         try:
-            from app.settlement import sync_final_scores, settle_pending_bets, print_performance_report
+            from app.settlement import sync_final_scores, sync_halftime_scores, settle_pending_bets, print_performance_report
 
-            print("🔁 Syncing final scores + settling pending bets...")
+            print("[RETRY] Syncing final scores + settling pending bets...")
             score_summary = sync_final_scores(engine, days_from=args.settle_days_from)
+            halftime_summary = sync_halftime_scores(engine, days_from=args.settle_days_from)
             settle_summary = settle_pending_bets(engine)
+            health_summary["settlement"] = {
+                "settled": settle_summary.settled,
+                "wins": settle_summary.wins,
+                "losses": settle_summary.losses,
+                "pushes": settle_summary.pushes,
+                "skipped_1h": settle_summary.skipped_missing_scores_1h,
+                "missing_closing_line": settle_summary.missing_closing_line,
+            }
             print(
-                f"  ✓ Scores: fetched={score_summary.fetched_events} completed={score_summary.completed_events} "
+                f"  [OK] Scores: fetched={score_summary.fetched_events} completed={score_summary.completed_events} "
                 f"updated_games={score_summary.updated_games} missing_games={score_summary.missing_games}"
             )
             print(
-                f"  ✓ Settlement: settled={settle_summary.settled} W-L-P={settle_summary.wins}-{settle_summary.losses}-{settle_summary.pushes} "
+                f"  - Halftime: fetched={halftime_summary.fetched_events} updated_games={halftime_summary.updated_games} "
+                f"missing_games={halftime_summary.missing_games} missing_scores={halftime_summary.missing_scores}"
+            )
+            print(
+                f"  [OK] Settlement: settled={settle_summary.settled} W-L-P={settle_summary.wins}-{settle_summary.losses}-{settle_summary.pushes} "
                 f"skipped_1H_missing_scores={settle_summary.skipped_missing_scores_1h} missing_closing_line={settle_summary.missing_closing_line}"
             )
+            if settle_summary.skipped_missing_scores_1h > 0:
+                print("  [WARN]  Missing halftime scores for settled 1H bets.")
+                if not args.allow_data_degrade:
+                    exit_with_health(2, "missing halftime scores for 1H bets")
+                health_summary["status"] = "warn"
+                health_summary.setdefault("notes", []).append("missing halftime scores for 1H bets")
             if not args.teams_only:
                 print_performance_report(engine, lookback_days=args.report_days)
         except Exception as e:
-            print(f"  ⚠️  Settlement step failed: {type(e).__name__}: {e}")
+            print(f"  [WARN]  Settlement step failed: {type(e).__name__}: {e}")
 
         if args.settle_only:
+            health_summary.setdefault("picks", {"total": 0, "max": 0})
+            send_health_summary_to_teams(health_summary)
             return
 
+    league_avgs = _load_league_averages(engine, target_date)
+    if league_avgs:
+        _apply_league_averages(league_avgs)
+        health_summary["league_avgs"] = {
+            "tempo": round(league_avgs.get("tempo", 0), 2),
+            "efficiency": round(league_avgs.get("efficiency", 0), 2),
+        }
+
+    team_hca = _load_team_hca(
+        engine=engine,
+        target_date=target_date,
+        lookback_days=settings.model.team_hca_lookback_days,
+        min_games=settings.model.team_hca_min_games,
+        cap=settings.model.team_hca_cap,
+    )
+    health_summary["team_hca"] = {
+        "teams": len(team_hca),
+        "lookback_days": settings.model.team_hca_lookback_days,
+        "min_games": settings.model.team_hca_min_games,
+    }
+
+    team_health_file = os.getenv("TEAM_HEALTH_FILE", "").strip()
+    team_health = _load_team_health_file(team_health_file)
+    if team_health_file:
+        health_summary["team_health"] = {
+            "teams": len(team_health),
+            "source": Path(team_health_file).name,
+        }
+
+    recent_stats = _load_recent_hit_rates(engine, settings.model.bayes_recent_window_days)
+    bayes_priors = {}
+    for bet_type in BetType:
+        stats = recent_stats.get(bet_type.value) if recent_stats else None
+        samples = int((stats or {}).get("samples", 0) or 0)
+        hit_rate = (stats or {}).get("hit_rate")
+        if hit_rate is None or samples < settings.model.bayes_min_samples:
+            hit_rate = settings.model.bayes_default_hit_rate
+        bayes_priors[bet_type] = {"hit_rate": float(hit_rate), "samples": samples}
+
+    prediction_engine.set_bayes_priors(bayes_priors)
+    health_summary["bayes_priors"] = {
+        "window_days": settings.model.bayes_recent_window_days,
+        "min_samples": settings.model.bayes_min_samples,
+        "samples": {k.value: v["samples"] for k, v in bayes_priors.items()},
+    }
+
     # Fetch games
-    print(f"✓ Fetching games for {target_date}...")
+    print(f"[OK] Fetching games for {target_date}...")
     print()
     
     try:
         games = fetch_games_from_db(target_date=target_date, engine=engine)
     except Exception as e:
-        print(f"✗ FATAL ERROR: Failed to fetch games: {type(e).__name__}: {e}")
+        print(f" FATAL ERROR: Failed to fetch games: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
-        sys.exit(1)
+        exit_with_health(1, f"failed to fetch games: {type(e).__name__}")
     
     if not games:
-        print(f"⚠️  No games found for {target_date}")
-        sys.exit(0)
+        print(f"[WARN]  No games found for {target_date}")
+        exit_with_health(0, "no games found")
     
     # Filter by specific game if requested
     if args.game:
@@ -1480,10 +2154,20 @@ def main():
             and away_filter.lower() in g["away"].lower()
         ]
         if not games:
-            print(f"⚠️  No games found matching '{away_filter}' @ '{home_filter}'")
-            sys.exit(0)
+            print(f"[WARN]  No games found matching '{away_filter}' @ '{home_filter}'")
+            exit_with_health(0, "no games matched filter")
+    # Data quality gate (avoid silent failures)
+    quality_summary = _summarize_data_quality(games)
+    health_summary["data_quality"] = quality_summary
+    quality_failures = _enforce_data_quality(quality_summary, args)
+    if quality_failures:
+        if not args.allow_data_degrade:
+            exit_with_health(2, "data quality below thresholds")
+        health_summary["status"] = "warn"
+        health_summary.setdefault("notes", []).append("data quality below thresholds")
+
     
-    print(f"✓ Found {len(games)} games")
+    print(f"[OK] Found {len(games)} games")
     print()
 
     # v6.2: Setup situational adjuster for rest day calculations
@@ -1547,6 +2231,13 @@ def main():
             # Sharp book reference (Pinnacle) for CLV tracking
             "sharp_spread": game.get("sharp_spread"),
             "sharp_total": game.get("sharp_total"),
+            # Opening lines (consensus + sharp)
+            "spread_open": game.get("spread_open"),
+            "total_open": game.get("total_open"),
+            "spread_1h_open": game.get("spread_1h_open"),
+            "total_1h_open": game.get("total_1h_open"),
+            "sharp_spread_open": game.get("sharp_spread_open"),
+            "sharp_total_open": game.get("sharp_total_open"),
         }
 
         # v6.2: Compute rest info for situational adjustments
@@ -1576,7 +2267,25 @@ def main():
             )
         except Exception as e:
             # Log but don't fail - rest info is optional enhancement
-            print(f"  ⚠️ Rest calc failed for {game['away']} @ {game['home']}: {e}")
+            print(f"  [WARN] Rest calc failed for {game['away']} @ {game['home']}: {e}")
+
+
+        home_health = None
+        away_health = None
+        if team_health:
+            home_health = team_health.get(game["home"].lower())
+            away_health = team_health.get(game["away"].lower())
+
+        home_hca = None
+        home_hca_1h = None
+        if team_hca and not game.get("is_neutral", False):
+            home_hca = team_hca.get(game["home"])
+            if home_hca is not None:
+                base_hca = settings.model.home_court_advantage_spread
+                base_hca_1h = settings.model.home_court_advantage_spread_1h
+                if base_hca:
+                    home_hca_1h = home_hca * (base_hca_1h / base_hca)
+
 
         # Get prediction
         try:
@@ -1589,13 +2298,17 @@ def main():
                 is_neutral=game.get("is_neutral", False),
                 home_rest=home_rest,
                 away_rest=away_rest,
+                home_hca=home_hca,
+                home_hca_1h=home_hca_1h,
+                home_health=home_health,
+                away_health=away_health,
                 game_id=game.get("game_id"),
                 commence_time=game.get("commence_time"),
                 engine=engine,
                 persist=True,
             )
         except Exception as e:
-            print(f"  ✗ Error predicting {game['away']} @ {game['home']}: {e}")
+            print(f"   Error predicting {game['away']} @ {game['home']}: {e}")
             continue
         
         pred = result["prediction"]
@@ -1696,7 +2409,7 @@ def main():
                 "fire_rating": fire,
             })
     
-    print(f"✓ Processed {games_processed} games ({games_skipped} skipped - missing data)")
+    print(f"[OK] Processed {games_processed} games ({games_skipped} skipped - missing data)")
     if args.debug_skips and skipped_reasons:
         missing_ratings = sum(1 for r in skipped_reasons if r[2] == "missing_ratings")
         missing_odds = sum(1 for r in skipped_reasons if r[2] == "missing_odds")
@@ -1711,8 +2424,17 @@ def main():
     # Send to Teams if requested
     if args.teams or args.teams_only:
         print()
-        print("📤 Sending picks to Microsoft Teams...")
+        print(" Sending picks to Microsoft Teams...")
         send_picks_to_teams(all_picks, target_date)
+
+
+    max_picks = sum(
+        1
+        for p in all_picks
+        if str(p.get("bet_tier", "")).lower() == "max" or p.get("edge", 0) >= 5.0
+    )
+    health_summary["picks"] = {"total": len(all_picks), "max": max_picks}
+    send_health_summary_to_teams(health_summary)
 
 
 if __name__ == "__main__":

@@ -65,6 +65,7 @@ class BasePredictor(ABC):
     LEAGUE_AVG_ORB: float = 28.0
     LEAGUE_AVG_TOR: float = 18.5
     LEAGUE_AVG_FTR: float = 33.0          # Fixed from 32.0
+    LEAGUE_AVG_3PR: float = 35.0
 
     # Matchup adjustment factors
     REBOUND_FACTOR: float = 0.15   # Points per % rebounding edge
@@ -243,7 +244,7 @@ class BasePredictor(ABC):
 
         # 3P variance adjustment
         avg_3pr = (home.three_pt_rate + away.three_pt_rate) / 2
-        three_pt_adj = (avg_3pr - 35.0) * 0.05  # ~35% is league avg
+        three_pt_adj = (avg_3pr - self.LEAGUE_AVG_3PR) * 0.05
 
         # Pace differential adjustment
         pace_diff = abs(home.tempo - away.tempo)

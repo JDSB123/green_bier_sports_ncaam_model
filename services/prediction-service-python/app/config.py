@@ -215,6 +215,116 @@ class ModelConfig(BaseSettings):
         description="Confidence penalty when betting against sharp movement."
     )
 
+    # MARKET CONTEXT (line movement / steam / RLM)
+    market_move_threshold_spread: float = Field(
+        default=1.0,
+        description="Points move to flag spread market movement."
+    )
+    market_move_threshold_total: float = Field(
+        default=2.0,
+        description="Points move to flag total market movement."
+    )
+    market_move_threshold_spread_1h: float = Field(
+        default=0.75,
+        description="Points move to flag 1H spread market movement."
+    )
+    market_move_threshold_total_1h: float = Field(
+        default=1.5,
+        description="Points move to flag 1H total market movement."
+    )
+    steam_threshold_spread: float = Field(
+        default=1.5,
+        description="Points move to flag a steam spread move."
+    )
+    steam_threshold_total: float = Field(
+        default=3.0,
+        description="Points move to flag a steam total move."
+    )
+    steam_threshold_spread_1h: float = Field(
+        default=1.0,
+        description="Points move to flag a steam 1H spread move."
+    )
+    steam_threshold_total_1h: float = Field(
+        default=2.0,
+        description="Points move to flag a steam 1H total move."
+    )
+    market_move_confidence_boost: float = Field(
+        default=0.03,
+        description="Confidence boost when market movement aligns with pick."
+    )
+    market_move_confidence_penalty: float = Field(
+        default=0.05,
+        description="Confidence penalty when market movement is against pick."
+    )
+    steam_confidence_boost: float = Field(
+        default=0.05,
+        description="Extra confidence boost when steam move aligns with pick."
+    )
+    steam_confidence_penalty: float = Field(
+        default=0.08,
+        description="Extra confidence penalty when steam move is against pick."
+    )
+    rlm_confidence_boost: float = Field(
+        default=0.04,
+        description="Confidence boost for reverse line movement aligned with pick."
+    )
+    public_bet_signal_threshold: float = Field(
+        default=0.60,
+        description="Public bet share threshold to flag one-sided action."
+    )
+    team_hca_lookback_days: int = Field(
+        default=365,
+        description="Lookback window (days) for team-specific HCA."
+    )
+    team_hca_min_games: int = Field(
+        default=10,
+        description="Minimum home/away games needed to compute team HCA."
+    )
+    team_hca_cap: float = Field(
+        default=3.0,
+        description="Clamp team HCA to this absolute maximum."
+    )
+    health_adjustment_confidence_penalty: float = Field(
+        default=0.02,
+        description="Confidence penalty when health adjustments are applied."
+    )
+    health_1h_scale: float = Field(
+        default=0.50,
+        description="Scale full-game health adjustments for 1H markets."
+    )
+    bayes_prior_weight: float = Field(
+        default=20.0,
+        description="Pseudo-sample weight for Bayesian calibration."
+    )
+    bayes_default_hit_rate: float = Field(
+        default=0.524,
+        description="Fallback hit rate when sample size is small."
+    )
+    bayes_recent_window_days: int = Field(
+        default=30,
+        description="Lookback window for recent ATS calibration."
+    )
+    bayes_min_samples: int = Field(
+        default=50,
+        description="Minimum settled samples before using recent hit rate."
+    )
+    edge_sigma_spread: float = Field(
+        default=11.0,
+        description="Sigma for spread edge-to-prob conversion."
+    )
+    edge_sigma_total: float = Field(
+        default=13.0,
+        description="Sigma for total edge-to-prob conversion."
+    )
+    edge_sigma_spread_1h: float = Field(
+        default=9.0,
+        description="Sigma for 1H spread edge-to-prob conversion."
+    )
+    edge_sigma_total_1h: float = Field(
+        default=9.0,
+        description="Sigma for 1H total edge-to-prob conversion."
+    )
+
     # ─────────────────────────────────────────────────────────────────────────
     # KELLY CRITERION
     # ─────────────────────────────────────────────────────────────────────────

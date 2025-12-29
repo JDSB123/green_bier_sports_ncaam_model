@@ -10,21 +10,30 @@ This is intentionally "manual-trigger friendly":
 
 Important limitations:
 - We can only settle 1H markets if halftime scores are present in `games.home_score_1h`
-  and `games.away_score_1h`. (This stack currently does not ingest halftime scores.)
+  and `games.away_score_1h`. Halftime scores are synced from ESPN; unresolved team names
+  or missing linescores will prevent settlement.
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
+
+import requests
 from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from app.odds_api_client import OddsApiClient, OddsApiError
+
+ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard"
+ESPN_SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary"
+ESPN_DEFAULT_GROUP = "50"
+ESPN_FALLBACK_GROUPS = (ESPN_DEFAULT_GROUP, None)
 
 
 @dataclass
@@ -43,6 +52,14 @@ class SettlementSummary:
     pushes: int
     skipped_missing_scores_1h: int
     missing_closing_line: int
+
+
+@dataclass
+class HalftimeSyncSummary:
+    fetched_events: int
+    updated_games: int
+    missing_games: int
+    missing_scores: int
 
 
 
@@ -134,6 +151,247 @@ def sync_final_scores(engine: Engine, days_from: int = 3, sport_key: Optional[st
         completed_events=completed,
         updated_games=updated,
         missing_games=missing,
+    )
+
+
+def _resolve_team_canonical(engine: Engine, name: str) -> Optional[str]:
+    if not name:
+        return None
+    stmt = text("SELECT resolve_team_name(:name)")
+    with engine.begin() as conn:
+        row = conn.execute(stmt, {"name": name}).fetchone()
+        if not row:
+            return None
+        return row[0]
+
+
+def _upsert_team_alias(engine: Engine, canonical: str, alias: str, source: str) -> None:
+    if not canonical or not alias:
+        return
+    if canonical.strip().lower() == alias.strip().lower():
+        return
+    stmt = text(
+        """
+        INSERT INTO team_aliases (team_id, alias, source)
+        SELECT id, :alias, :source
+        FROM teams
+        WHERE canonical_name = :canonical
+        ON CONFLICT (alias, source) DO NOTHING
+        """
+    )
+    with engine.begin() as conn:
+        conn.execute(stmt, {"alias": alias, "source": source, "canonical": canonical})
+
+
+def _fetch_espn_scoreboard(target_date: date, group: Optional[str] = ESPN_DEFAULT_GROUP) -> list[dict]:
+    params = {
+        "dates": target_date.strftime("%Y%m%d"),
+        "groups": group,
+        "limit": 500,
+    }
+    if group is None:
+        params.pop("groups", None)
+    resp = requests.get(ESPN_SCOREBOARD_URL, params=params, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    return data.get("events", []) or []
+
+def _fetch_espn_events(target_date: date, groups: tuple[Optional[str], ...] = ESPN_FALLBACK_GROUPS) -> list[dict]:
+    events: dict[str, dict] = {}
+    for group in groups:
+        try:
+            for event in _fetch_espn_scoreboard(target_date, group=group):
+                event_id = event.get("id")
+                if not event_id:
+                    continue
+                if event_id not in events:
+                    events[event_id] = event
+                else:
+                    if _event_has_1h_scores(event) and not _event_has_1h_scores(events[event_id]):
+                        events[event_id] = event
+        except requests.RequestException:
+            continue
+    return list(events.values())
+
+
+def _fetch_espn_summary(event_id: str) -> Optional[dict]:
+    resp = requests.get(ESPN_SUMMARY_URL, params={"event": event_id}, timeout=30)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def _coerce_int(value: Optional[object]) -> Optional[int]:
+    if value is None:
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _first_half_from_linescores(lines: list[dict]) -> Optional[int]:
+    if not lines:
+        return None
+    for ls in lines:
+        if ls.get("period") == 1:
+            return _coerce_int(ls.get("value") or ls.get("displayValue"))
+    return _coerce_int(lines[0].get("value") or lines[0].get("displayValue"))
+
+
+def _extract_scores_from_competitors(competitors: list[dict]) -> tuple[Optional[str], Optional[str], Optional[int], Optional[int]]:
+    home = away = None
+    home_1h = away_1h = None
+    for team in competitors:
+        home_away = team.get("homeAway")
+        team_info = team.get("team") or {}
+        name = team_info.get("displayName") or team_info.get("name") or team.get("displayName")
+        if not name:
+            continue
+        lines = team.get("linescores") or []
+        first_half = _first_half_from_linescores(lines)
+        if home_away == "home":
+            home = name
+            home_1h = first_half
+        elif home_away == "away":
+            away = name
+            away_1h = first_half
+    return home, away, home_1h, away_1h
+
+
+def _event_has_1h_scores(event: dict) -> bool:
+    comp = (event.get("competitions") or [{}])[0]
+    competitors = comp.get("competitors") or []
+    home, away, home_1h, away_1h = _extract_scores_from_competitors(competitors)
+    return bool(home and away and home_1h is not None and away_1h is not None)
+
+
+def _extract_espn_1h_scores(event: dict) -> Optional[dict]:
+    comp = (event.get("competitions") or [{}])[0]
+    competitors = comp.get("competitors") or []
+    event_date = comp.get("date") or event.get("date")
+
+    home, away, home_1h, away_1h = _extract_scores_from_competitors(competitors)
+
+    if (home_1h is None or away_1h is None) and event.get("id"):
+        try:
+            summary = _fetch_espn_summary(event["id"])
+        except requests.RequestException:
+            summary = None
+        if summary:
+            header_comp = (summary.get("header", {}).get("competitions") or [{}])[0]
+            summary_competitors = header_comp.get("competitors") or []
+            event_date = event_date or header_comp.get("date")
+            home, away, home_1h, away_1h = _extract_scores_from_competitors(summary_competitors)
+
+    if not home or not away:
+        return None
+
+    return {
+        "home_team": home,
+        "away_team": away,
+        "home_score_1h": home_1h,
+        "away_score_1h": away_1h,
+        "event_date": event_date,
+    }
+
+
+def sync_halftime_scores(engine: Engine, days_from: int = 3, group: str = ESPN_DEFAULT_GROUP) -> HalftimeSyncSummary:
+    """
+    Pull halftime (1H) scores from ESPN and update games.home_score_1h/away_score_1h.
+    """
+    cst = ZoneInfo("America/Chicago")
+    today_cst = datetime.now(cst).date()
+
+    fetched_events = 0
+    updated = 0
+    missing_games = 0
+    missing_scores = 0
+
+    update_stmt = text(
+        """
+        UPDATE games g
+        SET
+            home_score_1h = :home_score_1h,
+            away_score_1h = :away_score_1h,
+            updated_at = NOW()
+        FROM teams ht, teams at
+        WHERE g.home_team_id = ht.id
+          AND g.away_team_id = at.id
+          AND ht.canonical_name = :home_canonical
+          AND at.canonical_name = :away_canonical
+          AND DATE(g.commence_time AT TIME ZONE 'America/Chicago') = :game_date
+          AND (g.home_score_1h IS NULL OR g.away_score_1h IS NULL)
+        """
+    )
+
+    for offset in range(days_from + 1):
+        target_date = today_cst - timedelta(days=offset)
+        try:
+            events = _fetch_espn_events(target_date, groups=(group, None))
+        except requests.RequestException:
+            continue
+
+        fetched_events += len(events)
+        for event in events:
+            parsed = _extract_espn_1h_scores(event)
+            if not parsed:
+                continue
+            if parsed["home_score_1h"] is None or parsed["away_score_1h"] is None:
+                missing_scores += 1
+                continue
+
+            home_canonical = _resolve_team_canonical(engine, parsed["home_team"])
+            away_canonical = _resolve_team_canonical(engine, parsed["away_team"])
+            if not home_canonical or not away_canonical:
+                missing_games += 1
+                continue
+
+            _upsert_team_alias(engine, home_canonical, parsed["home_team"], "espn")
+            _upsert_team_alias(engine, away_canonical, parsed["away_team"], "espn")
+
+            event_date = parsed["event_date"]
+            if event_date:
+                event_dt = datetime.fromisoformat(event_date.replace("Z", "+00:00")).astimezone(cst)
+                game_date = event_dt.date()
+            else:
+                game_date = target_date
+
+            with engine.begin() as conn:
+                res = conn.execute(
+                    update_stmt,
+                    {
+                        "home_score_1h": int(parsed["home_score_1h"]),
+                        "away_score_1h": int(parsed["away_score_1h"]),
+                        "home_canonical": home_canonical,
+                        "away_canonical": away_canonical,
+                        "game_date": game_date,
+                    },
+                )
+                if (res.rowcount or 0) > 0:
+                    updated += int(res.rowcount or 0)
+                    continue
+
+                # Try swapped orientation (some feeds disagree on home/away)
+                res = conn.execute(
+                    update_stmt,
+                    {
+                        "home_score_1h": int(parsed["away_score_1h"]),
+                        "away_score_1h": int(parsed["home_score_1h"]),
+                        "home_canonical": away_canonical,
+                        "away_canonical": home_canonical,
+                        "game_date": game_date,
+                    },
+                )
+                if (res.rowcount or 0) > 0:
+                    updated += int(res.rowcount or 0)
+                else:
+                    missing_games += 1
+
+    return HalftimeSyncSummary(
+        fetched_events=fetched_events,
+        updated_games=updated,
+        missing_games=missing_games,
+        missing_scores=missing_scores,
     )
 
 

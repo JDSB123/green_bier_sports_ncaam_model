@@ -13,6 +13,7 @@ Each market has its own independently-backtested model:
 
 from dataclasses import dataclass
 from datetime import datetime
+import math
 from typing import Optional, List
 from uuid import UUID
 
@@ -56,12 +57,17 @@ class PredictionEngineV33:
         self.config = settings.model
         self.logger = structlog.get_logger()
         self.version_tag = f"v{APP_VERSION}"
+        self.bayes_priors: dict[BetType, dict[str, float]] = {}
         
         # Store models for reference
         self.fg_spread_model = fg_spread_model
         self.fg_total_model = fg_total_model
         self.h1_spread_model = h1_spread_model
         self.h1_total_model = h1_total_model
+
+    def set_bayes_priors(self, priors: dict) -> None:
+        """Inject Bayesian priors for confidence calibration."""
+        self.bayes_priors = priors or {}
 
     def make_prediction(
         self,
@@ -75,6 +81,10 @@ class PredictionEngineV33:
         is_neutral: bool = False,
         home_rest: Optional['RestInfo'] = None,
         away_rest: Optional['RestInfo'] = None,
+        home_hca: Optional[float] = None,
+        home_hca_1h: Optional[float] = None,
+        home_health: Optional[dict] = None,
+        away_health: Optional[dict] = None,
     ) -> Prediction:
         """
         Generate predictions using v33.6 modular models.
@@ -96,6 +106,10 @@ class PredictionEngineV33:
             is_neutral: True if neutral site game
             home_rest: Rest info for situational adjustments (optional)
             away_rest: Rest info for situational adjustments (optional)
+            home_hca: Optional team-specific HCA override (full game)
+            home_hca_1h: Optional team-specific HCA override (1H)
+            home_health: Optional health adjustments for home team
+            away_health: Optional health adjustments for away team
             
         Returns:
             Complete Prediction object with all 4 market predictions
@@ -119,41 +133,52 @@ class PredictionEngineV33:
         # Get predictions from each independent model
         # ═══════════════════════════════════════════════════════════════════════
 
-        # FG Spread (independent, backtested on 3,318 games)
-        fg_spread_pred = self.fg_spread_model.predict(
-            home=home_ratings,
-            away=away_ratings,
-            is_neutral=is_neutral,
-            home_rest_days=_rest_days(home_rest),
-            away_rest_days=_rest_days(away_rest),
-        )
+        fg_spread_hca = self.fg_spread_model.HCA
+        h1_spread_hca = self.h1_spread_model.HCA
+        if home_hca is not None:
+            self.fg_spread_model.HCA = home_hca
+        if home_hca_1h is not None:
+            self.h1_spread_model.HCA = home_hca_1h
 
-        # FG Total (independent, backtested on 3,318 games)
-        fg_total_pred = self.fg_total_model.predict(
-            home=home_ratings,
-            away=away_ratings,
-            is_neutral=is_neutral,
-            home_rest_days=_rest_days(home_rest),
-            away_rest_days=_rest_days(away_rest),
-        )
+        try:
+            # FG Spread (independent, backtested on 3,318 games)
+            fg_spread_pred = self.fg_spread_model.predict(
+                home=home_ratings,
+                away=away_ratings,
+                is_neutral=is_neutral,
+                home_rest_days=_rest_days(home_rest),
+                away_rest_days=_rest_days(away_rest),
+            )
 
-        # 1H Spread (independent, backtested on 904 games)
-        h1_spread_pred = self.h1_spread_model.predict(
-            home=home_ratings,
-            away=away_ratings,
-            is_neutral=is_neutral,
-            home_rest_days=_rest_days(home_rest),
-            away_rest_days=_rest_days(away_rest),
-        )
+            # FG Total (independent, backtested on 3,318 games)
+            fg_total_pred = self.fg_total_model.predict(
+                home=home_ratings,
+                away=away_ratings,
+                is_neutral=is_neutral,
+                home_rest_days=_rest_days(home_rest),
+                away_rest_days=_rest_days(away_rest),
+            )
 
-        # 1H Total (independent, backtested on 562 games)
-        h1_total_pred = self.h1_total_model.predict(
-            home=home_ratings,
-            away=away_ratings,
-            is_neutral=is_neutral,
-            home_rest_days=_rest_days(home_rest),
-            away_rest_days=_rest_days(away_rest),
-        )
+            # 1H Spread (independent, backtested on 904 games)
+            h1_spread_pred = self.h1_spread_model.predict(
+                home=home_ratings,
+                away=away_ratings,
+                is_neutral=is_neutral,
+                home_rest_days=_rest_days(home_rest),
+                away_rest_days=_rest_days(away_rest),
+            )
+
+            # 1H Total (independent, backtested on 562 games)
+            h1_total_pred = self.h1_total_model.predict(
+                home=home_ratings,
+                away=away_ratings,
+                is_neutral=is_neutral,
+                home_rest_days=_rest_days(home_rest),
+                away_rest_days=_rest_days(away_rest),
+            )
+        finally:
+            self.fg_spread_model.HCA = fg_spread_hca
+            self.h1_spread_model.HCA = h1_spread_hca
 
         # ═══════════════════════════════════════════════════════════════════════
         # Convert model predictions to Prediction object
@@ -170,6 +195,31 @@ class PredictionEngineV33:
         h1_home_score = (h1_total - h1_spread) / 2
         h1_away_score = (h1_total + h1_spread) / 2
 
+        health_spread_adj = 0.0
+        health_total_adj = 0.0
+        if home_health or away_health:
+            home_spread_adj = float((home_health or {}).get("spread_adjustment", 0.0))
+            away_spread_adj = float((away_health or {}).get("spread_adjustment", 0.0))
+            home_total_adj = float((home_health or {}).get("total_adjustment", 0.0))
+            away_total_adj = float((away_health or {}).get("total_adjustment", 0.0))
+            health_spread_adj = home_spread_adj - away_spread_adj
+            health_total_adj = home_total_adj + away_total_adj
+
+            fg_spread = fg_spread - health_spread_adj
+            fg_total = fg_total + health_total_adj
+            h1_spread = h1_spread - (health_spread_adj * self.config.health_1h_scale)
+            h1_total = h1_total + (health_total_adj * self.config.health_1h_scale)
+
+        fg_spread = round(fg_spread, 1)
+        fg_total = round(fg_total, 1)
+        h1_spread = round(h1_spread, 1)
+        h1_total = round(h1_total, 1)
+
+        fg_home_score = (fg_total - fg_spread) / 2
+        fg_away_score = (fg_total + fg_spread) / 2
+        h1_home_score = (h1_total - h1_spread) / 2
+        h1_away_score = (h1_total + h1_spread) / 2
+
         # Create Prediction object
         prediction = Prediction(
             game_id=game_id,
@@ -181,15 +231,27 @@ class PredictionEngineV33:
             predicted_total=fg_total,
             predicted_home_score=fg_home_score,
             predicted_away_score=fg_away_score,
-            spread_confidence=fg_spread_pred.confidence,
-            total_confidence=fg_total_pred.confidence,
+            spread_confidence=max(
+                0.50,
+                fg_spread_pred.confidence - (self.config.health_adjustment_confidence_penalty if health_spread_adj else 0.0),
+            ),
+            total_confidence=max(
+                0.50,
+                fg_total_pred.confidence - (self.config.health_adjustment_confidence_penalty if health_total_adj else 0.0),
+            ),
             # 1H Predictions
             predicted_spread_1h=h1_spread,
             predicted_total_1h=h1_total,
             predicted_home_score_1h=h1_home_score,
             predicted_away_score_1h=h1_away_score,
-            spread_confidence_1h=h1_spread_pred.confidence,
-            total_confidence_1h=h1_total_pred.confidence,
+            spread_confidence_1h=max(
+                0.50,
+                h1_spread_pred.confidence - (self.config.health_adjustment_confidence_penalty if health_spread_adj else 0.0),
+            ),
+            total_confidence_1h=max(
+                0.50,
+                h1_total_pred.confidence - (self.config.health_adjustment_confidence_penalty if health_total_adj else 0.0),
+            ),
             # Model metadata
             model_version=self.version_tag,
         )
@@ -332,12 +394,6 @@ class PredictionEngineV33:
         if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
             bet_line = market_line if pick == Pick.HOME else -market_line
 
-        # Calculate EV and Kelly
-        ev_percent, kelly = self._calculate_ev_kelly(edge, confidence, bet_type)
-
-        # Determine bet tier
-        bet_tier = self._get_bet_tier(edge, confidence)
-
         # Get sharp line for comparison
         sharp_line = None
         is_sharp_aligned = True
@@ -357,9 +413,21 @@ class PredictionEngineV33:
         if not is_sharp_aligned:
             final_confidence *= (1 - self.config.against_sharp_penalty)
 
+        # Apply market context adjustments (line movement / steam / RLM)
+        final_confidence = self._apply_market_context(
+            final_confidence, bet_type, pick, market_odds
+        )
+
         # Skip if confidence dropped below threshold
         if final_confidence < self.config.min_confidence:
             return None
+
+        implied_prob = self._calibrated_probability(edge, final_confidence, bet_type)
+        price = self._get_pick_price(bet_type, pick, market_odds)
+        ev_percent, kelly = self._calculate_ev_kelly(implied_prob, price)
+
+        # Determine bet tier
+        bet_tier = self._get_bet_tier(edge, final_confidence)
 
         # Calculate recommended units
         recommended_units = min(
@@ -383,7 +451,7 @@ class PredictionEngineV33:
             edge=edge,
             confidence=final_confidence,
             ev_percent=ev_percent,
-            implied_prob=confidence,
+            implied_prob=implied_prob,
             market_prob=market_prob,
             kelly_fraction=kelly,
             recommended_units=round(recommended_units, 1),
@@ -392,28 +460,96 @@ class PredictionEngineV33:
             is_sharp_aligned=is_sharp_aligned,
         )
 
-    def _calculate_ev_kelly(
+    def _get_pick_price(
+        self,
+        bet_type: BetType,
+        pick: Pick,
+        market_odds: MarketOdds,
+    ) -> int:
+        """Return the American odds price for the pick (defaults to -110)."""
+        if bet_type == BetType.SPREAD:
+            return market_odds.spread_price or -110
+        if bet_type == BetType.SPREAD_1H:
+            return market_odds.spread_price_1h or -110
+        if bet_type == BetType.TOTAL:
+            return (market_odds.over_price if pick == Pick.OVER else market_odds.under_price) or -110
+        if bet_type == BetType.TOTAL_1H:
+            return (market_odds.over_price_1h if pick == Pick.OVER else market_odds.under_price_1h) or -110
+        return -110
+
+    def _get_edge_sigma(self, bet_type: BetType) -> float:
+        if bet_type == BetType.SPREAD:
+            return self.config.edge_sigma_spread
+        if bet_type == BetType.TOTAL:
+            return self.config.edge_sigma_total
+        if bet_type == BetType.SPREAD_1H:
+            return self.config.edge_sigma_spread_1h
+        return self.config.edge_sigma_total_1h
+
+    def _get_bayes_prior(self, bet_type: BetType) -> tuple[float, float]:
+        """Return (hit_rate, prior_weight) for the bet type."""
+        default_rate = self.config.bayes_default_hit_rate
+        prior_weight = self.config.bayes_prior_weight
+        if not self.bayes_priors:
+            return default_rate, prior_weight
+
+        key = bet_type
+        prior = self.bayes_priors.get(key)
+        if prior is None and isinstance(bet_type, BetType):
+            prior = self.bayes_priors.get(bet_type.value)
+        if not isinstance(prior, dict):
+            return default_rate, prior_weight
+
+        hit_rate = float(prior.get("hit_rate", default_rate))
+        samples = int(prior.get("samples", 0) or 0)
+        if samples < self.config.bayes_min_samples:
+            return default_rate, prior_weight
+        return hit_rate, prior_weight
+
+    def _calibrated_probability(
         self,
         edge: float,
         confidence: float,
         bet_type: BetType,
+    ) -> float:
+        """Blend edge-based probability with Bayesian prior."""
+        sigma = self._get_edge_sigma(bet_type)
+        conf = min(1.0, max(0.0, confidence))
+
+        if sigma <= 0:
+            base_prob = conf
+        else:
+            z = edge / sigma
+            edge_prob = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+            edge_prob = min(0.99, max(0.01, edge_prob))
+            base_prob = 0.5 + (edge_prob - 0.5) * conf
+
+        prior_rate, prior_weight = self._get_bayes_prior(bet_type)
+        model_weight = max(1.0, prior_weight * max(0.25, conf))
+        blended = (prior_rate * prior_weight + base_prob * model_weight) / (prior_weight + model_weight)
+        return min(0.99, max(0.01, blended))
+
+    def _calculate_ev_kelly(
+        self,
+        implied_prob: float,
+        price: int = -110,
     ) -> tuple[float, float]:
         """Calculate expected value percentage and Kelly criterion."""
-        break_even = 0.5238  # -110 odds threshold
+        if price >= 0:
+            win = price
+            loss = 100
+        else:
+            win = 100
+            loss = abs(price)
 
-        # Edge probability impact
-        edge_prob = edge / 30.0
-        our_prob = break_even + edge_prob * confidence
+        p = min(0.99, max(0.01, implied_prob))
+        q = 1 - p
+        b = win / loss if loss else 0.0
 
-        # EV = (prob * win) - ((1-prob) * loss)
-        # At -110: win = 100, loss = 110
-        ev = (our_prob * 100) - ((1 - our_prob) * 110)
-        ev_percent = ev / 110 * 100
+        ev = (p * win) - (q * loss)
+        ev_percent = (ev / loss * 100) if loss else 0.0
 
         # Kelly: f* = (bp - q) / b
-        b = 100 / 110
-        p = our_prob
-        q = 1 - p
         kelly = max(0, (b * p - q) / b) if b > 0 else 0
 
         return ev_percent, kelly
@@ -449,6 +585,119 @@ class PredictionEngineV33:
             model_over = model_line > market_line
             sharp_over = sharp_line > market_line
             return model_over == sharp_over
+
+    def _apply_market_context(
+        self,
+        confidence: float,
+        bet_type: BetType,
+        pick: Pick,
+        market_odds: MarketOdds,
+    ) -> float:
+        """Adjust confidence using line movement/steam/RLM signals when available."""
+        move = self._get_market_move(bet_type, market_odds)
+        if move is None:
+            return confidence
+
+        move_threshold, steam_threshold = self._get_move_thresholds(bet_type)
+        aligned = self._is_move_aligned(bet_type, pick, move)
+
+        adjusted = confidence
+        if abs(move) >= move_threshold:
+            if aligned:
+                adjusted *= (1 + self.config.market_move_confidence_boost)
+            else:
+                adjusted *= (1 - self.config.market_move_confidence_penalty)
+
+        if abs(move) >= steam_threshold:
+            if aligned:
+                adjusted *= (1 + self.config.steam_confidence_boost)
+            else:
+                adjusted *= (1 - self.config.steam_confidence_penalty)
+
+        if self._is_reverse_line_move(bet_type, move, market_odds):
+            if aligned:
+                adjusted *= (1 + self.config.rlm_confidence_boost)
+
+        return min(0.99, max(0.01, adjusted))
+
+    def _get_market_move(self, bet_type: BetType, market_odds: MarketOdds) -> Optional[float]:
+        """Return current - open line for the bet type (home-perspective for spreads)."""
+        if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+            current = market_odds.spread if bet_type == BetType.SPREAD else market_odds.spread_1h
+            open_line = market_odds.spread_open if bet_type == BetType.SPREAD else market_odds.spread_1h_open
+            if open_line is None:
+                open_line = market_odds.sharp_spread_open
+                if current is None:
+                    current = market_odds.sharp_spread
+            if current is None or open_line is None:
+                return None
+            return current - open_line
+
+        current = market_odds.total if bet_type == BetType.TOTAL else market_odds.total_1h
+        open_line = market_odds.total_open if bet_type == BetType.TOTAL else market_odds.total_1h_open
+        if open_line is None:
+            open_line = market_odds.sharp_total_open
+            if current is None:
+                current = market_odds.sharp_total
+        if current is None or open_line is None:
+            return None
+        return current - open_line
+
+    def _get_move_thresholds(self, bet_type: BetType) -> tuple[float, float]:
+        if bet_type == BetType.SPREAD:
+            return self.config.market_move_threshold_spread, self.config.steam_threshold_spread
+        if bet_type == BetType.SPREAD_1H:
+            return self.config.market_move_threshold_spread_1h, self.config.steam_threshold_spread_1h
+        if bet_type == BetType.TOTAL_1H:
+            return self.config.market_move_threshold_total_1h, self.config.steam_threshold_total_1h
+        return self.config.market_move_threshold_total, self.config.steam_threshold_total
+
+    def _is_move_aligned(self, bet_type: BetType, pick: Pick, move: float) -> bool:
+        """True if line movement direction aligns with the pick side."""
+        if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+            if pick == Pick.HOME:
+                return move < 0
+            return move > 0
+
+        if pick == Pick.OVER:
+            return move > 0
+        return move < 0
+
+    def _is_reverse_line_move(
+        self,
+        bet_type: BetType,
+        move: float,
+        market_odds: MarketOdds,
+    ) -> bool:
+        """Detect reverse line movement when public bet splits are available."""
+        threshold = self.config.public_bet_signal_threshold
+
+        if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+            pct_home = market_odds.public_bet_pct_home
+            if pct_home is None:
+                return False
+            public_home = pct_home >= threshold
+            public_away = pct_home <= (1 - threshold)
+            if not (public_home or public_away):
+                return False
+            if public_home and move > 0:
+                return True
+            if public_away and move < 0:
+                return True
+            return False
+
+        pct_over = market_odds.public_bet_pct_over
+        if pct_over is None:
+            return False
+        public_over = pct_over >= threshold
+        public_under = pct_over <= (1 - threshold)
+        if not (public_over or public_under):
+            return False
+        if public_over and move < 0:
+            return True
+        if public_under and move > 0:
+            return True
+        return False
 
     def _get_market_probability(
         self,

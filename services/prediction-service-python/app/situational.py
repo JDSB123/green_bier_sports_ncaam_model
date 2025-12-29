@@ -4,11 +4,18 @@ Situational adjustments for NCAAM predictions.
 Computes rest day differentials and back-to-back penalties.
 """
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, List
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _ensure_tz_aware(dt: datetime) -> datetime:
+    """Ensure datetime is timezone-aware (assume UTC if naive)."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 @dataclass
@@ -92,13 +99,19 @@ class SituationalAdjuster:
             )
 
         # Find most recent completed game before this one
+        # Ensure game_datetime is timezone-aware for comparison
+        game_datetime_aware = _ensure_tz_aware(game_datetime)
+
         last_game_dt = None
         for game in sorted(game_history, key=lambda g: g["commence_time"], reverse=True):
             game_time = game["commence_time"]
             if isinstance(game_time, str):
                 game_time = datetime.fromisoformat(game_time.replace("Z", "+00:00"))
 
-            if game_time < game_datetime:
+            # Ensure game_time is also timezone-aware
+            game_time = _ensure_tz_aware(game_time)
+
+            if game_time < game_datetime_aware:
                 last_game_dt = game_time
                 break
 
@@ -109,8 +122,8 @@ class SituationalAdjuster:
                 is_back_to_back=False,
             )
 
-        # Calculate days difference
-        time_diff = game_datetime - last_game_dt
+        # Calculate days difference (both are now timezone-aware)
+        time_diff = game_datetime_aware - last_game_dt
         days_rest = time_diff.days
 
         # B2B is same calendar day or next calendar day (< 36 hours)

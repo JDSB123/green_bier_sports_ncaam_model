@@ -33,6 +33,10 @@ use axum::{
 };
 use serde_json::json;
 
+// Mascot suffixes used for conservative, suffix-only stripping.
+// Keep in sync with DB resolver; avoids collapsing "Florida A&M" -> "Florida".
+const MASCOT_SUFFIXES: &str = "blue devils|tar heels|wildcats|tigers|bulldogs|cavaliers|demon deacons|wolfpack|seminoles|cardinals|hurricanes|fighting irish|panthers|orange|hokies|yellow jackets|eagles|jayhawks|bears|red raiders|horned frogs|cowboys|cyclones|mountaineers|longhorns|sooners|cougars|knights|bearcats|boilermakers|wolverines|spartans|hoosiers|fighting illini|buckeyes|hawkeyes|badgers|golden gophers|nittany lions|scarlet knights|terrapins|cornhuskers|bruins|trojans|ducks|huskies|crimson tide|volunteers|razorbacks|gators|rebels|gamecocks|commodores|aggies|sun devils|buffaloes|utes|golden eagles|friars|pirates|red storm|musketeers|hoyas|blue demons|mustangs|golden hurricane|rattlers|49ers|owls|broncos|wolf pack|aztecs|rams|lobos|gaels|dons|waves|lions|pilots|toreros|flyers|billikens|spiders|bonnies|explorers|dukes|colonials|minutemen|hawks|ramblers|anteaters|highlanders|gauchos|tritons|titans|matadors|lancers|hornets|privateers|seahawks|delta devils|monarchs|miners|mean green|roadrunners|bearkats|flames|mountain hawks|leopards|raiders|crusaders|terriers|hilltoppers|blue raiders|thundering herd|red wolves|chanticleers|sycamores|redbirds|salukis|beacons|purple aces|braves|golden grizzlies|vikings|phoenix|penguins|jaguars|norse|lumberjacks|mavericks|islanders|texans|seawolves|great danes|jaspers|red foxes|saints|golden griffins|peacocks|stags|broncs|sharks|red flash";
+
 /// The Odds API event structure
 #[derive(Debug, Deserialize, Clone, Default)]
 #[serde(default)]
@@ -108,6 +112,8 @@ pub struct Config {
     pub enable_full: bool,
     pub enable_h1: bool,
     pub enable_h2: bool,
+    /// If true, unresolved teams cause the event to be skipped (no auto-creation).
+    pub strict_team_matching: bool,
     /// If true, run once and exit (no polling loop)
     pub run_once: bool,
     /// API rate limit (requests per minute). Default: 30
@@ -190,6 +196,9 @@ impl Config {
             enable_full: env::var("ENABLE_FULL").map(|v| v.to_lowercase() == "true").unwrap_or(true),
             enable_h1: env::var("ENABLE_H1").map(|v| v.to_lowercase() == "true").unwrap_or(true),
             enable_h2: env::var("ENABLE_H2").map(|v| v.to_lowercase() == "true").unwrap_or(true),
+            strict_team_matching: env::var("STRICT_TEAM_MATCHING")
+                .map(|v| v.to_lowercase() != "false")
+                .unwrap_or(true),
             rate_limit_per_minute: env::var("RATE_LIMIT_PER_MINUTE")
                 .unwrap_or_else(|_| "30".to_string())
                 .parse()
@@ -835,13 +844,27 @@ impl OddsIngestionService {
     pub async fn process_events(&self, events: Vec<OddsApiEvent>) -> Result<Vec<OddsSnapshot>> {
         let mut snapshots = Vec::new();
         let now = Utc::now();
+        let mut skipped_events = 0usize;
 
         for event in events {
             // Get or create game ID using race-condition-free cache
             let event_clone = event.clone();
-            let game_id = self.game_cache.get_or_insert_with(&event.id, || async {
+            let game_id = match self.game_cache.get_or_insert_with(&event.id, || async {
                 self.get_or_create_game(&event_clone).await
-            }).await?;
+            }).await {
+                Ok(id) => id,
+                Err(e) => {
+                    skipped_events += 1;
+                    warn!(
+                        "Skipping event {} ({} @ {}): {}",
+                        event.id,
+                        event.away_team,
+                        event.home_team,
+                        e
+                    );
+                    continue;
+                }
+            };
 
             for bookmaker in &event.bookmakers {
                 for market in &bookmaker.markets {
@@ -859,6 +882,10 @@ impl OddsIngestionService {
                     }
                 }
             }
+        }
+
+        if skipped_events > 0 {
+            warn!("Skipped {} events due to team resolution errors", skipped_events);
         }
 
         Ok(snapshots)
@@ -943,8 +970,8 @@ impl OddsIngestionService {
     /// CRITICAL: Validates home/away assignment and team name resolution
     async fn get_or_create_game(&self, event: &OddsApiEvent) -> Result<Uuid> {
         // Resolve and validate team names BEFORE upserting game
-        let home_team_id = self.get_or_create_team(&event.home_team).await?;
-        let away_team_id = self.get_or_create_team(&event.away_team).await?;
+        let home_team_id = self.get_or_create_team(&event.home_team, "home_team").await?;
+        let away_team_id = self.get_or_create_team(&event.away_team, "away_team").await?;
         
         // CRITICAL CHECK: Ensure home and away are different teams
         if home_team_id == away_team_id {
@@ -1048,7 +1075,7 @@ impl OddsIngestionService {
 
     /// Get or create team - CRITICAL: Normalizes team names BEFORE storing
     /// Uses resolve_team_name() function to ensure 99.99% accuracy
-    async fn get_or_create_team(&self, team_name: &str) -> Result<Uuid> {
+    async fn get_or_create_team(&self, team_name: &str, context: &str) -> Result<Uuid> {
         // STEP 1: Resolve to an existing team ID (prefer those that already have ratings).
         // We try multiple variants because The Odds API often includes mascots and
         // abbreviations, while ratings use mascot-less canonical names.
@@ -1056,7 +1083,7 @@ impl OddsIngestionService {
         let mut best_unrated: Option<(Uuid, String)> = None;
 
         for cand in candidates {
-            if let Some((id, canonical, has_ratings)) = self.resolve_team_fuzzy(&cand).await? {
+            if let Some((id, canonical, has_ratings)) = self.resolve_team_strict(&cand).await? {
                 if has_ratings {
                     // Found rated team: attach raw name as alias (if different) and return.
                     if team_name.to_lowercase() != canonical.to_lowercase() {
@@ -1098,6 +1125,24 @@ impl OddsIngestionService {
                 .await?;
             }
             return Ok(id);
+        }
+
+        if self.config.strict_team_matching {
+            sqlx::query(
+                r#"
+                INSERT INTO team_resolution_audit (input_name, resolved_name, source, context, has_ratings)
+                VALUES ($1, NULL, 'the_odds_api', $2, false)
+                "#
+            )
+            .bind(team_name)
+            .bind(context)
+            .execute(&self.db)
+            .await?;
+
+            return Err(anyhow!(
+                "Unresolved team name (strict matching enabled): {}",
+                team_name
+            ));
         }
 
         // STEP 2: Create new team ONLY with normalized canonical name
@@ -1166,7 +1211,7 @@ impl OddsIngestionService {
 
         let cleaned = self.normalize_lookup_name(&raw);
 
-        // Helper to add a base string + expansions + mascot-stripped variants.
+        // Helper to add a base string + expansions.
         let mut add_variants = |s: &str, out: &mut Vec<String>| {
             if s.trim().is_empty() {
                 return;
@@ -1175,20 +1220,14 @@ impl OddsIngestionService {
             if let Some(expanded) = Self::expand_prefix_abbrev(s) {
                 out.push(expanded);
             }
-
-            // Heuristic: Odds feeds often include mascot suffix; try dropping trailing words.
-            let parts: Vec<&str> = s.split_whitespace().collect();
-            if parts.len() >= 2 {
-                out.push(parts[..parts.len() - 1].join(" "));
-            }
-            if parts.len() >= 3 {
-                out.push(parts[..parts.len() - 2].join(" "));
-            }
         };
 
         if !cleaned.is_empty() {
             // Always add variants even if cleaned == raw so we still generate mascot-stripped forms.
             add_variants(&cleaned, &mut out);
+            for stripped in self.strip_mascot_suffixes(&cleaned) {
+                add_variants(&stripped, &mut out);
+            }
         }
 
         // Common "State" -> "St." canonicalization used in our seeded team list.
@@ -1200,6 +1239,50 @@ impl OddsIngestionService {
         // De-dupe while preserving order
         let mut seen = std::collections::HashSet::new();
         out.retain(|s| seen.insert(s.to_lowercase()));
+        out
+    }
+
+    /// Strip known mascot suffixes from the end of a name (one or more passes).
+    fn strip_mascot_suffixes(&self, name: &str) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut current = name.trim().to_string();
+
+        loop {
+            let lowered = current.to_lowercase();
+            let mut best: Option<&str> = None;
+            for suffix in MASCOT_SUFFIXES.split('|') {
+                let suffix = suffix.trim();
+                if suffix.is_empty() {
+                    continue;
+                }
+                if lowered == suffix {
+                    continue;
+                }
+                if lowered.ends_with(&format!(" {}", suffix)) {
+                    match best {
+                        None => best = Some(suffix),
+                        Some(prev) => {
+                            if suffix.len() > prev.len() {
+                                best = Some(suffix);
+                            }
+                        }
+                    }
+                }
+            }
+
+            let Some(suffix) = best else {
+                break;
+            };
+
+            let new_len = lowered.len().saturating_sub(suffix.len());
+            let trimmed = current[..new_len].trim_end().to_string();
+            if trimmed.is_empty() || trimmed == current {
+                break;
+            }
+            current = trimmed;
+            out.push(current.clone());
+        }
+
         out
     }
 
@@ -1266,6 +1349,26 @@ impl OddsIngestionService {
             return None;
         }
         Some(format!("{} {}", expanded, rest.join(" ")))
+    }
+
+    /// Strict resolution using resolve_team_name() (no fuzzy/partial matches).
+    async fn resolve_team_strict(&self, input: &str) -> Result<Option<(Uuid, String, bool)>> {
+        let resolved: Option<(Uuid, String, bool)> = sqlx::query_as(
+            r#"
+            SELECT
+              t.id,
+              t.canonical_name,
+              EXISTS(SELECT 1 FROM team_ratings tr WHERE tr.team_id = t.id) AS has_ratings
+            FROM teams t
+            WHERE t.canonical_name = resolve_team_name($1)
+            LIMIT 1
+            "#
+        )
+        .bind(input)
+        .fetch_optional(&self.db)
+        .await?;
+
+        Ok(resolved)
     }
 
     /// Fuzzy resolution that ignores punctuation/spacing and checks both canonical names

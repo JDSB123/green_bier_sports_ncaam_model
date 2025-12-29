@@ -136,7 +136,7 @@ class H1TotalModel(BasePredictor):
         # 1H possessions estimation
         # Base: 33 possessions in 1H (not exactly half of ~68 FG)
         # Adjust based on tempo deviation from league average
-        tempo_deviation = (avg_fg_tempo - 68.0) / 68.0  # % above/below average
+        tempo_deviation = (avg_fg_tempo - self.LEAGUE_AVG_TEMPO) / self.LEAGUE_AVG_TEMPO
 
         # 1H possessions scale with tempo but with dampening
         # Very fast teams don't speed up 1H as much (still feeling out)

@@ -170,6 +170,20 @@ class MarketOdds(BaseModel):
     sharp_spread: Optional[float] = None
     sharp_total: Optional[float] = None
 
+    # Opening lines (for market movement/steam context)
+    spread_open: Optional[float] = None
+    total_open: Optional[float] = None
+    spread_1h_open: Optional[float] = None
+    total_1h_open: Optional[float] = None
+    sharp_spread_open: Optional[float] = None
+    sharp_total_open: Optional[float] = None
+
+    # Optional public sentiment (if available)
+    public_bet_pct_home: Optional[float] = None
+    public_money_pct_home: Optional[float] = None
+    public_bet_pct_over: Optional[float] = None
+    public_money_pct_over: Optional[float] = None
+
     @field_validator('total', 'total_1h', mode='before')
     @classmethod
     def validate_totals(cls, v: Optional[float], info) -> Optional[float]:
@@ -189,8 +203,9 @@ class MarketOdds(BaseModel):
     @classmethod
     def validate_spreads(cls, v: Optional[float]) -> Optional[float]:
         if v is not None:
-            if abs(v) > 30:
-                raise ValueError("Spread exceeds reasonable limit (±30)")
+            # Expanded from +/-30 to handle heavy mismatches (e.g., D1 vs SWAC/MEAC).
+            if abs(v) > 45:
+                raise ValueError("Spread exceeds reasonable limit (+/-45)")
         return v
 
 

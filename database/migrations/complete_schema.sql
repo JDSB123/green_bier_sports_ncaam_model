@@ -22,8 +22,19 @@ CREATE INDEX IF NOT EXISTS idx_games_commence ON games(commence_time DESC);
 CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);
 CREATE INDEX IF NOT EXISTS idx_games_external ON games(external_id);
 CREATE INDEX IF NOT EXISTS idx_games_teams_date ON games(home_team_id, away_team_id, commence_time);
-ALTER TABLE games
-    ADD CONSTRAINT IF NOT EXISTS games_external_id_key UNIQUE (external_id);
+-- Postgres does not support `ADD CONSTRAINT IF NOT EXISTS`; make it idempotent.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'games_external_id_key'
+          AND conrelid = 'games'::regclass
+    ) THEN
+        ALTER TABLE games
+            ADD CONSTRAINT games_external_id_key UNIQUE (external_id);
+    END IF;
+END $$;
 
 -- Predictions
 CREATE TABLE IF NOT EXISTS predictions (

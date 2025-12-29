@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
 from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendation
+from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_total_model
 from app.config import settings
 from app.validation import validate_market_odds, validate_team_ratings
 
@@ -98,6 +99,13 @@ class MarketOddsInput(BaseModel):
     # Sharp book reference
     sharp_spread: Optional[float] = None
     sharp_total: Optional[float] = None
+    # Opening lines (consensus + sharp)
+    spread_open: Optional[float] = None
+    total_open: Optional[float] = None
+    spread_1h_open: Optional[float] = None
+    total_1h_open: Optional[float] = None
+    sharp_spread_open: Optional[float] = None
+    sharp_total_open: Optional[float] = None
 
     def to_domain(self) -> MarketOdds:
         return MarketOdds(
@@ -113,6 +121,12 @@ class MarketOddsInput(BaseModel):
             under_price_1h=self.under_price_1h,
             sharp_spread=self.sharp_spread,
             sharp_total=self.sharp_total,
+            spread_open=self.spread_open,
+            total_open=self.total_open,
+            spread_1h_open=self.spread_1h_open,
+            total_1h_open=self.total_1h_open,
+            sharp_spread_open=self.sharp_spread_open,
+            sharp_total_open=self.sharp_total_open,
         )
 
 
@@ -486,6 +500,79 @@ def _get_db_engine():
     if not db_url:
         return None
     return create_engine(db_url)
+
+
+def _fetch_latest_team_ratings(engine, team_name: str) -> TeamRatings:
+    """Resolve team name and fetch latest ratings from DB."""
+    with engine.connect() as conn:
+        resolved = conn.execute(
+            text("SELECT resolve_team_name(:name)"),
+            {"name": team_name},
+        ).fetchone()
+        canonical = resolved[0] if resolved and resolved[0] else None
+        if not canonical:
+            raise HTTPException(status_code=404, detail=f"Unknown team: {team_name}")
+
+        row = conn.execute(
+            text(
+                """
+                SELECT
+                    tr.adj_o,
+                    tr.adj_d,
+                    tr.tempo,
+                    tr.torvik_rank,
+                    tr.efg,
+                    tr.efgd,
+                    tr.tor,
+                    tr.tord,
+                    tr.orb,
+                    tr.drb,
+                    tr.ftr,
+                    tr.ftrd,
+                    tr.two_pt_pct,
+                    tr.two_pt_pct_d,
+                    tr.three_pt_pct,
+                    tr.three_pt_pct_d,
+                    tr.three_pt_rate,
+                    tr.three_pt_rate_d,
+                    tr.barthag,
+                    tr.wab
+                FROM team_ratings tr
+                JOIN teams t ON t.id = tr.team_id
+                WHERE t.canonical_name = :canonical
+                ORDER BY tr.rating_date DESC
+                LIMIT 1
+                """
+            ),
+            {"canonical": canonical},
+        ).fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"No ratings for team: {canonical}")
+
+    return TeamRatings(
+        team_name=canonical,
+        adj_o=float(row.adj_o),
+        adj_d=float(row.adj_d),
+        tempo=float(row.tempo),
+        rank=int(row.torvik_rank or 0),
+        efg=float(row.efg),
+        efgd=float(row.efgd),
+        tor=float(row.tor),
+        tord=float(row.tord),
+        orb=float(row.orb),
+        drb=float(row.drb),
+        ftr=float(row.ftr),
+        ftrd=float(row.ftrd),
+        two_pt_pct=float(row.two_pt_pct),
+        two_pt_pct_d=float(row.two_pt_pct_d),
+        three_pt_pct=float(row.three_pt_pct),
+        three_pt_pct_d=float(row.three_pt_pct_d),
+        three_pt_rate=float(row.three_pt_rate),
+        three_pt_rate_d=float(row.three_pt_rate_d),
+        barthag=float(row.barthag),
+        wab=float(row.wab),
+    )
 
 
 @app.get("/api/picks/{date_param}")
@@ -1387,26 +1474,66 @@ async def teams_webhook_handler(request: Request):
 
 @app.get("/predict/fh_total_indep")
 async def predict_fh_total_indep(home: str, away: str, neutral: bool = False):
-    # Logic to get ratings and predict using fh_total_indep
-    return {"prediction": fh_total_indep.predict(home, away, neutral)}
+    engine = _get_db_engine()
+    if not engine:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    home_ratings = _fetch_latest_team_ratings(engine, home)
+    away_ratings = _fetch_latest_team_ratings(engine, away)
+    pred = h1_total_model.predict(home=home_ratings, away=away_ratings, is_neutral=neutral)
+    return {
+        "prediction": pred.value,
+        "confidence": pred.confidence,
+        "home": home_ratings.team_name,
+        "away": away_ratings.team_name,
+    }
 
 
 @app.get("/predict/fh_spread_indep")
 async def predict_fh_spread_indep(home: str, away: str, neutral: bool = False):
-    # Logic to get ratings and predict using fh_spread_indep
-    return {"prediction": fh_spread_indep.predict(home, away, neutral)}
+    engine = _get_db_engine()
+    if not engine:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    home_ratings = _fetch_latest_team_ratings(engine, home)
+    away_ratings = _fetch_latest_team_ratings(engine, away)
+    pred = h1_spread_model.predict(home=home_ratings, away=away_ratings, is_neutral=neutral)
+    return {
+        "prediction": pred.value,
+        "confidence": pred.confidence,
+        "home": home_ratings.team_name,
+        "away": away_ratings.team_name,
+    }
 
 
 @app.get("/predict/full_total_indep")
 async def predict_full_total_indep(home: str, away: str, neutral: bool = False):
-    # Logic to get ratings and predict using full_total_indep
-    return {"prediction": full_total_indep.predict(home, away, neutral)}
+    engine = _get_db_engine()
+    if not engine:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    home_ratings = _fetch_latest_team_ratings(engine, home)
+    away_ratings = _fetch_latest_team_ratings(engine, away)
+    pred = fg_total_model.predict(home=home_ratings, away=away_ratings, is_neutral=neutral)
+    return {
+        "prediction": pred.value,
+        "confidence": pred.confidence,
+        "home": home_ratings.team_name,
+        "away": away_ratings.team_name,
+    }
 
 
 @app.get("/predict/full_spread_indep")
 async def predict_full_spread_indep(home: str, away: str, neutral: bool = False):
-    # Logic to get ratings and predict using full_spread_indep
-    return {"prediction": full_spread_indep.predict(home, away, neutral)}
+    engine = _get_db_engine()
+    if not engine:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    home_ratings = _fetch_latest_team_ratings(engine, home)
+    away_ratings = _fetch_latest_team_ratings(engine, away)
+    pred = fg_spread_model.predict(home=home_ratings, away=away_ratings, is_neutral=neutral)
+    return {
+        "prediction": pred.value,
+        "confidence": pred.confidence,
+        "home": home_ratings.team_name,
+        "away": away_ratings.team_name,
+    }
 
 
 # Local run helper
