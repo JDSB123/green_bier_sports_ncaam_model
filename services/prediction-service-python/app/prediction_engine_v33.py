@@ -453,6 +453,7 @@ class PredictionEngineV33:
             ev_percent=ev_percent,
             implied_prob=implied_prob,
             market_prob=market_prob,
+            pick_price=price,
             kelly_fraction=kelly,
             recommended_units=round(recommended_units, 1),
             bet_tier=bet_tier,
@@ -466,16 +467,43 @@ class PredictionEngineV33:
         pick: Pick,
         market_odds: MarketOdds,
     ) -> int:
-        """Return the American odds price for the pick (defaults to -110)."""
+        """Return the American odds price for the specific pick side.
+
+        This must be explicit: no implicit -110 defaults.
+        """
         if bet_type == BetType.SPREAD:
-            return market_odds.spread_price or -110
+            if pick == Pick.HOME and market_odds.spread_home_price is not None:
+                return int(market_odds.spread_home_price)
+            if pick == Pick.AWAY and market_odds.spread_away_price is not None:
+                return int(market_odds.spread_away_price)
+            if market_odds.spread_price is not None:
+                return int(market_odds.spread_price)
+            raise ValueError("Missing spread price (need spread_home_price/spread_away_price or spread_price)")
+
         if bet_type == BetType.SPREAD_1H:
-            return market_odds.spread_price_1h or -110
+            if pick == Pick.HOME and market_odds.spread_1h_home_price is not None:
+                return int(market_odds.spread_1h_home_price)
+            if pick == Pick.AWAY and market_odds.spread_1h_away_price is not None:
+                return int(market_odds.spread_1h_away_price)
+            if market_odds.spread_price_1h is not None:
+                return int(market_odds.spread_price_1h)
+            raise ValueError("Missing 1H spread price (need spread_1h_home_price/spread_1h_away_price or spread_price_1h)")
+
         if bet_type == BetType.TOTAL:
-            return (market_odds.over_price if pick == Pick.OVER else market_odds.under_price) or -110
+            if pick == Pick.OVER and market_odds.over_price is not None:
+                return int(market_odds.over_price)
+            if pick == Pick.UNDER and market_odds.under_price is not None:
+                return int(market_odds.under_price)
+            raise ValueError("Missing total price (need over_price/under_price)")
+
         if bet_type == BetType.TOTAL_1H:
-            return (market_odds.over_price_1h if pick == Pick.OVER else market_odds.under_price_1h) or -110
-        return -110
+            if pick == Pick.OVER and market_odds.over_price_1h is not None:
+                return int(market_odds.over_price_1h)
+            if pick == Pick.UNDER and market_odds.under_price_1h is not None:
+                return int(market_odds.under_price_1h)
+            raise ValueError("Missing 1H total price (need over_price_1h/under_price_1h)")
+
+        raise ValueError(f"Unsupported bet_type for pricing: {bet_type}")
 
     def _get_edge_sigma(self, bet_type: BetType) -> float:
         if bet_type == BetType.SPREAD:
@@ -532,7 +560,7 @@ class PredictionEngineV33:
     def _calculate_ev_kelly(
         self,
         implied_prob: float,
-        price: int = -110,
+        price: int,
     ) -> tuple[float, float]:
         """Calculate expected value percentage and Kelly criterion."""
         if price >= 0:
@@ -712,20 +740,8 @@ class PredictionEngineV33:
             else:
                 return 100 / (odds + 100)
 
-        if bet_type == BetType.SPREAD:
-            odds = market_odds.spread_price or -110
-            return american_to_prob(odds)
-        elif bet_type == BetType.SPREAD_1H:
-            odds = market_odds.spread_price_1h or -110
-            return american_to_prob(odds)
-        elif bet_type == BetType.TOTAL:
-            odds = (market_odds.over_price if pick == Pick.OVER else market_odds.under_price) or -110
-            return american_to_prob(odds)
-        elif bet_type == BetType.TOTAL_1H:
-            odds = (market_odds.over_price_1h if pick == Pick.OVER else market_odds.under_price_1h) or -110
-            return american_to_prob(odds)
-        else:
-            return 0.5
+        odds = self._get_pick_price(bet_type, pick, market_odds)
+        return american_to_prob(odds)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
