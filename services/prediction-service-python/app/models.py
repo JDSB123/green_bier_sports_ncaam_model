@@ -154,15 +154,21 @@ class MarketOdds(BaseModel):
     model_config = {"frozen": True}
 
     spread: Optional[float] = None
-    spread_price: int = -110
+    # Legacy/compat: single spread price (assumes symmetric juice).
+    # Prefer using spread_home_price/spread_away_price when available.
+    spread_price: Optional[int] = None
+    spread_home_price: Optional[int] = None
+    spread_away_price: Optional[int] = None
     total: Optional[float] = None
-    over_price: int = -110
-    under_price: int = -110
+    over_price: Optional[int] = None
+    under_price: Optional[int] = None
 
     # First half
     spread_1h: Optional[float] = None
     total_1h: Optional[float] = None
     spread_price_1h: Optional[int] = None
+    spread_1h_home_price: Optional[int] = None
+    spread_1h_away_price: Optional[int] = None
     over_price_1h: Optional[int] = None
     under_price_1h: Optional[int] = None
 
@@ -328,6 +334,9 @@ class BettingRecommendation:
     kelly_fraction: float           # Full Kelly bet fraction
     recommended_units: float        # Actual recommended bet (fractional Kelly)
     bet_tier: BetTier
+
+    # Price context (American odds) for the specific pick side (HOME/AWAY/OVER/UNDER)
+    pick_price: Optional[int] = None
 
     # Sharp alignment
     sharp_line: Optional[float] = None

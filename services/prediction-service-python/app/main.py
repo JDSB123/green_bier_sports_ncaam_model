@@ -1387,19 +1387,19 @@ async def teams_webhook_handler(request: Request):
                             if pick_val == "HOME":
                                 team_name = game["home"]
                                 line = game["spread"] if not is_1h else game.get("spread_1h")
-                                juice = game.get("spread_home_juice", -110) if not is_1h else game.get("spread_1h_home_juice", -110)
+                                juice = game.get("spread_home_juice") if not is_1h else game.get("spread_1h_home_juice")
                             else:
                                 team_name = game["away"]
                                 line = -(game["spread"]) if game["spread"] and not is_1h else (-(game.get("spread_1h")) if game.get("spread_1h") else None)
-                                juice = game.get("spread_away_juice", -110) if not is_1h else game.get("spread_1h_away_juice", -110)
+                                juice = game.get("spread_away_juice") if not is_1h else game.get("spread_1h_away_juice")
                             pick_display = f"{team_name[:20]} {format_spread(line)} ({format_odds(juice)})"
                         elif market == "TOTAL":
                             total_line = game["total"] if not is_1h else game.get("total_1h")
                             if pick_val == "OVER":
-                                juice = game.get("over_juice", -110) if not is_1h else game.get("over_1h_juice", -110)
+                                juice = game.get("over_juice") if not is_1h else game.get("over_1h_juice")
                                 pick_display = f"OVER {total_line:.1f} ({format_odds(juice)})"
                             else:
-                                juice = game.get("under_juice", -110) if not is_1h else game.get("under_1h_juice", -110)
+                                juice = game.get("under_juice") if not is_1h else game.get("under_1h_juice")
                                 pick_display = f"UNDER {total_line:.1f} ({format_odds(juice)})"
                         else:
                             continue
@@ -1422,16 +1422,16 @@ async def teams_webhook_handler(request: Request):
                             # Show market from PICK perspective (+ for underdog side)
                             mkt_line = mkt_line_home if pick_val == "HOME" else (-mkt_line_home if mkt_line_home is not None else None)
                             if not is_1h:
-                                mkt_juice = game.get("spread_home_juice", -110) if pick_val == "HOME" else game.get("spread_away_juice", -110)
+                                mkt_juice = game.get("spread_home_juice") if pick_val == "HOME" else game.get("spread_away_juice")
                             else:
-                                mkt_juice = game.get("spread_1h_home_juice", -110) if pick_val == "HOME" else game.get("spread_1h_away_juice", -110)
+                                mkt_juice = game.get("spread_1h_home_juice") if pick_val == "HOME" else game.get("spread_1h_away_juice")
                             market_str = f"{format_spread(mkt_line)} ({format_odds(mkt_juice)})"
                         elif market == "TOTAL":
                             mkt_line = game["total"] if not is_1h else game.get("total_1h")
                             if not is_1h:
-                                mkt_juice = game.get("over_juice", -110) if pick_val == "OVER" else game.get("under_juice", -110)
+                                mkt_juice = game.get("over_juice") if pick_val == "OVER" else game.get("under_juice")
                             else:
-                                mkt_juice = game.get("over_1h_juice", -110) if pick_val == "OVER" else game.get("under_1h_juice", -110)
+                                mkt_juice = game.get("over_1h_juice") if pick_val == "OVER" else game.get("under_1h_juice")
                             market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
                         else:
                             continue

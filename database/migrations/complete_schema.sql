@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS betting_recommendations (
     game_id             UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,
     bet_type            TEXT NOT NULL,
     pick                TEXT NOT NULL,
+    pick_price           INTEGER,
     line                DECIMAL(5,2),
     edge                DECIMAL(5,2),
     confidence          DECIMAL(4,3),

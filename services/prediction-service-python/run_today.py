@@ -1363,12 +1363,12 @@ def get_prediction(
     if market_odds:
         market_odds_obj = MarketOdds(
             spread=market_odds.get("spread"),
-            spread_price=market_odds.get("spread_price") or -110,
+            spread_price=market_odds.get("spread_price"),
             spread_home_price=market_odds.get("spread_home_price"),
             spread_away_price=market_odds.get("spread_away_price"),
             total=market_odds.get("total"),
-            over_price=market_odds.get("over_price") or -110,
-            under_price=market_odds.get("under_price") or -110,
+            over_price=market_odds.get("over_price"),
+            under_price=market_odds.get("under_price"),
             spread_1h=market_odds.get("spread_1h"),
             spread_price_1h=market_odds.get("spread_price_1h"),
             spread_1h_home_price=market_odds.get("spread_1h_home_price"),
