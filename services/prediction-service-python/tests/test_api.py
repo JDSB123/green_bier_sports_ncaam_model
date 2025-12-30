@@ -123,6 +123,68 @@ class TestPredictEndpoint:
         assert "prediction" in data
         assert "recommendations" in data
 
+        def test_predict_rejects_spread_without_price(self):
+            """Spread without explicit pricing should fail (no implicit -110 defaults)."""
+            request_body = {
+                "game_id": str(uuid4()),
+                "home_team": "Duke",
+                "away_team": "UNC",
+                "commence_time": datetime.now().isoformat(),
+                "home_ratings": {
+                    "team_name": "Duke",
+                    "adj_o": 110.0,
+                    "adj_d": 100.0,
+                    "tempo": 68.0,
+                    "rank": 50,
+                    "efg": 50.0,
+                    "efgd": 50.0,
+                    "tor": 18.0,
+                    "tord": 18.0,
+                    "orb": 28.0,
+                    "drb": 72.0,
+                    "ftr": 33.0,
+                    "ftrd": 33.0,
+                    "two_pt_pct": 50.0,
+                    "two_pt_pct_d": 50.0,
+                    "three_pt_pct": 35.0,
+                    "three_pt_pct_d": 35.0,
+                    "three_pt_rate": 35.0,
+                    "three_pt_rate_d": 35.0,
+                    "barthag": 0.800,
+                    "wab": 2.0,
+                },
+                "away_ratings": {
+                    "team_name": "UNC",
+                    "adj_o": 110.0,
+                    "adj_d": 100.0,
+                    "tempo": 68.0,
+                    "rank": 50,
+                    "efg": 50.0,
+                    "efgd": 50.0,
+                    "tor": 18.0,
+                    "tord": 18.0,
+                    "orb": 28.0,
+                    "drb": 72.0,
+                    "ftr": 33.0,
+                    "ftrd": 33.0,
+                    "two_pt_pct": 50.0,
+                    "two_pt_pct_d": 50.0,
+                    "three_pt_pct": 35.0,
+                    "three_pt_pct_d": 35.0,
+                    "three_pt_rate": 35.0,
+                    "three_pt_rate_d": 35.0,
+                    "barthag": 0.800,
+                    "wab": 2.0,
+                },
+                "market_odds": {
+                    "spread": -6.5
+                },
+                "is_neutral": False,
+            }
+
+            response = client.post("/predict", json=request_body)
+            assert response.status_code == 422
+
     def test_predict_missing_ratings(self):
         """Request with missing ratings should fail with 422."""
         request_body = {

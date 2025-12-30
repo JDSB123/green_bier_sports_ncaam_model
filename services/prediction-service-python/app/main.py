@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from uuid import UUID
 
-from fastapi import FastAPI, BackgroundTasks, Request
+from fastapi import FastAPI, BackgroundTasks, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -84,15 +84,19 @@ class TeamRatingsInput(BaseModel):
 
 class MarketOddsInput(BaseModel):
     spread: Optional[float] = None
-    spread_price: int = -110
+    spread_price: Optional[int] = None
+    spread_home_price: Optional[int] = None
+    spread_away_price: Optional[int] = None
     total: Optional[float] = None
-    over_price: int = -110
-    under_price: int = -110
+    over_price: Optional[int] = None
+    under_price: Optional[int] = None
 
     # First half
     spread_1h: Optional[float] = None
     total_1h: Optional[float] = None
     spread_price_1h: Optional[int] = None
+    spread_1h_home_price: Optional[int] = None
+    spread_1h_away_price: Optional[int] = None
     over_price_1h: Optional[int] = None
     under_price_1h: Optional[int] = None
 
@@ -107,27 +111,81 @@ class MarketOddsInput(BaseModel):
     sharp_spread_open: Optional[float] = None
     sharp_total_open: Optional[float] = None
 
+    @model_validator(mode="after")
+    def _validate_odds_completeness(self):
+        def _has_pair(a: Optional[int], b: Optional[int]) -> bool:
+            return a is not None and b is not None
+
+        # Disallow "prices without lines" (prevents ambiguous / accidental payloads).
+        if self.spread is None and any(
+            v is not None for v in [self.spread_price, self.spread_home_price, self.spread_away_price]
+        ):
+            raise ValueError("spread prices require spread")
+        if self.total is None and any(v is not None for v in [self.over_price, self.under_price]):
+            raise ValueError("total prices require total")
+        if self.spread_1h is None and any(
+            v is not None for v in [self.spread_price_1h, self.spread_1h_home_price, self.spread_1h_away_price]
+        ):
+            raise ValueError("1H spread prices require spread_1h")
+        if self.total_1h is None and any(v is not None for v in [self.over_price_1h, self.under_price_1h]):
+            raise ValueError("1H total prices require total_1h")
+
+        # Full game spread must include pricing if provided.
+        if self.spread is not None:
+            if self.spread_price is None and not _has_pair(self.spread_home_price, self.spread_away_price):
+                raise ValueError(
+                    "spread requires either spread_price or (spread_home_price and spread_away_price)"
+                )
+
+        # Full game total must include both sides if provided.
+        if self.total is not None:
+            if self.over_price is None or self.under_price is None:
+                raise ValueError("total requires both over_price and under_price")
+
+        # First half spread must include pricing if provided.
+        if self.spread_1h is not None:
+            if self.spread_price_1h is None and not _has_pair(self.spread_1h_home_price, self.spread_1h_away_price):
+                raise ValueError(
+                    "spread_1h requires either spread_price_1h or (spread_1h_home_price and spread_1h_away_price)"
+                )
+
+        # First half total must include both sides if provided.
+        if self.total_1h is not None:
+            if self.over_price_1h is None or self.under_price_1h is None:
+                raise ValueError("total_1h requires both over_price_1h and under_price_1h")
+
+        # Require at least one market if market_odds block is present.
+        if all(v is None for v in [self.spread, self.total, self.spread_1h, self.total_1h]):
+            raise ValueError("market_odds must include at least one market (spread/total/spread_1h/total_1h)")
+
+        return self
+
     def to_domain(self) -> MarketOdds:
-        return MarketOdds(
-            spread=self.spread,
-            spread_price=self.spread_price,
-            total=self.total,
-            over_price=self.over_price,
-            under_price=self.under_price,
-            spread_1h=self.spread_1h,
-            total_1h=self.total_1h,
-            spread_price_1h=self.spread_price_1h,
-            over_price_1h=self.over_price_1h,
-            under_price_1h=self.under_price_1h,
-            sharp_spread=self.sharp_spread,
-            sharp_total=self.sharp_total,
-            spread_open=self.spread_open,
-            total_open=self.total_open,
-            spread_1h_open=self.spread_1h_open,
-            total_1h_open=self.total_1h_open,
-            sharp_spread_open=self.sharp_spread_open,
-            sharp_total_open=self.sharp_total_open,
-        )
+        odds_kwargs = {
+            "spread": self.spread,
+            "spread_price": self.spread_price,
+            "spread_home_price": self.spread_home_price,
+            "spread_away_price": self.spread_away_price,
+            "total": self.total,
+            "over_price": self.over_price,
+            "under_price": self.under_price,
+            "spread_1h": self.spread_1h,
+            "total_1h": self.total_1h,
+            "spread_price_1h": self.spread_price_1h,
+            "spread_1h_home_price": self.spread_1h_home_price,
+            "spread_1h_away_price": self.spread_1h_away_price,
+            "over_price_1h": self.over_price_1h,
+            "under_price_1h": self.under_price_1h,
+            "sharp_spread": self.sharp_spread,
+            "sharp_total": self.sharp_total,
+            "spread_open": self.spread_open,
+            "total_open": self.total_open,
+            "spread_1h_open": self.spread_1h_open,
+            "total_1h_open": self.total_1h_open,
+            "sharp_spread_open": self.sharp_spread_open,
+            "sharp_total_open": self.sharp_total_open,
+        }
+        return MarketOdds(**{k: v for k, v in odds_kwargs.items() if v is not None})
 
 
 class PredictRequest(BaseModel):
@@ -427,10 +485,32 @@ async def trigger_picks_sync(request: Request):
 
 @app.get("/picks/html")
 async def get_picks_html():
-    """Serve the latest HTML picks report."""
+    """Serve the latest HTML picks report.
+
+    Freshness contract: if the report is stale, callers must trigger picks
+    generation first (e.g. /trigger-picks-sync).
+    """
     html_path = Path("/app/output/latest_picks.html")
     if not html_path.exists():
         return {"error": "No report generated yet. Trigger picks first."}
+
+    max_age_minutes = int(os.getenv("MAX_PICKS_REPORT_AGE_MINUTES", "180"))
+    try:
+        mtime = datetime.fromtimestamp(html_path.stat().st_mtime, tz=timezone.utc)
+        age_minutes = (datetime.now(timezone.utc) - mtime).total_seconds() / 60.0
+        if age_minutes > max_age_minutes:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"Picks report is stale ({age_minutes:.1f}m old > {max_age_minutes}m). "
+                    "Trigger picks generation and retry."
+                ),
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        # If filesystem metadata is unavailable, still serve the file.
+        pass
     return FileResponse(html_path)
 
 
@@ -474,6 +554,58 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import create_engine, text
 
 CST = ZoneInfo("America/Chicago")
+
+
+def _odds_snapshot_age_minutes(now_utc: datetime, snapshot_time: Optional[datetime]) -> Optional[float]:
+    if snapshot_time is None:
+        return None
+    if snapshot_time.tzinfo is None:
+        snapshot_time = snapshot_time.replace(tzinfo=timezone.utc)
+    return (now_utc - snapshot_time.astimezone(timezone.utc)).total_seconds() / 60.0
+
+
+def _format_american_odds(odds: Optional[int]) -> str:
+    if odds is None:
+        return "N/A"
+    return f"+{int(odds)}" if int(odds) > 0 else str(int(odds))
+
+
+def _check_recent_team_resolution(engine) -> dict:
+    """Best-effort guardrail: ensure canonical resolution isn't degraded."""
+    lookback_days = int(os.getenv("TEAM_MATCHING_LOOKBACK_DAYS", "30"))
+    min_rate = float(os.getenv("MIN_TEAM_RESOLUTION_RATE", "0.99"))
+    now_utc = datetime.now(timezone.utc)
+    lookback_start = now_utc - timedelta(days=lookback_days)
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text(
+                """
+                SELECT
+                    COUNT(*)::int AS total,
+                    SUM(CASE WHEN resolved_name IS NOT NULL THEN 1 ELSE 0 END)::int AS resolved,
+                    SUM(CASE WHEN resolved_name IS NULL THEN 1 ELSE 0 END)::int AS unresolved
+                FROM team_resolution_audit
+                WHERE created_at >= :lookback_start
+                """
+            ),
+            {"lookback_start": lookback_start},
+        ).fetchone()
+
+    total = int(row.total or 0) if row else 0
+    resolved = int(row.resolved or 0) if row else 0
+    unresolved = int(row.unresolved or 0) if row else 0
+    rate = (resolved / total) if total else 0.0
+    ok = bool(total > 0 and unresolved == 0 and rate >= min_rate)
+    return {
+        "ok": ok,
+        "lookback_days": lookback_days,
+        "min_rate": min_rate,
+        "total": total,
+        "resolved": resolved,
+        "unresolved": unresolved,
+        "rate": rate,
+    }
 
 
 def _get_target_date(date_param: str) -> date:
@@ -596,6 +728,27 @@ async def get_picks_json(request: Request, date_param: str = "today"):
     if not engine:
         return {"error": "Database not configured", "picks": []}
 
+    # Hard guardrail: do not serve picks if canonical matching is degraded.
+    try:
+        tm = _check_recent_team_resolution(engine)
+        if not tm.get("ok"):
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"Canonical team matching degraded: rate={tm.get('rate', 0.0):.2%} "
+                    f"unresolved={tm.get('unresolved', 0)} over {tm.get('lookback_days', 0)}d. "
+                    "Run team matching + data sync and retry."
+                ),
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Team matching gate error: {type(e).__name__}")
+
+    max_age_full = int(os.getenv("MAX_ODDS_AGE_MINUTES_FULL", "60"))
+    max_age_1h = int(os.getenv("MAX_ODDS_AGE_MINUTES_1H", "60"))
+    now_utc = datetime.now(timezone.utc)
+
     picks = []
 
     try:
@@ -641,11 +794,26 @@ async def get_picks_json(request: Request, date_param: str = "today"):
                     ar.three_pt_rate as away_3pr, ar.three_pt_rate_d as away_3prd,
                     ar.barthag as away_barthag, ar.wab as away_wab,
                     -- Full game odds (latest)
-                    (SELECT home_line FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'spreads' ORDER BY time DESC LIMIT 1) as market_spread,
-                    (SELECT total_line FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'totals' ORDER BY time DESC LIMIT 1) as market_total,
+                    (SELECT home_line FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'spreads' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_spread,
+                    (SELECT home_price FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'spreads' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_spread_home_price,
+                    (SELECT away_price FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'spreads' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_spread_away_price,
+                    (SELECT time FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'spreads' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_spread_time,
+
+                    (SELECT total_line FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'totals' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_total,
+                    (SELECT over_price FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'totals' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_over_price,
+                    (SELECT under_price FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'totals' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_under_price,
+                    (SELECT time FROM odds_snapshots WHERE game_id = g.id AND period = 'full' AND market_type = 'totals' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_total_time,
+
                     -- 1H odds (latest)
-                    (SELECT home_line FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'spreads' ORDER BY time DESC LIMIT 1) as market_spread_1h,
-                    (SELECT total_line FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'totals' ORDER BY time DESC LIMIT 1) as market_total_1h
+                    (SELECT home_line FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'spreads' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_spread_1h,
+                    (SELECT home_price FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'spreads' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_spread_1h_home_price,
+                    (SELECT away_price FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'spreads' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_spread_1h_away_price,
+                    (SELECT time FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'spreads' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_spread_1h_time,
+
+                    (SELECT total_line FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'totals' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_total_1h,
+                    (SELECT over_price FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'totals' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_over_price_1h,
+                    (SELECT under_price FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'totals' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_under_price_1h,
+                    (SELECT time FROM odds_snapshots WHERE game_id = g.id AND period = '1h' AND market_type = 'totals' ORDER BY (bookmaker='pinnacle') DESC, (bookmaker='bovada') DESC, time DESC LIMIT 1) as market_total_1h_time
                 FROM games g
                 JOIN teams ht ON g.home_team_id = ht.id
                 JOIN teams at ON g.away_team_id = at.id
@@ -697,13 +865,94 @@ async def get_picks_json(request: Request, date_param: str = "today"):
 
                 # Build MarketOdds if available (convert decimals to floats)
                 market_odds = None
-                if row.market_spread or row.market_total:
-                    market_odds = MarketOdds(
-                        spread=to_float(row.market_spread) if row.market_spread else None,
-                        total=to_float(row.market_total) if row.market_total else None,
-                        spread_1h=to_float(row.market_spread_1h) if row.market_spread_1h else None,
-                        total_1h=to_float(row.market_total_1h) if row.market_total_1h else None,
-                    )
+                if row.market_spread is not None or row.market_total is not None:
+                    # Freshness + price completeness: do not compute picks on stale/incomplete odds.
+                    if row.market_spread is not None:
+                        spread_age = _odds_snapshot_age_minutes(now_utc, row.market_spread_time)
+                        if spread_age is None or spread_age > max_age_full:
+                            raise HTTPException(
+                                status_code=503,
+                                detail=f"Stale/missing full-game spread odds for {row.away_team} @ {row.home_team}",
+                            )
+                        if row.market_spread_home_price is None or row.market_spread_away_price is None:
+                            raise HTTPException(
+                                status_code=503,
+                                detail=f"Missing full-game spread prices for {row.away_team} @ {row.home_team}",
+                            )
+                    if row.market_total is not None:
+                        total_age = _odds_snapshot_age_minutes(now_utc, row.market_total_time)
+                        if total_age is None or total_age > max_age_full:
+                            raise HTTPException(
+                                status_code=503,
+                                detail=f"Stale/missing full-game total odds for {row.away_team} @ {row.home_team}",
+                            )
+                        if row.market_over_price is None or row.market_under_price is None:
+                            raise HTTPException(
+                                status_code=503,
+                                detail=f"Missing full-game total prices for {row.away_team} @ {row.home_team}",
+                            )
+
+                    if row.market_spread_1h is not None:
+                        spread_1h_age = _odds_snapshot_age_minutes(now_utc, row.market_spread_1h_time)
+                        if spread_1h_age is None or spread_1h_age > max_age_1h:
+                            raise HTTPException(
+                                status_code=503,
+                                detail=f"Stale/missing 1H spread odds for {row.away_team} @ {row.home_team}",
+                            )
+                        if row.market_spread_1h_home_price is None or row.market_spread_1h_away_price is None:
+                            raise HTTPException(
+                                status_code=503,
+                                detail=f"Missing 1H spread prices for {row.away_team} @ {row.home_team}",
+                            )
+                    if row.market_total_1h is not None:
+                        total_1h_age = _odds_snapshot_age_minutes(now_utc, row.market_total_1h_time)
+                        if total_1h_age is None or total_1h_age > max_age_1h:
+                            raise HTTPException(
+                                status_code=503,
+                                detail=f"Stale/missing 1H total odds for {row.away_team} @ {row.home_team}",
+                            )
+                        if row.market_over_price_1h is None or row.market_under_price_1h is None:
+                            raise HTTPException(
+                                status_code=503,
+                                detail=f"Missing 1H total prices for {row.away_team} @ {row.home_team}",
+                            )
+
+                    odds_kwargs = {}
+                    if row.market_spread is not None:
+                        odds_kwargs.update(
+                            {
+                                "spread": to_float(row.market_spread),
+                                "spread_home_price": int(row.market_spread_home_price),
+                                "spread_away_price": int(row.market_spread_away_price),
+                                "spread_price": int(row.market_spread_home_price),
+                            }
+                        )
+                    if row.market_total is not None:
+                        odds_kwargs.update(
+                            {
+                                "total": to_float(row.market_total),
+                                "over_price": int(row.market_over_price),
+                                "under_price": int(row.market_under_price),
+                            }
+                        )
+                    if row.market_spread_1h is not None:
+                        odds_kwargs.update(
+                            {
+                                "spread_1h": to_float(row.market_spread_1h),
+                                "spread_1h_home_price": int(row.market_spread_1h_home_price),
+                                "spread_1h_away_price": int(row.market_spread_1h_away_price),
+                                "spread_price_1h": int(row.market_spread_1h_home_price),
+                            }
+                        )
+                    if row.market_total_1h is not None:
+                        odds_kwargs.update(
+                            {
+                                "total_1h": to_float(row.market_total_1h),
+                                "over_price_1h": int(row.market_over_price_1h),
+                                "under_price_1h": int(row.market_under_price_1h),
+                            }
+                        )
+                    market_odds = MarketOdds(**odds_kwargs)
 
                 # Generate prediction
                 prediction = prediction_engine.make_prediction(
@@ -765,7 +1014,7 @@ async def get_picks_json(request: Request, date_param: str = "today"):
                             "period": period,
                             "market": market_type,
                             "pick": pick_team,
-                            "pick_odds": "-110",
+                            "pick_odds": _format_american_odds(getattr(rec, "pick_price", None)),
                             "model_line": round(rec.model_line, 1) if rec.model_line else None,
                             "market_line": round(rec.market_line, 1) if rec.market_line else None,
                             "edge": f"+{edge_pct:.1f}" if edge_pct > 0 else f"{edge_pct:.1f}",
@@ -783,6 +1032,8 @@ async def get_picks_json(request: Request, date_param: str = "today"):
             "generated_at": datetime.now(CST).isoformat(),
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching picks: {e}")
         return {"error": str(e), "picks": []}
@@ -839,7 +1090,7 @@ async def predict(request: Request, req: PredictRequest):
 import hmac
 import hashlib
 import json
-from fastapi import Request, HTTPException
+from fastapi import Request
 
 
 class TeamsWebhookMessage(BaseModel):
@@ -923,6 +1174,48 @@ async def teams_webhook_handler(request: Request):
                 
                 # Fetch games
                 games = run_today_module.fetch_games_from_db(target_date=target_date, engine=engine)
+
+                # Hard gates: canonical matching + fresh odds only
+                try:
+                    tm_recent = run_today_module._check_recent_team_resolution(
+                        engine=engine,
+                        lookback_days=int(os.getenv("TEAM_MATCHING_LOOKBACK_DAYS", "30")),
+                        min_resolution_rate=float(os.getenv("MIN_TEAM_RESOLUTION_RATE", "0.99")),
+                    )
+                    if not tm_recent.get("ok"):
+                        return {
+                            "type": "message",
+                            "text": (
+                                "❌ BLOCKED: Canonical team matching degraded. "
+                                f"rate={float(tm_recent.get('rate', 0.0)):.2%} "
+                                f"unresolved={tm_recent.get('unresolved', 0)} "
+                                f"lookback={tm_recent.get('lookback_days', 0)}d"
+                            ),
+                        }
+                except Exception as e:
+                    return {
+                        "type": "message",
+                        "text": f"❌ BLOCKED: Team matching gate error: {type(e).__name__}: {e}",
+                    }
+
+                try:
+                    odds_failures = run_today_module._enforce_odds_freshness_and_completeness(
+                        games=games,
+                        max_age_full_minutes=int(os.getenv("MAX_ODDS_AGE_MINUTES_FULL", "60")),
+                        max_age_1h_minutes=int(os.getenv("MAX_ODDS_AGE_MINUTES_1H", "60")),
+                    )
+                    if odds_failures:
+                        sample = "\n".join(f"- {m}" for m in odds_failures[:10])
+                        more = "" if len(odds_failures) <= 10 else f"\n...and {len(odds_failures) - 10} more"
+                        return {
+                            "type": "message",
+                            "text": "❌ BLOCKED: stale/incomplete odds detected:\n" + sample + more,
+                        }
+                except Exception as e:
+                    return {
+                        "type": "message",
+                        "text": f"❌ BLOCKED: Odds freshness gate error: {type(e).__name__}: {e}",
+                    }
                 
                 if not games:
                     response = {
@@ -959,20 +1252,56 @@ async def teams_webhook_handler(request: Request):
                             commence_time = game["commence_time"]
                     
                     # Create market odds object
-                    market_odds_obj = MarketOdds(
-                        spread=game.get("spread"),
-                        spread_price=game.get("spread_price", -110),
-                        total=game.get("total"),
-                        over_price=game.get("over_price", -110),
-                        under_price=game.get("under_price", -110),
-                        spread_1h=game.get("spread_1h"),
-                        total_1h=game.get("total_1h"),
-                        spread_price_1h=game.get("spread_price_1h"),
-                        over_price_1h=game.get("over_price_1h"),
-                        under_price_1h=game.get("under_price_1h"),
-                        sharp_spread=game.get("sharp_spread"),
-                        sharp_total=game.get("sharp_total")
+                    odds_kwargs = {}
+                    if game.get("spread") is not None:
+                        odds_kwargs.update(
+                            {
+                                "spread": game.get("spread"),
+                                "spread_home_price": game.get("spread_home_juice"),
+                                "spread_away_price": game.get("spread_away_juice"),
+                                "spread_price": game.get("spread_home_juice") or game.get("spread_away_juice"),
+                            }
+                        )
+                    if game.get("total") is not None:
+                        odds_kwargs.update(
+                            {
+                                "total": game.get("total"),
+                                "over_price": game.get("over_juice"),
+                                "under_price": game.get("under_juice"),
+                            }
+                        )
+                    if game.get("spread_1h") is not None:
+                        odds_kwargs.update(
+                            {
+                                "spread_1h": game.get("spread_1h"),
+                                "spread_1h_home_price": game.get("spread_1h_home_juice"),
+                                "spread_1h_away_price": game.get("spread_1h_away_juice"),
+                                "spread_price_1h": game.get("spread_1h_home_juice") or game.get("spread_1h_away_juice"),
+                            }
+                        )
+                    if game.get("total_1h") is not None:
+                        odds_kwargs.update(
+                            {
+                                "total_1h": game.get("total_1h"),
+                                "over_price_1h": game.get("over_1h_juice"),
+                                "under_price_1h": game.get("under_1h_juice"),
+                            }
+                        )
+
+                    # Sharp reference + opens if present
+                    odds_kwargs.update(
+                        {
+                            "sharp_spread": game.get("sharp_spread"),
+                            "sharp_total": game.get("sharp_total"),
+                            "spread_open": game.get("spread_open"),
+                            "total_open": game.get("total_open"),
+                            "spread_1h_open": game.get("spread_1h_open"),
+                            "total_1h_open": game.get("total_1h_open"),
+                            "sharp_spread_open": game.get("sharp_spread_open"),
+                            "sharp_total_open": game.get("sharp_total_open"),
+                        }
                     )
+                    market_odds_obj = MarketOdds(**{k: v for k, v in odds_kwargs.items() if v is not None})
                     
                     # Validate market odds (log warnings/errors but continue)
                     odds_validation = validate_market_odds(
