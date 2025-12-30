@@ -6,6 +6,20 @@ import os
 from pathlib import Path
 from typing import Iterable
 
+# Configure structured logging on import
+from .logging_config import configure_logging
+
+# Configure logging based on environment
+_log_level = os.getenv("LOG_LEVEL", "INFO")
+_json_logs = os.getenv("JSON_LOGS", "true").lower() == "true"
+_service_name = os.getenv("SERVICE_NAME", "prediction-service")
+
+configure_logging(
+    log_level=_log_level,
+    json_logs=_json_logs,
+    service_name=_service_name,
+)
+
 
 def _candidate_version_paths(start: Path) -> Iterable[Path]:
     """Yield possible VERSION file locations from closest to farthest."""

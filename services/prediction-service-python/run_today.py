@@ -39,9 +39,13 @@ from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_
 from app.situational import SituationalAdjuster, RestInfo
 from app.persistence import persist_prediction_and_recommendations
 from app.graph_upload import upload_file_to_teams
+from app.logging_config import get_logger, log_error
+from app.metrics import increment_counter, Timer
 from validate_team_matching import TeamMatchingValidator
 import csv
 from pathlib import Path
+
+logger = get_logger(__name__)
 
 
 def _check_recent_team_resolution(

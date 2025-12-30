@@ -1,16 +1,17 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from uuid import UUID
+import time
 
 from fastapi import FastAPI, BackgroundTasks, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field, model_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import subprocess
-import logging
 import os
 from pathlib import Path
 from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
@@ -18,11 +19,60 @@ from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendatio
 from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_total_model
 from app.config import settings
 from app.validation import validate_market_odds, validate_team_ratings
+from app.logging_config import get_logger, log_request, log_error
+from app.metrics import increment_counter, observe_histogram, Timer
 
-logger = logging.getLogger("api")
+logger = get_logger(__name__)
 
 # Rate limiter configuration
 limiter = Limiter(key_func=get_remote_address)
+
+
+# -----------------------------
+# Request Logging Middleware
+# -----------------------------
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """Middleware to log all HTTP requests with structured logging."""
+    
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        
+        # Log request
+        logger.info(
+            "http_request_started",
+            method=request.method,
+            path=request.url.path,
+            query_params=dict(request.query_params),
+            client_ip=request.client.host if request.client else None,
+        )
+        
+        try:
+            response = await call_next(request)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            # Log response
+            log_request(
+                logger,
+                method=request.method,
+                path=request.url.path,
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+            )
+            
+            return response
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            log_error(
+                logger,
+                e,
+                context={
+                    "method": request.method,
+                    "path": request.url.path,
+                    "duration_ms": duration_ms,
+                },
+            )
+            raise
 
 
 # -----------------------------
@@ -209,9 +259,36 @@ class PredictionResponse(BaseModel):
 # -----------------------------
 
 app = FastAPI(
-    title="NCAA Prediction Service",
-    version=settings.service_version
+    title="NCAA Basketball Prediction Service",
+    description="""
+    Production-grade NCAA basketball prediction API.
+    
+    ## Features
+    
+    - **Predictions**: Generate predictions for spreads and totals (full game + 1H)
+    - **Recommendations**: Get betting recommendations with edge analysis
+    - **Picks**: Fetch formatted picks for specific dates
+    
+    ## Model Version
+    
+    Current model: **v33.6.3**
+    
+    - FG Spread: MAE 10.57 pts, 71.9% accuracy (3,318 games)
+    - FG Total: MAE 13.1 pts, 10.7 for middle games (3,318 games)
+    - 1H Spread: MAE 8.25 pts, 66.6% accuracy (904 games)
+    - 1H Total: MAE 8.88 pts (562 games)
+    
+    ## Authentication
+    
+    No authentication required for public endpoints. Rate limiting applies.
+    """,
+    version=settings.service_version,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
+
+# Add middleware (order matters - logging first)
+app.add_middleware(RequestLoggingMiddleware)
 
 # Rate limiter setup
 app.state.limiter = limiter
@@ -525,11 +602,46 @@ async def root():
 
 @app.get("/health")
 async def health():
+    """Health check endpoint."""
     return {
         "service": settings.service_name,
         "version": settings.service_version,
         "status": "ok",
     }
+
+
+@app.get("/metrics")
+async def get_metrics():
+    """
+    Export metrics in Prometheus-compatible format.
+    
+    Returns metrics for monitoring and observability.
+    """
+    from app.metrics import metrics
+    
+    all_metrics = metrics.get_all_metrics()
+    
+    # Format for Prometheus (simple text format)
+    lines = []
+    
+    # Counters
+    for name, value in all_metrics["counters"].items():
+        lines.append(f"# TYPE {name} counter")
+        lines.append(f"{name} {value}")
+    
+    # Histograms
+    for name, stats in all_metrics["histograms"].items():
+        lines.append(f"# TYPE {name} histogram")
+        lines.append(f"{name}_count {stats['count']}")
+        lines.append(f"{name}_sum {stats['sum']}")
+        lines.append(f"{name}_avg {stats['avg']}")
+        lines.append(f"{name}_min {stats['min']}")
+        lines.append(f"{name}_max {stats['max']}")
+        lines.append(f"{name}_p50 {stats['p50']}")
+        lines.append(f"{name}_p95 {stats['p95']}")
+        lines.append(f"{name}_p99 {stats['p99']}")
+    
+    return "\n".join(lines)
 
 
 @app.get("/config")
@@ -1039,48 +1151,86 @@ async def get_picks_json(request: Request, date_param: str = "today"):
         return {"error": str(e), "picks": []}
 
 
-@app.post("/predict", response_model=PredictionResponse)
+@app.post(
+    "/predict",
+    response_model=PredictionResponse,
+    summary="Generate predictions for a game",
+    description="""
+    Generate predictions for all 4 markets (FG Spread, FG Total, 1H Spread, 1H Total)
+    and betting recommendations based on market odds.
+    
+    **Input:**
+    - Team ratings (all 22 Barttorvik fields required)
+    - Market odds (optional, but required for recommendations)
+    
+    **Output:**
+    - Predictions for all 4 markets
+    - Betting recommendations (filtered by edge/EV thresholds)
+    """,
+)
 @limiter.limit("60/minute")
 async def predict(request: Request, req: PredictRequest):
-    home = req.home_ratings.to_domain()
-    away = req.away_ratings.to_domain()
-    market = req.market_odds.to_domain() if req.market_odds else None
+    increment_counter("predictions_requested_total")
+    
+    try:
+        with Timer("prediction_generation_duration_seconds"):
+            home = req.home_ratings.to_domain()
+            away = req.away_ratings.to_domain()
+            market = req.market_odds.to_domain() if req.market_odds else None
 
-    pred: Prediction = prediction_engine.make_prediction(
-        game_id=req.game_id,
-        home_team=req.home_team,
-        away_team=req.away_team,
-        commence_time=req.commence_time,
-        home_ratings=home,
-        away_ratings=away,
-        market_odds=market,
-        is_neutral=req.is_neutral,
-    )
+            pred: Prediction = prediction_engine.make_prediction(
+                game_id=req.game_id,
+                home_team=req.home_team,
+                away_team=req.away_team,
+                commence_time=req.commence_time,
+                home_ratings=home,
+                away_ratings=away,
+                market_odds=market,
+                is_neutral=req.is_neutral,
+            )
 
-    recs: List[BettingRecommendation] = []
-    if market:
-        recs = prediction_engine.generate_recommendations(pred, market)
-
-    # Convert dataclasses to serializable dicts
-    prediction_dict = {
-        k: (v.isoformat() if isinstance(v, datetime) else v)
-        for k, v in pred.__dict__.items()
-    }
-
-    recommendations_list = []
-    for r in recs:
-        d = {
+            recs: List[BettingRecommendation] = []
+            if market:
+                recs = prediction_engine.generate_recommendations(pred, market)
+            
+            increment_counter("predictions_generated_total")
+            increment_counter("recommendations_generated_total", amount=len(recs))
+            
+            logger.info(
+                "prediction_completed",
+                game_id=str(req.game_id),
+                home_team=req.home_team,
+                away_team=req.away_team,
+                recommendations_count=len(recs),
+            )
+        
+        # Convert dataclasses to serializable dicts
+        prediction_dict = {
             k: (v.isoformat() if isinstance(v, datetime) else v)
-            for k, v in r.__dict__.items()
+            for k, v in pred.__dict__.items()
         }
-        # Add formatted outputs
-        d["summary"] = r.summary
-        d["executive_summary"] = r.executive_summary
-        d["detailed_rationale"] = r.detailed_rationale
-        d["smoke_score"] = r._calculate_smoke_score()
-        recommendations_list.append(d)
 
-    return PredictionResponse(prediction=prediction_dict, recommendations=recommendations_list)
+        recommendations_list = []
+        for r in recs:
+            d = {
+                k: (v.isoformat() if isinstance(v, datetime) else v)
+                for k, v in r.__dict__.items()
+            }
+            # Add formatted outputs
+            d["summary"] = r.summary
+            d["executive_summary"] = r.executive_summary
+            d["detailed_rationale"] = r.detailed_rationale
+            d["smoke_score"] = r._calculate_smoke_score()
+            recommendations_list.append(d)
+
+        return PredictionResponse(prediction=prediction_dict, recommendations=recommendations_list)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        increment_counter("predictions_errors_total")
+        log_error(logger, e, context={"game_id": str(req.game_id)})
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 
 # -----------------------------

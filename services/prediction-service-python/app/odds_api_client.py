@@ -4,6 +4,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
+from app.metrics import increment_counter, observe_histogram, Timer
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 DEFAULT_BASE_URL = "https://api.the-odds-api.com/v4"
 DEFAULT_SPORT_KEY = os.getenv("SPORT_KEY", "basketball_ncaab")
 
@@ -95,43 +100,78 @@ class OddsApiClient:
         params = params or {}
         params.setdefault("apiKey", self.api_key)
 
-        while True:
-            try:
-                resp = requests.request(method, url, params=params, timeout=30)
-            except requests.RequestException as e:
-                attempt += 1
-                if attempt >= max_attempts:
-                    raise OddsApiError(f"Network error after {max_attempts} attempts: {e}")
-                time.sleep(2 ** attempt)
-                continue
-
-            status = resp.status_code
-            if 200 <= status < 300:
-                headers = {
-                    "x-requests-remaining": resp.headers.get("x-requests-remaining"),
-                    "x-requests-used": resp.headers.get("x-requests-used"),
-                }
-                return resp, headers
-
-            # Retry on 429/5xx
-            if status == 429 or 500 <= status < 600:
-                attempt += 1
-                if attempt >= max_attempts:
-                    raise OddsApiError(
-                        f"Odds API error after {max_attempts} attempts (status {status}): {resp.text}"
+        with Timer("odds_api_request_duration_seconds"):
+            while True:
+                try:
+                    resp = requests.request(method, url, params=params, timeout=30)
+                    increment_counter("odds_api_requests_total")
+                except requests.RequestException as e:
+                    attempt += 1
+                    increment_counter("odds_api_errors_total", amount=1)
+                    logger.warning(
+                        "odds_api_request_failed",
+                        attempt=attempt,
+                        max_attempts=max_attempts,
+                        error=str(e),
+                        path=path,
                     )
-                delay = 2 ** attempt
-                ra = resp.headers.get("Retry-After")
-                if ra:
-                    try:
-                        delay = int(ra)
-                    except ValueError:
-                        pass
-                time.sleep(delay)
-                continue
+                    if attempt >= max_attempts:
+                        increment_counter("odds_api_failures_total", amount=1)
+                        raise OddsApiError(f"Network error after {max_attempts} attempts: {e}")
+                    time.sleep(2 ** attempt)
+                    continue
 
-            # Non-retryable
-            raise OddsApiError(f"Odds API error (status {status}): {resp.text}")
+                status = resp.status_code
+                if 200 <= status < 300:
+                    headers = {
+                        "x-requests-remaining": resp.headers.get("x-requests-remaining"),
+                        "x-requests-used": resp.headers.get("x-requests-used"),
+                    }
+                    increment_counter("odds_api_success_total", amount=1)
+                    logger.debug(
+                        "odds_api_request_success",
+                        path=path,
+                        status_code=status,
+                        requests_remaining=headers.get("x-requests-remaining"),
+                    )
+                    return resp, headers
+
+                # Retry on 429/5xx
+                if status == 429 or 500 <= status < 600:
+                    attempt += 1
+                    increment_counter("odds_api_retries_total", amount=1)
+                    logger.warning(
+                        "odds_api_retryable_error",
+                        attempt=attempt,
+                        max_attempts=max_attempts,
+                        status_code=status,
+                        path=path,
+                    )
+                    if attempt >= max_attempts:
+                        increment_counter("odds_api_failures_total", amount=1)
+                        raise OddsApiError(
+                            f"Odds API error after {max_attempts} attempts (status {status}): {resp.text}"
+                        )
+                    delay = 2 ** attempt
+                    ra = resp.headers.get("Retry-After")
+                    if ra:
+                        try:
+                            delay = int(ra)
+                        except ValueError:
+                            pass
+                    time.sleep(delay)
+                    continue
+
+                # Non-retryable
+                increment_counter("odds_api_errors_total", amount=1)
+                increment_counter("odds_api_failures_total", amount=1)
+                logger.error(
+                    "odds_api_non_retryable_error",
+                    status_code=status,
+                    path=path,
+                    response_text=resp.text[:200],
+                )
+                raise OddsApiError(f"Odds API error (status {status}): {resp.text}")
 
     # Public methods
     def get_sports(self) -> List[Dict[str, Any]]:
