@@ -19,10 +19,9 @@
 3. **`docker-compose.yml`** - Local development/deployment
    - Pulls from `ncaamstablegbsvacr.azurecr.io`
    - **Usage:** `docker compose up -d`
-
-4. **`.github/workflows/build-and-push.yml`** - CI/CD pipeline
-   - Builds and pushes images on merge to main
-   - Updates docker-compose.yml with new version
+ 
+4. **`VERSION`** - Single source of truth for the running release version
+   - Used by deploy tooling and surfaced by `/health`
 
 ---
 
@@ -92,7 +91,6 @@ docker compose exec prediction-service python /app/run_today.py --teams
 ├── database/
 │   └── migrations/            # SQL migrations
 ├── docs/                      # Documentation
-├── testing/                   # Test scripts
 ├── docker-compose.yml         # Container orchestration
 └── README.md                  # Project overview
 ```

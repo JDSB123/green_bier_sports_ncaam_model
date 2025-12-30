@@ -31,7 +31,7 @@ import json
 # No need to recreate - just call the proven binaries
 import subprocess
 
-# Import prediction engine (v33.6 - modular independent models)
+# Import prediction engine (modular independent models)
 from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
 from app.models import TeamRatings, MarketOdds, BetType
 from app.config import settings
@@ -2189,7 +2189,8 @@ def main():
     print()
     print("" + "" * 118 + "")
     print("" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "")
-    print("" + "  Model: v33.6 Modular (FG/H1 Spread & Total)".ljust(118) + "")
+    model_tag = getattr(prediction_engine, "version_tag", "").strip() or "current"
+    print("" + f"  Model: {model_tag} (FG/H1 Spread & Total)".ljust(118) + "")
     print("" + "" * 118 + "")
     print()
     

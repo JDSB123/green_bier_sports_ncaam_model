@@ -67,23 +67,18 @@ Addresses all high-priority recommendations from MODEL_END_TO_END_REVIEW.md"
 
 **Push:**
 ```bash
-git push origin dev
+git push origin main
 ```
 
 ---
 
 ### 3. Deploy to Production 🚀
 
-**Via CI/CD (Automatic):**
-- Push to `main` branch triggers GitHub Actions
-- Builds Docker images and deploys to Azure Container Apps
-- No manual steps needed if CI/CD is configured
+**Manual Deploy (recommended):**
 
-**Manual Deploy (if needed):**
-```bash
-# Build and push images
-docker compose build
-# Follow your Azure deployment process
+```powershell
+cd azure
+.\deploy.ps1 -QuickDeploy -Environment stable
 ```
 
 ---

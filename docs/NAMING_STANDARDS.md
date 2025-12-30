@@ -98,7 +98,7 @@
 
 ### Container Image
 - **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:{tag}`
-- **Example:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v<VERSION>` (e.g., `v33.6.3`)
+- **Example:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v<VERSION>` (e.g., `v33.6.5`)
 
 ---
 
@@ -120,10 +120,8 @@
 - **DB_USER:** `ncaam` (default, uses SPORT)
 - **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:{version}`
 
-### GitHub Actions (`.github/workflows/build-and-push.yml`)
-- **ACR_NAME:** `ncaamstablegbsvacr`
-- **ACR_LOGIN_SERVER:** `ncaamstablegbsvacr.azurecr.io`
-- **IMAGE_NAME:** `ncaam-prediction`
+### CI/CD (Optional)
+This repository does not include a GitHub Actions workflow; deployments are performed via `azure/deploy.ps1`.
 
 ---
 

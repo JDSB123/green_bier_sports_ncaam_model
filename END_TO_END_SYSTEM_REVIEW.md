@@ -71,8 +71,8 @@ The codebase now uses a single, consistent model versioning scheme:
 ### Active Model Version
 - **Source:** `VERSION` (repo root, single source of truth)
 - **Loaded by:** `services/prediction-service-python/app/__init__.py` + every predictor/config at import-time
-- **Value:** `33.6.3`
-- **Status:** ✅ Current runtime and outputs reflect v33.6.3
+- **Value:** `33.6.5`
+- **Status:** ✅ Current runtime and outputs reflect the repo `VERSION`
 
 ### Model Components
 - **Files:** `services/prediction-service-python/app/predictors/*.py`
@@ -111,9 +111,8 @@ The codebase now uses a single, consistent model versioning scheme:
 - 1H Total: 562 games, MAE 8.88
 
 ### Testing Infrastructure
-- `testing/test_predictor.py` - Unit tests
-- `testing/test_modular_models.py` - Tests for v33.6 models
-- `testing/scripts/validate_model.py` - Real game validation
+- `services/prediction-service-python/tests/` - Unit tests (pytest)
+- `services/prediction-service-python/test_modular_models.py` - Modular model smoke test script
 - Backtest scripts for each individual model
 
 ---
@@ -357,7 +356,7 @@ docker-compose: hca_spread = 3.0, hca_total = 4.5 ← OVERRIDDEN
 - ✅ Proper backtesting with real game data
 - ✅ Sophisticated prediction models
 - ✅ Full data pipeline operational
-- ✅ Running in containers with CI/CD
+- ✅ Running in containers (manual deployment)
 - ✅ Teams webhook integration working
 
 **What Needs Cleanup:**
@@ -369,15 +368,15 @@ Yes. It's working and generating predictions.
 **Should You Clean It Up First?**
 Yes, before the next basketball season, standardize:
 1. Configuration (single source of truth)
-2. Versioning scheme (v6 or v33, not both)
-3. Model choice (keep v6.3.25 or fully migrate to v33.6)
+2. Versioning scheme (single `VERSION` source of truth)
+3. Model choice (keep the current modular models as the only supported path)
 
 ---
 
 ## FILE REFERENCE MAP
 
 **Core Prediction Logic:**
-- [`services/prediction-service-python/app/predictors/`](services/prediction-service-python/app/predictors/) - Modular models (v33.6)
+- [`services/prediction-service-python/app/predictors/`](services/prediction-service-python/app/predictors/) - Modular models
 - [`services/prediction-service-python/app/prediction_engine_v33.py`](services/prediction-service-python/app/prediction_engine_v33.py) - Orchestrator/adapter
 - [`services/prediction-service-python/app/config.py`](services/prediction-service-python/app/config.py) - Configuration
 
@@ -394,8 +393,8 @@ Yes, before the next basketball season, standardize:
 - Migrations: `001_initial_schema.sql` through `009_barttorvik_raw_capture.sql`
 
 **Testing:**
-- [`testing/test_modular_models.py`](testing/test_modular_models.py) - v33.6 tests
-- [`testing/scripts/validate_model.py`](testing/scripts/validate_model.py) - Backtesting
+- `services/prediction-service-python/tests/` - Unit tests (pytest)
+- `services/prediction-service-python/test_modular_models.py` - Modular model smoke test script
 
 ---
 

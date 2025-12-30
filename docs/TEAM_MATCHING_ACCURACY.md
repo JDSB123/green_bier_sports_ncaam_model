@@ -109,7 +109,7 @@ VALUES (home_team_id, away_team_id, ...)
 - Resolution Rate: 100% (861 aliases)
 - Unresolved Teams: 0 (validated daily)
 
-Detailed backtests run manually via `testing/scripts/run_backtest.py` when needed (manual-only, no automation).
+Backtesting is manual-only; see `MODEL_BACKTEST_AND_INDEPENDENCE_CONFIRMATION.md` for the verification checklist.
 
 ### `validate_game_teams(home_name TEXT, away_name TEXT)`
 - **Purpose**: Validates home/away pair

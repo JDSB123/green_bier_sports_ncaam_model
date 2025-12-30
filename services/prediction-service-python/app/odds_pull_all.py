@@ -35,7 +35,7 @@ def main() -> int:
         print(f"  Second-half odds:    {summary['h2_events']}")
 
         # Optional: persist a dry-run snapshot for inspection
-        out_dir = os.getenv("ODDS_PULL_OUT", "testing/tmp_odds_pull")
+        out_dir = os.getenv("ODDS_PULL_OUT", "output/tmp_odds_pull")
         os.makedirs(out_dir, exist_ok=True)
         with open(os.path.join(out_dir, "events.json"), "w", encoding="utf-8") as f:
             json.dump(events, f, indent=2)

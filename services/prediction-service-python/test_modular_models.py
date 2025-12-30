@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test Modular Prediction Models v33.6.1
+Test Modular Prediction Models
 
 Tests all 4 market models:
 - FG Spread (PROVEN z=3.94)
@@ -10,7 +10,10 @@ Tests all 4 market models:
 """
 
 import sys
-sys.path.insert(0, r"c:\Users\JB\green-bier-ventures\NCAAM_main\services\prediction-service-python")
+from pathlib import Path
+
+# Ensure the local service package is importable when running this file directly.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.models import TeamRatings
 from app.predictors import (

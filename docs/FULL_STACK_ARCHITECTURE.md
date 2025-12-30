@@ -1,4 +1,4 @@
-# NCAAM v33.6.3 Model - Complete Self-Contained Stack
+# NCAAM v33.6.5 Model - Complete Self-Contained Stack
 
 ## ✅ **100% Self-Contained - NO Local Dependencies**
 
@@ -71,7 +71,7 @@ This system is **fully containerized** with **ZERO fallbacks** to local files, e
 
 ### 3. **Prediction Service**
 - **Container:** `ncaam_v33_model_prediction`
-- **Image:** `ncaam_v33_model_prediction:latest` (built from Dockerfile)
+- **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v<VERSION>` (no `latest` tag)
 - **Port:** `8092:8082`
 - **Secrets:** 
   - `db_password` → `/run/secrets/db_password`
@@ -605,7 +605,6 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 - ❌ Local Redis instances
 
 ### External Services (Optional)
-- ❌ GitHub Actions
 - ❌ CI/CD pipelines
 - ❌ External monitoring (Azure Monitor, etc.)
 - ❌ External logging services

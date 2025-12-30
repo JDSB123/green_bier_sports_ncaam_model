@@ -69,7 +69,7 @@ git checkout -b feature/your-feature-name
 # Bump the single source of truth when the release version changes
 # (example shows a patch bump)
 $currentVersion = Get-Content VERSION
-Set-Content VERSION -Value "33.6.3"
+Set-Content VERSION -Value "<NEW_VERSION>"
 
 # Commit changes (use descriptive messages)
 git add .
@@ -324,9 +324,8 @@ git checkout -b feature/next-feature-name
 ## ?? Version Discipline
 
 - **Single source:** Update the root VERSION file whenever you bump semantic versions.
-- **Automation:** GitHub Actions reads that file on every main push, tags images (<VERSION>), pushes to ACR, and redeploys Azure Container Apps automatically.
-- **Manual deploys:** zure/deploy.ps1 falls back to the same file, so local redeploys stay in lockstep.
-- **Process:** Bump VERSION, run tests, open a PR, merge, and let the pipeline propagate the change.
+- **Deploys:** Run `azure/deploy.ps1` (it reads `VERSION`, builds/pushes images, and updates Azure Container Apps).
+- **Process:** Bump VERSION, run tests, open a PR, merge, and deploy.
 
 ---
 

@@ -271,7 +271,7 @@ app = FastAPI(
     
     ## Model Version
     
-    Current model: **v33.6.3**
+    Current model: see `/health` (the service version is also exposed via the OpenAPI `version` field).
     
     - FG Spread: MAE 10.57 pts, 71.9% accuracy (3,318 games)
     - FG Total: MAE 13.1 pts, 10.7 for middle games (3,318 games)

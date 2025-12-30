@@ -8,7 +8,7 @@
 ## Overview
 
 This system keeps prediction runs **100% manual-only**—no polling, cron jobs, or scheduled tasks automatically trigger picks.  
-CI/CD still exists for release discipline: GitHub Actions builds/pushes containers (using the repo `VERSION` file) and redeploys Azure Container Apps whenever `main` changes, but it never runs predictions.
+Deployments are also operator-initiated (see `azure/deploy.ps1`). Nothing auto-deploys or auto-runs predictions.
 
 You control when data is synced and predictions are run.
 
@@ -33,14 +33,14 @@ You control when data is synced and predictions are run.
 - Binaries are called directly by `run_today.py` when you want fresh data
 
 ### ❌ Release Automation is Separate
-- GitHub Actions builds/pushes images and redeploys Azure Container Apps whenever `main` changes
-- CI **never** runs predictions, sync jobs, or backtests automatically
+- Deployments are run manually via `azure/deploy.ps1`
+- Deploy **never** runs predictions, sync jobs, or backtests automatically
 - Operators still choose when to execute `./predict.bat` or backtesting scripts
 
 ### ❌ No Automated Backtesting
 - No background backtesting tasks
 - No scheduled backtest runs
-- All backtesting is manual-only (run via `testing/scripts/run_backtest.py` when needed)
+- Backtesting is manual-only (see `MODEL_BACKTEST_AND_INDEPENDENCE_CONFIRMATION.md`)
 
 ---
 

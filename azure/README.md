@@ -325,13 +325,12 @@ az group delete --name NCAAM-GBSV-MODEL-RG --yes --no-wait
 | Scaling | Manual | Automatic |
 | SSL | Manual | Automatic |
 
-## CI/CD Pipeline
+## CI/CD (Optional)
 
-GitHub Actions automatically builds and pushes images on merge to `main`:
+This repository does **not** include a GitHub Actions workflow for builds/deploys.
 
-- **Workflow:** `.github/workflows/build-and-push.yml`
-- **ACR:** `ncaamstablegbsvacr.azurecr.io`
-- **Image:** `ncaam-prediction:{version}`
+Deployments are performed via:
+- `azure/deploy.ps1` (recommended)
 
 ## Next Steps
 

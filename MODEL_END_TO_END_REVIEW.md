@@ -1,6 +1,6 @@
 # COMPREHENSIVE END-TO-END MODEL REVIEW
 **Date:** January 2025  
-**Model Version:** v33.6.3  
+**Model Version:** v33.6.5  
 **Status:** ✅ PRODUCTION READY
 
 ---
@@ -268,7 +268,7 @@ Your NCAA basketball prediction system is **production-grade** with a clean, mod
 ### Version Control
 
 **Single Source of Truth:** `VERSION` file (repo root)
-- Current: `33.6.3`
+- Current: `33.6.5`
 - Loaded by: `app/__init__.py` at import time
 - Used by: All models, API responses, persistence
 
@@ -445,7 +445,7 @@ MODEL__MIN_SPREAD_EDGE: 2.0
 - Prediction service (Python)
 - PostgreSQL database
 - Redis cache
-- CI/CD via GitHub Actions
+- Deployments via `azure/deploy.ps1` (manual)
 
 **Secrets Management:**
 - ✅ Secrets mounted from Azure Key Vault
@@ -557,7 +557,7 @@ Your NCAA basketball prediction system is **production-ready** with:
 ✅ **Solid Architecture:** Modular, clean separation of concerns  
 ✅ **Proven Performance:** Backtested on 3,318+ real games  
 ✅ **Proper Guardrails:** Team matching, odds freshness, data quality checks  
-✅ **Production Deployment:** Running on Azure with CI/CD  
+✅ **Production Deployment:** Running on Azure (manual deploy via `azure/deploy.ps1`)  
 ✅ **Good Code Quality:** Type-safe, documented, tested
 
 **Confidence Level:** 95% - System is ready for production use
@@ -572,6 +572,6 @@ Your NCAA basketball prediction system is **production-ready** with:
 
 **Review Completed:** January 2025  
 **Reviewer:** AI Assistant  
-**Model Version:** v33.6.3  
+**Model Version:** v33.6.5  
 **Status:** ✅ PRODUCTION READY
 

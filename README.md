@@ -1,6 +1,4 @@
-# NCAA Basketball v33.6.3 - PRODUCTION FINAL
-
-<!-- GitHub Actions credentials updated: 2025-12-26 -->
+# NCAA Basketball v33.6.5
 
 ## Single Point of Entry
 
@@ -86,7 +84,7 @@ That's it. One command. Everything runs inside the container.
                     └─────────────┘
 ```
 
-## Model Parameters (v33.6.3)
+## Model Parameters (v33.6.5)
 
 **Full Game:**
 - Home Court Advantage (Spread): 5.8 pts (backtested from 3,318 games)
@@ -112,14 +110,14 @@ This is the **FINAL** production container. Do not modify unless creating a new 
 
 ## Manual-Only Operation
 
-**Picks are still user-initiated only, but release builds are automated via CI/CD.**
+**Picks and deployments are operator-initiated.** Nothing runs on schedules or polling loops.
 
-- ✅ GitHub Actions builds/pushes all images to ACR and redeploys Azure Container Apps whenever `main` is updated.
+- ✅ Deployments are run via `azure/deploy.ps1` (manual)
 - ✅ No cron jobs or scheduled tasks kick off predictions.
 - ✅ No continuous polling loops (RUN_ONCE=true enforced in Go/Rust services).
 - ✅ No automated data/backtesting workflows—`.\predict.bat` is still the only way to refresh data and make picks.
 - ✅ Services run once and exit; everything is manual-run + manual-review.
-- ✅ Backtesting remains manual-only (run `testing/scripts/run_backtest.py` when needed).
+- ✅ Backtesting remains manual-only (see `MODEL_BACKTEST_AND_INDEPENDENCE_CONFIRMATION.md`).
 
 **To get fresh picks:**
 1. Execute `.\predict.bat` manually when you want fresh data and recommendations

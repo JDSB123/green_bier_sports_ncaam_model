@@ -428,10 +428,12 @@ TESTING:
    - Current polling: 43x over quota
    - Need to reduce frequency OR upgrade tier
 
-3. ✅ **Verify test script works:**
-   ```bash
-   python testing/scripts/ingestion_healthcheck.py
-   ```
+3. ✅ **Verify ingestion works (no extra scripts required):**
+   - `GET /health` and `GET /metrics` on the prediction service
+   - Optional dry-run pull inside the prediction-service container:
+     ```bash
+     python -m app.odds_pull_all
+     ```
 
 ### This Week
 
@@ -607,10 +609,6 @@ export BOOKMAKERS_H2="draftkings,fanduel,pinnacle,bovada"
 - Preferred bookmaker selection happens at query time in `run_today.py` using `latest_odds` CTEs
 
 ## Validation & Health
-- Run ingestion health check:
-```bash
-python testing/scripts/ingestion_healthcheck.py --sport-key basketball_ncaab
-```
 - Inspect health endpoint:
 ```bash
 curl http://localhost:8083/health

@@ -1,14 +1,13 @@
 """
-NCAA Prediction Engine v33.6
+NCAA Prediction Engine
 
 Orchestrator for modular market-specific prediction models.
-Provides drop-in replacement for BarttorvikPredictor (v6.3.25).
 
 Each market has its own independently-backtested model:
-- FG Spread: v33.6 (3,318 games, MAE 10.57, HCA 5.8)
-- FG Total: v33.6 (3,318 games, MAE 13.1, Calibration +7.0)
-- 1H Spread: v33.6 (904 games, MAE 8.25, HCA 3.6)
-- 1H Total: v33.6 (562 games, MAE 8.88, Calibration +2.7)
+- FG Spread: 3,318 games, MAE 10.57, HCA 5.8
+- FG Total: 3,318 games, MAE 13.1, Calibration +7.0
+- 1H Spread: 904 games, MAE 8.25, HCA 3.6
+- 1H Total: 562 games, MAE 8.88, Calibration +2.7
 """
 
 from dataclasses import dataclass

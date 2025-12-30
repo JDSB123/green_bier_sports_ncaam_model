@@ -75,13 +75,9 @@ Going forward, use this standard:
 
 ---
 
-## ✅ CI/CD Pipeline
+## ✅ Deployment
 
-GitHub Actions automatically builds and pushes to `ncaamstablegbsvacr.azurecr.io`:
-
-- **Trigger:** Push to `main` branch
-- **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:{version}`
-- **Latest Version:** See `docker-compose.yml` line 134
+Deployments are performed manually via `azure/deploy.ps1` (image tags come from the repo `VERSION` file).
 
 ---
 

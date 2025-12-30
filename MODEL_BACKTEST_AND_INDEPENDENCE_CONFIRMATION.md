@@ -176,7 +176,7 @@ grep -E "^    (HCA|CALIBRATION|BASE_VARIANCE|MODEL_VERSION)" services/prediction
 
 ```bash
 # Run all model tests (if available)
-python -m pytest services/prediction-service-python/app/tests/ -v
+python -m pytest services/prediction-service-python/tests/ -v
 
 # Run modular model test suite
 python services/prediction-service-python/test_modular_models.py
@@ -184,16 +184,16 @@ python services/prediction-service-python/test_modular_models.py
 
 ---
 
-## 5. KEY DIFFERENCES FROM v33.1
+## 5. KEY DIFFERENCES FROM THE LEGACY MODEL
 
-### v33.1 (What You Had Before)
+### Legacy Model (What You Had Before)
 - ❌ One "BarttorvikPredictor" class doing all 4 markets
 - ❌ Single HCA value (4.7) for spreads
 - ❌ Single total calibration (-4.6)
 - ❌ FG and 1H used same formulas
 - ❌ 4,194-game monolithic backtest
 
-### v33.6 (What You Have Now)
+### Current Modular Model (What You Have Now)
 - ✅ 4 independent model classes (FGSpreadModel, FGTotalModel, H1SpreadModel, H1TotalModel)
 - ✅ Model-specific HCA (5.8 for FG, 3.6 for 1H)
 - ✅ Model-specific calibration (0 to +7.0)
@@ -201,7 +201,7 @@ python services/prediction-service-python/test_modular_models.py
 - ✅ Independent backtests per market (3,318 FG / 904-562 1H)
 - ✅ Better variance estimates (11.0 to 20.0 per model)
 
-**Impact:** v33.6 is more sophisticated - each market gets its own tuned model.
+**Impact:** The modular design is more sophisticated — each market gets its own tuned model.
 
 ---
 
@@ -321,5 +321,5 @@ This is how professional sportsbooks think about predictions.
 **Confirmed by:** Cursor AI Assistant  
 **Confirmation Date:** December 24, 2025  
 **Status:** ✅ VERIFIED AND CONFIRMED  
-**Model Version:** v33.6 (Current)
+**Model Version:** current (see `VERSION`)
 

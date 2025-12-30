@@ -232,7 +232,7 @@ class TestModelIndependence:
 
 
 class TestMinEdgeThresholds:
-    """Tests for MIN_EDGE betting thresholds (v33.6.1 fix)."""
+    """Tests for MIN_EDGE betting thresholds."""
 
     def test_fg_spread_min_edge(self):
         """FG Spread MIN_EDGE should be 2.0 (from backtest ROI analysis)."""
@@ -260,10 +260,10 @@ class TestMinEdgeThresholds:
 
 
 class TestConfidenceThresholds:
-    """Tests for confidence calculation (v33.6.1 fix for 1H Total)."""
+    """Tests for confidence calculation."""
 
     def test_h1_total_confidence_above_threshold(self, strong_home_team, mid_away_team):
-        """H1 Total confidence should be >= 0.50 for standard games (v33.6.1 fix)."""
+        """H1 Total confidence should be >= 0.50 for standard games."""
         pred = h1_total_model.predict(strong_home_team, mid_away_team)
         # Standard games should have reasonable confidence
         # Base confidence is now 0.68, only extreme adjustments should drop below 0.50
@@ -288,7 +288,7 @@ class TestConfidenceThresholds:
 
 
 class TestExtremeTotalRanges:
-    """Tests for extreme total detection (v33.6.1 feature)."""
+    """Tests for extreme total detection."""
 
     def test_fg_total_extreme_thresholds_exist(self):
         """Verify extreme total thresholds are defined in engine."""

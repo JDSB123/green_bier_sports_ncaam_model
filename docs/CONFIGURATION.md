@@ -274,7 +274,7 @@ docker compose up -d
 | `Location` | `centralus` | Azure region |
 | `ResourceGroup` | `NCAAM-GBSV-MODEL-RG` | Resource group name |
 | `Environment` | `stable` | Deployment environment |
-| `ImageTag` | `v<VERSION>` (e.g., `v33.6.3`) | Container image tag (read from repo `VERSION`) |
+| `ImageTag` | `v<VERSION>` (e.g., `v33.6.5`) | Container image tag (read from repo `VERSION`) |
 
 ---
 
@@ -297,10 +297,6 @@ docker compose up -d
 ---
 
 **Last Updated:** December 23, 2025  
-**Version:** v6.3
-
----
-
 # Ingestion Healthcheck
 
 This guide helps quickly validate external API ingestion is operational and resilient.
@@ -314,23 +310,13 @@ This guide helps quickly validate external API ingestion is operational and resi
 - Odds API key available via environment `THE_ODDS_API_KEY` or Docker secret `/run/secrets/odds_api_key`
 - Python with dependencies installed (see below)
 
-## Install dependencies
-Use the testing requirements:
+## Quick checks (no extra scripts required)
+
+- **Prediction service**: `GET /health` and `GET /metrics`
+- **Odds API sanity** (inside the prediction-service container):
 
 ```bash
-pip install -r testing/requirements.txt
-```
-
-## Run the healthcheck
-Default options match service configuration (season auto-calculated, sport key `basketball_ncaab`).
-
-```bash
-python testing/scripts/ingestion_healthcheck.py
-```
-
-Override options if needed:
-```bash
-python testing/scripts/ingestion_healthcheck.py --season 2025 --sport-key basketball_ncaab
+python -m app.odds_pull_all
 ```
 
 Exit codes: `0` when all checks pass, `1` otherwise.
