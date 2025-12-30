@@ -43,6 +43,73 @@ from validate_team_matching import TeamMatchingValidator
 import csv
 from pathlib import Path
 
+
+def _check_recent_team_resolution(
+    engine,
+    lookback_days: int,
+    min_resolution_rate: float,
+) -> Dict[str, object]:
+    """Fail-fast guardrail for canonical team matching quality.
+
+    Uses `team_resolution_audit` in a recent window so historical one-off issues
+    don't permanently block runs.
+    """
+    now_utc = datetime.now(timezone.utc)
+    lookback_start = now_utc - timedelta(days=int(lookback_days))
+
+    query = text(
+        """
+        SELECT
+            COUNT(*)::int AS total,
+            SUM(CASE WHEN resolved_name IS NOT NULL THEN 1 ELSE 0 END)::int AS resolved,
+            SUM(CASE WHEN resolved_name IS NULL THEN 1 ELSE 0 END)::int AS unresolved
+        FROM team_resolution_audit
+        WHERE created_at >= :lookback_start
+        """
+    )
+    by_source_query = text(
+        """
+        SELECT
+            source,
+            COUNT(*)::int AS total,
+            SUM(CASE WHEN resolved_name IS NOT NULL THEN 1 ELSE 0 END)::int AS resolved,
+            SUM(CASE WHEN resolved_name IS NULL THEN 1 ELSE 0 END)::int AS unresolved
+        FROM team_resolution_audit
+        WHERE created_at >= :lookback_start
+        GROUP BY source
+        ORDER BY total DESC
+        """
+    )
+
+    with engine.connect() as conn:
+        row = conn.execute(query, {"lookback_start": lookback_start}).fetchone()
+        by_source_rows = conn.execute(by_source_query, {"lookback_start": lookback_start}).fetchall()
+
+    total = int(row.total or 0) if row else 0
+    resolved = int(row.resolved or 0) if row else 0
+    unresolved = int(row.unresolved or 0) if row else 0
+    rate = (resolved / total) if total else 0.0
+    ok = bool(total > 0 and unresolved == 0 and rate >= float(min_resolution_rate))
+    return {
+        "ok": ok,
+        "lookback_days": int(lookback_days),
+        "min_resolution_rate": float(min_resolution_rate),
+        "total": total,
+        "resolved": resolved,
+        "unresolved": unresolved,
+        "rate": rate,
+        "by_source": [
+            {
+                "source": r.source,
+                "total": int(r.total or 0),
+                "resolved": int(r.resolved or 0),
+                "unresolved": int(r.unresolved or 0),
+                "rate": (int(r.resolved or 0) / int(r.total or 0)) if int(r.total or 0) else 0.0,
+            }
+            for r in (by_source_rows or [])
+        ],
+    }
+
 # Central Time Zone
 CST = ZoneInfo("America/Chicago")
 
@@ -54,6 +121,14 @@ def _summarize_data_quality(games: List[Dict]) -> Dict[str, int]:
     total = len(games)
     ratings_ok = sum(1 for g in games if g.get("home_ratings") and g.get("away_ratings"))
     odds_ok = sum(1 for g in games if g.get("spread") is not None or g.get("total") is not None)
+    odds_prices_ok = sum(
+        1
+        for g in games
+        if (
+            (g.get("spread") is None or (g.get("spread_home_juice") is not None and g.get("spread_away_juice") is not None))
+            and (g.get("total") is None or (g.get("over_juice") is not None and g.get("under_juice") is not None))
+        )
+    )
     ready_ok = sum(
         1
         for g in games
@@ -70,9 +145,78 @@ def _summarize_data_quality(games: List[Dict]) -> Dict[str, int]:
         "total": total,
         "ratings_ok": ratings_ok,
         "odds_ok": odds_ok,
+        "odds_prices_ok": odds_prices_ok,
         "ready_ok": ready_ok,
         "h1_odds_ok": h1_odds_ok,
     }
+
+
+def _odds_snapshot_age_minutes(now_utc: datetime, snapshot_time: Optional[datetime]) -> Optional[float]:
+    if snapshot_time is None:
+        return None
+    if snapshot_time.tzinfo is None:
+        # Assume UTC if DB returned naive timestamps.
+        snapshot_time = snapshot_time.replace(tzinfo=timezone.utc)
+    return (now_utc - snapshot_time.astimezone(timezone.utc)).total_seconds() / 60.0
+
+
+def _enforce_odds_freshness_and_completeness(
+    games: List[Dict],
+    max_age_full_minutes: int,
+    max_age_1h_minutes: int,
+) -> List[str]:
+    """Fail-fast: no stale odds and no missing prices for any present market."""
+    now_utc = datetime.now(timezone.utc)
+    failures: List[str] = []
+
+    for g in games:
+        matchup = f"{g.get('away')} @ {g.get('home')}"
+
+        # Full game spread
+        if g.get("spread") is not None:
+            if g.get("spread_home_juice") is None or g.get("spread_away_juice") is None:
+                failures.append(f"{matchup}: missing full-game spread prices")
+            age = _odds_snapshot_age_minutes(now_utc, g.get("spread_time"))
+            if age is None:
+                failures.append(f"{matchup}: missing full-game spread snapshot time")
+            elif age > max_age_full_minutes:
+                failures.append(
+                    f"{matchup}: stale full-game spread odds ({age:.1f}m old > {max_age_full_minutes}m)"
+                )
+
+        # Full game total
+        if g.get("total") is not None:
+            if g.get("over_juice") is None or g.get("under_juice") is None:
+                failures.append(f"{matchup}: missing full-game total prices")
+            age = _odds_snapshot_age_minutes(now_utc, g.get("total_time"))
+            if age is None:
+                failures.append(f"{matchup}: missing full-game total snapshot time")
+            elif age > max_age_full_minutes:
+                failures.append(
+                    f"{matchup}: stale full-game total odds ({age:.1f}m old > {max_age_full_minutes}m)"
+                )
+
+        # First half spread (only enforce freshness if market exists)
+        if g.get("spread_1h") is not None:
+            if g.get("spread_1h_home_juice") is None or g.get("spread_1h_away_juice") is None:
+                failures.append(f"{matchup}: missing 1H spread prices")
+            age = _odds_snapshot_age_minutes(now_utc, g.get("spread_1h_time"))
+            if age is None:
+                failures.append(f"{matchup}: missing 1H spread snapshot time")
+            elif age > max_age_1h_minutes:
+                failures.append(f"{matchup}: stale 1H spread odds ({age:.1f}m old > {max_age_1h_minutes}m)")
+
+        # First half total
+        if g.get("total_1h") is not None:
+            if g.get("over_1h_juice") is None or g.get("under_1h_juice") is None:
+                failures.append(f"{matchup}: missing 1H total prices")
+            age = _odds_snapshot_age_minutes(now_utc, g.get("total_1h_time"))
+            if age is None:
+                failures.append(f"{matchup}: missing 1H total snapshot time")
+            elif age > max_age_1h_minutes:
+                failures.append(f"{matchup}: stale 1H total odds ({age:.1f}m old > {max_age_1h_minutes}m)")
+
+    return failures
 
 
 def _enforce_data_quality(summary: Dict[str, int], args: argparse.Namespace) -> List[str]:
@@ -359,8 +503,8 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                         enable_h2=False,
                     )
                     odds_success = sync_result["success"]
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"  [WARN]  Retry odds sync failed: {type(e).__name__}: {e}")
         except Exception as e:
             print(f"  [WARN]  Retry failed: {e}")
     
@@ -400,6 +544,8 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 game_id,
                 market_type,
                 period,
+                time,
+                bookmaker,
                 home_line,
                 away_line,
                 total_line,
@@ -422,6 +568,8 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 game_id,
                 market_type,
                 period,
+                time,
+                bookmaker,
                 home_line,
                 away_line,
                 total_line,
@@ -555,16 +703,24 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             MAX(CASE WHEN lo.market_type = 'spreads' THEN lo.home_line END) as spread,
             MAX(CASE WHEN lo.market_type = 'spreads' THEN lo.home_price END) as spread_home_juice,
             MAX(CASE WHEN lo.market_type = 'spreads' THEN lo.away_price END) as spread_away_juice,
+            MAX(CASE WHEN lo.market_type = 'spreads' THEN lo.time END) as spread_time,
+            MAX(CASE WHEN lo.market_type = 'spreads' THEN lo.bookmaker END) as spread_book,
             MAX(CASE WHEN lo.market_type = 'totals' THEN lo.total_line END) as total,
             MAX(CASE WHEN lo.market_type = 'totals' THEN lo.over_price END) as over_juice,
             MAX(CASE WHEN lo.market_type = 'totals' THEN lo.under_price END) as under_juice,
+            MAX(CASE WHEN lo.market_type = 'totals' THEN lo.time END) as total_time,
+            MAX(CASE WHEN lo.market_type = 'totals' THEN lo.bookmaker END) as total_book,
             -- First half odds
             MAX(CASE WHEN lo1h.market_type = 'spreads' THEN lo1h.home_line END) as spread_1h,
             MAX(CASE WHEN lo1h.market_type = 'spreads' THEN lo1h.home_price END) as spread_1h_home_juice,
             MAX(CASE WHEN lo1h.market_type = 'spreads' THEN lo1h.away_price END) as spread_1h_away_juice,
+            MAX(CASE WHEN lo1h.market_type = 'spreads' THEN lo1h.time END) as spread_1h_time,
+            MAX(CASE WHEN lo1h.market_type = 'spreads' THEN lo1h.bookmaker END) as spread_1h_book,
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.total_line END) as total_1h,
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.over_price END) as over_1h_juice,
             MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.under_price END) as under_1h_juice,
+            MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.time END) as total_1h_time,
+            MAX(CASE WHEN lo1h.market_type = 'totals' THEN lo1h.bookmaker END) as total_1h_book,
             -- Opening lines (consensus)
             MAX(CASE WHEN oo.market_type = 'spreads' THEN oo.home_line END) as spread_open,
             MAX(CASE WHEN oo.market_type = 'totals' THEN oo.total_line END) as total_open,
@@ -767,15 +923,23 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 "spread": float(row.spread) if row.spread is not None else None,
                 "spread_home_juice": int(row.spread_home_juice) if row.spread_home_juice else None,
                 "spread_away_juice": int(row.spread_away_juice) if row.spread_away_juice else None,
+                "spread_time": row.spread_time,
+                "spread_book": row.spread_book,
                 "total": float(row.total) if row.total is not None else None,
                 "over_juice": int(row.over_juice) if row.over_juice else None,
                 "under_juice": int(row.under_juice) if row.under_juice else None,
+                "total_time": row.total_time,
+                "total_book": row.total_book,
                 "spread_1h": float(row.spread_1h) if row.spread_1h is not None else None,
                 "spread_1h_home_juice": int(row.spread_1h_home_juice) if row.spread_1h_home_juice else None,
                 "spread_1h_away_juice": int(row.spread_1h_away_juice) if row.spread_1h_away_juice else None,
+                "spread_1h_time": row.spread_1h_time,
+                "spread_1h_book": row.spread_1h_book,
                 "total_1h": float(row.total_1h) if row.total_1h is not None else None,
                 "over_1h_juice": int(row.over_1h_juice) if row.over_1h_juice else None,
                 "under_1h_juice": int(row.under_1h_juice) if row.under_1h_juice else None,
+                "total_1h_time": row.total_1h_time,
+                "total_1h_book": row.total_1h_book,
                 # Sharp book reference (Pinnacle)
                 "sharp_spread": float(row.sharp_spread) if row.sharp_spread is not None else None,
                 "sharp_total": float(row.sharp_total) if row.sharp_total is not None else None,
@@ -1200,11 +1364,15 @@ def get_prediction(
         market_odds_obj = MarketOdds(
             spread=market_odds.get("spread"),
             spread_price=market_odds.get("spread_price") or -110,
+            spread_home_price=market_odds.get("spread_home_price"),
+            spread_away_price=market_odds.get("spread_away_price"),
             total=market_odds.get("total"),
             over_price=market_odds.get("over_price") or -110,
             under_price=market_odds.get("under_price") or -110,
             spread_1h=market_odds.get("spread_1h"),
             spread_price_1h=market_odds.get("spread_price_1h"),
+            spread_1h_home_price=market_odds.get("spread_1h_home_price"),
+            spread_1h_away_price=market_odds.get("spread_1h_away_price"),
             total_1h=market_odds.get("total_1h"),
             over_price_1h=market_odds.get("over_price_1h"),
             under_price_1h=market_odds.get("under_price_1h"),
@@ -1447,10 +1615,10 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
     if not all_picks:
         print("  [WARN]  No picks to send to Teams")
         return False
-    
-    if _is_placeholder_teams_webhook(webhook_url):
-        print("  [WARN]  No Teams webhook URL configured")
-        return False
+
+    send_enabled = not _is_placeholder_teams_webhook(webhook_url)
+    if not send_enabled:
+        print("  [WARN]  No Teams webhook URL configured (will still write HTML/CSV artifacts)")
     
     # Sort picks by game time ascending (earliest games first)
     sorted_picks = sorted(all_picks, key=lambda p: p['time_cst'])
@@ -1715,6 +1883,9 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         ]
     }
     
+    if not send_enabled:
+        return False
+
     try:
         response = requests.post(
             webhook_url,
@@ -1901,6 +2072,18 @@ def main():
         help="Allow running even if data quality checks fail"
     )
     parser.add_argument(
+        "--team-matching-lookback-days",
+        type=int,
+        default=int(os.getenv("TEAM_MATCHING_LOOKBACK_DAYS", "30")),
+        help="Lookback window (days) for team matching enforcement (default: 30)"
+    )
+    parser.add_argument(
+        "--min-team-resolution-rate",
+        type=float,
+        default=float(os.getenv("MIN_TEAM_RESOLUTION_RATE", "0.99")),
+        help="Minimum recent team resolution rate (0-1) required (default: 0.99)"
+    )
+    parser.add_argument(
         "--min-ratings-pct",
         type=float,
         default=0.9,
@@ -1923,6 +2106,18 @@ def main():
         type=float,
         default=0.0,
         help="Minimum % of games with 1H odds (default: 0.0)"
+    )
+    parser.add_argument(
+        "--max-odds-age-minutes-full",
+        type=int,
+        default=int(os.getenv("MAX_ODDS_AGE_MINUTES_FULL", "60")),
+        help="Max allowed age for full-game odds snapshots in minutes (default: 60)"
+    )
+    parser.add_argument(
+        "--max-odds-age-minutes-1h",
+        type=int,
+        default=int(os.getenv("MAX_ODDS_AGE_MINUTES_1H", "60")),
+        help="Max allowed age for 1H odds snapshots in minutes (default: 60)"
     )
     parser.add_argument(
         "--teams",
@@ -1996,35 +2191,48 @@ def main():
     
     # Sync data (unless --no-sync)
 
-    # Validate team matching (CRITICAL for accuracy)
+    # Create DB engine once for the entire run (predictions persistence + settlement).
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
+    # Canonical team matching enforcement (HARD GATE)
+    # Requirement: >=99% recent resolution and ZERO unresolved in lookback window.
+    print("[INFO] Enforcing canonical team matching quality...")
+    try:
+        tm_recent = _check_recent_team_resolution(
+            engine=engine,
+            lookback_days=args.team_matching_lookback_days,
+            min_resolution_rate=args.min_team_resolution_rate,
+        )
+        health_summary["team_matching"] = tm_recent
+        total = tm_recent.get("total", 0)
+        unresolved = tm_recent.get("unresolved", 0)
+        rate = float(tm_recent.get("rate", 0.0) or 0.0)
+
+        print(
+            f"  - Recent resolution: {rate:.2%} ({tm_recent.get('resolved', 0)}/{total}), "
+            f"unresolved={unresolved} (lookback {tm_recent.get('lookback_days', 0)}d)"
+        )
+        if not tm_recent.get("ok"):
+            print("[FATAL] Canonical team matching gate failed.")
+            # No bypass here: outputs are not trustworthy when team resolution is degraded.
+            exit_with_health(2, "canonical team matching below required threshold")
+    except Exception as e:
+        print(f"[FATAL] Canonical team matching check errored: {type(e).__name__}: {e}")
+        exit_with_health(2, f"canonical team matching check error: {type(e).__name__}")
+
+    # Optional verbose validator output (informational only)
     if not args.no_sync:
-        print("[INFO] Validating team matching...")
+        print("[INFO] Running full team matching validator report...")
         try:
             validator = TeamMatchingValidator()
-            validation_ok = validator.run_all_validations()
-            validation_warned = any(r.status == "WARN" for r in getattr(validator, "results", []))
-            health_summary["team_matching"] = {"ok": validation_ok, "warned": validation_warned}
-
-            if not validation_ok:
-                print("[WARN] Team matching validation failed.")
-                if not args.allow_data_degrade:
-                    exit_with_health(2, "team matching validation failed")
-                health_summary["status"] = "warn"
-                health_summary.setdefault("notes", []).append("team matching validation failed")
-            elif validation_warned:
-                print("[WARN] Team matching validation reported warnings.")
-                if not args.allow_data_degrade:
-                    exit_with_health(2, "team matching validation warnings")
-                health_summary["status"] = "warn"
-                health_summary.setdefault("notes", []).append("team matching validation warnings")
-            else:
-                print("[OK] Team matching validation passed.")
+            validator_ok = validator.run_all_validations()
+            validator_warned = any(r.status == "WARN" for r in getattr(validator, "results", []))
+            health_summary.setdefault("team_matching", {})
+            health_summary["team_matching"]["validator_ok"] = bool(validator_ok)
+            health_summary["team_matching"]["validator_warned"] = bool(validator_warned)
         except Exception as e:
-            print(f"[WARN] Team matching validation error: {e}")
-            if not args.allow_data_degrade:
-                exit_with_health(2, f"team matching validation error: {e}")
-            health_summary["status"] = "warn"
-            health_summary.setdefault("notes", []).append(f"team matching validation error: {e}")
+            print(f"[WARN] Full validator report failed: {type(e).__name__}: {e}")
+            health_summary.setdefault("notes", []).append("team matching validator report failed")
 
     sync_ok = sync_fresh_data(skip_sync=args.no_sync)
     health_summary["sync_ok"] = sync_ok
@@ -2034,9 +2242,6 @@ def main():
         health_summary["status"] = "warn"
         health_summary.setdefault("notes", []).append("data sync failed")
 
-    
-    # Create DB engine once for the entire run (predictions persistence + settlement).
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
     # Optional: score sync + settlement + ROI report (production auditing)
     if not args.no_settle:
@@ -2166,6 +2371,21 @@ def main():
         health_summary["status"] = "warn"
         health_summary.setdefault("notes", []).append("data quality below thresholds")
 
+    # Odds freshness + complete pricing gate (HARD GATE)
+    odds_failures = _enforce_odds_freshness_and_completeness(
+        games=games,
+        max_age_full_minutes=args.max_odds_age_minutes_full,
+        max_age_1h_minutes=args.max_odds_age_minutes_1h,
+    )
+    if odds_failures:
+        print("[FATAL] Odds freshness/pricing gate failed:")
+        for msg in odds_failures[:25]:
+            print(f"   - {msg}")
+        if len(odds_failures) > 25:
+            print(f"   ... and {len(odds_failures) - 25} more")
+        # No bypass: requirement is 'real fresh odds must always be used'.
+        exit_with_health(2, "stale or incomplete odds")
+
     
     print(f"[OK] Found {len(games)} games")
     print()
@@ -2219,11 +2439,16 @@ def main():
         # Build market odds
         market_odds = {
             "spread": game["spread"],
+            "spread_home_price": game.get("spread_home_juice"),
+            "spread_away_price": game.get("spread_away_juice"),
+            # Legacy/compat: a single spread_price for codepaths that assume symmetric juice
             "spread_price": game.get("spread_home_juice") or game.get("spread_away_juice"),
             "total": game["total"],
             "over_price": game.get("over_juice"),
             "under_price": game.get("under_juice"),
             "spread_1h": game.get("spread_1h"),
+            "spread_1h_home_price": game.get("spread_1h_home_juice"),
+            "spread_1h_away_price": game.get("spread_1h_away_juice"),
             "spread_price_1h": game.get("spread_1h_home_juice") or game.get("spread_1h_away_juice"),
             "total_1h": game.get("total_1h"),
             "over_price_1h": game.get("over_1h_juice"),
@@ -2308,8 +2533,8 @@ def main():
                 persist=True,
             )
         except Exception as e:
-            print(f"   Error predicting {game['away']} @ {game['home']}: {e}")
-            continue
+            print(f"[FATAL] Prediction failed for {game['away']} @ {game['home']}: {type(e).__name__}: {e}")
+            exit_with_health(1, f"prediction failed: {type(e).__name__}")
         
         pred = result["prediction"]
         recs = result["recommendations"]
@@ -2368,16 +2593,16 @@ def main():
                 mkt_line_home = game["spread"] if not is_1h else game.get("spread_1h")
                 mkt_line = mkt_line_home if pick_val == "HOME" else (-(mkt_line_home) if mkt_line_home is not None else None)
                 if not is_1h:
-                    mkt_juice = game.get("spread_home_juice", -110) if pick_val == "HOME" else game.get("spread_away_juice", -110)
+                    mkt_juice = game.get("spread_home_juice") if pick_val == "HOME" else game.get("spread_away_juice")
                 else:
-                    mkt_juice = game.get("spread_1h_home_juice", -110) if pick_val == "HOME" else game.get("spread_1h_away_juice", -110)
+                    mkt_juice = game.get("spread_1h_home_juice") if pick_val == "HOME" else game.get("spread_1h_away_juice")
                 market_str = f"{format_spread(mkt_line)} ({format_odds(mkt_juice)})"
             elif market == "TOTAL":
                 mkt_line = game["total"] if not is_1h else game.get("total_1h")
                 if not is_1h:
-                    mkt_juice = game.get("over_juice", -110) if pick_val == "OVER" else game.get("under_juice", -110)
+                    mkt_juice = game.get("over_juice") if pick_val == "OVER" else game.get("under_juice")
                 else:
-                    mkt_juice = game.get("over_1h_juice", -110) if pick_val == "OVER" else game.get("under_1h_juice", -110)
+                    mkt_juice = game.get("over_1h_juice") if pick_val == "OVER" else game.get("under_1h_juice")
                 market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
             else:
                 continue
