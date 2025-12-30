@@ -71,8 +71,8 @@ The codebase now uses a single, consistent model versioning scheme:
 ### Active Model Version
 - **Source:** `VERSION` (repo root, single source of truth)
 - **Loaded by:** `services/prediction-service-python/app/__init__.py` + every predictor/config at import-time
-- **Value:** `33.6.2`
-- **Status:** ✅ Current runtime and outputs reflect v33.6.2
+- **Value:** `33.6.3`
+- **Status:** ✅ Current runtime and outputs reflect v33.6.3
 
 ### Model Components
 - **Files:** `services/prediction-service-python/app/predictors/*.py`

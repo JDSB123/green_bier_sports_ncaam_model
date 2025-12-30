@@ -27,7 +27,8 @@ openssl rand -hex 32 | tr -d '\n' > master_api_key.txt
 echo -n "YOUR_ACTUAL_KEY" > odds_api_key.txt
 
 # Basketball API key (get from https://api-basketball.com/)
-# Code reads from: /run/secrets/basketball_api_key (Docker) or env var BASKETBALL_API_KEY (Azure)
+# NOTE: This repository includes schema + deployment wiring for API-Basketball, but the current
+# runtime pipeline does not require it unless you add/enable an ingestion component that uses it.
 echo -n "YOUR_BASKETBALL_API_KEY" > basketball_api_key.txt
 
 # Microsoft Teams Incoming Webhook URL (OPTIONAL - only needed for --teams)
@@ -79,6 +80,7 @@ services:
 ## Security Best Practices
 
 1. **Never commit secrets** - All `.txt` files in this directory are gitignored
+  - Also: never paste API keys/passwords into docs, prompts, or config files tracked by git.
 2. **Use strong passwords** - Minimum 32 characters for production
 3. **Rotate regularly** - Change secrets at least quarterly
 4. **Audit access** - Monitor who has access to this directory

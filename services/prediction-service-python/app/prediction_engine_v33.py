@@ -435,8 +435,21 @@ class PredictionEngineV33:
             self.config.max_bet_units,
         )
 
-        # Get market probability from odds
+        # Get market probabilities from odds
         market_prob = self._get_market_probability(bet_type, market_odds, pick)
+        market_prob_novig, market_hold_percent = self._get_market_probability_novig(
+            bet_type, market_odds, pick
+        )
+
+        # Probability edge vs market (prefer no-vig when possible)
+        market_ref_prob = market_prob_novig if market_prob_novig is not None else market_prob
+        prob_edge = implied_prob - market_ref_prob
+
+        # EV/probability gating (best practice)
+        if ev_percent < self.config.min_ev_percent:
+            return None
+        if prob_edge < self.config.min_prob_edge:
+            return None
 
         return BettingRecommendation(
             game_id=prediction.game_id,
@@ -454,6 +467,9 @@ class PredictionEngineV33:
             implied_prob=implied_prob,
             market_prob=market_prob,
             pick_price=price,
+            market_prob_novig=market_prob_novig,
+            market_hold_percent=market_hold_percent,
+            prob_edge=prob_edge,
             kelly_fraction=kelly,
             recommended_units=round(recommended_units, 1),
             bet_tier=bet_tier,
@@ -742,6 +758,70 @@ class PredictionEngineV33:
 
         odds = self._get_pick_price(bet_type, pick, market_odds)
         return american_to_prob(odds)
+
+    def _get_market_probability_novig(
+        self,
+        bet_type: BetType,
+        market_odds: MarketOdds,
+        pick: Pick,
+    ) -> tuple[Optional[float], Optional[float]]:
+        """Return (no-vig probability for pick, market hold %), when both sides are available."""
+
+        def american_to_prob(odds: int) -> float:
+            if odds < 0:
+                return abs(odds) / (abs(odds) + 100)
+            return 100 / (odds + 100)
+
+        def no_vig_two_way(odds_a: int, odds_b: int) -> tuple[float, float, float]:
+            pa_raw = american_to_prob(odds_a)
+            pb_raw = american_to_prob(odds_b)
+            denom = pa_raw + pb_raw
+            if denom <= 0:
+                return 0.5, 0.5, 0.0
+            pa = pa_raw / denom
+            pb = pb_raw / denom
+            hold = max(0.0, denom - 1.0)
+            return pa, pb, hold
+
+        # Spreads (need both HOME and AWAY prices)
+        if bet_type == BetType.SPREAD:
+            home = market_odds.spread_home_price
+            away = market_odds.spread_away_price
+            if home is None or away is None:
+                return None, None
+            p_home, p_away, hold = no_vig_two_way(int(home), int(away))
+            prob = p_home if pick == Pick.HOME else p_away
+            return prob, hold * 100
+
+        if bet_type == BetType.SPREAD_1H:
+            home = market_odds.spread_1h_home_price
+            away = market_odds.spread_1h_away_price
+            if home is None or away is None:
+                return None, None
+            p_home, p_away, hold = no_vig_two_way(int(home), int(away))
+            prob = p_home if pick == Pick.HOME else p_away
+            return prob, hold * 100
+
+        # Totals (need both OVER and UNDER prices)
+        if bet_type == BetType.TOTAL:
+            over = market_odds.over_price
+            under = market_odds.under_price
+            if over is None or under is None:
+                return None, None
+            p_over, p_under, hold = no_vig_two_way(int(over), int(under))
+            prob = p_over if pick == Pick.OVER else p_under
+            return prob, hold * 100
+
+        if bet_type == BetType.TOTAL_1H:
+            over = market_odds.over_price_1h
+            under = market_odds.under_price_1h
+            if over is None or under is None:
+                return None, None
+            p_over, p_under, hold = no_vig_two_way(int(over), int(under))
+            prob = p_over if pick == Pick.OVER else p_under
+            return prob, hold * 100
+
+        return None, None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

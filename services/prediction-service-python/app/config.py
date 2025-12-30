@@ -1,55 +1,8 @@
-"""
-Configuration for NCAA Basketball Prediction Service v33.6.2
+"""Configuration for the NCAA Basketball prediction service.
 
-v33.6.2 Changes (2025-12-28):
-- FIXED: 1H Total confidence now starts at 0.68 (was 0.52, below 0.65 threshold)
-- FIXED: FG Spread MIN_EDGE aligned to 2.0 (was 7.0, too conservative)
-- FIXED: FG Total MIN_EDGE aligned to 3.0 (matches config)
-- ADDED: Extreme total handling - skip bets on FG total <120 or >170, 1H <55 or >85
-- ADDED: CLV tracking infrastructure (closing line capture, calculate_clv method)
-- ADDED: Settlement functions (settle_recommendations, get_clv_summary)
-- ADDED: Comprehensive unit tests for all new functionality
-
-v33.6 Changes (2024-12-24):
-- ALL 4 MODELS TRULY INDEPENDENT & BACKTESTED with real ESPN data
-- FG Spread: BACKTESTED on 3,318 games, HCA=5.8 (from actual home margins)
-- FG Total: BACKTESTED on 3,318 games, Calibration=+7.0 (unchanged)
-- H1 Spread: BACKTESTED on 904 real 1H games, HCA=3.6 (from actual 1H margins)
-- H1 Total: BACKTESTED on 562 real 1H games, Calibration=+2.7 (unchanged)
-- Created dedicated backtest scripts: backtest_fg_spread.py, backtest_h1_spread.py
-- Previous spread HCAs (4.7, 2.35) were NOT backtested - now corrected
-
-v33.5 Changes (2024-12-24):
-- CLEANUP: Removed 7 stale/duplicate predictor files (independent_*.py, *_independent.py)
-- CLEANUP: Removed stale ACR repo (prediction-service) - single source is ncaam-prediction
-- CLEANUP: Removed duplicate backtest file (testing/backtest_independent_models.py)
-- Canonical models: fg_total.py, fg_spread.py, h1_total.py, h1_spread.py
-- h1_total.py is truly independent (backtested on 562 games with real 1H data)
-
-v33.4 Changes (2024-12-24):
-- ROOT CAUSE FIX: Removed total_calibration_adjustment (-4.6) - it was WRONG
-  - Raw formula UNDERPREDICTED by 3.7 pts
-  - The -4.6 calibration made it WORSE (-8.3 pts bias)
-  - Real issue: league_avg_tempo was 68.5, actual data is 67.6
-  - Real issue: league_avg_efficiency was 106.0, actual data is 105.5
-- FIXED league_avg_tempo: 68.5 -> 67.6 (from Barttorvik data)
-- FIXED league_avg_efficiency: 106.0 -> 105.5 (from Barttorvik data)
-- REMOVED calibration patches: total_calibration_adjustment = 0.0
-- Result: Bias reduced from -8.3 to -1.0 with CORRECT formula, not patches
-
-v33.3 Changes (2024-12-24):
-- Real odds backtest: 313 games with DraftKings/FanDuel lines
-- Updated min_spread_edge from 7.0 to 3.0 based on optimal ROI
-- Updated min_total_edge from 999 to 11.0 (profitable at high edge)
-
-v33.1 Changes (2024-12-23):
-- CALIBRATED: HCA increased from 3.2 to 4.7 based on 4194-game backtest
-- CALIBRATED: Total adjustment -4.6 to fix over-prediction bias
-- Validated against 5 seasons of real ESPN game data (2020-2024)
-
-v33.0 Changes:
-- Enforce single entry point, consolidated Dockerfiles
-- HCA values are now EXPLICIT (what you see is what gets applied)
+Versioning:
+- Runtime version is loaded from the repo root VERSION file.
+- Historical change notes live in docs/VERSIONING.md.
 """
 
 from pydantic_settings import BaseSettings
@@ -190,6 +143,17 @@ class ModelConfig(BaseSettings):
     min_confidence: float = Field(
         default=0.65,
         description="Minimum confidence to recommend bet. Higher than v4.0's 0.60."
+    )
+
+    # EV / probability gating
+    # Best practice: do not recommend negative-EV bets even if point edge is large.
+    min_ev_percent: float = Field(
+        default=0.0,
+        description="Minimum EV% to recommend a bet. 0.0 means only positive-EV bets are recommended."
+    )
+    min_prob_edge: float = Field(
+        default=0.0,
+        description="Minimum probability edge (model_prob - market_prob). Uses no-vig market prob when available."
     )
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -431,7 +395,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = APP_VERSION  # Single source of truth from VERSION file
+    service_version: str = APP_VERSION  # Single source of truth (VERSION)
     debug: bool = False
 
     # Feature Store
