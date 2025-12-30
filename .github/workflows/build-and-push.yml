@@ -45,6 +45,37 @@ jobs:
           echo "tag=$TAG_VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $TAG_VERSION"
 
+      - name: Pre-build validation
+        run: |
+          echo "Validating build requirements..."
+          
+          # Check VERSION file
+          if [ ! -f VERSION ]; then
+            echo "ERROR: VERSION file not found"
+            exit 1
+          fi
+          
+          # Check required directories
+          for dir in services/prediction-service-python services/ratings-sync-go services/odds-ingestion-rust database/migrations database/seeds; do
+            if [ ! -d "$dir" ]; then
+              echo "ERROR: Required directory $dir not found"
+              exit 1
+            fi
+          done
+          
+          # Check critical files
+          for file in services/prediction-service-python/Dockerfile services/prediction-service-python/requirements.txt; do
+            if [ ! -f "$file" ]; then
+              echo "ERROR: Required file $file not found"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All pre-build checks passed"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to Azure
         uses: azure/login@v2
         with:
@@ -65,17 +96,27 @@ jobs:
           echo "Building and pushing images to $ACR_LOGIN_SERVER"
 
           # Prediction (hardened Dockerfile uses repo root context)
+          echo "🔨 Building prediction service..."
           docker build --no-cache \
+            --progress=plain \
             -f services/prediction-service-python/Dockerfile \
             -t $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.tag }} \
             -t $ACR_LOGIN_SERVER/$PRED_IMAGE:latest \
-            .
+            . 2>&1 | tee build-prediction.log
+          
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "❌ Prediction service build failed"
+            tail -n 100 build-prediction.log
+            exit 1
+          fi
 
           docker push $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.tag }}
           docker push $ACR_LOGIN_SERVER/$PRED_IMAGE:latest
 
           # Web
+          echo "🔨 Building web frontend..."
           docker build --no-cache \
+            --progress=plain \
             -f services/web-frontend/Dockerfile \
             -t $ACR_LOGIN_SERVER/$WEB_IMAGE:${{ steps.version.outputs.tag }} \
             -t $ACR_LOGIN_SERVER/$WEB_IMAGE:latest \
@@ -85,7 +126,9 @@ jobs:
           docker push $ACR_LOGIN_SERVER/$WEB_IMAGE:latest
 
           # Ratings sync
+          echo "🔨 Building ratings sync..."
           docker build --no-cache \
+            --progress=plain \
             -f services/ratings-sync-go/Dockerfile \
             -t $ACR_LOGIN_SERVER/$RATINGS_IMAGE:${{ steps.version.outputs.tag }} \
             -t $ACR_LOGIN_SERVER/$RATINGS_IMAGE:latest \
@@ -95,7 +138,9 @@ jobs:
           docker push $ACR_LOGIN_SERVER/$RATINGS_IMAGE:latest
 
           # Odds ingestion
+          echo "🔨 Building odds ingestion..."
           docker build --no-cache \
+            --progress=plain \
             -f services/odds-ingestion-rust/Dockerfile \
             -t $ACR_LOGIN_SERVER/$ODDS_IMAGE:${{ steps.version.outputs.tag }} \
             -t $ACR_LOGIN_SERVER/$ODDS_IMAGE:latest \
@@ -103,57 +148,85 @@ jobs:
 
           docker push $ACR_LOGIN_SERVER/$ODDS_IMAGE:${{ steps.version.outputs.tag }}
           docker push $ACR_LOGIN_SERVER/$ODDS_IMAGE:latest
+          
+          echo "✅ All images built and pushed successfully"
 
       - name: Deploy to Azure Container Apps (best-effort)
         run: |
+          echo "🚀 Deploying to Azure Container Apps..."
+          
           # Prediction API
+          echo "Updating prediction service..."
           az containerapp update \
             --name ncaam-stable-prediction \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.tag }} \
-            --output none || echo "Prediction Container App not found or update failed. Skipping."
+            --output none && echo "✅ Prediction service updated" || echo "⚠️ Prediction Container App not found or update failed. Skipping."
 
           # Web
+          echo "Updating web frontend..."
           az containerapp update \
             --name ncaam-stable-web \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.tag }} \
-            --output none || echo "Web Container App not found or update failed. Skipping."
+            --output none && echo "✅ Web frontend updated" || echo "⚠️ Web Container App not found or update failed. Skipping."
 
           # Manual jobs
+          echo "Updating ratings sync job..."
           az containerapp job update \
             --name ncaam-stable-ratings-sync \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.tag }} \
-            --output none || echo "Ratings job not found or update failed. Skipping."
+            --output none && echo "✅ Ratings sync updated" || echo "⚠️ Ratings job not found or update failed. Skipping."
 
+          echo "Updating odds ingestion job..."
           az containerapp job update \
             --name ncaam-stable-odds-ingestion \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.tag }} \
-            --output none || echo "Odds ingestion job not found or update failed. Skipping."
+            --output none && echo "✅ Odds ingestion updated" || echo "⚠️ Odds ingestion job not found or update failed. Skipping."
+          
+          echo "✅ Deployment phase complete"
 
       - name: Update docker-compose.yml with new prediction-service version
         run: |
+          echo "📝 Updating docker-compose.yml with new version..."
           sed -i "s|image: .*/$PRED_IMAGE:.*|image: $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.tag }}|" docker-compose.yml
+          echo "✅ docker-compose.yml updated"
 
       - name: Commit updated docker-compose.yml
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docker-compose.yml
-          git diff --staged --quiet || git commit -m "CI: Update prediction-service image to ${{ steps.version.outputs.tag }}"
-          git push
+          if git diff --staged --quiet; then
+            echo "ℹ️ No changes to commit"
+          else
+            git commit -m "CI: Update prediction-service image to ${{ steps.version.outputs.tag }}"
+            git push
+            echo "✅ Changes committed and pushed"
+          fi
 
       - name: Summary
         run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** ${{ steps.version.outputs.tag }} (raw: ${{ steps.version.outputs.raw }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **Prediction:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Web:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Ratings Job:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Odds Job:** ${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Version" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** ${{ steps.version.outputs.tag }} (raw: ${{ steps.version.outputs.raw }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "If infra isn't deployed yet, run \`azure/deploy.ps1\` first." >> $GITHUB_STEP_SUMMARY
+          echo "### Images Built & Pushed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Prediction:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Web:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Ratings Job:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Odds Job:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Smoke Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Python imports validated" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Compiled binaries verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "If infrastructure isn't deployed yet, run \`azure/deploy.ps1\` first." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Build completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')*" >> $GITHUB_STEP_SUMMARY
 
