@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# GREEN BIER SPORT VENTURES - NCAAM v33.6.4
+# GREEN BIER SPORT VENTURES - NCAAM v33.6.5
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enterprise-ready sports prediction model with:
 # - Dynamic port allocation (no conflicts with other sports)
@@ -131,7 +131,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
-    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.6.4
+    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.6.5
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
@@ -195,7 +195,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   ratings-sync:
-    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-ratings-sync:${IMAGE_TAG:-v33.6.4}
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-ratings-sync:${IMAGE_TAG:-v33.6.5}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_ratings_sync
     <<: [*common-env, *resource-limits]
     secrets:
@@ -230,7 +230,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   odds-full-once:
-    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.6.4}
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.6.5}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_full_once
     <<: [*common-env, *security-opts, *resource-limits]
     secrets:
@@ -263,7 +263,7 @@ services:
     restart: "no"
 
   odds-1h-once:
-    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.6.4}
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.6.5}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_h1_once
     <<: [*common-env, *security-opts, *resource-limits]
     secrets:

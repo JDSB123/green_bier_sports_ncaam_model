@@ -5,7 +5,7 @@ import time
 
 from fastapi import FastAPI, BackgroundTasks, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field, model_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -623,6 +623,11 @@ async def get_metrics():
     
     # Format for Prometheus (simple text format)
     lines = []
+
+    # Always emit a build/info metric so the payload is never empty and
+    # scrapers can validate the endpoint is alive.
+    lines.append("# TYPE prediction_service_build_info gauge")
+    lines.append(f'prediction_service_build_info{{version="{settings.service_version}"}} 1')
     
     # Counters
     for name, value in all_metrics["counters"].items():
@@ -641,7 +646,8 @@ async def get_metrics():
         lines.append(f"{name}_p95 {stats['p95']}")
         lines.append(f"{name}_p99 {stats['p99']}")
     
-    return "\n".join(lines)
+    # Prometheus expects text/plain (not JSON) and a trailing newline is customary.
+    return PlainTextResponse("\n".join(lines) + "\n", media_type="text/plain")
 
 
 @app.get("/config")
