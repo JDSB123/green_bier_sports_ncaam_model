@@ -25,6 +25,30 @@ from sqlalchemy.engine import Engine
 from app.models import BettingRecommendation, Prediction
 
 
+_COLUMNS_CACHE: dict[str, set[str]] = {}
+
+
+def _get_table_columns(engine: Engine, table_name: str, schema: str = "public") -> set[str]:
+    """Return available columns for a table, cached per engine URL."""
+    cache_key = f"{str(engine.url)}::{schema}.{table_name}"
+    if cache_key in _COLUMNS_CACHE:
+        return _COLUMNS_CACHE[cache_key]
+
+    stmt = text(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = :schema
+          AND table_name = :table
+        """
+    )
+    with engine.connect() as conn:
+        rows = conn.execute(stmt, {"schema": schema, "table": table_name}).fetchall()
+    cols = {r[0] for r in rows}
+    _COLUMNS_CACHE[cache_key] = cols
+    return cols
+
+
 def _jsonb(value: Optional[Dict[str, Any]]) -> str:
     """Serialize a dict to a JSON string for CAST(:x AS jsonb)."""
     if value is None:
@@ -191,43 +215,47 @@ def insert_recommendations(
     Insert a set of recommendations for a given prediction_id.
     Returns number of rows inserted.
     """
+    cols = _get_table_columns(engine, "betting_recommendations")
+
+    base_columns = [
+        "prediction_id",
+        "game_id",
+        "bet_type",
+        "pick",
+        "line",
+        "edge",
+        "confidence",
+        "ev_percent",
+        "kelly_fraction",
+        "recommended_units",
+        "bet_tier",
+        "sharp_line",
+        "steam_aligned",
+    ]
+    optional_columns = [
+        "market_line_at_bet",
+        "pick_price",
+        "implied_prob",
+        "market_prob",
+        "market_prob_novig",
+        "market_hold_percent",
+        "prob_edge",
+    ]
+
+    insert_columns = [c for c in base_columns if c in cols]
+    insert_columns += [c for c in optional_columns if c in cols]
+    insert_columns.append("created_at")
+
+    placeholders = [f":{c}" if c != "created_at" else "NOW()" for c in insert_columns]
     stmt = text(
         """
         INSERT INTO betting_recommendations (
-            prediction_id,
-            game_id,
-            bet_type,
-            pick,
-            pick_price,
-            line,
-            edge,
-            confidence,
-            ev_percent,
-            kelly_fraction,
-            recommended_units,
-            bet_tier,
-            sharp_line,
-            steam_aligned,
-            created_at
+            {columns}
         )
         VALUES (
-            :prediction_id,
-            :game_id,
-            :bet_type,
-            :pick,
-            :pick_price,
-            :line,
-            :edge,
-            :confidence,
-            :ev_percent,
-            :kelly_fraction,
-            :recommended_units,
-            :bet_tier,
-            :sharp_line,
-            :steam_aligned,
-            NOW()
+            {values}
         )
-        """
+        """.format(columns=",\n            ".join(insert_columns), values=",\n            ".join(placeholders))
     )
 
     rows = []
@@ -247,7 +275,6 @@ def insert_recommendations(
                 "game_id": game_id,
                 "bet_type": r.bet_type.value,
                 "pick": r.pick.value,
-                "pick_price": r.pick_price,
                 "line": capped_line,
                 "edge": capped_edge,
                 "confidence": r.confidence,
@@ -257,6 +284,13 @@ def insert_recommendations(
                 "bet_tier": r.bet_tier.value,
                 "sharp_line": r.sharp_line,
                 "steam_aligned": bool(r.is_sharp_aligned),
+                "market_line_at_bet": r.market_line,
+                "pick_price": r.pick_price,
+                "implied_prob": r.implied_prob,
+                "market_prob": r.market_prob,
+                "market_prob_novig": getattr(r, "market_prob_novig", None),
+                "market_hold_percent": getattr(r, "market_hold_percent", None),
+                "prob_edge": getattr(r, "prob_edge", None),
             }
         )
 

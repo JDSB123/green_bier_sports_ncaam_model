@@ -155,7 +155,9 @@ services:
       TEAMS_WEBHOOK_SECRET_FILE: /run/secrets/teams_webhook_secret
       # Model configuration (matches config.py defaults - single source of truth)
       # NOTE: POLL_INTERVAL_SECONDS is not used (manual-only mode, no polling)
-      MODEL__HOME_COURT_ADVANTAGE_SPREAD: 3.2
+      # IMPORTANT: This should match the backtested model constants (FG=5.8, 1H=3.6)
+      # so team-specific HCA scaling in run_today.py remains consistent.
+      MODEL__HOME_COURT_ADVANTAGE_SPREAD: 5.8
       MODEL__HOME_COURT_ADVANTAGE_TOTAL: 0.0
     networks:
       - ncaam_v33_backend

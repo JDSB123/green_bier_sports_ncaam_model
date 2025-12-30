@@ -274,7 +274,7 @@ docker compose up -d
 | `Location` | `centralus` | Azure region |
 | `ResourceGroup` | `NCAAM-GBSV-MODEL-RG` | Resource group name |
 | `Environment` | `stable` | Deployment environment |
-| `ImageTag` | `v<VERSION>` (e.g., `v33.6.2`) | Container image tag (read from repo `VERSION`) |
+| `ImageTag` | `v<VERSION>` (e.g., `v33.6.3`) | Container image tag (read from repo `VERSION`) |
 
 ---
 

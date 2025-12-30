@@ -337,6 +337,10 @@ class BettingRecommendation:
 
     # Price context (American odds) for the specific pick side (HOME/AWAY/OVER/UNDER)
     pick_price: Optional[int] = None
+    # Market-derived extras (best-practice auditing)
+    market_prob_novig: Optional[float] = None
+    market_hold_percent: Optional[float] = None
+    prob_edge: Optional[float] = None
 
     # Sharp alignment
     sharp_line: Optional[float] = None
