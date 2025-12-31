@@ -38,19 +38,9 @@ export PREDICTION_HOST_PORT=8093
 docker compose up -d
 ```
 
-**Option 2: .env File (Optional)**
-```bash
-# Copy template
-cp config.example .env
+**Option 2: `.env` files are not supported**
 
-# Edit .env file
-POSTGRES_HOST_PORT=5451
-REDIS_HOST_PORT=6391
-PREDICTION_HOST_PORT=8093
-
-# Docker Compose automatically reads .env
-docker compose up -d
-```
+This repository does **not** load `.env` files; secrets must come from the `secrets/` directory or be provided directly via environment variables (Option 1). There is no `config.example` template to copy because configuration is expected to be explicit/per-deployment.
 
 **Option 3: Inline with docker compose**
 ```bash

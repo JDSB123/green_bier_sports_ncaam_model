@@ -106,7 +106,7 @@
 
 ### Azure Bicep (`azure/main.bicep`)
 - **baseName parameter:** `'ncaam'` (default)
-- **environment parameter:** `'prod'` (default)
+- **environment parameter:** `'stable'` (default)
 
 ### Azure Deploy Script (`azure/deploy.ps1`)
 - **$baseName:** `'ncaam'`
