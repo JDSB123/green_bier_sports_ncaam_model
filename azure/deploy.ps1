@@ -74,7 +74,8 @@ $ErrorActionPreference = 'Stop'
 
 # Resolve version tag if not provided
 if (-not $ImageTag -or [string]::IsNullOrWhiteSpace($ImageTag)) {
-    $versionFile = Join-Path $PSScriptRoot ".." "VERSION"
+    # Join-Path supports only two positional args (Path, ChildPath). Use a single child path.
+    $versionFile = Join-Path $PSScriptRoot "..\VERSION"
     if (Test-Path $versionFile) {
         $rawVersion = (Get-Content -Path $versionFile -TotalCount 1).Trim()
         if (-not [string]::IsNullOrWhiteSpace($rawVersion)) {
