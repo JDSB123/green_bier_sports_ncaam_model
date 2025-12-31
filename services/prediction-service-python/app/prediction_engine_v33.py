@@ -46,13 +46,13 @@ H1_TOTAL_MAX_RELIABLE = 85.0   # Above this, model under-predicts
 
 class PredictionEngineV33:
     """
-    v33.6 Prediction Engine - Modular architecture with 4 independent models.
+    v33.6.5 Prediction Engine - Modular architecture with 4 independent models.
     
     Provides same interface as BarttorvikPredictor for drop-in replacement.
     """
 
     def __init__(self):
-        """Initialize with v33.6 modular models."""
+        """Initialize with v33.6.5 modular models."""
         self.config = settings.model
         self.logger = structlog.get_logger()
         self.version_tag = f"v{APP_VERSION}"
@@ -86,7 +86,7 @@ class PredictionEngineV33:
         away_health: Optional[dict] = None,
     ) -> Prediction:
         """
-        Generate predictions using v33.6 modular models.
+        Generate predictions using v33.6.5 modular models.
         
         Each market gets its own specialized model:
         - FG Spread: Proven statistical edge
@@ -474,6 +474,7 @@ class PredictionEngineV33:
             bet_tier=bet_tier,
             sharp_line=sharp_line,
             is_sharp_aligned=is_sharp_aligned,
+            model_version=prediction.model_version,
         )
 
     def _get_pick_price(

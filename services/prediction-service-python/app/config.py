@@ -25,7 +25,7 @@ class ModelConfig(BaseSettings):
     # ─────────────────────────────────────────────────────────────────────────
 
     # SPREAD HCA - Points added to home team advantage
-    # CALIBRATED v33.6: Backtested on 3,318 FG games and 904 1H games with real ESPN data
+    # CALIBRATED v33.6.5: Backtested on 3,318 FG games and 904 1H games with real ESPN data
     # FG Spread: HCA = 5.8 (from actual home margins in 3,318-game backtest)
     # H1 Spread: HCA = 3.6 (from actual 1H home margins in 904-game backtest)
     home_court_advantage_spread: float = Field(

@@ -1,5 +1,5 @@
 """
-Full Game Total Prediction Model v33.6
+Full Game Total Prediction Model v33.6.5
 
 BACKTESTED on 3,318 games with actual scores from ESPN.
 

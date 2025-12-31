@@ -1,5 +1,5 @@
 """
-Modular Prediction Models v33.6
+Modular Prediction Models v33.6.5
 
 All 4 markets are TRULY INDEPENDENT & BACKTESTED:
 - FG Spread: HCA=5.8 (from 3,318-game backtest, MAE=10.57)

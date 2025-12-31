@@ -1,5 +1,5 @@
 """
-First Half Spread Model v33.6
+First Half Spread Model v33.6.5
 
 BACKTESTED on 904 real 1H games from ESPN (2019-2024).
 HCA calibration derived from actual 1H home margins.
@@ -35,7 +35,7 @@ class H1SpreadModel(BasePredictor):
 
     BACKTESTED on 904 real 1H games (2019-2024) from ESPN.
 
-    Backtest Results (v33.6):
+    Backtest Results (v33.6.5):
     - MAE: 8.25 points
     - Direction Accuracy: 66.6%
     - HCA derived from actual 1H home margins (+4.62 avg)

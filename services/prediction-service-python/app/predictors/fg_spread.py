@@ -1,5 +1,5 @@
 """
-Full Game Spread Model v33.6
+Full Game Spread Model v33.6.5
 
 BACKTESTED on 3,318 games (2019-2024) with ESPN real scores.
 HCA calibration derived from actual home margins.
@@ -36,7 +36,7 @@ class FGSpreadModel(BasePredictor):
 
     BACKTESTED on 3,318 games (2019-2024) with ESPN real scores.
 
-    Backtest Results (v33.6):
+    Backtest Results (v33.6.5):
     - MAE: 10.57 points
     - Direction Accuracy: 71.9%
     - HCA derived from actual non-neutral home margins

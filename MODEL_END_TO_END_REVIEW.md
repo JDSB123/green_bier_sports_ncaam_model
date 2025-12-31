@@ -65,11 +65,11 @@ Your NCAA basketball prediction system is **production-grade** with a clean, mod
 │ ┌──▼─────────┐  ┌──────▼──────┐  ┌─────────▼───┐         │
 │ │ FG Spread   │  │ FG Total     │  │ 1H Spread   │         │
 │ │ Model       │  │ Model        │  │ Model       │         │
-│ │ (v33.6)     │  │ (v33.6)      │  │ (v33.6)     │         │
+│ │ (v33.6.5)   │  │ (v33.6.5)    │  │ (v33.6.5)   │         │
 │ └─────────────┘  └──────────────┘  └─────────────┘         │
 │                                                               │
 │ ┌───────────────────────────────────────────────────────┐   │
-│ │ 1H Total Model (v33.6)                               │   │
+│ │ 1H Total Model (v33.6.5)                             │   │
 │ └───────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                           │
@@ -344,7 +344,7 @@ MODEL__MIN_SPREAD_EDGE: 2.0
 
 ## MODEL PERFORMANCE METRICS
 
-### Backtest Results (v33.6)
+### Backtest Results (v33.6.5)
 
 **FG Spread:**
 - Sample: 3,318 games (2019-2024)

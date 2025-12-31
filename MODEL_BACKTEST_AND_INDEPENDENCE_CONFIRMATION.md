@@ -1,6 +1,6 @@
 # Model Backtest & Independence Confirmation
 **Date:** December 24, 2025  
-**Version:** v33.6 (CURRENT)  
+**Version:** v33.6.5 (CURRENT)  
 **Status:** ✅ CONFIRMED - Model is fully back-tested and independent
 
 ---
@@ -15,7 +15,7 @@ Your model **IS** truly back-tested and independent. Here's the evidence:
 
 ### ✅ 4 INDEPENDENT MARKET MODELS - All Back-Tested
 
-Your system has **moved beyond monolithic** to **modular independent models** (v33.6):
+Your system has **moved beyond monolithic** to **modular independent models** (v33.6.5):
 
 #### Model 1: FG Spread
 - **Backtest:** 3,318 games (2019-2024) with ESPN real scores
@@ -133,7 +133,7 @@ Where:
 - Stated goal: Move to independent market models
 - Each market gets its own model class
 
-### v33.6 (CURRENT - Dec 24, 2025) - Full Independence
+### v33.6.5 (CURRENT - Dec 24, 2025) - Full Independence
 - ✅ 4 completely independent models
 - ✅ Each with own backtest (3,318 FG / 904-562 1H)
 - ✅ Each with own calibration constants
@@ -292,7 +292,7 @@ python services/prediction-service-python/test_modular_models.py
 
 ### The Architecture is Smart
 
-v33.6 moved from "one model does everything" to "each market has its expert":
+v33.6.5 moved from "one model does everything" to "each market has its expert":
 - FG Spread specialist: Good for high-confidence bets
 - FG Total specialist: Good for middle-range games
 - 1H Spread specialist: Better variance handling

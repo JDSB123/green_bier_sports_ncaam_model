@@ -1,5 +1,5 @@
 """
-First Half Total Prediction Model v33.6
+First Half Total Prediction Model v33.6.5
 
 FULLY INDEPENDENT 1H model - does NOT derive from FG Total.
 BACKTESTED on 562 games with actual 1H scores from ESPN.

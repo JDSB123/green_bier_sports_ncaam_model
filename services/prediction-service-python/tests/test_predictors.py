@@ -2,10 +2,10 @@
 Tests for prediction models.
 
 Tests all 4 independent prediction models:
-- FG Spread (v33.6, HCA=5.8)
-- FG Total (v33.6, Calibration=+7.0)
-- H1 Spread (v33.6, HCA=3.6)
-- H1 Total (v33.6, Calibration=+2.7)
+- FG Spread (v33.6.5, HCA=5.8)
+- FG Total (v33.6.5, Calibration=+7.0)
+- H1 Spread (v33.6.5, HCA=3.6)
+- H1 Total (v33.6.5, Calibration=+2.7)
 """
 
 import pytest
@@ -224,11 +224,11 @@ class TestModelIndependence:
         assert h1_total_model.CALIBRATION == 2.7
 
     def test_model_versions(self):
-        """All models should be v33.6."""
-        assert "33.6" in fg_spread_model.MODEL_VERSION
-        assert "33.6" in fg_total_model.MODEL_VERSION
-        assert "33.6" in h1_spread_model.MODEL_VERSION
-        assert "33.6" in h1_total_model.MODEL_VERSION
+        """All models should be v33.6.5."""
+        assert "33.6.5" in fg_spread_model.MODEL_VERSION
+        assert "33.6.5" in fg_total_model.MODEL_VERSION
+        assert "33.6.5" in h1_spread_model.MODEL_VERSION
+        assert "33.6.5" in h1_total_model.MODEL_VERSION
 
 
 class TestMinEdgeThresholds:
