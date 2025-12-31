@@ -324,13 +324,22 @@ if (-not $SkipBuild) {
             $job = Start-Job -ScriptBlock {
                 param($name, $context, $dockerfile, $noCache, $root)
                 Set-Location $root
-                $cacheArg = if ($noCache) { "--no-cache" } else { "" }
-                if ($cacheArg) {
-                    docker build $cacheArg -t $name -f $dockerfile $context 2>&1
+                # IMPORTANT: capture build output so the job returns a single object.
+                # If we let `docker build` write to the pipeline, Receive-Job returns
+                # many strings + the final object, and `$result.ExitCode` becomes
+                # an array containing `$null`, which incorrectly marks builds failed.
+                if ($noCache) {
+                    $output = & docker build --no-cache -t $name -f $dockerfile $context 2>&1
                 } else {
-                    docker build -t $name -f $dockerfile $context 2>&1
+                    $output = & docker build -t $name -f $dockerfile $context 2>&1
                 }
-                return @{ ExitCode = $LASTEXITCODE; Image = $name }
+
+                $exit = $LASTEXITCODE
+                return [pscustomobject]@{
+                    ExitCode = $exit
+                    Image    = $name
+                    Output   = $output
+                }
             } -ArgumentList $imgName, $imgContext, $imgDockerfile, $useNoCache, $repoRoot
 
             $buildJobs += @{ Job = $job; Image = $imgName }
@@ -349,6 +358,12 @@ if (-not $SkipBuild) {
             if ($result.ExitCode -ne 0) {
                 $failedBuilds += $buildJob.Image
                 Write-Host "    FAILED: $($buildJob.Image)" -ForegroundColor Red
+                if ($result.Output) {
+                    Write-Host "    ---- docker build output (tail) ----" -ForegroundColor DarkGray
+                    $tail = $result.Output | Select-Object -Last 120
+                    Write-Host ($tail -join "`n") -ForegroundColor DarkGray
+                    Write-Host "    ------------------------------------" -ForegroundColor DarkGray
+                }
             } else {
                 Write-Host "    OK: $($buildJob.Image)" -ForegroundColor Green
             }
