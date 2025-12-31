@@ -302,7 +302,131 @@ DELETE FROM team_aliases
 WHERE team_id NOT IN (SELECT id FROM teams);
 
 -- ─────────────────────────────────────────────────────────────────────────────────
--- STEP 4: Log migration completion
+-- STEP 4: Fix Tennessee variant aliases (CRITICAL)
+-- The ratings sync was incorrectly matching "East Tennessee St." etc to "Tennessee"
+-- ─────────────────────────────────────────────────────────────────────────────────
+
+-- Remove any wrong Tennessee aliases
+DELETE FROM team_aliases 
+WHERE alias IN ('East Tennessee St.', 'Tennessee St.', 'Tennessee Tech', 
+                'Tennessee Tech Golden Eagles', 'Tennessee St Tigers', 'Tennessee Martin')
+  AND team_id = (SELECT id FROM teams WHERE canonical_name = 'Tennessee');
+
+-- Add correct aliases for Tennessee variants
+INSERT INTO team_aliases (team_id, alias, source, confidence)
+SELECT t.id, a.alias, 'barttorvik', 1.0
+FROM teams t
+CROSS JOIN LATERAL (VALUES
+    ('ETSU', 'East Tennessee St.'),
+    ('ETSU', 'East Tennessee State'),
+    ('ETSU', 'ETSU Buccaneers'),
+    ('Tennessee St.', 'Tennessee State'),
+    ('Tennessee St.', 'Tennessee St Tigers'),
+    ('Tennessee St.', 'TSU Tigers'),
+    ('Tennessee Tech', 'Tennessee Tech Golden Eagles'),
+    ('Tennessee Tech', 'TTU Golden Eagles'),
+    ('UT Martin', 'Tennessee Martin'),
+    ('UT Martin', 'Tennessee-Martin'),
+    ('UT Martin', 'UT-Martin'),
+    ('UT Martin', 'UTM'),
+    ('UT Martin', 'UT Martin Skyhawks')
+) AS a(canonical, alias)
+WHERE t.canonical_name = a.canonical
+ON CONFLICT (alias, source) DO UPDATE SET team_id = EXCLUDED.team_id;
+
+-- ─────────────────────────────────────────────────────────────────────────────────
+-- STEP 5: Update resolve_team_name to remove fuzzy matching
+-- CRITICAL: Fuzzy matching was causing "Tennessee Martin" -> "Tennessee" bugs
+-- ─────────────────────────────────────────────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION resolve_team_name(input_name TEXT)
+RETURNS TEXT AS $$
+DECLARE
+    v_result TEXT;
+    v_normalized TEXT;
+    v_stripped TEXT;
+BEGIN
+    -- Return NULL for empty input
+    IF input_name IS NULL OR TRIM(input_name) = '' THEN
+        RETURN NULL;
+    END IF;
+
+    -- Normalize input: lowercase, remove special chars, compress whitespace
+    v_normalized := LOWER(TRIM(input_name));
+    v_normalized := REGEXP_REPLACE(v_normalized, '[^a-z0-9\s&]', '', 'g');
+    v_normalized := REGEXP_REPLACE(v_normalized, '\s+', ' ', 'g');
+
+    -- Create stripped version (no mascots)
+    v_stripped := REGEXP_REPLACE(v_normalized,
+        '\s+(blue devils|tar heels|wildcats|tigers|bulldogs|cavaliers|demon deacons|wolfpack|seminoles|cardinals|hurricanes|fighting irish|panthers|orange|hokies|yellow jackets|eagles|jayhawks|bears|red raiders|horned frogs|cowboys|cyclones|mountaineers|longhorns|sooners|cougars|knights|bearcats|boilermakers|wolverines|spartans|hoosiers|fighting illini|buckeyes|hawkeyes|badgers|golden gophers|nittany lions|scarlet knights|terrapins|cornhuskers|bruins|trojans|ducks|huskies|crimson tide|volunteers|razorbacks|gators|rebels|gamecocks|commodores|aggies|sun devils|buffaloes|utes|golden eagles|friars|pirates|red storm|musketeers|hoyas|blue demons|mustangs|golden hurricane|rattlers|49ers|owls|broncos|wolf pack|aztecs|rams|lobos|gaels|dons|waves|lions|pilots|toreros|flyers|billikens|spiders|bonnies|explorers|dukes|colonials|minutemen|hawks|ramblers|anteaters|highlanders|gauchos|tritons|titans|matadors|lancers|hornets|privateers|seahawks|delta devils|monarchs|miners|mean green|roadrunners|bearkats|flames|mountain hawks|leopards|raiders|crusaders|terriers|hilltoppers|blue raiders|thundering herd|red wolves|chanticleers|sycamores|redbirds|salukis|beacons|purple aces|braves|golden grizzlies|vikings|phoenix|penguins|jaguars|colonials|norse|lumberjacks|mavericks|islanders|texans|seawolves|great danes|jaspers|red foxes|saints|golden griffins|peacocks|stags|broncs|sharks|red flash|skyhawks|buccaneers)$',
+        '', 'g');
+
+    -- STEP 1: Exact match on canonical_name (case-insensitive)
+    SELECT t.canonical_name INTO v_result
+    FROM teams t
+    LEFT JOIN team_ratings tr ON t.id = tr.team_id
+    WHERE LOWER(t.canonical_name) = LOWER(TRIM(input_name))
+    ORDER BY tr.team_id IS NOT NULL DESC
+    LIMIT 1;
+
+    IF v_result IS NOT NULL THEN
+        RETURN v_result;
+    END IF;
+
+    -- STEP 2: Exact match on alias (case-insensitive)
+    SELECT t.canonical_name INTO v_result
+    FROM teams t
+    JOIN team_aliases ta ON t.id = ta.team_id
+    LEFT JOIN team_ratings tr ON t.id = tr.team_id
+    WHERE LOWER(ta.alias) = LOWER(TRIM(input_name))
+    ORDER BY ta.confidence DESC, tr.team_id IS NOT NULL DESC
+    LIMIT 1;
+
+    IF v_result IS NOT NULL THEN
+        RETURN v_result;
+    END IF;
+
+    -- STEP 3: Normalized match (remove punctuation, match against canonical or alias)
+    SELECT t.canonical_name INTO v_result
+    FROM teams t
+    LEFT JOIN team_aliases ta ON t.id = ta.team_id
+    LEFT JOIN team_ratings tr ON t.id = tr.team_id
+    WHERE REGEXP_REPLACE(LOWER(t.canonical_name), '[^a-z0-9]', '', 'g') = REGEXP_REPLACE(v_normalized, '[^a-z0-9]', '', 'g')
+       OR REGEXP_REPLACE(LOWER(ta.alias), '[^a-z0-9]', '', 'g') = REGEXP_REPLACE(v_normalized, '[^a-z0-9]', '', 'g')
+    ORDER BY tr.team_id IS NOT NULL DESC
+    LIMIT 1;
+
+    IF v_result IS NOT NULL THEN
+        RETURN v_result;
+    END IF;
+
+    -- STEP 4: Try matching with mascot stripped
+    SELECT t.canonical_name INTO v_result
+    FROM teams t
+    LEFT JOIN team_aliases ta ON t.id = ta.team_id
+    LEFT JOIN team_ratings tr ON t.id = tr.team_id
+    WHERE REGEXP_REPLACE(LOWER(t.canonical_name), '[^a-z0-9]', '', 'g') = REGEXP_REPLACE(v_stripped, '[^a-z0-9]', '', 'g')
+       OR REGEXP_REPLACE(LOWER(ta.alias), '[^a-z0-9]', '', 'g') = REGEXP_REPLACE(v_stripped, '[^a-z0-9]', '', 'g')
+    ORDER BY tr.team_id IS NOT NULL DESC
+    LIMIT 1;
+
+    IF v_result IS NOT NULL THEN
+        RETURN v_result;
+    END IF;
+
+    -- NO FUZZY/PARTIAL MATCHING
+    -- Fuzzy matching was REMOVED because it caused incorrect matches:
+    --   - "Tennessee Martin" would match "Tennessee"
+    --   - "East Tennessee St." would match "Tennessee"
+    -- If we reach here, return NULL and let the caller create a new team entry.
+    -- Add the missing alias to team_aliases table to prevent future mismatches.
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- ─────────────────────────────────────────────────────────────────────────────────
+-- STEP 6: Log migration completion
 -- ─────────────────────────────────────────────────────────────────────────────────
 
 DO $$
