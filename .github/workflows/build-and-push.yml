@@ -9,7 +9,9 @@ on:
       - 'services/odds-ingestion-rust/**'
       - 'services/web-frontend/**'
       - 'azure/**'
+      - 'database/migrations/**'
       - '.github/workflows/build-and-push.yml'
+  workflow_dispatch:  # Allow manual triggering
 
 env:
   ACR_NAME: ncaamstablegbsvacr
