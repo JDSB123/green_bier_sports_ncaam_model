@@ -34,7 +34,6 @@ def capture_pregame_closing_lines(
         Dict with 'games_checked', 'snapshots_captured', 'recommendations_updated'
     """
     from app.odds_api_client import OddsApiClient, OddsApiError
-    from app.persistence import capture_closing_lines
     
     now = datetime.now(timezone.utc)
     cutoff = now + timedelta(minutes=lookahead_minutes)
@@ -46,9 +45,11 @@ def capture_pregame_closing_lines(
             g.id as game_id,
             g.external_id,
             g.commence_time,
-            g.home_team,
-            g.away_team
+            ht.canonical_name as home_team,
+            at.canonical_name as away_team
         FROM games g
+        JOIN teams ht ON ht.id = g.home_team_id
+        JOIN teams at ON at.id = g.away_team_id
         INNER JOIN betting_recommendations br ON br.game_id = g.id
         WHERE br.status IN ('pending', 'placed')
           AND br.closing_line IS NULL
@@ -58,8 +59,7 @@ def capture_pregame_closing_lines(
     )
     
     games_checked = 0
-    snapshots_captured = 0
-    recommendations_updated = 0
+    snapshots_inserted = 0
     
     with engine.begin() as conn:
         games = conn.execute(stmt, {"now": now, "cutoff": cutoff}).fetchall()
@@ -67,8 +67,7 @@ def capture_pregame_closing_lines(
     if not games:
         return {
             "games_checked": 0,
-            "snapshots_captured": 0,
-            "recommendations_updated": 0,
+            "snapshots_inserted": 0,
         }
     
     # Fetch current odds for these games
@@ -86,83 +85,125 @@ def capture_pregame_closing_lines(
         game = dict(game_row._mapping)
         game_id = game["game_id"]
         external_id = game["external_id"]
+        commence_time = game.get("commence_time") or now
         games_checked += 1
         
         try:
+            if not external_id:
+                continue
+
             # Fetch current odds for this event from sharp books
             event_odds = client.get_closing_lines_for_event(external_id)
-            
             bookmakers = event_odds.get("bookmakers") or []
             if not bookmakers:
                 continue
-            
-            # Extract closing lines, preferring sharp books
-            closing_spread = None
-            closing_total = None
-            closing_spread_1h = None
-            closing_total_1h = None
-            
-            # Priority: Pinnacle > Bovada > Circa > first available
-            priority_books = ["pinnacle", "bovada", "circa"]
-            sorted_books = sorted(
-                bookmakers,
-                key=lambda b: (
-                    0 if b.get("key") in priority_books else 1,
-                    priority_books.index(b.get("key")) if b.get("key") in priority_books else 999,
-                ),
-            )
-            
-            for book in sorted_books:
-                for market in book.get("markets") or []:
-                    market_key = market.get("key", "")
+
+            event_home = event_odds.get("home_team") or game.get("home_team")
+            event_away = event_odds.get("away_team") or game.get("away_team")
+
+            # Store as odds_snapshots so the settlement logic can compute true closing line later.
+            # Important: ensure snapshot time <= commence_time so it is eligible as "closing".
+            snapshot_time = now if now <= commence_time else commence_time
+
+            rows = []
+            for bookmaker in bookmakers:
+                book_key = bookmaker.get("key")
+                if not book_key:
+                    continue
+                for market in bookmaker.get("markets") or []:
+                    market_key = (market.get("key") or "").lower()
                     outcomes = market.get("outcomes") or []
-                    
-                    if market_key == "spreads" and closing_spread is None:
+
+                    if market_key in ("spreads", "spreads_h1"):
+                        market_type = "spreads"
+                        period = "1h" if market_key.endswith("_h1") else "full"
+                        home_line = away_line = None
+                        home_price = away_price = None
                         for outcome in outcomes:
-                            if outcome.get("name") == game.get("home_team"):
-                                closing_spread = float(outcome.get("point", 0))
-                                break
-                    
-                    elif market_key == "totals" and closing_total is None:
+                            name = outcome.get("name")
+                            if name == event_home:
+                                home_line = outcome.get("point")
+                                home_price = outcome.get("price")
+                            elif name == event_away:
+                                away_line = outcome.get("point")
+                                away_price = outcome.get("price")
+                        rows.append(
+                            {
+                                "time": snapshot_time,
+                                "game_id": game_id,
+                                "bookmaker": book_key,
+                                "market_type": market_type,
+                                "period": period,
+                                "home_line": home_line,
+                                "away_line": away_line,
+                                "total_line": None,
+                                "home_price": home_price,
+                                "away_price": away_price,
+                                "over_price": None,
+                                "under_price": None,
+                            }
+                        )
+                    elif market_key in ("totals", "totals_h1"):
+                        market_type = "totals"
+                        period = "1h" if market_key.endswith("_h1") else "full"
+                        total_line = None
+                        over_price = under_price = None
                         for outcome in outcomes:
-                            if outcome.get("name") == "Over":
-                                closing_total = float(outcome.get("point", 0))
-                                break
-                    
-                    elif market_key == "spreads_h1" and closing_spread_1h is None:
-                        for outcome in outcomes:
-                            if outcome.get("name") == game.get("home_team"):
-                                closing_spread_1h = float(outcome.get("point", 0))
-                                break
-                    
-                    elif market_key == "totals_h1" and closing_total_1h is None:
-                        for outcome in outcomes:
-                            if outcome.get("name") == "Over":
-                                closing_total_1h = float(outcome.get("point", 0))
-                                break
-            
-            # Use 'is not None' to properly handle 0.0 values (pick'em games)
-            has_data = (closing_spread is not None or 
-                       closing_total is not None or 
-                       closing_spread_1h is not None or 
-                       closing_total_1h is not None)
-            if has_data:
-                snapshots_captured += 1
-                updated = capture_closing_lines(
-                    engine,
-                    game_id,
-                    closing_spread=closing_spread,
-                    closing_total=closing_total,
-                    closing_spread_1h=closing_spread_1h,
-                    closing_total_1h=closing_total_1h,
+                            name = (outcome.get("name") or "").lower()
+                            if name == "over":
+                                total_line = outcome.get("point")
+                                over_price = outcome.get("price")
+                            elif name == "under":
+                                under_price = outcome.get("price")
+                        rows.append(
+                            {
+                                "time": snapshot_time,
+                                "game_id": game_id,
+                                "bookmaker": book_key,
+                                "market_type": market_type,
+                                "period": period,
+                                "home_line": None,
+                                "away_line": None,
+                                "total_line": total_line,
+                                "home_price": None,
+                                "away_price": None,
+                                "over_price": over_price,
+                                "under_price": under_price,
+                            }
+                        )
+
+            if not rows:
+                continue
+
+            insert_stmt = text(
+                """
+                INSERT INTO odds_snapshots (
+                    time, game_id, bookmaker, market_type, period,
+                    home_line, away_line, total_line,
+                    home_price, away_price, over_price, under_price
+                ) VALUES (
+                    :time, :game_id, :bookmaker, :market_type, :period,
+                    :home_line, :away_line, :total_line,
+                    :home_price, :away_price, :over_price, :under_price
                 )
-                recommendations_updated += updated
+                ON CONFLICT (time, game_id, bookmaker, market_type, period) DO UPDATE SET
+                    home_line = EXCLUDED.home_line,
+                    away_line = EXCLUDED.away_line,
+                    total_line = EXCLUDED.total_line,
+                    home_price = EXCLUDED.home_price,
+                    away_price = EXCLUDED.away_price,
+                    over_price = EXCLUDED.over_price,
+                    under_price = EXCLUDED.under_price
+                """
+            )
+            with engine.begin() as conn:
+                conn.execute(insert_stmt, rows)
+            snapshots_inserted += len(rows)
         
         except OddsApiError:
             continue
     
     return {
         "games_checked": games_checked,
-        "snapshots_captured": snapshots_captured,
-        "recommendations_updated": recommendations_updated,
+        "snapshots_inserted": snapshots_inserted,
     }

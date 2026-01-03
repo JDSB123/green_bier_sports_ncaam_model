@@ -54,10 +54,10 @@ class H1SpreadModel(BasePredictor):
     LEAGUE_AVG_EFFICIENCY: float = 105.5  # FG efficiency (used for base calc)
     LEAGUE_AVG_EFG: float = 50.0          # 1H-specific EFG reference
 
-    # 1H HOME COURT ADVANTAGE - UPDATED based on 1,046 game analysis
-    # Actual avg 1H home margin: +5.03, which is 56.3% of FG HCA (+8.95)
-    # Previous 3.6 was too low (only 62% of 5.8 FG HCA)
-    HCA: float = 5.0
+    # 1H HOME COURT ADVANTAGE - independently backtested (904 real 1H games)
+    # Keep this aligned with docs/config (`MODEL__HOME_COURT_ADVANTAGE_SPREAD_1H`) and
+    # the "manual-only" run orchestration in `run_today.py`.
+    HCA: float = 3.6
 
     # 1H SCALING FACTORS
     BASE_TEMPO_FACTOR: float = 0.48      # 1H has ~48% of FG possessions

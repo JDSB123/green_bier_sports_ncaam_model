@@ -513,6 +513,7 @@ def settle_pending_bets(engine: Engine) -> SettlementSummary:
             br.bet_type,
             br.pick,
             br.line,
+            br.pick_price,
             br.recommended_units,
             br.created_at,
             g.commence_time,
@@ -561,6 +562,7 @@ def settle_pending_bets(engine: Engine) -> SettlementSummary:
         line = float(r["line"])
         stake = float(r.get("recommended_units") or 1.0)
         commence_time: datetime = r["commence_time"]
+        bet_pick_price = r.get("pick_price")
 
         # Choose which scores to use
         is_1h = bet_type.upper().endswith("_1H")
@@ -586,6 +588,14 @@ def settle_pending_bets(engine: Engine) -> SettlementSummary:
         clv_val = None
         price_for_pnl: Optional[int] = None
 
+        # Prefer the price that existed at recommendation time (what we can actually bet),
+        # fall back to closing price if available, else assume -110.
+        if bet_pick_price is not None:
+            try:
+                price_for_pnl = int(bet_pick_price)
+            except (TypeError, ValueError):
+                price_for_pnl = None
+
         bet_type_u = bet_type.upper()
         pick_u = (pick or "").upper()
 
@@ -593,23 +603,31 @@ def settle_pending_bets(engine: Engine) -> SettlementSummary:
         if snap:
             if bet_type_u.startswith("SPREAD"):
                 closing_line = float(snap["home_line"]) if pick_u == "HOME" else float(snap["away_line"])
-                price_for_pnl = int(snap["home_price"] or -110) if pick_u == "HOME" else int(snap["away_price"] or -110)
+                if price_for_pnl is None:
+                    price_for_pnl = (
+                        int(snap["home_price"] or -110)
+                        if pick_u == "HOME"
+                        else int(snap["away_price"] or -110)
+                    )
                 # Positive = beat close (got a better number than closing)
                 clv_val = round(line - closing_line, 3)
             elif bet_type_u.startswith("TOTAL"):
                 closing_line = float(snap["total_line"])
                 if pick_u == "OVER":
-                    price_for_pnl = int(snap["over_price"] or -110)
+                    if price_for_pnl is None:
+                        price_for_pnl = int(snap["over_price"] or -110)
                     clv_val = round(closing_line - line, 3)  # closing higher than bet is good for OVER
                 else:
-                    price_for_pnl = int(snap["under_price"] or -110)
+                    if price_for_pnl is None:
+                        price_for_pnl = int(snap["under_price"] or -110)
                     clv_val = round(line - closing_line, 3)  # bet higher than closing is good for UNDER
             else:
                 # Unsupported market type
                 pass
         else:
             # No closing snapshot: still settle outcome; assume -110
-            price_for_pnl = -110
+            if price_for_pnl is None:
+                price_for_pnl = -110
 
         # Settle outcome
         if bet_type_u.startswith("SPREAD"):

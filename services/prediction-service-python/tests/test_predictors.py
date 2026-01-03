@@ -224,11 +224,13 @@ class TestModelIndependence:
         assert h1_total_model.CALIBRATION == 2.7
 
     def test_model_versions(self):
-        """All models should be v33.6.5."""
-        assert "33.6.5" in fg_spread_model.MODEL_VERSION
-        assert "33.6.5" in fg_total_model.MODEL_VERSION
-        assert "33.6.5" in h1_spread_model.MODEL_VERSION
-        assert "33.6.5" in h1_total_model.MODEL_VERSION
+        """All models should report the same runtime version."""
+        from app import __version__ as app_version
+
+        assert fg_spread_model.MODEL_VERSION == app_version
+        assert fg_total_model.MODEL_VERSION == app_version
+        assert h1_spread_model.MODEL_VERSION == app_version
+        assert h1_total_model.MODEL_VERSION == app_version
 
 
 class TestMinEdgeThresholds:

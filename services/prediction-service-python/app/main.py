@@ -741,12 +741,19 @@ def _get_db_engine():
     """Get database engine from environment."""
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
-        # Try to construct from secrets
-        db_password_file = "/run/secrets/db_password"
+        # Build from docker-compose style env + secrets (sport-parameterized).
+        sport = os.getenv("SPORT", "ncaam")
+        db_user = os.getenv("DB_USER", sport)
+        db_name = os.getenv("DB_NAME", sport)
+        db_host = os.getenv("DB_HOST", "postgres")
+        db_port = os.getenv("DB_PORT", "5432")
+
+        db_password_file = os.getenv("DB_PASSWORD_FILE", "/run/secrets/db_password")
         if os.path.exists(db_password_file):
-            with open(db_password_file) as f:
+            with open(db_password_file, encoding="utf-8") as f:
                 db_password = f.read().strip()
-            db_url = f"postgresql+psycopg2://ncaam:{db_password}@postgres:5432/ncaam"
+            if db_password:
+                db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
     if not db_url:
         return None
     return create_engine(db_url)
@@ -876,7 +883,7 @@ async def get_picks_json(request: Request, date_param: str = "today"):
             result = conn.execute(text("""
                 WITH latest_home_ratings AS (
                     SELECT DISTINCT ON (team_id)
-                        team_id, adj_o, adj_d, tempo, efg, efgd, tor, tord, orb, drb,
+                        team_id, adj_o, adj_d, tempo, torvik_rank, efg, efgd, tor, tord, orb, drb,
                         ftr, ftrd, two_pt_pct, two_pt_pct_d, three_pt_pct, three_pt_pct_d,
                         three_pt_rate, three_pt_rate_d, barthag, wab
                     FROM team_ratings
@@ -884,7 +891,7 @@ async def get_picks_json(request: Request, date_param: str = "today"):
                 ),
                 latest_away_ratings AS (
                     SELECT DISTINCT ON (team_id)
-                        team_id, adj_o, adj_d, tempo, efg, efgd, tor, tord, orb, drb,
+                        team_id, adj_o, adj_d, tempo, torvik_rank, efg, efgd, tor, tord, orb, drb,
                         ftr, ftrd, two_pt_pct, two_pt_pct_d, three_pt_pct, three_pt_pct_d,
                         three_pt_rate, three_pt_rate_d, barthag, wab
                     FROM team_ratings
@@ -896,7 +903,7 @@ async def get_picks_json(request: Request, date_param: str = "today"):
                     ht.canonical_name as home_team,
                     at.canonical_name as away_team,
                     hr.adj_o as home_adj_o, hr.adj_d as home_adj_d, hr.tempo as home_tempo,
-                    200 as home_rank,
+                    hr.torvik_rank as home_rank,
                     hr.efg as home_efg, hr.efgd as home_efgd,
                     hr.tor as home_tor, hr.tord as home_tord, hr.orb as home_orb, hr.drb as home_drb,
                     hr.ftr as home_ftr, hr.ftrd as home_ftrd, hr.two_pt_pct as home_2pt,
@@ -904,7 +911,7 @@ async def get_picks_json(request: Request, date_param: str = "today"):
                     hr.three_pt_rate as home_3pr, hr.three_pt_rate_d as home_3prd,
                     hr.barthag as home_barthag, hr.wab as home_wab,
                     ar.adj_o as away_adj_o, ar.adj_d as away_adj_d, ar.tempo as away_tempo,
-                    200 as away_rank,
+                    ar.torvik_rank as away_rank,
                     ar.efg as away_efg, ar.efgd as away_efgd,
                     ar.tor as away_tor, ar.tord as away_tord, ar.orb as away_orb, ar.drb as away_drb,
                     ar.ftr as away_ftr, ar.ftrd as away_ftrd, ar.two_pt_pct as away_2pt,
@@ -983,7 +990,15 @@ async def get_picks_json(request: Request, date_param: str = "today"):
 
                 # Build MarketOdds if available (convert decimals to floats)
                 market_odds = None
-                if row.market_spread is not None or row.market_total is not None:
+                if any(
+                    v is not None
+                    for v in [
+                        row.market_spread,
+                        row.market_total,
+                        row.market_spread_1h,
+                        row.market_total_1h,
+                    ]
+                ):
                     # Freshness + price completeness: do not compute picks on stale/incomplete odds.
                     if row.market_spread is not None:
                         spread_age = _odds_snapshot_age_minutes(now_utc, row.market_spread_time)
