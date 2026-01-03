@@ -170,7 +170,6 @@ az containerapp update `
 |------|---------|
 | `main.bicep` | Azure infrastructure as code |
 | `deploy.ps1` | One-click deployment script |
-| `parameters.prod.json` | Production environment parameters |
 | `README.md` | This documentation |
 
 ## Azure Resources Created

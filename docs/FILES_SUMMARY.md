@@ -83,7 +83,6 @@ docker compose exec prediction-service python /app/run_today.py --teams
 ├── azure/                      # Azure deployment files
 │   ├── deploy.ps1             # Deployment script
 │   ├── main.bicep             # Infrastructure template
-│   └── parameters.prod.json   # Production parameters
 ├── services/
 │   ├── prediction-service-python/  # Python prediction engine
 │   ├── ratings-sync-go/            # Go ratings fetcher

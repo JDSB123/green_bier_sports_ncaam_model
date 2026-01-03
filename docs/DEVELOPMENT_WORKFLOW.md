@@ -30,12 +30,13 @@
 │  │  • Pull Requests → Merge to main             │      │
 │  └──────────────┬───────────────────────────────┘      │
 │                 │                                        │
-│                 │ Azure pulls FROM GitHub main          │
+│                 │ LOCAL deploy (clean checkout of main)  │
+│                 │ builds + pushes images to ACR          │
 │                 ▼                                        │
 │  ┌──────────────────────────────────────────────┐      │
 │  │  AZURE (Production Deployment)               │      │
 │  │  • Runs the application                      │      │
-│  │  • Pulls code FROM GitHub main               │      │
+│  │  • Pulls container images FROM ACR           │      │
 │  │  • Deploys and runs containers               │      │
 │  └──────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────┘
@@ -55,8 +56,8 @@
 ## ✅ What Azure IS
 
 - ✅ **Azure is where your APPLICATION RUNS** (production environment)
-- ✅ **Azure pulls code FROM GitHub main** to deploy
-- ✅ **Azure builds Docker images FROM GitHub main**
+- ✅ **Azure runs container images pulled from ACR**
+- ✅ **A deploy operator builds/pushes images from a clean `main` checkout**
 - ✅ **Azure runs the containers** with your code
 
 ---
@@ -109,21 +110,25 @@ git pull origin main
 
 ### Step 3: Deployment (AZURE)
 
-**Azure pulls FROM GitHub main and deploys:**
+**Deploy from a clean, up-to-date checkout of `main`:**
 
 ```powershell
-# Azure deployment pulls from GitHub main
+# Ensure local is aligned to GitHub main first
+git checkout main
+git pull origin main
+
+# Build/push images to ACR + update Azure Container Apps/Jobs
 cd azure
 .\deploy.ps1 -Environment prod -OddsApiKey "YOUR_KEY"
 
 # This process:
-# 1. Pulls latest code FROM GitHub main
-# 2. Builds Docker image
+# 1. Builds Docker images locally from this repo checkout
 # 3. Pushes image to Azure Container Registry
 # 4. Deploys to Azure Container Apps
 ```
 
-**Key Point:** Azure **pulls FROM GitHub main**, it does NOT pull from your local machine.
+**Key Point:** Azure does **not** pull code from GitHub. It pulls **container images from ACR**.
+To keep deployments consistent, always run `deploy.ps1` from a clean, up-to-date checkout of `main`.
 
 ---
 
@@ -136,7 +141,7 @@ cd azure
 | **Push Code** | **LOCAL** → GitHub feature branch | Share work |
 | **Review/Approve** | **GITHUB** (PR) | Code review |
 | **Merge to Main** | **GITHUB** | Single source of truth |
-| **Deploy to Production** | **AZURE** (from GitHub main) | Run application |
+| **Deploy to Production** | **LOCAL deploy script** → Azure | Build/push to ACR + update Container Apps |
 
 ---
 
@@ -180,7 +185,7 @@ cd azure
    ↓
 4. LOCAL: Pull latest main (git pull origin main)
    ↓
-5. AZURE: Deploy from GitHub main (./deploy.ps1)
+5. LOCAL: Deploy from clean main (./deploy.ps1 → ACR → Azure)
 ```
 
 ---
@@ -194,7 +199,7 @@ cd azure
 - ✅ All development happens **locally**
 - ✅ All code is pushed to **GitHub**
 - ✅ All changes merge to **GitHub main**
-- ✅ Azure deploys **FROM GitHub main**
+- ✅ Azure runs **ACR images built from main**
 
 ### Quick Reference:
 
@@ -211,7 +216,7 @@ git push origin feature/my-change
 # Deployment (AZURE - FROM GitHub)
 cd azure
 .\deploy.ps1 -Environment prod -OddsApiKey "KEY"
-# Azure pulls FROM GitHub main automatically
+# Azure pulls images from ACR (deploy script pushes them)
 ```
 
 ---
@@ -220,8 +225,8 @@ cd azure
 
 1. **Edit code LOCALLY** (in your IDE/editor)
 2. **Push to GITHUB** (feature branch → PR → main)
-3. **Azure pulls FROM GitHub main** (not from local)
-4. **GitHub main = Single source of truth** (all code versions)
+3. **Deploy from a clean main checkout** (`deploy.ps1` builds/pushes to ACR)
+4. **GitHub main = single source of truth** for what should be deployed
 
 ---
 

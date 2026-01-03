@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NCAAM v33.6.5 - Azure Container Apps Deployment
+// NCAAM - Azure Container Apps Deployment (versioned by imageTag)
 // ═══════════════════════════════════════════════════════════════════════════════
 // Deploys:
 // - Azure Container Registry (ACR)
@@ -317,14 +317,6 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
               }
             ] : [],
             [
-              {
-                name: 'MODEL__HOME_COURT_ADVANTAGE_SPREAD'
-                value: '3.2'
-              }
-              {
-                name: 'MODEL__HOME_COURT_ADVANTAGE_TOTAL'
-                value: '0.0'
-              }
               {
                 name: 'TZ'
                 value: 'America/Chicago'
