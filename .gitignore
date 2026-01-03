@@ -131,3 +131,4 @@ ncaam_v33_model_odds_api_key
 
 # Local run helpers (not source-controlled)
 services/prediction-service-python/run_prediction.py
+services/prediction-service-python/training_data/
