@@ -268,7 +268,6 @@ class OddsApiClient:
                 continue
         return out
 
-
     # ═══════════════════════════════════════════════════════════════════════════
     # PREMIUM MARKETS - Additional endpoints from The Odds API
     # ═══════════════════════════════════════════════════════════════════════════
@@ -278,7 +277,14 @@ class OddsApiClient:
         event_id: str,
         bookmakers: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Get alternate spread/total lines for line shopping."""
+        """
+        Get alternate spread and total lines for line shopping.
+        
+        These are all available point spread and total outcomes beyond
+        the featured lines. Useful for finding +EV on alternate numbers.
+        
+        Markets: alternate_spreads, alternate_totals, alternate_spreads_h1, alternate_totals_h1
+        """
         markets = "alternate_spreads,alternate_totals,alternate_spreads_h1,alternate_totals_h1"
         return self.get_event_odds(event_id, markets=markets, bookmakers=bookmakers)
 
@@ -287,22 +293,66 @@ class OddsApiClient:
         event_id: str,
         bookmakers: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Get team totals (over/under on individual team scores)."""
+        """
+        Get team totals (over/under on individual team scores).
+        
+        Markets: team_totals, alternate_team_totals
+        """
         markets = "team_totals,alternate_team_totals"
         return self.get_event_odds(event_id, markets=markets, bookmakers=bookmakers)
 
-    def get_player_props(
+    def get_sharp_vs_square_lines(
+        self,
+        event_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Get lines from both sharp and square books for comparison.
+        
+        Sharp books: pinnacle, circa, bookmaker
+        Square books: draftkings, fanduel, betmgm, caesars
+        
+        Use this for line shopping - bet where you get the best number,
+        but validate against sharp book consensus.
+        """
+        all_books = "pinnacle,circa,bookmaker,draftkings,fanduel,betmgm,caesars,bovada"
+        return self.get_event_odds(
+            event_id,
+            markets="spreads,totals,spreads_h1,totals_h1",
+            bookmakers=all_books,
+        )
+
+    def get_all_game_markets(
         self,
         event_id: str,
         bookmakers: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Get NCAAB player props (points, rebounds, assists, threes, etc.)."""
-        markets = "player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists"
+        """
+        Get all game-level markets for an event (comprehensive pull).
+        
+        Includes featured lines, alternates, team totals, and moneylines.
+        Warning: This is an expensive call that uses more API credits.
+        """
+        markets = (
+            "spreads,totals,h2h,"
+            "spreads_h1,totals_h1,h2h_h1,"
+            "alternate_spreads,alternate_totals,"
+            "alternate_spreads_h1,alternate_totals_h1,"
+            "team_totals"
+        )
         return self.get_event_odds(event_id, markets=markets, bookmakers=bookmakers)
 
     def get_closing_lines_for_event(
         self,
         event_id: str,
     ) -> Dict[str, Any]:
-        """Get current lines for CLV capture from sharp books."""
-        return self.get_event_odds(event_id, markets="spreads,totals,spreads_h1,totals_h1", bookmakers="pinnacle,bovada,circa")
+        """
+        Get current lines for CLV capture (pre-game closing line snapshot).
+        
+        Focuses on primary markets from sharp books (Pinnacle preferred).
+        """
+        markets = "spreads,totals,spreads_h1,totals_h1"
+        return self.get_event_odds(
+            event_id,
+            markets=markets,
+            bookmakers="pinnacle,bovada,circa",
+        )
