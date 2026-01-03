@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class TotalAdjustmentFactors:
-    """Factors from 3,318-game backtest analysis."""
+    """Factors from backtest analysis - IMPROVED based on validation."""
     # Base calibration for middle range (135-145)
     base_calibration: float = 1.5  # Minimal for middle range
 
@@ -55,6 +55,15 @@ class TotalAdjustmentFactors:
     eff_high_threshold: float = 115.0
     eff_low_threshold: float = 100.0
     eff_adj_factor: float = 0.2
+
+    # NEW: Turnover rate adjustment (high TOR = fewer scoring possessions)
+    tor_high_threshold: float = 20.0
+    tor_low_threshold: float = 16.0
+    tor_adj_per_point: float = 0.3
+
+    # NEW: Free throw rate adjustment (high FTR = more points per possession)
+    ftr_high_threshold: float = 36.0
+    ftr_adj_per_point: float = 0.2
 
 
 
@@ -192,6 +201,37 @@ class FGTotalModel(BasePredictor):
             adjustment += eff_adj
             if eff_adj < -0.5:
                 reasons.append(f"low eff {eff_adj:.1f}")
+
+        # 5. Turnover rate adjustment (NEW)
+        # High turnover games = fewer possessions complete, lower scoring
+        home_tor = getattr(home, 'tor', 18.5) or 18.5
+        away_tor = getattr(away, 'tor', 18.5) or 18.5
+        home_tord = getattr(home, 'tord', 18.5) or 18.5
+        away_tord = getattr(away, 'tord', 18.5) or 18.5
+        avg_tor = (home_tor + away_tord + away_tor + home_tord) / 4
+
+        if avg_tor > self.factors.tor_high_threshold:
+            tor_adj = -(avg_tor - self.factors.tor_high_threshold) * self.factors.tor_adj_per_point
+            adjustment += tor_adj
+            if tor_adj < -0.5:
+                reasons.append(f"high TO {tor_adj:.1f}")
+        elif avg_tor < self.factors.tor_low_threshold:
+            tor_adj = (self.factors.tor_low_threshold - avg_tor) * self.factors.tor_adj_per_point
+            adjustment += tor_adj
+            if tor_adj > 0.5:
+                reasons.append(f"clean +{tor_adj:.1f}")
+
+        # 6. Free throw rate adjustment (NEW)
+        # High FTR = more points per possession (and/or foul trouble slowing game)
+        home_ftr = getattr(home, 'ftr', 33.0) or 33.0
+        away_ftr = getattr(away, 'ftr', 33.0) or 33.0
+        avg_ftr = (home_ftr + away_ftr) / 2
+
+        if avg_ftr > self.factors.ftr_high_threshold:
+            ftr_adj = (avg_ftr - self.factors.ftr_high_threshold) * self.factors.ftr_adj_per_point
+            adjustment += ftr_adj
+            if ftr_adj > 0.5:
+                reasons.append(f"FT heavy +{ftr_adj:.1f}")
 
         reasoning = ", ".join(reasons) if reasons else "standard"
         return adjustment, reasoning
