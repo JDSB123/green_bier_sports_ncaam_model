@@ -1,0 +1,1047 @@
+game_id,date,home_team,away_team,home_h1,away_h1,h1_total,home_fg,away_fg,fg_total
+401168156,2019-11-05,Miami Hurricanes,Louisville Cardinals,26,45,71,74,87,161
+401169796,2019-11-06,Florida Gators,North Florida Ospreys,39,22,61,74,59,133
+401166020,2019-11-06,Maryland Terrapins,Holy Cross Crusaders,51,39,90,95,71,166
+401175199,2019-11-06,Gonzaga Bulldogs,Alabama State Hornets,42,30,72,95,64,159
+401169778,2019-11-06,Villanova Wildcats,Army Black Knights,49,26,75,97,54,151
+401168441,2019-11-05,Seton Hall Pirates,Wagner Seahawks,52,37,89,105,71,176
+401169597,2019-11-06,Texas Tech Red Raiders,Eastern Illinois Panthers,46,31,77,85,60,145
+401170001,2019-11-06,Memphis Tigers,South Carolina State Bulldogs,50,32,82,97,64,161
+401170555,2019-11-06,Oregon Ducks,Fresno State Bulldogs,38,27,65,71,57,128
+401169593,2019-11-05,Baylor Bears,Central Arkansas Bears,53,32,85,105,61,166
+401166408,2019-11-06,Utah State Aggies,Montana State Bobcats,37,34,71,81,73,154
+401169787,2019-11-06,Xavier Musketeers,Jacksonville Dolphins,43,22,65,76,57,133
+401175202,2019-11-06,Wisconsin Badgers,Saint Mary's Gaels,24,30,54,63,65,128
+401169797,2019-11-06,Auburn Tigers,Georgia Southern Eagles,41,37,78,83,74,157
+401170102,2019-11-06,VCU Rams,Saint Francis Red Flash,36,22,58,72,58,130
+401168159,2019-11-07,North Carolina Tar Heels,Notre Dame Fighting Irish,30,31,61,76,65,141
+401168161,2019-11-07,Syracuse Orange,Virginia Cavaliers,19,25,44,34,48,82
+401166022,2019-11-07,Ohio State Buckeyes,Cincinnati Bearcats,19,26,45,64,56,120
+401166414,2019-11-07,Arizona Wildcats,Northern Arizona Lumberjacks,44,22,66,91,52,143
+401166023,2019-11-07,Purdue Boilermakers,Green Bay Phoenix,35,22,57,79,57,136
+401177913,2019-11-07,Omaha Mavericks,Midland University Midland,30,21,51,72,53,125
+401175030,2019-11-07,Morehead State Eagles,Spalding Pelicans,41,22,63,92,44,136
+401176777,2019-11-08,Purdue Fort Wayne Mastodons,Manchester Spartans,50,32,82,91,80,171
+401175914,2019-11-08,Marshall Thundering Herd,Robert Morris Colonials,33,27,60,67,60,127
+401174698,2019-11-08,App State Mountaineers,Ferrum Panthers,47,24,71,83,56,139
+401171546,2019-11-08,Hartford Hawks,Winthrop Eagles,28,34,62,57,67,124
+401171520,2019-11-08,Clemson Tigers,Presbyterian Blue Hose,43,21,64,79,45,124
+401170342,2019-11-08,North Florida Ospreys,Florida National Conquistadors,38,35,73,89,81,170
+401166024,2019-11-08,Rutgers Scarlet Knights,Bryant Bulldogs,38,30,68,73,71,144
+401176061,2019-11-08,Samford Bulldogs,Kentucky Wesleyan Panthers,33,21,54,68,42,110
+401177959,2019-11-08,South Dakota State Jackrabbits,Peru State Bobcats,42,28,70,86,58,144
+401177442,2019-11-08,North Dakota State Bison,Mayville St Comets,44,32,76,93,53,146
+401176813,2019-11-08,North Dakota Fighting Hawks,Crown College Polars,48,31,79,86,61,147
+401176395,2019-11-08,Central Arkansas Bears,Hendrix College Warriors,25,11,36,71,51,122
+401174699,2019-11-08,Troy Trojans,UAB Blazers,30,26,56,75,76,151
+401170343,2019-11-08,Drake Bulldogs,Kennesaw State Owls,39,19,58,86,55,141
+401169599,2019-11-08,TCU Horned Frogs,Southwestern (TX) Pirates,43,38,81,83,62,145
+401170559,2019-11-08,Washington State Cougars,Seattle U Redhawks,43,21,64,85,54,139
+401166415,2019-11-08,Air Force Falcons,Idaho State Bengals,31,42,73,79,89,168
+401171629,2019-11-08,UC Davis Aggies,Jessup University Warriors,51,32,83,109,63,172
+401169808,2019-11-09,Kentucky Wildcats,Eastern Kentucky Colonels,46,25,71,91,49,140
+401169601,2019-11-09,Kansas Jayhawks,UNC Greensboro Spartans,36,32,68,74,62,136
+401168162,2019-11-09,Duke Blue Devils,Colorado State Rams,42,26,68,89,55,144
+401168164,2019-11-09,UNC Wilmington Seahawks,North Carolina Tar Heels,29,40,69,62,78,140
+401166417,2019-11-09,Utah State Aggies,Weber State Wildcats,48,13,61,89,34,123
+401169788,2019-11-09,Xavier Musketeers,Siena Saints,42,33,75,81,63,144
+401169810,2019-11-09,LSU Tigers,Bowling Green Falcons,46,36,82,88,79,167
+401170106,2019-11-09,VCU Rams,North Texas Mean Green,31,21,52,59,56,115
+401166028,2019-11-10,Maryland Terrapins,Rhode Island Rams,35,32,67,73,55,128
+401175206,2019-11-10,Gonzaga Bulldogs,Arkansas-Pine Bluff Golden Lions,56,30,86,110,60,170
+401168442,2019-11-09,Seton Hall Pirates,Stony Brook Seawolves,31,33,64,74,57,131
+401169606,2019-11-10,Texas Tech Red Raiders,Bethune-Cookman Wildcats,40,19,59,79,44,123
+401170563,2019-11-10,Oregon Ducks,Boise State Broncos,48,30,78,106,75,181
+401166030,2019-11-10,Purdue Boilermakers,Texas Longhorns,34,31,65,66,70,136
+401166054,2019-11-11,Michigan State Spartans,Binghamton Bearcats,54,23,77,100,47,147
+401168168,2019-11-10,Florida Gators,Florida State Seminoles,21,25,46,51,63,114
+401168171,2019-11-10,Virginia Cavaliers,James Madison Dukes,31,23,54,65,34,99
+401166055,2019-11-10,Ohio State Buckeyes,UMass Lowell River Hawks,38,25,63,76,56,132
+401169934,2019-11-11,Arizona Wildcats,Illinois Fighting Illini,39,38,77,90,69,159
+401171548,2019-11-12,Saint Mary's Gaels,Winthrop Eagles,25,26,51,59,61,120
+401169817,2019-11-13,Kentucky Wildcats,Evansville Purple Aces,30,34,64,64,67,131
+401175210,2019-11-13,Gonzaga Bulldogs,North Dakota Fighting Hawks,55,36,91,97,66,163
+401173654,2019-11-13,Utah State Aggies,Denver Pioneers,53,27,80,97,56,153
+401170570,2019-11-13,Washington Huskies,Mount St. Mary's Mountaineers,21,21,42,56,46,102
+401169789,2019-11-13,Xavier Musketeers,Missouri Tigers,28,21,49,63,58,121
+401169820,2019-11-13,South Alabama Jaguars,Auburn Tigers,30,38,68,69,70,139
+401168179,2019-11-14,Louisville Cardinals,Indiana State Sycamores,47,26,73,91,62,153
+401169613,2019-11-14,Texas Tech Red Raiders,Houston Christian Huskies,54,39,93,103,74,177
+401169823,2019-11-13,VCU Rams,LSU Tigers,50,38,88,84,82,166
+401169825,2019-11-15,Florida Gators,Towson Tigers,30,30,60,66,60,126
+401171610,2019-11-15,Saint Mary's Gaels,Long Beach State Beach,41,31,72,81,63,144
+401170571,2019-11-15,Arizona Wildcats,San José State Spartans,39,17,56,87,39,126
+401169615,2019-11-16,Kansas Jayhawks,Monmouth Hawks,59,21,80,112,57,169
+401168185,2019-11-16,North Carolina Tar Heels,Gardner-Webb Runnin' Bulldogs,30,27,57,77,61,138
+401169828,2019-11-16,Texas A&M Aggies,Gonzaga Bulldogs,19,40,59,49,79,128
+401173658,2019-11-16,Utah State Aggies,North Carolina A&T Aggies,38,23,61,81,54,135
+401169790,2019-11-16,Xavier Musketeers,Missouri State Bears,32,30,62,59,56,115
+401169614,2019-11-16,Baylor Bears,Texas State Bobcats,30,30,60,72,63,135
+401166072,2019-11-16,Maryland Terrapins,Oakland Golden Grizzlies,35,22,57,80,50,130
+401169834,2019-11-16,LSU Tigers,Nicholls Colonels,38,39,77,75,65,140
+401170576,2019-11-17,Colorado Buffaloes,San Diego Toreros,30,27,57,71,53,124
+401168443,2019-11-17,Saint Louis Billikens,Seton Hall Pirates,31,46,77,66,83,149
+401170582,2019-11-18,Oregon Ducks,UT Arlington Mavericks,37,28,65,67,47,114
+401169447,2019-11-17,UConn Huskies,Florida Gators,25,20,45,62,59,121
+401171562,2019-11-18,Saint Mary's Gaels,Cal Poly Mustangs,46,21,67,79,48,127
+401170580,2019-11-17,Arizona Wildcats,New Mexico State Aggies,43,21,64,83,53,136
+401173661,2019-11-19,Utah State Aggies,UTSA Roadrunners,41,29,70,82,50,132
+401170584,2019-11-19,Colorado Buffaloes,UC Irvine Anteaters,40,30,70,69,53,122
+401166079,2019-11-20,Maryland Terrapins,Fairfield Stags,41,27,68,74,55,129
+401170587,2019-11-20,Washington Huskies,Maine Black Bears,36,18,54,72,53,125
+401172743,2019-11-20,Miami (OH) RedHawks,Central State (OH) Marauders,36,20,56,80,45,125
+401168198,2019-11-20,Florida State Seminoles,Chattanooga Mocs,41,29,70,89,53,142
+401176081,2019-11-21,VMI Keydets,Christendom Crusaders,54,13,67,96,20,116
+401175125,2019-11-21,Wright State Raiders,Urbana Blue Knights,38,19,57,88,51,139
+401172587,2019-11-21,Ball State Cardinals,Northern Kentucky Norse,22,21,43,57,59,116
+401172375,2019-11-21,Old Dominion Monarchs,James Madison Dukes,32,37,69,78,80,158
+401172089,2019-11-21,Saint Peter's Peacocks,Wagner Seahawks,25,35,60,77,81,158
+401172082,2019-11-21,Yale Bulldogs,Siena Saints,32,32,64,100,89,189
+401171776,2019-11-21,Drexel Dragons,Bryant Bulldogs,40,30,70,86,74,160
+401170370,2019-11-21,NJIT Highlanders,Binghamton Bearcats,43,35,78,75,77,152
+401170136,2019-11-21,Massachusetts Minutemen,Rider Broncs,45,34,79,82,72,154
+401169845,2019-11-21,Tennessee Volunteers,Alabama State Hornets,34,23,57,76,41,117
+401168459,2019-11-21,St. John's Red Storm,Columbia Lions,49,27,76,82,63,145
+401168203,2019-11-21,Virginia Tech Hokies,Delaware State Hornets,45,27,72,100,64,164
+401168200,2019-11-21,Louisville Cardinals,South Carolina Upstate Spartans,34,28,62,76,50,126
+401168199,2019-11-21,Georgia Bulldogs,Georgia Tech Yellow Jackets,35,27,62,82,78,160
+401166438,2019-11-21,Boston College Eagles,Eastern Washington Eagles,33,31,64,72,68,140
+401166082,2019-11-21,Indiana Hoosiers,Princeton Tigers,35,31,66,79,54,133
+401166081,2019-11-21,Rutgers Scarlet Knights,Stephen F. Austin Lumberjacks,31,26,57,69,57,126
+401176398,2019-11-21,Sam Houston Bearkats,LeTourneau Yellow Jackets,43,41,84,88,58,146
+401170372,2019-11-21,Lipscomb Bisons,Belmont Bruins,33,32,65,67,73,140
+401170371,2019-11-21,Florida Gulf Coast Eagles,Florida Atlantic Owls,16,29,45,72,70,142
+401168202,2019-11-21,Syracuse Orange,Cornell Big Red,26,25,51,72,53,125
+401176040,2019-11-21,UAB Blazers,Mount St. Mary's Mountaineers,27,25,52,58,51,109
+401173621,2019-11-21,Northern Iowa Panthers,Cornell College (IA) Rams,58,29,87,88,66,154
+401173595,2019-11-21,Loyola Chicago Ramblers,IU Indianapolis Jaguars,39,31,70,85,62,147
+401170137,2019-11-21,Saint Louis Billikens,High Point Panthers,30,19,49,67,55,122
+401170042,2019-11-21,Tulsa Golden Hurricane,SE Louisiana Lions,34,34,68,73,66,139
+401170003,2019-11-21,Memphis Tigers,Little Rock Trojans,28,23,51,68,58,126
+401169847,2019-11-21,Vanderbilt Commodores,Austin Peay Governors,38,37,75,90,72,162
+401169846,2019-11-21,Texas A&M Aggies,Troy Trojans,17,25,42,56,52,108
+401169844,2019-11-21,Missouri Tigers,Morehead State Eagles,36,29,65,70,52,122
+401166439,2019-11-21,Northern Arizona Lumberjacks,Benedictine (AZ) Redhawks,52,32,84,93,56,149
+401181602,2019-11-21,Chicago State Cougars,North Park Vikings,40,34,74,79,66,145
+401172586,2019-11-21,Western Illinois Leathernecks,Northern Illinois Huskies,36,41,77,81,86,167
+401168201,2019-11-21,North Carolina Tar Heels,Elon Phoenix,32,33,65,75,61,136
+401166440,2019-11-21,UC Davis Aggies,Sacramento State Hornets,23,29,52,51,61,112
+401173666,2019-11-21,Colorado State Rams,Arkansas State Red Wolves,39,33,72,78,80,158
+401166083,2019-11-21,Illinois Fighting Illini,The Citadel Bulldogs,34,20,54,85,57,142
+401173668,2019-11-21,Boise State Broncos,BYU Cougars,27,20,47,72,68,140
+401173665,2019-11-21,San José State Spartans,Grambling Tigers,35,34,69,83,76,159
+401173664,2019-11-21,UNLV Rebels,Texas State Bobcats,28,28,56,57,64,121
+401170588,2019-11-21,Oregon State Beavers,UC Santa Barbara Gauchos,34,27,61,78,67,145
+401166441,2019-11-21,Portland State Vikings,Portland Pilots,33,33,66,75,82,157
+401173667,2019-11-21,Fresno State Bulldogs,Saint Mary's Gaels,27,33,60,58,68,126
+401173663,2019-11-21,San Diego Toreros,San Diego State Aztecs,26,34,60,49,66,115
+401170589,2019-11-22,Arizona Wildcats,South Dakota State Jackrabbits,29,32,61,71,64,135
+401166087,2019-11-23,Maryland Terrapins,George Mason Patriots,43,31,74,86,63,149
+401166091,2019-11-23,Ohio State Buckeyes,Purdue Fort Wayne Mastodons,42,25,67,85,46,131
+401169449,2019-11-23,Oregon Ducks,Houston Cougars,32,27,59,78,66,144
+401166443,2019-11-23,Washington Huskies,Montana Grizzlies,31,29,60,73,56,129
+401175215,2019-11-24,Gonzaga Bulldogs,Cal State Bakersfield Roadrunners,39,21,60,77,49,126
+401168444,2019-11-23,Seton Hall Pirates,Florida A&M Rattlers,36,24,60,87,51,138
+401169854,2019-11-23,Memphis Tigers,Ole Miss Rebels,45,38,83,87,86,173
+401170144,2019-11-24,VCU Rams,Florida Gulf Coast Eagles,43,16,59,78,48,126
+401170595,2019-11-25,Washington Huskies,San Diego Toreros,41,30,71,88,69,157
+401170148,2019-11-26,VCU Rams,Alabama State Hornets,46,28,74,78,62,140
+401168219,2019-11-27,Duke Blue Devils,Stephen F. Austin Lumberjacks,45,40,85,83,85,168
+401168224,2019-11-27,Virginia Cavaliers,Maine Black Bears,24,14,38,46,26,72
+401169453,2019-11-28,Temple Owls,Maryland Terrapins,34,29,63,69,76,145
+401171832,2019-11-28,Elon Phoenix,UT Arlington Mavericks,30,32,62,67,77,144
+401183482,2019-11-28,Michigan Wolverines,North Carolina Tar Heels,39,34,73,73,64,137
+401169862,2019-11-28,Harvard Crimson,Texas A&M Aggies,22,18,40,62,51,113
+401170517,2019-11-28,Cal Poly Mustangs,Tennessee State Tigers,31,44,75,72,82,154
+401168428,2019-11-28,Long Beach State Beach,Providence Friars,28,37,65,66,65,131
+401183481,2019-11-28,Gonzaga Bulldogs,Oregon Ducks,43,37,80,73,72,145
+401170602,2019-11-28,Fairfield Stags,USC Trojans,22,25,47,47,54,101
+401168618,2019-11-28,Memphis Tigers,NC State Wolfpack,55,39,94,83,78,161
+401170516,2019-11-28,North Florida Ospreys,Long Island University Sharks,40,46,86,95,92,187
+401168225,2019-11-28,Charleston Cougars,Wake Forest Demon Deacons,26,28,54,56,65,121
+401168407,2019-11-28,Marquette Golden Eagles,Davidson Wildcats,25,26,51,73,63,136
+401183480,2019-11-28,Iowa State Cyclones,Alabama Crimson Tide,51,36,87,104,89,193
+401169635,2019-11-29,Texas Tech Red Raiders,Iowa Hawkeyes,26,36,62,61,72,133
+401169452,2019-11-29,Pennsylvania Quakers,UCF Knights,31,30,61,68,67,135
+401183479,2019-11-29,Southern Miss Golden Eagles,Seton Hall Pirates,31,40,71,56,81,137
+401168318,2019-11-29,Creighton Bluejays,San Diego State Aztecs,25,40,65,52,83,135
+401170601,2019-11-29,Arizona Wildcats,Pepperdine Waves,42,42,84,93,91,184
+401168226,2019-11-30,Duke Blue Devils,Winthrop Eagles,42,35,77,83,70,153
+401168228,2019-11-29,Western Kentucky Hilltoppers,Louisville Cardinals,23,37,60,54,71,125
+401166100,2019-11-30,Ohio State Buckeyes,Morgan State Bears,45,18,63,90,57,147
+401173677,2019-11-30,Saint Mary's Gaels,Utah State Aggies,34,36,70,81,73,154
+401169864,2019-11-30,Florida Gators,Marshall Thundering Herd,25,33,58,73,67,140
+401166462,2019-12-01,Colorado Buffaloes,Sacramento State Hornets,24,16,40,59,45,104
+401169792,2019-11-30,Xavier Musketeers,Lipscomb Bisons,40,26,66,87,62,149
+401169781,2019-12-01,Villanova Wildcats,La Salle Explorers,48,28,76,83,72,155
+401170606,2019-12-03,Washington Huskies,South Dakota Coyotes,32,23,55,75,55,130
+401169455,2019-12-04,Memphis Tigers,Bradley Braves,29,19,48,71,56,127
+401169640,2019-12-04,Baylor Bears,Maryland Eastern Shore Hawks,38,21,59,78,46,124
+401170156,2019-12-04,Dayton Flyers,Houston Christian Huskies,49,42,91,99,68,167
+401168292,2019-12-04,Ole Miss Rebels,Butler Bulldogs,22,31,53,58,67,125
+401175220,2019-12-05,Gonzaga Bulldogs,Texas Southern Tigers,53,30,83,101,62,163
+401170608,2019-12-05,Colorado Buffaloes,Loyola Marymount Lions,30,34,64,76,64,140
+401169873,2019-12-05,Tennessee Volunteers,Florida A&M Rattlers,39,18,57,72,43,115
+401166467,2019-12-05,Washington Huskies,Eastern Washington Eagles,47,35,82,90,80,170
+401169782,2019-12-04,Villanova Wildcats,Pennsylvania Quakers,36,30,66,80,69,149
+401173685,2019-12-05,San José State Spartans,Utah State Aggies,33,36,69,59,71,130
+401169876,2019-12-06,Auburn Tigers,Furman Paladins,31,39,70,81,78,159
+401168505,2019-12-07,Louisville Cardinals,Pittsburgh Panthers,35,21,56,64,46,110
+401166103,2019-12-06,Michigan Wolverines,Iowa Hawkeyes,50,38,88,103,91,194
+401170519,2019-12-07,Virginia Tech Hokies,Duke Blue Devils,41,38,79,63,77,140
+401169646,2019-12-08,Kansas Jayhawks,Colorado Buffaloes,34,22,56,72,58,130
+401166104,2019-12-07,Maryland Terrapins,Illinois Fighting Illini,25,39,64,59,58,117
+401166105,2019-12-07,Ohio State Buckeyes,Penn State Nittany Lions,46,35,81,106,74,180
+401169879,2019-12-07,Kentucky Wildcats,Fairleigh Dickinson Knights,43,23,66,83,52,135
+401169647,2019-12-07,Baylor Bears,Arizona Wildcats,35,24,59,63,58,121
+401170612,2019-12-08,Oregon Ducks,Hawai'i Rainbow Warriors,34,34,68,89,64,153
+401170004,2019-12-07,UAB Blazers,Memphis Tigers,40,26,66,57,65,122
+401169783,2019-12-07,Saint Joseph's Hawks,Villanova Wildcats,25,41,66,66,78,144
+401168293,2019-12-07,Butler Bulldogs,Florida Gators,35,26,61,76,62,138
+401173691,2019-12-07,Utah State Aggies,Fresno State Bulldogs,27,24,51,77,70,147
+401184943,2019-12-08,Virginia Cavaliers,North Carolina Tar Heels,24,18,42,56,47,103
+401170617,2019-12-09,Washington Huskies,Gonzaga Bulldogs,37,41,78,76,83,159
+401166107,2019-12-09,Michigan State Spartans,Rutgers Scarlet Knights,33,28,61,77,65,142
+401168446,2019-12-09,Iowa State Cyclones,Seton Hall Pirates,28,26,54,76,66,142
+401168520,2019-12-08,Florida State Seminoles,Clemson Tigers,27,33,60,72,53,125
+401176182,2019-12-10,Alcorn State Braves,Rust Bearcats,52,43,95,108,62,170
+401170170,2019-12-10,Duquesne Dukes,Columbia Lions,45,21,66,90,54,144
+401177955,2019-12-10,South Dakota Coyotes,Alabama State Hornets,27,23,50,73,59,132
+401166109,2019-12-10,Iowa Hawkeyes,Minnesota Golden Gophers,37,29,66,72,52,124
+401169649,2019-12-11,Kansas Jayhawks,Milwaukee Panthers,52,27,79,95,68,163
+401166110,2019-12-11,Penn State Nittany Lions,Maryland Terrapins,40,30,70,76,69,145
+401168294,2019-12-11,Baylor Bears,Butler Bulldogs,34,24,58,53,52,105
+401170618,2019-12-11,Colorado Buffaloes,Northern Iowa Panthers,32,33,65,76,79,155
+401166111,2019-12-12,Illinois Fighting Illini,Michigan Wolverines,30,28,58,71,62,133
+401170619,2019-12-12,Arizona Wildcats,Omaha Mavericks,43,23,66,99,49,148
+401175131,2019-12-13,Wright State Raiders,Southern Jaguars,44,33,77,85,62,147
+401172940,2019-12-13,Abilene Christian Wildcats,Howard Payne Yellow Jackets,46,27,73,105,36,141
+401169652,2019-12-13,West Virginia Mountaineers,Austin Peay Governors,38,21,59,84,53,137
+401169653,2019-12-13,Iowa State Cyclones,Iowa Hawkeyes,24,39,63,68,84,152
+401173623,2019-12-13,Grand Canyon Lopes,Northern Iowa Panthers,26,43,69,58,82,140
+401166481,2019-12-13,Portland State Vikings,Portland Bible Arrows,54,19,73,101,48,149
+401170622,2019-12-14,Colorado State Rams,Colorado Buffaloes,12,27,39,48,56,104
+401168250,2019-12-14,Louisville Cardinals,Eastern Kentucky Colonels,50,32,82,99,67,166
+401169657,2019-12-14,Kansas Jayhawks,Kansas City Roos,43,24,67,98,57,155
+401166114,2019-12-14,Michigan Wolverines,Oregon Ducks,23,31,54,70,71,141
+401170623,2019-12-15,Arizona Wildcats,Gonzaga Bulldogs,34,35,69,80,84,164
+401168249,2019-12-14,Kentucky Wildcats,Georgia Tech Yellow Jackets,36,30,66,67,53,120
+401169462,2019-12-14,Tennessee Volunteers,Memphis Tigers,24,25,49,47,51,98
+401170176,2019-12-15,Dayton Flyers,Drake Bulldogs,34,22,56,78,47,125
+401171734,2019-12-14,Oakland Golden Grizzlies,Michigan State Spartans,19,34,53,49,72,121
+401168295,2019-12-14,Butler Bulldogs,Southern Jaguars,34,16,50,66,41,107
+401166118,2019-12-15,Minnesota Golden Gophers,Ohio State Buckeyes,38,29,67,84,71,155
+401168255,2019-12-15,North Carolina Tar Heels,Wofford Terriers,36,32,68,64,68,132
+401169659,2019-12-17,Texas Tech Red Raiders,Southern Miss Golden Eagles,25,32,57,71,65,136
+401166121,2019-12-18,Ohio State Buckeyes,Southeast Missouri State Redhawks,35,26,61,80,48,128
+401170181,2019-12-18,Dayton Flyers,North Texas Mean Green,34,19,53,71,58,129
+401168258,2019-12-18,Florida State Seminoles,North Florida Ospreys,48,39,87,98,81,179
+401170630,2019-12-18,Washington Huskies,Seattle U Redhawks,32,33,65,81,59,140
+401168261,2019-12-19,Gonzaga Bulldogs,North Carolina Tar Heels,44,37,81,94,81,175
+401168262,2019-12-19,Louisville Cardinals,Miami (OH) RedHawks,28,20,48,70,46,116
+401169891,2019-12-19,Kentucky Wildcats,Utah Utes,31,35,66,66,69,135
+401166495,2019-12-19,Oregon Ducks,Montana Grizzlies,37,24,61,81,48,129
+401168264,2019-12-18,Virginia Cavaliers,Stony Brook Seawolves,28,21,49,56,44,100
+401166122,2019-12-19,Northwestern Wildcats,Michigan State Spartans,27,37,64,72,77,149
+401182455,2019-12-19,San Diego State Aztecs,San Diego Christian Hawks,45,27,72,92,48,140
+401169895,2019-12-19,Cincinnati Bearcats,Tennessee Volunteers,38,34,72,78,66,144
+401168265,2019-12-20,Duke Blue Devils,Wofford Terriers,39,26,65,86,57,143
+401168447,2019-12-20,Seton Hall Pirates,Maryland Terrapins,27,18,45,52,48,100
+401168621,2019-12-20,Auburn Tigers,NC State Wolfpack,38,37,75,79,73,152
+401166123,2019-12-20,Penn State Nittany Lions,Central Connecticut Blue Devils,51,31,82,87,58,145
+401169661,2019-12-21,Villanova Wildcats,Kansas Jayhawks,23,23,46,56,55,111
+401166502,2019-12-21,Gonzaga Bulldogs,Eastern Washington Eagles,64,33,97,112,77,189
+401170635,2019-12-22,Oregon Ducks,Texas Southern Tigers,36,33,69,84,78,162
+401170005,2019-12-21,Memphis Tigers,Jackson State Tigers,39,28,67,77,49,126
+401169900,2019-12-21,Auburn Tigers,Lehigh Mountain Hawks,27,20,47,74,51,125
+401166128,2019-12-21,Michigan Wolverines,Presbyterian Blue Hose,38,15,53,86,44,130
+401166129,2019-12-22,Michigan State Spartans,Eastern Michigan Eagles,41,20,61,101,48,149
+401169898,2019-12-21,Tennessee Volunteers,Jacksonville State Gamecocks,30,26,56,75,53,128
+401169666,2019-12-21,Texas Tech Red Raiders,UT Rio Grande Valley Vaqueros,26,27,53,68,58,126
+401169662,2019-12-21,Youngstown State Penguins,West Virginia Mountaineers,38,35,73,64,75,139
+401168276,2019-12-22,Virginia Cavaliers,South Carolina Gamecocks,24,33,57,59,70,129
+401170200,2019-12-24,Dayton Flyers,Grambling Tigers,40,22,62,81,53,134
+401182620,2019-12-25,Ball State Cardinals,Portland Pilots,19,19,38,61,46,107
+401182621,2019-12-25,UTEP Miners,Boise State Broncos,27,29,56,67,72,139
+401182622,2019-12-25,Hawai'i Rainbow Warriors,Georgia Tech Yellow Jackets,32,29,61,53,70,123
+401182623,2019-12-26,Washington Huskies,Houston Cougars,36,31,67,71,75,146
+401175693,2019-12-28,Mount St. Mary's Mountaineers,Coppin State Eagles,37,27,64,79,55,134
+401170937,2019-12-28,Loyola Maryland Greyhounds,UMass Lowell River Hawks,46,43,89,93,81,174
+401168280,2019-12-28,Kentucky Wildcats,Louisville Cardinals,32,24,56,78,70,148
+401168277,2019-12-28,Duke Blue Devils,Brown Bears,35,29,64,75,50,125
+401169467,2019-12-28,Memphis Tigers,New Orleans Privateers,51,24,75,97,55,152
+401168296,2019-12-28,Butler Bulldogs,UL Monroe Warhawks,33,14,47,67,36,103
+401171566,2019-12-29,San Diego State Aztecs,Cal Poly Mustangs,31,23,54,73,57,130
+401168278,2019-12-28,Florida State Seminoles,North Alabama Lions,47,26,73,88,71,159
+401166136,2019-12-29,Ohio State Buckeyes,West Virginia Mountaineers,37,31,68,59,67,126
+401169669,2019-12-29,Stanford Cardinal,Kansas Jayhawks,18,28,46,56,72,128
+401170642,2019-12-29,Oregon Ducks,Alabama State Hornets,48,24,72,98,59,157
+401169913,2019-12-29,Auburn Tigers,Lipscomb Bisons,40,25,65,86,59,145
+401166133,2019-12-29,Michigan Wolverines,UMass Lowell River Hawks,42,25,67,86,60,146
+401166140,2019-12-29,Maryland Terrapins,Bryant Bulldogs,36,31,67,84,70,154
+401166142,2019-12-30,Michigan State Spartans,Western Michigan Broncos,48,24,72,95,62,157
+401168283,2019-12-29,Virginia Cavaliers,Navy Midshipmen,37,29,66,65,56,121
+401166139,2019-12-29,Penn State Nittany Lions,Cornell Big Red,45,29,74,90,59,149
+401169672,2019-12-29,Texas Tech Red Raiders,Cal State Bakersfield Roadrunners,33,29,62,73,58,131
+401166134,2019-12-29,Iowa Hawkeyes,Kennesaw State Owls,49,30,79,93,51,144
+401172493,2019-12-31,Gonzaga Bulldogs,Detroit Mercy Titans,53,37,90,93,72,165
+401169675,2019-12-30,Baylor Bears,Jackson State Tigers,48,24,72,83,57,140
+401169511,2019-12-31,Memphis Tigers,Tulane Green Wave,40,30,70,84,73,157
+401169785,2019-12-30,Villanova Wildcats,Xavier Musketeers,32,25,57,68,62,130
+401170208,2019-12-31,Dayton Flyers,North Florida Ospreys,42,28,70,77,59,136
+401168354,2019-12-31,Duke Blue Devils,Boston College Eagles,45,19,64,88,49,137
+401168297,2020-01-01,St. John's Red Storm,Butler Bulldogs,16,37,53,58,60,118
+401168521,2019-12-31,Florida State Seminoles,Georgia Tech Yellow Jackets,31,29,60,70,58,128
+401173716,2020-01-01,San Diego State Aztecs,Fresno State Bulldogs,25,17,42,61,52,113
+401169513,2020-01-01,Wichita State Shockers,East Carolina Pirates,37,30,67,75,69,144
+401175232,2020-01-03,Portland Pilots,Gonzaga Bulldogs,42,35,77,72,85,157
+401170644,2020-01-03,Colorado Buffaloes,Oregon Ducks,28,22,50,74,65,139
+401166145,2020-01-03,Michigan State Spartans,Illinois Fighting Illini,36,30,66,76,56,132
+401170214,2020-01-03,La Salle Explorers,Dayton Flyers,24,46,70,58,84,142
+401166148,2020-01-04,Ohio State Buckeyes,Wisconsin Badgers,25,29,54,57,61,118
+401175236,2020-01-05,Gonzaga Bulldogs,Pepperdine Waves,37,37,74,75,70,145
+401168355,2020-01-05,Miami Hurricanes,Duke Blue Devils,36,50,86,62,95,157
+401169679,2020-01-04,Kansas Jayhawks,West Virginia Mountaineers,24,30,54,60,53,113
+401170650,2020-01-04,Utah Utes,Oregon Ducks,31,36,67,64,69,133
+401169681,2020-01-05,Baylor Bears,Texas Longhorns,36,23,59,59,44,103
+401168506,2020-01-04,Louisville Cardinals,Florida State Seminoles,32,39,71,65,78,143
+401166273,2020-01-04,Mississippi State Bulldogs,Auburn Tigers,24,29,53,68,80,148
+401169468,2020-01-04,Memphis Tigers,Georgia Bulldogs,37,37,74,62,65,127
+401168413,2020-01-04,Marquette Golden Eagles,Villanova Wildcats,46,29,75,71,60,131
+401168298,2020-01-04,Butler Bulldogs,Creighton Bluejays,34,24,58,71,57,128
+401173725,2020-01-05,Utah State Aggies,San Diego State Aztecs,27,34,61,68,77,145
+401166149,2020-01-04,Maryland Terrapins,Indiana Hoosiers,28,20,48,75,59,134
+401166272,2020-01-04,Kentucky Wildcats,Missouri Tigers,31,26,57,71,59,130
+401168473,2020-01-04,Virginia Cavaliers,Virginia Tech Hokies,30,17,47,65,39,104
+401166150,2020-01-04,Penn State Nittany Lions,Iowa Hawkeyes,39,38,77,89,86,175
+401169678,2020-01-04,Texas Tech Red Raiders,Oklahoma State Cowboys,36,30,66,85,50,135
+401169469,2020-01-04,Wichita State Shockers,Ole Miss Rebels,39,24,63,74,54,128
+401170649,2020-01-05,Arizona Wildcats,Arizona State Sun Devils,36,17,53,75,47,122
+401166151,2020-01-05,Michigan State Spartans,Michigan Wolverines,44,34,78,87,69,156
+401170220,2020-01-05,Saint Joseph's Hawks,Dayton Flyers,33,33,66,67,80,147
+401169683,2020-01-07,Oklahoma State Cowboys,West Virginia Mountaineers,19,28,47,41,55,96
+401169685,2020-01-08,Texas Tech Red Raiders,Baylor Bears,18,21,39,52,57,109
+401166154,2020-01-08,Maryland Terrapins,Ohio State Buckeyes,28,22,50,67,55,122
+401168507,2020-01-08,Louisville Cardinals,Miami Hurricanes,43,32,75,74,58,132
+401166278,2020-01-08,Georgia Bulldogs,Kentucky Wildcats,37,31,68,69,78,147
+401168325,2020-01-08,Creighton Bluejays,Villanova Wildcats,33,25,58,59,64,123
+401168474,2020-01-08,Boston College Eagles,Virginia Cavaliers,30,26,56,60,53,113
+401166156,2020-01-08,Rutgers Scarlet Knights,Penn State Nittany Lions,28,33,61,72,61,133
+401168356,2020-01-09,Georgia Tech Yellow Jackets,Duke Blue Devils,29,40,69,64,73,137
+401169686,2020-01-09,Iowa State Cyclones,Kansas Jayhawks,26,46,72,53,79,132
+401166282,2020-01-09,Auburn Tigers,Vanderbilt Commodores,42,38,80,83,79,162
+401173729,2020-01-09,Wyoming Cowboys,San Diego State Aztecs,21,32,53,52,72,124
+401168522,2020-01-09,Wake Forest Demon Deacons,Florida State Seminoles,34,41,75,68,78,146
+401175240,2020-01-10,San Diego Toreros,Gonzaga Bulldogs,16,53,69,50,94,144
+401166160,2020-01-10,Michigan State Spartans,Minnesota Golden Gophers,36,32,68,74,58,132
+401170655,2020-01-10,Oregon Ducks,Arizona Wildcats,34,36,70,74,73,147
+401166159,2020-01-10,Michigan Wolverines,Purdue Boilermakers,32,28,60,84,78,162
+401169525,2020-01-10,Wichita State Shockers,Memphis Tigers,37,31,68,76,67,143
+401168299,2020-01-11,Providence Friars,Butler Bulldogs,18,30,48,58,70,128
+401166161,2020-01-11,Iowa Hawkeyes,Maryland Terrapins,38,24,62,67,49,116
+401175242,2020-01-11,Loyola Marymount Lions,Gonzaga Bulldogs,22,38,60,62,87,149
+401168357,2020-01-12,Duke Blue Devils,Wake Forest Demon Deacons,49,23,72,90,59,149
+401169688,2020-01-11,Kansas Jayhawks,Baylor Bears,24,37,61,55,67,122
+401166287,2020-01-11,Auburn Tigers,Georgia Bulldogs,35,24,59,82,60,142
+401173731,2020-01-12,San Diego State Aztecs,Boise State Broncos,48,25,73,83,65,148
+401170659,2020-01-12,Oregon Ducks,Arizona State Sun Devils,40,31,71,78,69,147
+401166163,2020-01-11,Indiana Hoosiers,Ohio State Buckeyes,31,34,65,66,54,120
+401168508,2020-01-11,Notre Dame Fighting Irish,Louisville Cardinals,24,36,60,64,67,131
+401166283,2020-01-11,Kentucky Wildcats,Alabama Crimson Tide,45,35,80,76,67,143
+401170229,2020-01-11,Dayton Flyers,Massachusetts Minutemen,48,22,70,88,60,148
+401168396,2020-01-11,Villanova Wildcats,Georgetown Hoyas,39,36,75,80,66,146
+401169690,2020-01-11,West Virginia Mountaineers,Texas Tech Red Raiders,37,31,68,66,54,120
+401168475,2020-01-11,Virginia Cavaliers,Syracuse Orange,20,24,44,55,63,118
+401166165,2020-01-11,Penn State Nittany Lions,Wisconsin Badgers,22,31,53,49,58,107
+401166167,2020-01-12,Purdue Boilermakers,Michigan State Spartans,37,20,57,71,42,113
+401166166,2020-01-12,Minnesota Golden Gophers,Michigan Wolverines,30,31,61,75,67,142
+401169531,2020-01-12,South Florida Bulls,Memphis Tigers,37,29,66,64,68,132
+401169530,2020-01-12,UConn Huskies,Wichita State Shockers,30,35,65,86,89,175
+401170663,2020-01-13,Oregon State Beavers,Arizona Wildcats,31,31,62,82,65,147
+401170662,2020-01-12,Colorado Buffaloes,Utah Utes,44,22,66,91,52,143
+401176242,2020-01-13,Southern Jaguars,Jackson State Tigers,31,25,56,56,50,106
+401200594,2020-01-13,Cornell Big Red,Elmira Soaring Eagles,43,20,63,70,33,103
+401172858,2020-01-14,Loyola Maryland Greyhounds,Boston University Terriers,17,42,59,53,85,138
+401175773,2020-01-14,Maryland Eastern Shore Hawks,North Carolina Central Eagles,25,28,53,64,69,133
+401175759,2020-01-14,Howard Bison,South Carolina State Bulldogs,43,40,83,95,101,196
+401175715,2020-01-14,Delaware State Hornets,North Carolina A&T Aggies,46,50,96,77,98,175
+401175679,2020-01-14,Bethune-Cookman Wildcats,Morgan State Bears,45,32,77,85,78,163
+401175696,2020-01-14,Florida A&M Rattlers,Coppin State Eagles,27,13,40,65,54,119
+401181598,2020-01-14,Alabama State Hornets,Arkansas-Pine Bluff Golden Lions,27,28,55,56,61,117
+401176187,2020-01-14,Alcorn State Braves,Grambling Tigers,39,31,70,87,69,156
+401176145,2020-01-14,Alabama A&M Bulldogs,Mississippi Valley State Delta Devils,28,42,70,66,72,138
+401166534,2020-01-14,Montana Grizzlies,Portland State Vikings,46,42,88,85,70,155
+401168358,2020-01-15,Clemson Tigers,Duke Blue Devils,40,33,73,79,72,151
+401169693,2020-01-15,Oklahoma Sooners,Kansas Jayhawks,27,28,55,52,66,118
+401173737,2020-01-15,Fresno State Bulldogs,San Diego State Aztecs,21,26,47,55,64,119
+401168509,2020-01-15,Pittsburgh Panthers,Louisville Cardinals,31,28,59,68,73,141
+401169694,2020-01-15,West Virginia Mountaineers,TCU Horned Frogs,37,23,60,81,49,130
+401170237,2020-01-15,Dayton Flyers,VCU Rams,38,33,71,79,65,144
+401168352,2020-01-15,Villanova Wildcats,DePaul Blue Demons,30,28,58,79,75,154
+401166170,2020-01-15,Wisconsin Badgers,Maryland Terrapins,30,25,55,56,54,110
+401166169,2020-01-14,Ohio State Buckeyes,Nebraska Cornhuskers,38,25,63,80,68,148
+401169695,2020-01-15,Kansas State Wildcats,Texas Tech Red Raiders,30,37,67,63,77,140
+401169697,2020-01-16,Baylor Bears,Iowa State Cyclones,30,25,55,68,55,123
+401166296,2020-01-16,Alabama Crimson Tide,Auburn Tigers,36,27,63,83,64,147
+401168300,2020-01-15,Butler Bulldogs,Seton Hall Pirates,40,30,70,70,78,148
+401168476,2020-01-16,Florida State Seminoles,Virginia Cavaliers,31,24,55,54,50,104
+401166293,2020-01-15,South Carolina Gamecocks,Kentucky Wildcats,25,33,58,81,78,159
+401169535,2020-01-16,Temple Owls,Wichita State Shockers,26,32,58,65,53,118
+401168327,2020-01-16,Georgetown Hoyas,Creighton Bluejays,36,37,73,83,80,163
+401175246,2020-01-17,Gonzaga Bulldogs,Santa Clara Broncos,58,22,80,104,54,158
+401170669,2020-01-17,Washington State Cougars,Oregon Ducks,34,37,71,72,61,133
+401170666,2020-01-17,Arizona State Sun Devils,Colorado Buffaloes,28,28,56,61,68,129
+401169536,2020-01-17,Memphis Tigers,Cincinnati Bearcats,31,20,51,60,49,109
+401170242,2020-01-18,Saint Louis Billikens,Dayton Flyers,33,25,58,76,78,154
+401166174,2020-01-18,Michigan State Spartans,Wisconsin Badgers,35,20,55,67,55,122
+401166173,2020-01-18,Iowa Hawkeyes,Michigan Wolverines,47,43,90,90,83,173
+401175179,2020-01-19,Gonzaga Bulldogs,BYU Cougars,38,31,69,92,69,161
+401169698,2020-01-18,Oklahoma State Cowboys,Baylor Bears,36,27,63,68,75,143
+401168359,2020-01-18,Duke Blue Devils,Louisville Cardinals,32,42,74,73,79,152
+401166298,2020-01-18,Florida Gators,Auburn Tigers,28,23,51,69,47,116
+401168301,2020-01-18,DePaul Blue Demons,Butler Bulldogs,44,34,78,79,66,145
+401169699,2020-01-18,Texas Longhorns,Kansas Jayhawks,31,26,57,57,66,123
+401173744,2020-01-19,San Diego State Aztecs,Nevada Wolf Pack,33,35,68,68,55,123
+401170673,2020-01-18,Washington Huskies,Oregon Ducks,37,25,62,61,64,125
+401168523,2020-01-18,Miami Hurricanes,Florida State Seminoles,30,31,61,79,83,162
+401166300,2020-01-18,Arkansas Razorbacks,Kentucky Wildcats,27,36,63,66,73,139
+401169700,2020-01-18,Kansas State Wildcats,West Virginia Mountaineers,42,25,67,84,68,152
+401169470,2020-01-18,Villanova Wildcats,UConn Huskies,27,21,48,61,55,116
+401169537,2020-01-18,Wichita State Shockers,Houston Cougars,25,35,60,54,65,119
+401166176,2020-01-18,Maryland Terrapins,Purdue Boilermakers,36,20,56,57,50,107
+401168450,2020-01-18,St. John's Red Storm,Seton Hall Pirates,43,30,73,79,82,161
+401170670,2020-01-18,Arizona Wildcats,Colorado Buffaloes,34,23,57,75,54,129
+401166178,2020-01-18,Penn State Nittany Lions,Ohio State Buckeyes,42,27,69,90,76,166
+401169701,2020-01-18,Texas Tech Red Raiders,Iowa State Cyclones,27,21,48,72,52,124
+401166175,2020-01-18,Illinois Fighting Illini,Northwestern Wildcats,38,34,72,75,71,146
+401168328,2020-01-18,Creighton Bluejays,Providence Friars,41,37,78,78,74,152
+401170247,2020-01-19,Fordham Rams,Davidson Wildcats,41,37,78,62,74,136
+401172056,2020-01-19,Niagara Purple Eagles,Siena Saints,30,36,66,72,71,143
+401166179,2020-01-19,Rutgers Scarlet Knights,Minnesota Golden Gophers,34,25,59,64,56,120
+401175932,2020-01-19,Chicago State Cougars,Cal State Bakersfield Roadrunners,30,38,68,54,72,126
+401174976,2020-01-19,North Dakota State Bison,North Dakota Fighting Hawks,41,34,75,83,74,157
+401171985,2020-01-19,Marist Red Foxes,Iona Gaels,43,32,75,83,73,156
+401171940,2020-01-19,Canisius Golden Griffins,Rider Broncs,52,42,94,95,86,181
+401170846,2020-01-19,Maine Black Bears,Binghamton Bearcats,46,33,79,86,63,149
+401173565,2020-01-19,Illinois State Redbirds,Loyola Chicago Ramblers,24,28,52,50,62,112
+401173534,2020-01-19,Southern Illinois Salukis,Drake Bulldogs,31,23,54,66,49,115
+401174978,2020-01-19,South Dakota Coyotes,South Dakota State Jackrabbits,52,38,90,99,84,183
+401206833,2020-01-19,Kansas City Roos,Grand Canyon Lopes,32,36,68,66,69,135
+401169541,2020-01-19,Cincinnati Bearcats,East Carolina Pirates,45,28,73,82,57,139
+401168577,2020-01-19,Wake Forest Demon Deacons,Boston College Eagles,36,29,65,80,62,142
+401170675,2020-01-20,UCLA Bruins,California Golden Bears,22,21,43,50,40,90
+401169704,2020-01-21,Baylor Bears,Oklahoma Sooners,35,24,59,61,57,118
+401169703,2020-01-21,West Virginia Mountaineers,Texas Longhorns,45,20,65,97,59,156
+401169705,2020-01-22,Kansas Jayhawks,Kansas State Wildcats,39,23,62,81,60,141
+401173746,2020-01-22,San Diego State Aztecs,Wyoming Cowboys,32,19,51,72,55,127
+401168360,2020-01-22,Duke Blue Devils,Miami Hurricanes,48,24,72,89,59,148
+401168302,2020-01-22,Villanova Wildcats,Butler Bulldogs,36,26,62,76,61,137
+401166305,2020-01-22,Kentucky Wildcats,Georgia Bulldogs,41,35,76,89,79,168
+401166180,2020-01-22,Northwestern Wildcats,Maryland Terrapins,40,26,66,66,77,143
+401169706,2020-01-22,TCU Horned Frogs,Texas Tech Red Raiders,27,31,58,65,54,119
+401166181,2020-01-22,Purdue Boilermakers,Illinois Fighting Illini,30,29,59,62,79,141
+401168510,2020-01-23,Louisville Cardinals,Georgia Tech Yellow Jackets,32,38,70,68,64,132
+401170250,2020-01-23,Dayton Flyers,St. Bonaventure Bonnies,47,29,76,86,60,146
+401168434,2020-01-23,Seton Hall Pirates,Providence Friars,36,32,68,73,64,137
+401166308,2020-01-23,Auburn Tigers,South Carolina Gamecocks,39,31,70,80,67,147
+401166183,2020-01-23,Iowa Hawkeyes,Rutgers Scarlet Knights,38,43,81,85,80,165
+401169545,2020-01-23,Tulsa Golden Hurricane,Memphis Tigers,40,17,57,80,40,120
+401166185,2020-01-24,Indiana Hoosiers,Michigan State Spartans,37,30,67,67,63,130
+401170677,2020-01-24,Oregon Ducks,USC Trojans,32,30,62,79,70,149
+401170676,2020-01-24,Colorado Buffaloes,Washington State Cougars,38,33,71,78,56,134
+401169546,2020-01-24,Houston Cougars,UConn Huskies,25,30,55,63,59,122
+401168303,2020-01-25,Butler Bulldogs,Marquette Golden Eagles,35,39,74,89,85,174
+401175256,2020-01-26,Gonzaga Bulldogs,Pacific Tigers,48,33,81,92,59,151
+401168524,2020-01-26,Florida State Seminoles,Notre Dame Fighting Irish,47,37,84,85,84,169
+401168511,2020-01-25,Louisville Cardinals,Clemson Tigers,47,26,73,80,62,142
+401170257,2020-01-25,Richmond Spiders,Dayton Flyers,32,40,72,79,87,166
+401168435,2020-01-25,Providence Friars,Villanova Wildcats,30,37,67,60,64,124
+401169548,2020-01-25,Memphis Tigers,SMU Mustangs,41,32,73,70,74,144
+401166188,2020-01-25,Michigan Wolverines,Illinois Fighting Illini,30,34,64,62,64,126
+401170680,2020-01-26,Arizona State Sun Devils,Arizona Wildcats,30,43,73,66,65,131
+401170681,2020-01-26,Colorado Buffaloes,Washington Huskies,51,33,84,76,62,138
+401166189,2020-01-25,Rutgers Scarlet Knights,Nebraska Cornhuskers,38,33,71,75,72,147
+401173755,2020-01-26,UNLV Rebels,San Diego State Aztecs,28,34,62,67,71,138
+401166191,2020-01-26,Minnesota Golden Gophers,Michigan State Spartans,22,30,52,52,70,122
+401170685,2020-01-26,Oregon Ducks,UCLA Bruins,48,26,74,96,75,171
+401166190,2020-01-26,Indiana Hoosiers,Maryland Terrapins,36,45,81,76,77,153
+401169551,2020-01-26,Houston Cougars,South Florida Bulls,31,23,54,68,49,117
+401169718,2020-01-28,Oklahoma State Cowboys,Kansas Jayhawks,24,29,53,50,65,115
+401166193,2020-01-28,Iowa Hawkeyes,Wisconsin Badgers,30,30,60,68,62,130
+401168480,2020-01-29,Virginia Cavaliers,Florida State Seminoles,27,28,55,61,56,117
+401168468,2020-01-28,St. John's Red Storm,Villanova Wildcats,26,39,65,59,79,138
+401168361,2020-01-29,Duke Blue Devils,Pittsburgh Panthers,45,34,79,79,67,146
+401168304,2020-01-29,Georgetown Hoyas,Butler Bulldogs,43,32,75,64,69,133
+401166314,2020-01-29,Ole Miss Rebels,Auburn Tigers,37,20,57,82,83,165
+401166195,2020-01-29,Rutgers Scarlet Knights,Purdue Boilermakers,39,27,66,70,63,133
+401169720,2020-01-30,Iowa State Cyclones,Baylor Bears,26,33,59,53,67,120
+401173759,2020-01-30,New Mexico Lobos,San Diego State Aztecs,25,48,73,57,85,142
+401168512,2020-01-30,Boston College Eagles,Louisville Cardinals,43,45,88,69,86,155
+401170264,2020-01-30,Duquesne Dukes,Dayton Flyers,30,38,68,69,73,142
+401168374,2020-01-29,Seton Hall Pirates,DePaul Blue Demons,28,29,57,64,57,121
+401169722,2020-01-30,Texas Tech Red Raiders,West Virginia Mountaineers,42,38,80,89,81,170
+401166315,2020-01-29,Kentucky Wildcats,Vanderbilt Commodores,28,35,63,71,62,133
+401166196,2020-01-29,Michigan State Spartans,Northwestern Wildcats,33,22,55,79,50,129
+401169555,2020-01-30,East Carolina Pirates,Houston Cougars,21,33,54,59,69,128
+401166316,2020-01-30,LSU Tigers,Alabama Crimson Tide,51,33,84,90,76,166
+401166197,2020-01-30,Penn State Nittany Lions,Indiana Hoosiers,28,28,56,64,49,113
+401175260,2020-01-31,Santa Clara Broncos,Gonzaga Bulldogs,36,40,76,72,87,159
+401170687,2020-01-31,California Golden Bears,Oregon Ducks,32,32,64,72,77,149
+401166199,2020-01-31,Maryland Terrapins,Iowa Hawkeyes,36,32,68,82,72,154
+401166198,2020-01-31,Illinois Fighting Illini,Minnesota Golden Gophers,24,20,44,59,51,110
+401170689,2020-01-31,UCLA Bruins,Colorado Buffaloes,39,27,66,72,68,140
+401172335,2020-01-31,Pennsylvania Quakers,Harvard Crimson,35,28,63,75,72,147
+401172669,2020-01-31,Kent State Golden Flashes,Akron Zips,27,33,60,68,67,135
+401172670,2020-02-01,Buffalo Bulls,Bowling Green Falcons,45,34,79,77,78,155
+401172501,2020-02-01,Detroit Mercy Titans,Oakland Golden Grizzlies,25,34,59,64,77,141
+401172322,2020-02-01,Princeton Tigers,Dartmouth Big Green,32,27,59,66,44,110
+401172285,2020-02-01,Yale Bulldogs,Columbia Lions,40,21,61,93,62,155
+401172266,2020-02-01,Brown Bears,Cornell Big Red,41,36,77,74,63,137
+401172027,2020-02-01,Niagara Purple Eagles,Marist Red Foxes,17,33,50,48,67,115
+401172007,2020-02-01,Saint Peter's Peacocks,Manhattan Jaspers,34,18,52,70,53,123
+401171987,2020-02-01,Iona Gaels,Siena Saints,29,45,74,64,87,151
+401171966,2020-02-01,Rider Broncs,Fairfield Stags,26,29,55,68,52,120
+401171943,2020-02-01,Canisius Golden Griffins,Quinnipiac Bobcats,36,35,71,73,90,163
+401170269,2020-02-01,Rhode Island Rams,VCU Rams,49,27,76,87,75,162
+401175144,2020-02-01,Milwaukee Panthers,Wright State Raiders,19,26,45,61,65,126
+401172524,2020-02-01,Green Bay Phoenix,Northern Kentucky Norse,34,32,66,62,71,133
+401169725,2020-02-01,Baylor Bears,TCU Horned Frogs,35,24,59,68,52,120
+401175264,2020-02-01,San Francisco Dons,Gonzaga Bulldogs,43,35,78,79,83,162
+401169726,2020-02-01,Kansas Jayhawks,Texas Tech Red Raiders,44,35,79,78,75,153
+401173765,2020-02-02,San Diego State Aztecs,Utah State Aggies,31,39,70,80,68,148
+401168525,2020-02-01,Virginia Tech Hokies,Florida State Seminoles,29,34,63,63,74,137
+401168513,2020-02-01,NC State Wolfpack,Louisville Cardinals,26,41,67,57,77,134
+401170270,2020-02-01,Dayton Flyers,Fordham Rams,36,17,53,70,56,126
+401168331,2020-02-01,Villanova Wildcats,Creighton Bluejays,23,35,58,61,76,137
+401168362,2020-02-02,Syracuse Orange,Duke Blue Devils,36,40,76,88,97,185
+401168451,2020-02-01,Seton Hall Pirates,Xavier Musketeers,23,35,58,62,74,136
+401170693,2020-02-01,Stanford Cardinal,Oregon Ducks,28,36,64,70,60,130
+401169723,2020-02-01,West Virginia Mountaineers,Kansas State Wildcats,30,27,57,66,57,123
+401166322,2020-02-01,Auburn Tigers,Kentucky Wildcats,34,35,69,75,66,141
+401166204,2020-02-01,Wisconsin Badgers,Michigan State Spartans,43,27,70,64,63,127
+401168305,2020-02-01,Butler Bulldogs,Providence Friars,25,31,56,61,65,126
+401170694,2020-02-02,USC Trojans,Colorado Buffaloes,24,33,57,57,78,135
+401169559,2020-02-01,Cincinnati Bearcats,Houston Cougars,30,40,70,64,62,126
+401166318,2020-02-01,LSU Tigers,Ole Miss Rebels,40,20,60,73,63,136
+401169560,2020-02-01,Tulsa Golden Hurricane,Wichita State Shockers,23,29,52,54,51,105
+401166201,2020-02-02,Nebraska Cornhuskers,Penn State Nittany Lions,33,38,71,64,76,140
+401166200,2020-02-01,Michigan Wolverines,Rutgers Scarlet Knights,37,34,71,69,63,132
+401166205,2020-02-02,Iowa Hawkeyes,Illinois Fighting Illini,30,31,61,72,65,137
+401169728,2020-02-04,Kansas State Wildcats,Baylor Bears,28,33,61,67,73,140
+401169729,2020-02-04,Kansas Jayhawks,Texas Longhorns,31,33,64,69,58,127
+401168498,2020-02-04,Florida State Seminoles,North Carolina Tar Heels,29,28,57,65,59,124
+401168363,2020-02-05,Boston College Eagles,Duke Blue Devils,24,21,45,55,63,118
+401166206,2020-02-05,Maryland Terrapins,Rutgers Scarlet Knights,20,25,45,56,51,107
+401166326,2020-02-05,Arkansas Razorbacks,Auburn Tigers,32,34,66,76,79,155
+401166327,2020-02-05,Kentucky Wildcats,Mississippi State Bulldogs,31,23,54,80,72,152
+401166208,2020-02-05,Michigan State Spartans,Penn State Nittany Lions,37,43,80,70,75,145
+401168514,2020-02-06,Louisville Cardinals,Wake Forest Demon Deacons,34,46,80,86,76,162
+401168306,2020-02-05,Butler Bulldogs,Villanova Wildcats,42,38,80,79,76,155
+401168400,2020-02-06,Georgetown Hoyas,Seton Hall Pirates,32,42,74,71,78,149
+401169731,2020-02-06,West Virginia Mountaineers,Iowa State Cyclones,41,27,68,76,61,137
+401166210,2020-02-06,Purdue Boilermakers,Iowa Hawkeyes,61,36,97,104,68,172
+401166331,2020-02-06,Vanderbilt Commodores,LSU Tigers,52,47,99,99,90,189
+401168332,2020-02-06,Providence Friars,Creighton Bluejays,32,36,68,73,56,129
+401175268,2020-02-07,Gonzaga Bulldogs,Loyola Marymount Lions,38,30,68,85,67,152
+401170698,2020-02-07,Arizona Wildcats,USC Trojans,43,33,76,85,80,165
+401170700,2020-02-07,Colorado Buffaloes,California Golden Bears,28,28,56,71,65,136
+401169567,2020-02-07,Houston Cougars,Tulane Green Wave,39,21,60,75,62,137
+401166211,2020-02-08,Illinois Fighting Illini,Maryland Terrapins,42,40,82,66,75,141
+401169736,2020-02-08,Baylor Bears,Oklahoma State Cowboys,35,26,61,78,70,148
+401175272,2020-02-09,Saint Mary's Gaels,Gonzaga Bulldogs,28,53,81,60,90,150
+401169733,2020-02-08,TCU Horned Frogs,Kansas Jayhawks,18,31,49,46,60,106
+401173772,2020-02-09,Air Force Falcons,San Diego State Aztecs,34,41,75,74,89,163
+401168482,2020-02-08,Louisville Cardinals,Virginia Cavaliers,44,30,74,80,73,153
+401170281,2020-02-08,Dayton Flyers,Saint Louis Billikens,39,31,70,71,65,136
+401168364,2020-02-08,North Carolina Tar Heels,Duke Blue Devils,44,35,79,96,98,194
+401168526,2020-02-08,Florida State Seminoles,Miami Hurricanes,50,47,97,99,81,180
+401168452,2020-02-08,Villanova Wildcats,Seton Hall Pirates,31,27,58,64,70,134
+401166332,2020-02-08,Auburn Tigers,LSU Tigers,30,42,72,91,90,181
+401169734,2020-02-08,Oklahoma Sooners,West Virginia Mountaineers,31,24,55,69,59,128
+401170705,2020-02-09,Oregon State Beavers,Oregon Ducks,28,32,60,63,53,116
+401166333,2020-02-08,Tennessee Volunteers,Kentucky Wildcats,30,37,67,64,77,141
+401166214,2020-02-08,Michigan Wolverines,Michigan State Spartans,29,23,52,77,68,145
+401166213,2020-02-08,Iowa Hawkeyes,Nebraska Cornhuskers,41,30,71,96,72,168
+401168333,2020-02-08,Creighton Bluejays,St. John's Red Storm,47,37,84,94,82,176
+401166215,2020-02-08,Penn State Nittany Lions,Minnesota Golden Gophers,36,22,58,83,77,160
+401170702,2020-02-09,Arizona Wildcats,UCLA Bruins,28,29,57,52,65,117
+401170704,2020-02-08,Colorado Buffaloes,Stanford Cardinal,22,33,55,81,74,155
+401168307,2020-02-09,Marquette Golden Eagles,Butler Bulldogs,34,26,60,76,57,133
+401169572,2020-02-09,Houston Cougars,Wichita State Shockers,38,18,56,76,43,119
+401169739,2020-02-11,Texas Longhorns,Baylor Bears,16,22,38,45,52,97
+401168365,2020-02-11,Duke Blue Devils,Florida State Seminoles,33,32,65,70,65,135
+401169738,2020-02-11,Texas Tech Red Raiders,TCU Horned Frogs,45,20,65,88,42,130
+401173777,2020-02-12,San Diego State Aztecs,New Mexico Lobos,35,33,68,82,59,141
+401170287,2020-02-12,Dayton Flyers,Rhode Island Rams,49,35,84,81,67,148
+401166219,2020-02-12,Maryland Terrapins,Nebraska Cornhuskers,38,25,63,72,70,142
+401166339,2020-02-12,Vanderbilt Commodores,Kentucky Wildcats,36,27,63,64,78,142
+401166220,2020-02-11,Purdue Boilermakers,Penn State Nittany Lions,30,42,72,76,88,164
+401166218,2020-02-12,Illinois Fighting Illini,Michigan State Spartans,20,37,57,69,70,139
+401166342,2020-02-12,LSU Tigers,Missouri Tigers,37,43,80,82,78,160
+401169741,2020-02-13,West Virginia Mountaineers,Kansas Jayhawks,30,24,54,49,58,107
+401168515,2020-02-13,Georgia Tech Yellow Jackets,Louisville Cardinals,31,26,57,64,58,122
+401168334,2020-02-12,Seton Hall Pirates,Creighton Bluejays,39,41,80,82,87,169
+401166344,2020-02-13,Auburn Tigers,Alabama Crimson Tide,44,41,85,95,91,186
+401168419,2020-02-13,Villanova Wildcats,Marquette Golden Eagles,38,29,67,72,71,143
+401168308,2020-02-12,Butler Bulldogs,Xavier Musketeers,32,23,55,66,61,127
+401169577,2020-02-13,South Florida Bulls,Houston Cougars,26,31,57,58,62,120
+401170709,2020-02-14,Oregon Ducks,Colorado Buffaloes,26,35,61,68,60,128
+401166223,2020-02-14,Indiana Hoosiers,Iowa Hawkeyes,49,34,83,89,77,166
+401172692,2020-02-14,Toledo Rockets,Buffalo Bulls,28,52,80,67,83,150
+401174456,2020-02-15,Northern Kentucky Norse,IU Indianapolis Jaguars,42,39,81,84,70,154
+401172690,2020-02-15,Central Michigan Chippewas,Akron Zips,34,37,71,67,80,147
+401172345,2020-02-15,Princeton Tigers,Yale Bulldogs,25,43,68,64,88,152
+401172305,2020-02-15,Harvard Crimson,Cornell Big Red,42,15,57,85,63,148
+401172288,2020-02-15,Dartmouth Big Green,Columbia Lions,34,38,72,65,63,128
+401172270,2020-02-15,Pennsylvania Quakers,Brown Bears,35,29,64,63,75,138
+401172068,2020-02-15,Saint Peter's Peacocks,Quinnipiac Bobcats,38,20,58,84,72,156
+401171990,2020-02-15,Iona Gaels,Manhattan Jaspers,45,22,67,80,57,137
+401171970,2020-02-15,Marist Red Foxes,Fairfield Stags,19,19,38,53,57,110
+401171947,2020-02-15,Canisius Golden Griffins,Monmouth Hawks,36,30,66,71,85,156
+401170291,2020-02-15,St. Bonaventure Bonnies,Davidson Wildcats,28,47,75,64,93,157
+401175005,2020-02-15,North Dakota State Bison,Purdue Fort Wayne Mastodons,43,33,76,80,70,150
+401175004,2020-02-15,South Dakota State Jackrabbits,Denver Pioneers,36,39,75,90,78,168
+401174472,2020-02-15,Wright State Raiders,UIC Flames,39,33,72,75,58,133
+401172078,2020-02-15,Siena Saints,Rider Broncs,39,17,56,73,64,137
+401169746,2020-02-15,Baylor Bears,West Virginia Mountaineers,33,22,55,70,59,129
+401175278,2020-02-16,Pepperdine Waves,Gonzaga Bulldogs,36,40,76,77,89,166
+401169743,2020-02-15,Kansas Jayhawks,Oklahoma Sooners,41,32,73,87,70,157
+401168516,2020-02-15,Clemson Tigers,Louisville Cardinals,31,14,45,77,62,139
+401170293,2020-02-15,Massachusetts Minutemen,Dayton Flyers,26,31,57,63,71,134
+401168366,2020-02-15,Duke Blue Devils,Notre Dame Fighting Irish,42,32,74,94,60,154
+401168527,2020-02-15,Florida State Seminoles,Syracuse Orange,41,33,74,80,77,157
+401166224,2020-02-15,Michigan State Spartans,Maryland Terrapins,31,39,70,60,67,127
+401168438,2020-02-16,Providence Friars,Seton Hall Pirates,41,27,68,74,71,145
+401166350,2020-02-15,Missouri Tigers,Auburn Tigers,45,32,77,85,73,158
+401166347,2020-02-15,Kentucky Wildcats,Ole Miss Rebels,25,27,52,67,62,129
+401166227,2020-02-15,Penn State Nittany Lions,Northwestern Wildcats,42,28,70,77,61,138
+401170714,2020-02-16,Oregon State Beavers,Colorado Buffaloes,22,31,53,47,69,116
+401168309,2020-02-15,Butler Bulldogs,Georgetown Hoyas,31,32,63,66,73,139
+401169473,2020-02-15,SMU Mustangs,Houston Cougars,39,28,67,73,72,145
+401166228,2020-02-15,Rutgers Scarlet Knights,Illinois Fighting Illini,34,32,66,72,57,129
+401168335,2020-02-16,Creighton Bluejays,DePaul Blue Demons,42,28,70,93,64,157
+401169744,2020-02-15,Oklahoma State Cowboys,Texas Tech Red Raiders,27,29,56,73,70,143
+401166349,2020-02-15,Alabama Crimson Tide,LSU Tigers,40,29,69,88,82,170
+401173784,2020-02-16,Boise State Broncos,San Diego State Aztecs,26,40,66,55,72,127
+401169471,2020-02-16,Temple Owls,Villanova Wildcats,30,26,56,56,76,132
+401170719,2020-02-17,Oregon Ducks,Utah Utes,44,30,74,80,62,142
+401166230,2020-02-16,Minnesota Golden Gophers,Iowa Hawkeyes,31,26,57,55,58,113
+401169748,2020-02-18,Kansas Jayhawks,Iowa State Cyclones,50,40,90,91,71,162
+401169750,2020-02-19,Oklahoma Sooners,Baylor Bears,24,30,54,54,65,119
+401170299,2020-02-19,VCU Rams,Dayton Flyers,29,36,65,61,66,127
+401168528,2020-02-19,Florida State Seminoles,Pittsburgh Panthers,38,33,71,82,67,149
+401166232,2020-02-18,Penn State Nittany Lions,Illinois Fighting Illini,26,30,56,56,62,118
+401166356,2020-02-19,LSU Tigers,Kentucky Wildcats,28,29,57,76,79,155
+401168336,2020-02-19,Marquette Golden Eagles,Creighton Bluejays,22,32,54,65,73,138
+401169749,2020-02-19,West Virginia Mountaineers,Oklahoma State Cowboys,28,33,61,65,47,112
+401168367,2020-02-20,NC State Wolfpack,Duke Blue Devils,44,29,73,88,66,154
+401168517,2020-02-20,Louisville Cardinals,Syracuse Orange,41,34,75,90,66,156
+401168378,2020-02-20,DePaul Blue Demons,Villanova Wildcats,26,46,72,71,91,162
+401166357,2020-02-20,Georgia Bulldogs,Auburn Tigers,31,25,56,65,55,120
+401168310,2020-02-19,Seton Hall Pirates,Butler Bulldogs,28,34,62,74,72,146
+401169480,2020-02-20,Houston Cougars,Tulsa Golden Hurricane,26,20,46,76,43,119
+401175281,2020-02-21,Gonzaga Bulldogs,San Francisco Dons,22,31,53,71,54,125
+401170722,2020-02-21,Arizona State Sun Devils,Oregon Ducks,34,23,57,77,72,149
+401170723,2020-02-21,Colorado Buffaloes,USC Trojans,26,29,55,70,66,136
+401166236,2020-02-21,Iowa Hawkeyes,Ohio State Buckeyes,46,35,81,85,76,161
+401175188,2020-02-21,BYU Cougars,Santa Clara Broncos,40,30,70,85,75,160
+401170721,2020-02-21,Arizona Wildcats,Oregon State Beavers,40,30,70,89,63,152
+401176505,2020-02-21,Merrimack Warriors,Sacred Heart Pioneers,26,26,52,64,57,121
+401172702,2020-02-22,Kent State Golden Flashes,Buffalo Bulls,39,33,72,98,104,202
+401172505,2020-02-22,Detroit Mercy Titans,Green Bay Phoenix,36,44,80,67,84,151
+401172346,2020-02-22,Harvard Crimson,Princeton Tigers,30,34,64,61,60,121
+401172325,2020-02-22,Dartmouth Big Green,Pennsylvania Quakers,28,27,55,66,59,125
+401172307,2020-02-22,Cornell Big Red,Yale Bulldogs,37,32,69,80,81,161
+401172272,2020-02-22,Columbia Lions,Brown Bears,35,30,65,66,72,138
+401172029,2020-02-22,Marist Red Foxes,Monmouth Hawks,22,23,45,61,65,126
+401172011,2020-02-22,Manhattan Jaspers,Saint Peter's Peacocks,26,26,52,64,67,131
+401171993,2020-02-22,Iona Gaels,Rider Broncs,34,29,63,70,69,139
+401171972,2020-02-22,Fairfield Stags,Niagara Purple Eagles,23,38,61,61,60,121
+401171948,2020-02-22,Quinnipiac Bobcats,Canisius Golden Griffins,32,39,71,66,64,130
+401176506,2020-02-22,Robert Morris Colonials,Mount St. Mary's Mountaineers,28,33,61,68,60,128
+401176503,2020-02-22,Wagner Seahawks,Central Connecticut Blue Devils,29,35,64,68,56,124
+401176108,2020-02-22,St. Francis Brooklyn Terriers,Bryant Bulldogs,41,46,87,74,82,156
+401176504,2020-02-22,Fairleigh Dickinson Knights,Long Island University Sharks,35,37,72,81,86,167
+401175150,2020-02-22,Oakland Golden Grizzlies,Milwaukee Panthers,34,35,69,75,68,143
+401170304,2020-02-22,Saint Louis Billikens,VCU Rams,41,27,68,80,62,142
+401169753,2020-02-22,Baylor Bears,Kansas Jayhawks,31,34,65,61,64,125
+401175189,2020-02-23,BYU Cougars,Gonzaga Bulldogs,46,38,84,91,78,169
+401173792,2020-02-23,San Diego State Aztecs,UNLV Rebels,25,37,62,63,66,129
+401170308,2020-02-22,Dayton Flyers,Duquesne Dukes,36,38,74,80,70,150
+401168368,2020-02-23,Duke Blue Devils,Virginia Tech Hokies,51,25,76,88,64,152
+401168529,2020-02-22,NC State Wolfpack,Florida State Seminoles,32,27,59,61,67,128
+401166363,2020-02-22,Kentucky Wildcats,Florida Gators,31,31,62,65,59,124
+401168501,2020-02-22,Louisville Cardinals,North Carolina Tar Heels,36,23,59,72,55,127
+401169786,2020-02-22,Xavier Musketeers,Villanova Wildcats,21,30,51,55,64,119
+401166360,2020-02-22,Auburn Tigers,Tennessee Volunteers,33,41,74,73,66,139
+401170726,2020-02-23,Arizona Wildcats,Oregon Ducks,33,36,69,72,73,145
+401169755,2020-02-22,TCU Horned Frogs,West Virginia Mountaineers,29,31,60,67,60,127
+401170728,2020-02-22,Colorado Buffaloes,UCLA Bruins,29,26,55,63,70,133
+401168420,2020-02-22,Providence Friars,Marquette Golden Eagles,43,29,72,84,72,156
+401169484,2020-02-22,Memphis Tigers,Houston Cougars,27,23,50,60,59,119
+401166241,2020-02-23,Ohio State Buckeyes,Maryland Terrapins,40,33,73,79,72,151
+401166239,2020-02-23,Indiana Hoosiers,Penn State Nittany Lions,37,24,61,68,60,128
+401168311,2020-02-23,Creighton Bluejays,Butler Bulldogs,40,21,61,81,59,140
+401168453,2020-02-23,Seton Hall Pirates,St. John's Red Storm,36,22,58,81,65,146
+401169759,2020-02-25,Kansas Jayhawks,Oklahoma State Cowboys,35,25,60,83,58,141
+401168518,2020-02-25,Florida State Seminoles,Louisville Cardinals,32,40,72,82,67,149
+401169758,2020-02-25,Texas Longhorns,West Virginia Mountaineers,34,28,62,67,57,124
+401169761,2020-02-26,Baylor Bears,Kansas State Wildcats,50,24,74,85,66,151
+401170312,2020-02-26,George Mason Patriots,Dayton Flyers,25,30,55,55,62,117
+401173796,2020-02-26,San Diego State Aztecs,Colorado State Rams,34,36,70,66,60,126
+401168369,2020-02-26,Wake Forest Demon Deacons,Duke Blue Devils,39,39,78,113,101,214
+401166368,2020-02-26,Texas A&M Aggies,Kentucky Wildcats,27,36,63,60,69,129
+401166367,2020-02-26,Auburn Tigers,Ole Miss Rebels,31,24,55,67,58,125
+401166244,2020-02-26,Michigan State Spartans,Iowa Hawkeyes,27,33,60,78,70,148
+401169762,2020-02-26,Oklahoma Sooners,Texas Tech Red Raiders,32,22,54,65,51,116
+401166245,2020-02-27,Minnesota Golden Gophers,Maryland Terrapins,47,31,78,73,74,147
+401168470,2020-02-26,Villanova Wildcats,St. John's Red Storm,36,34,70,71,60,131
+401166246,2020-02-27,Penn State Nittany Lions,Rutgers Scarlet Knights,42,24,66,65,64,129
+401175288,2020-02-28,Gonzaga Bulldogs,San Diego Toreros,46,34,80,94,59,153
+401170734,2020-02-28,Oregon Ducks,Oregon State Beavers,29,25,54,69,54,123
+401166247,2020-02-28,Michigan Wolverines,Wisconsin Badgers,33,43,76,74,81,155
+401170733,2020-02-28,California Golden Bears,Colorado Buffaloes,38,26,64,76,62,138
+401166248,2020-02-28,Nebraska Cornhuskers,Ohio State Buckeyes,27,43,70,54,75,129
+401170318,2020-02-29,Dayton Flyers,Davidson Wildcats,42,24,66,82,67,149
+401169764,2020-02-29,Kansas State Wildcats,Kansas Jayhawks,34,35,69,58,62,120
+401169765,2020-02-29,TCU Horned Frogs,Baylor Bears,21,28,49,75,72,147
+401175292,2020-03-01,Gonzaga Bulldogs,Saint Mary's Gaels,34,34,68,86,76,162
+401173804,2020-03-01,Nevada Wolf Pack,San Diego State Aztecs,45,36,81,76,83,159
+401168530,2020-02-29,Clemson Tigers,Florida State Seminoles,32,39,71,70,69,139
+401168370,2020-02-29,Virginia Cavaliers,Duke Blue Devils,25,25,50,52,50,102
+401166378,2020-02-29,Kentucky Wildcats,Auburn Tigers,40,37,77,73,66,139
+401166252,2020-03-01,Maryland Terrapins,Michigan State Spartans,29,40,69,66,78,144
+401168439,2020-02-29,Villanova Wildcats,Providence Friars,18,30,48,54,58,112
+401168421,2020-02-29,Marquette Golden Eagles,Seton Hall Pirates,35,44,79,79,88,167
+401166251,2020-02-29,Iowa Hawkeyes,Penn State Nittany Lions,35,34,69,77,68,145
+401175190,2020-02-29,Pepperdine Waves,BYU Cougars,35,32,67,64,81,145
+401169767,2020-02-29,West Virginia Mountaineers,Oklahoma Sooners,21,25,46,62,73,135
+401169763,2020-02-29,Texas Tech Red Raiders,Texas Longhorns,37,30,67,58,68,126
+401168337,2020-03-01,St. John's Red Storm,Creighton Bluejays,44,37,81,91,71,162
+401168519,2020-03-01,Louisville Cardinals,Virginia Tech Hokies,27,27,54,68,52,120
+401166255,2020-03-01,Ohio State Buckeyes,Michigan Wolverines,32,29,61,77,63,140
+401170741,2020-03-01,Stanford Cardinal,Colorado Buffaloes,35,28,63,72,64,136
+401169498,2020-03-01,Houston Cougars,Cincinnati Bearcats,38,31,69,68,55,123
+401168371,2020-03-03,Duke Blue Devils,NC State Wolfpack,38,36,74,88,69,157
+401166381,2020-03-04,Kentucky Wildcats,Tennessee Volunteers,42,31,73,73,81,154
+401166259,2020-03-04,Rutgers Scarlet Knights,Maryland Terrapins,35,29,64,78,67,145
+401166258,2020-03-04,Penn State Nittany Lions,Michigan State Spartans,46,31,77,71,79,150
+401166257,2020-03-04,Iowa Hawkeyes,Purdue Boilermakers,25,42,67,68,77,145
+401169772,2020-03-05,Kansas Jayhawks,TCU Horned Frogs,35,37,72,75,66,141
+401170327,2020-03-05,Rhode Island Rams,Dayton Flyers,30,46,76,57,84,141
+401168531,2020-03-05,Notre Dame Fighting Irish,Florida State Seminoles,42,35,77,71,73,144
+401168454,2020-03-05,Seton Hall Pirates,Villanova Wildcats,30,33,63,77,79,156
+401168338,2020-03-05,Creighton Bluejays,Georgetown Hoyas,48,33,81,91,76,167
+401166383,2020-03-05,Auburn Tigers,Texas A&M Aggies,26,33,59,75,78,153
+401168490,2020-03-05,Miami Hurricanes,Virginia Cavaliers,23,24,47,44,46,90
+401166261,2020-03-05,Wisconsin Badgers,Northwestern Wildcats,34,28,62,63,48,111
+401170744,2020-03-06,Oregon Ducks,California Golden Bears,46,20,66,90,56,146
+401166263,2020-03-06,Ohio State Buckeyes,Illinois Fighting Illini,30,37,67,71,63,134
+401169503,2020-03-06,UConn Huskies,Houston Cougars,30,37,67,77,71,148
+401166262,2020-03-05,Michigan Wolverines,Nebraska Cornhuskers,32,28,60,82,58,140
+401211135,2020-03-06,Northern Iowa Panthers,Drake Bulldogs,33,43,76,56,77,133
+401211136,2020-03-06,Bradley Braves,Southern Illinois Salukis,24,27,51,64,59,123
+401211066,2020-03-06,Samford Bulldogs,VMI Keydets,30,52,82,78,96,174
+401210997,2020-03-06,Winthrop Eagles,Gardner-Webb Runnin' Bulldogs,37,30,67,78,66,144
+401172724,2020-03-06,Bowling Green Falcons,Buffalo Bulls,33,40,73,84,88,172
+401172721,2020-03-06,Akron Zips,Kent State Golden Flashes,39,37,76,79,76,155
+401211137,2020-03-07,Loyola Chicago Ramblers,Valparaiso Beacons,36,22,58,73,74,147
+401172726,2020-03-07,Miami (OH) RedHawks,Ohio Bobcats,22,29,51,65,67,132
+401172723,2020-03-07,Central Michigan Chippewas,Western Michigan Broncos,33,29,62,85,68,153
+401172722,2020-03-07,Toledo Rockets,Eastern Michigan Eagles,32,26,58,79,57,136
+401172327,2020-03-07,Dartmouth Big Green,Yale Bulldogs,30,33,63,61,72,133
+401172310,2020-03-07,Pennsylvania Quakers,Cornell Big Red,35,32,67,78,64,142
+401172293,2020-03-07,Princeton Tigers,Columbia Lions,42,21,63,81,58,139
+401172276,2020-03-07,Harvard Crimson,Brown Bears,30,33,63,55,64,119
+401172046,2020-03-07,Monmouth Hawks,Siena Saints,34,43,77,72,86,158
+401171996,2020-03-07,Saint Peter's Peacocks,Iona Gaels,36,36,72,68,65,133
+401171977,2020-03-07,Manhattan Jaspers,Fairfield Stags,17,34,51,50,66,116
+401171953,2020-03-07,Canisius Golden Griffins,Niagara Purple Eagles,28,29,57,67,63,130
+401170332,2020-03-07,Duquesne Dukes,Richmond Spiders,29,37,66,62,73,135
+401168581,2020-03-07,NC State Wolfpack,Wake Forest Demon Deacons,44,31,75,84,64,148
+401168566,2020-03-07,Clemson Tigers,Georgia Tech Yellow Jackets,28,39,67,62,65,127
+401211067,2020-03-07,Wofford Terriers,The Citadel Bulldogs,51,32,83,93,76,169
+401211063,2020-03-07,Belmont Bruins,Eastern Kentucky Colonels,30,21,51,60,50,110
+401210998,2020-03-07,Radford Highlanders,Hampton Pirates,34,39,73,78,86,164
+401172725,2020-03-07,Northern Illinois Huskies,Ball State Cardinals,24,36,60,54,75,129
+401211158,2020-03-07,San Francisco Dons,Loyola Marymount Lions,39,26,65,82,53,135
+401211056,2020-03-07,San Diego State Aztecs,Boise State Broncos,40,40,80,81,68,149
+401170333,2020-03-07,Davidson Wildcats,VCU Rams,33,35,68,75,65,140
+401211138,2020-03-07,Indiana State Sycamores,Missouri State Bears,24,34,58,51,78,129
+401211064,2020-03-07,Murray State Racers,Austin Peay Governors,36,29,65,73,61,134
+401211159,2020-03-07,Pepperdine Waves,Santa Clara Broncos,41,26,67,84,73,157
+401211057,2020-03-07,Utah State Aggies,Wyoming Cowboys,38,31,69,89,82,171
+401169774,2020-03-07,Texas Tech Red Raiders,Kansas Jayhawks,24,32,56,62,66,128
+401170334,2020-03-08,Dayton Flyers,George Washington Revolutionaries,26,25,51,76,51,127
+401169773,2020-03-07,West Virginia Mountaineers,Baylor Bears,24,22,46,76,64,140
+401166388,2020-03-07,Florida Gators,Kentucky Wildcats,40,30,70,70,71,141
+401168532,2020-03-07,Florida State Seminoles,Boston College Eagles,42,24,66,80,62,142
+401168339,2020-03-07,Creighton Bluejays,Seton Hall Pirates,32,32,64,77,60,137
+401168492,2020-03-07,Virginia Cavaliers,Louisville Cardinals,31,24,55,57,54,111
+401168372,2020-03-07,Duke Blue Devils,North Carolina Tar Heels,42,34,76,89,76,165
+401170748,2020-03-08,Oregon Ducks,Stanford Cardinal,36,31,67,80,67,147
+401166386,2020-03-07,Tennessee Volunteers,Auburn Tigers,31,42,73,63,85,148
+401166265,2020-03-07,Northwestern Wildcats,Penn State Nittany Lions,34,34,68,80,69,149
+401166264,2020-03-07,Indiana Hoosiers,Wisconsin Badgers,28,25,53,56,60,116
+401166268,2020-03-08,Maryland Terrapins,Michigan Wolverines,41,28,69,83,70,153
+401166269,2020-03-08,Michigan State Spartans,Ohio State Buckeyes,38,32,70,80,69,149
+401166267,2020-03-08,Illinois Fighting Illini,Iowa Hawkeyes,41,41,82,78,76,154
+401169507,2020-03-08,Houston Cougars,Memphis Tigers,26,30,56,64,57,121
+401210970,2020-03-09,Hofstra Pride,Delaware Blue Hens,40,28,68,75,61,136
+401211651,2020-03-09,Ohio Bobcats,Central Michigan Chippewas,45,23,68,85,65,150
+401211649,2020-03-09,Toledo Rockets,Western Michigan Broncos,41,34,75,76,73,149
+401211648,2020-03-09,Kent State Golden Flashes,Eastern Michigan Eagles,39,28,67,86,76,162
+401211638,2020-03-09,Wright State Raiders,UIC Flames,26,41,67,56,73,129
+401211558,2020-03-09,Georgia Southern Eagles,Louisiana Ragin' Cajuns,45,49,94,82,81,163
+401211557,2020-03-09,App State Mountaineers,Coastal Carolina Chanticleers,22,37,59,70,65,135
+401211086,2020-03-09,North Dakota State Bison,Oral Roberts Golden Eagles,33,30,63,75,69,144
+401211074,2020-03-09,East Tennessee State Buccaneers,Wofford Terriers,36,31,67,72,58,130
+401211650,2020-03-09,Buffalo Bulls,Miami (OH) RedHawks,39,49,88,79,85,164
+401210971,2020-03-10,Northeastern Huskies,Elon Phoenix,37,21,58,68,60,128
+401211162,2020-03-10,Gonzaga Bulldogs,San Francisco Dons,40,35,75,81,77,158
+401211639,2020-03-10,Northern Kentucky Norse,Green Bay Phoenix,29,30,59,80,69,149
+401211087,2020-03-10,North Dakota Fighting Hawks,Purdue Fort Wayne Mastodons,32,25,57,73,56,129
+401211163,2020-03-10,BYU Cougars,Saint Mary's Gaels,26,20,46,50,51,101
+401211585,2020-03-10,Wake Forest Demon Deacons,Pittsburgh Panthers,41,40,81,72,81,153
+401211030,2020-03-10,Fairfield Stags,Manhattan Jaspers,19,19,38,43,61,104
+401211040,2020-03-10,Delaware State Hornets,Maryland Eastern Shore Hawks,31,30,61,68,64,132
+401211092,2020-03-10,Prairie View A&M Panthers,Alabama A&M Bulldogs,37,27,64,82,60,142
+401211640,2020-03-10,Northern Kentucky Norse,UIC Flames,34,24,58,71,62,133
+401211586,2020-03-10,Virginia Tech Hokies,North Carolina Tar Heels,26,32,58,56,78,134
+401211108,2020-03-10,Vermont Catamounts,UMBC Retrievers,39,34,73,81,74,155
+401211107,2020-03-10,Stony Brook Seawolves,Hartford Hawks,19,31,50,58,64,122
+401210972,2020-03-10,Hofstra Pride,Northeastern Huskies,28,30,58,70,61,131
+401210963,2020-03-10,Robert Morris Colonials,Saint Francis Red Flash,34,25,59,77,67,144
+401211031,2020-03-10,Iona Gaels,Canisius Golden Griffins,36,32,68,70,60,130
+401211041,2020-03-11,South Carolina State Bulldogs,Howard Bison,22,29,51,63,70,133
+401211089,2020-03-11,Texas Southern Tigers,Grambling Tigers,36,28,64,75,62,137
+401211164,2020-03-11,Gonzaga Bulldogs,Saint Mary's Gaels,42,41,83,84,66,150
+401211091,2020-03-11,Jackson State Tigers,Alcorn State Braves,37,16,53,69,52,121
+401211090,2020-03-11,Southern Jaguars,Alabama State Hornets,28,27,55,67,53,120
+401211088,2020-03-11,North Dakota State Bison,North Dakota Fighting Hawks,49,22,71,89,53,142
+401211032,2020-03-11,Niagara Purple Eagles,Marist Red Foxes,31,30,61,56,54,110
+401210973,2020-03-11,Weber State Wildcats,Sacramento State Hornets,26,30,56,54,62,116
+401211587,2020-03-11,Clemson Tigers,Miami Hurricanes,21,23,44,69,64,133
+401210901,2020-03-11,George Mason Patriots,Saint Joseph's Hawks,38,27,65,77,70,147
+401210974,2020-03-11,Southern Utah Thunderbirds,Idaho Vandals,29,27,56,75,69,144
+401211588,2020-03-11,NC State Wolfpack,Pittsburgh Panthers,35,32,67,73,58,131
+401211618,2020-03-11,Oregon State Beavers,Utah Utes,31,39,70,71,69,140
+401210902,2020-03-11,George Washington Revolutionaries,Fordham Rams,17,32,49,52,72,124
+401210976,2020-03-11,Northern Arizona Lumberjacks,Idaho State Bengals,29,44,73,62,64,126
+401211619,2020-03-11,Arizona Wildcats,Washington Huskies,35,30,65,77,70,147
+401211075,2020-03-11,Northwestern State Demons,Texas A&M-Corpus Christi Islanders,41,35,76,79,62,141
+401211042,2020-03-11,North Carolina Central Eagles,Delaware State Hornets,45,32,77,92,75,167
+401211003,2020-03-11,Minnesota Golden Gophers,Northwestern Wildcats,29,31,60,74,57,131
+401211589,2020-03-11,Notre Dame Fighting Irish,Boston College Eagles,36,21,57,80,58,138
+401211560,2020-03-11,Georgia State Panthers,Georgia Southern Eagles,33,34,67,62,81,143
+401211469,2020-03-11,Oklahoma State Cowboys,Iowa State Cyclones,34,32,66,72,71,143
+401211456,2020-03-11,Ole Miss Rebels,Georgia Bulldogs,30,41,71,63,81,144
+401211033,2020-03-11,Siena Saints,Manhattan Jaspers,34,25,59,63,49,112
+401211019,2020-03-11,Old Dominion Monarchs,Florida Atlantic Owls,32,32,64,56,66,122
+401210943,2020-03-11,Georgetown Hoyas,St. John's Red Storm,42,33,75,62,75,137
+401211660,2020-03-11,Colgate Raiders,Boston University Terriers,33,29,62,61,64,125
+401211020,2020-03-11,Florida International Panthers,Rice Owls,35,28,63,85,76,161
+401211559,2020-03-12,Texas State Bobcats,App State Mountaineers,40,26,66,85,68,153
+401211076,2020-03-12,Lamar Cardinals,McNeese Cowboys,37,24,61,80,59,139
+401211043,2020-03-12,North Carolina A&T Aggies,Howard Bison,39,27,66,86,77,163
+401211004,2020-03-12,Indiana Hoosiers,Nebraska Cornhuskers,43,34,77,89,64,153
+401211620,2020-03-12,Stanford Cardinal,California Golden Bears,20,30,50,51,63,114
+401211590,2020-03-12,Syracuse Orange,North Carolina Tar Heels,43,22,65,81,53,134
+401211457,2020-03-12,Arkansas Razorbacks,Vanderbilt Commodores,38,26,64,86,73,159
+401211034,2020-03-12,Saint Peter's Peacocks,Iona Gaels,22,18,40,56,54,110
+401211021,2020-03-12,UAB Blazers,UTSA Roadrunners,44,38,82,74,69,143
+401210944,2020-03-12,Xavier Musketeers,DePaul Blue Demons,34,38,72,67,71,138
+401211470,2020-03-12,TCU Horned Frogs,Kansas State Wildcats,18,28,46,49,53,102
+401211022,2020-03-12,Marshall Thundering Herd,UTEP Miners,43,32,75,86,78,164
+401211621,2020-03-12,Colorado Buffaloes,Washington State Cougars,25,35,60,68,82,150
+401259032,2020-11-26,Wisconsin Badgers,Eastern Illinois Panthers,43,20,63,77,67,144
+401262371,2020-11-25,Illinois Fighting Illini,North Carolina A&T Aggies,58,19,77,122,60,182
+401263445,2020-11-25,Michigan State Spartans,Eastern Michigan Eagles,43,27,70,83,67,150
+401259558,2020-11-26,Texas Tech Red Raiders,Northwestern State Demons,57,29,86,101,58,159
+401252794,2020-11-25,North Carolina Tar Heels,Charleston Cougars,39,32,71,79,60,139
+401257055,2020-11-25,Houston Cougars,Lamar Cardinals,35,15,50,89,45,134
+401254076,2020-11-26,Texas Longhorns,UT Rio Grande Valley Vaqueros,45,29,74,91,55,146
+401262106,2020-11-26,San Diego State Aztecs,UCLA Bruins,34,28,62,73,58,131
+401263457,2020-11-25,Ohio State Buckeyes,Illinois State Redbirds,42,25,67,94,67,161
+401259563,2020-11-26,Rutgers Scarlet Knights,Sacred Heart Pioneers,40,25,65,86,63,149
+401262142,2020-11-25,Michigan Wolverines,Bowling Green Falcons,43,36,79,96,82,178
+401262372,2020-11-26,Illinois Fighting Illini,Chicago State Cougars,47,17,64,97,38,135
+401263442,2020-11-27,Iowa Hawkeyes,Southern Jaguars,58,35,93,103,76,179
+401263459,2020-11-28,Wisconsin Badgers,Arkansas-Pine Bluff Golden Lions,53,19,72,92,58,150
+401262373,2020-11-27,Illinois Fighting Illini,Ohio Bobcats,35,34,69,77,75,152
+401259559,2020-11-27,Texas Tech Red Raiders,Sam Houston Bearkats,43,15,58,84,52,136
+401260378,2020-11-27,UCLA Bruins,Pepperdine Waves,32,39,71,107,98,205
+401262136,2020-11-28,Rutgers Scarlet Knights,Fairleigh Dickinson Knights,47,33,80,96,75,171
+401259835,2020-11-28,Duke Blue Devils,Coppin State Eagles,45,28,73,81,71,152
+401260037,2020-11-29,Michigan State Spartans,Notre Dame Fighting Irish,39,26,65,80,70,150
+401265778,2020-11-29,Baylor Bears,Washington Huskies,38,24,62,86,52,138
+401261448,2020-11-29,Arizona State Sun Devils,Houston Christian Huskies,65,31,96,100,77,177
+401265151,2020-11-29,Rutgers Scarlet Knights,Hofstra Pride,32,21,53,70,56,126
+401262491,2020-11-29,Michigan Wolverines,Oakland Golden Grizzlies,31,33,64,81,71,152
+401263458,2020-11-29,Ohio State Buckeyes,UMass Lowell River Hawks,33,33,66,74,64,138
+401261737,2020-11-30,Western Carolina Catamounts,Piedmont Lions,43,39,82,96,58,154
+401254077,2020-11-30,Davidson Wildcats,Texas Longhorns,39,43,82,76,78,154
+401255063,2020-11-30,Providence Friars,Indiana Hoosiers,24,37,61,58,79,137
+401259548,2020-11-30,Jacksonville State Gamecocks,Mobile Rams,36,33,69,85,66,151
+401257670,2020-11-30,Duquesne Dukes,Little Rock Trojans,30,34,64,66,76,142
+401264123,2020-11-30,Campbell Fighting Camels,St. Andrews Knights,38,18,56,85,51,136
+401263089,2020-11-30,Seattle U Redhawks,Cal State Northridge Matadors,28,39,67,65,76,141
+401259880,2020-11-30,App State Mountaineers,Bowling Green Falcons,36,34,70,76,78,154
+401255039,2020-11-30,Boston College Eagles,St. John's Red Storm,40,52,92,93,97,190
+401265813,2020-12-01,Hofstra Pride,Fairleigh Dickinson Knights,31,40,71,73,58,131
+401262868,2020-12-01,Stetson Hatters,Emmanuel (MA) Lions,36,37,73,61,64,125
+401261567,2020-12-01,UCF Knights,Auburn Tigers,30,21,51,63,55,118
+401259021,2020-12-01,Mercer Bears,Georgia State Panthers,42,37,79,86,69,155
+401257488,2020-12-01,Xavier Musketeers,Eastern Kentucky Colonels,48,39,87,99,96,195
+401255064,2020-12-01,UNLV Rebels,North Carolina Tar Heels,30,37,67,51,78,129
+401254102,2020-12-01,Tennessee Tech Golden Eagles,Chattanooga Mocs,25,24,49,54,62,116
+401261507,2020-12-01,California Golden Bears,Nicholls Colonels,23,18,41,60,49,109
+401265493,2020-12-01,Minnesota Golden Gophers,Loyola Marymount Lions,31,26,57,67,64,131
+401264954,2020-12-01,LSU Tigers,SE Louisiana Lions,50,18,68,96,43,139
+401261573,2020-12-01,SMU Mustangs,Texas A&M-Corpus Christi Islanders,47,22,69,91,54,145
+401258867,2020-12-01,Mississippi State Bulldogs,Texas State Bobcats,26,24,50,68,51,119
+401254051,2020-12-01,Kansas State Wildcats,Kansas City Roos,33,23,56,62,58,120
+401265993,2020-12-01,Seton Hall Pirates,Iona Gaels,35,37,72,86,64,150
+401260160,2020-12-01,Wyoming Cowboys,Texas Southern Tigers,50,31,81,74,76,150
+401257634,2020-12-01,Nevada Wolf Pack,Pacific Tigers,37,35,72,70,58,128
+401255065,2020-12-01,Alabama Crimson Tide,Stanford Cardinal,29,41,70,64,82,146
+401263460,2020-12-01,Wisconsin Badgers,Green Bay Phoenix,34,12,46,82,42,124
+401265819,2020-12-01,Creighton Bluejays,Omaha Mavericks,50,26,76,94,67,161
+401260337,2020-12-01,Virginia Cavaliers,Saint Francis Red Flash,45,13,58,76,51,127
+401266546,2020-12-03,Oregon Ducks,Missouri Tigers,31,42,73,75,83,158
+401260332,2020-12-03,Florida State Seminoles,North Florida Ospreys,36,21,57,86,58,144
+401255663,2020-12-02,Ohio State Buckeyes,Morehead State Eagles,37,27,64,77,44,121
+401264539,2020-12-04,Iowa Hawkeyes,Western Illinois Leathernecks,48,26,74,99,58,157
+401264484,2020-12-04,Kansas Jayhawks,Washburn Ichabods,49,32,81,89,54,143
+401261744,2020-12-04,Virginia Tech Hokies,VMI Keydets,30,23,53,64,57,121
+401257440,2020-12-04,California Golden Bears,Arizona State Sun Devils,34,35,69,62,70,132
+401255012,2020-12-05,Marquette Golden Eagles,Wisconsin Badgers,35,30,65,67,65,132
+401263446,2020-12-04,Michigan State Spartans,Detroit Mercy Titans,35,35,70,83,76,159
+401262406,2020-12-04,Creighton Bluejays,Kennesaw State Owls,52,25,77,93,58,151
+401260338,2020-12-04,Virginia Cavaliers,Kent State Golden Flashes,29,22,51,71,64,135
+401266749,2020-12-05,Texas Tech Red Raiders,Troy Trojans,47,22,69,80,46,126
+401266523,2020-12-05,Oregon Ducks,Seton Hall Pirates,34,28,62,83,70,153
+401254034,2020-12-05,Kansas Jayhawks,North Dakota State Bison,35,33,68,65,61,126
+401260964,2020-12-05,Houston Cougars,South Carolina Gamecocks,31,35,66,77,67,144
+401263447,2020-12-06,Michigan State Spartans,Western Michigan Broncos,39,35,74,79,61,140
+401259561,2020-12-06,Texas Tech Red Raiders,Grambling Tigers,33,19,52,81,40,121
+401267814,2020-12-07,Richmond Spiders,Wofford Terriers,37,30,67,77,72,149
+401267863,2020-12-08,Tennessee Volunteers,Colorado Buffaloes,31,24,55,56,47,103
+401268090,2020-12-09,Wisconsin Badgers,Rhode Island Rams,33,16,49,73,62,135
+401260962,2020-12-10,Texas Longhorns,Texas State Bobcats,33,20,53,74,53,127
+401259562,2020-12-10,Texas Tech Red Raiders,Abilene Christian Wildcats,23,14,37,51,44,95
+401260702,2020-12-09,Richmond Spiders,Northern Iowa Panthers,31,33,64,78,68,146
+401262674,2020-12-11,Arizona State Sun Devils,San Diego State Aztecs,33,35,68,68,80,148
+401265149,2020-12-12,Iowa Hawkeyes,Iowa State Cyclones,52,41,93,105,77,182
+401254035,2020-12-12,Kansas Jayhawks,Omaha Mavericks,45,22,67,95,50,145
+401263602,2020-12-12,Creighton Bluejays,Nebraska Cornhuskers,44,40,84,98,74,172
+401254978,2020-12-12,Georgetown Hoyas,Villanova Wildcats,46,33,79,63,76,139
+401268678,2020-12-11,West Virginia Mountaineers,North Texas Mean Green,21,29,50,62,50,112
+401262374,2020-12-13,Missouri Tigers,Illinois Fighting Illini,49,41,90,81,78,159
+401258875,2020-12-12,Tennessee Volunteers,Cincinnati Bearcats,30,24,54,65,56,121
+401268610,2020-12-12,North Carolina Tar Heels,North Carolina Central Eagles,30,28,58,73,67,140
+401257378,2020-12-12,Texas Tech Red Raiders,Texas A&M-Corpus Christi Islanders,33,21,54,77,57,134
+401256760,2020-12-12,Florida State Seminoles,Florida Gators,45,35,80,83,71,154
+401262677,2020-12-13,Iowa Hawkeyes,Northern Illinois Huskies,51,27,78,106,53,159
+401263448,2020-12-13,Michigan State Spartans,Oakland Golden Grizzlies,44,40,84,109,91,200
+401254083,2020-12-13,West Virginia Mountaineers,Richmond Spiders,52,30,82,87,71,158
+401268053,2020-12-13,Ohio State Buckeyes,Cleveland State Vikings,31,24,55,67,61,128
+401262475,2020-12-13,Grand Canyon Lopes,Arizona State Sun Devils,30,29,59,70,71,141
+401254985,2020-12-15,Creighton Bluejays,Marquette Golden Eagles,44,35,79,84,89,173
+401263327,2020-12-14,Maryland Terrapins,Rutgers Scarlet Knights,28,27,55,60,74,134
+401258876,2020-12-16,Tennessee Volunteers,App State Mountaineers,36,13,49,79,38,117
+401269392,2020-12-16,Wisconsin Badgers,Loyola Chicago Ramblers,31,26,57,77,63,140
+401263328,2020-12-16,Illinois Fighting Illini,Minnesota Golden Gophers,40,29,69,92,65,157
+401260175,2020-12-16,Florida State Seminoles,Georgia Tech Yellow Jackets,36,29,65,74,61,135
+401254987,2020-12-17,Villanova Wildcats,Butler Bulldogs,41,34,75,85,66,151
+401259552,2020-12-17,Texas Longhorns,Sam Houston Bearkats,44,26,70,79,63,142
+401263329,2020-12-17,Purdue Boilermakers,Ohio State Buckeyes,38,33,71,67,60,127
+401253834,2020-12-18,Texas Tech Red Raiders,Kansas Jayhawks,26,29,55,57,58,115
+401254988,2020-12-18,St. John's Red Storm,Creighton Bluejays,34,41,75,76,94,170
+401253835,2020-12-19,West Virginia Mountaineers,Iowa State Cyclones,30,31,61,70,65,135
+401258877,2020-12-19,Tennessee Volunteers,Tennessee Tech Golden Eagles,49,22,71,103,49,152
+401261637,2020-12-18,San Diego State Aztecs,BYU Cougars,20,35,55,62,72,134
+401255666,2020-12-19,Gonzaga Bulldogs,Iowa Hawkeyes,51,37,88,99,88,187
+401253836,2020-12-19,Kansas State Wildcats,Baylor Bears,27,56,83,69,100,169
+401270594,2020-12-20,Villanova Wildcats,Saint Joseph's Hawks,41,33,74,88,68,156
+401260333,2020-12-20,Florida State Seminoles,UCF Knights,39,34,73,74,86,160
+401263349,2020-12-21,Northwestern Wildcats,Michigan State Spartans,43,30,73,79,65,144
+401270041,2020-12-20,Houston Cougars,Alcorn State Braves,35,18,53,88,55,143
+401254992,2020-12-20,UConn Huskies,Creighton Bluejays,29,33,62,74,76,150
+401253837,2020-12-20,Texas Longhorns,Oklahoma State Cowboys,29,34,63,77,74,151
+401263350,2020-12-20,Rutgers Scarlet Knights,Illinois Fighting Illini,37,41,78,91,88,179
+401261645,2020-12-22,Gonzaga Bulldogs,Northwestern State Demons,43,30,73,95,57,152
+401254046,2020-12-22,Baylor Bears,Arkansas-Pine Bluff Golden Lions,55,12,67,99,42,141
+401268966,2020-12-21,Tennessee Volunteers,Saint Joseph's Hawks,56,33,89,102,66,168
+401268240,2020-12-22,Florida State Seminoles,Gardner-Webb Runnin' Bulldogs,31,28,59,72,59,131
+401262393,2020-12-22,Virginia Tech Hokies,Longwood Lancers,34,30,64,84,58,142
+401271433,2020-12-23,Gonzaga Bulldogs,Northwestern State Demons,43,17,60,95,78,173
+401253838,2020-12-23,Kansas Jayhawks,West Virginia Mountaineers,35,36,71,79,65,144
+401263331,2020-12-23,Iowa Hawkeyes,Purdue Boilermakers,37,27,64,70,55,125
+401264248,2020-12-23,Houston Cougars,Temple Owls,32,22,54,76,50,126
+401263330,2020-12-23,Wisconsin Badgers,Nebraska Cornhuskers,25,24,49,67,53,120
+401258865,2020-12-23,Missouri Tigers,Bradley Braves,21,19,40,54,53,107
+401253839,2020-12-23,Oklahoma Sooners,Texas Tech Red Raiders,32,40,72,67,69,136
+401270547,2020-12-22,Virginia Cavaliers,William & Mary Tribe,36,14,50,76,40,116
+401260181,2020-12-23,NC State Wolfpack,North Carolina Tar Heels,49,42,91,79,76,155
+401255019,2020-12-24,Marquette Golden Eagles,Villanova Wildcats,30,36,66,68,85,153
+401263333,2020-12-23,Ohio State Buckeyes,Rutgers Scarlet Knights,28,38,66,80,68,148
+401255016,2020-12-23,Creighton Bluejays,Xavier Musketeers,36,34,70,66,61,127
+401263334,2020-12-23,Penn State Nittany Lions,Illinois Fighting Illini,43,43,86,81,98,179
+401263336,2020-12-26,Minnesota Golden Gophers,Iowa Hawkeyes,38,33,71,102,95,197
+401263335,2020-12-25,Michigan State Spartans,Wisconsin Badgers,42,42,84,76,85,161
+401263337,2020-12-25,Nebraska Cornhuskers,Michigan Wolverines,34,36,70,69,80,149
+401270544,2020-12-26,Gonzaga Bulldogs,Virginia Cavaliers,44,31,75,98,75,173
+401268673,2020-12-26,UCF Knights,Houston Cougars,25,25,50,54,63,117
+401263339,2020-12-26,Illinois Fighting Illini,Indiana Hoosiers,29,27,56,69,60,129
+401263340,2020-12-26,Northwestern Wildcats,Ohio State Buckeyes,34,34,68,71,70,141
+401266976,2020-12-27,Indiana State Sycamores,Drake Bulldogs,30,31,61,63,81,144
+401258425,2020-12-27,Cleveland State Vikings,Youngstown State Penguins,30,40,70,81,74,155
+401256952,2020-12-27,New Hampshire Wildcats,Hartford Hawks,36,40,76,77,69,146
+401256951,2020-12-27,UMBC Retrievers,Binghamton Bearcats,29,29,58,74,67,141
+401271573,2020-12-27,Monmouth Hawks,Canisius Golden Griffins,44,30,74,84,66,150
+401264640,2020-12-27,Eastern Michigan Eagles,Olivet Comets,52,27,79,94,65,159
+401258542,2020-12-27,Wright State Raiders,Green Bay Phoenix,36,39,75,90,77,167
+401256953,2020-12-27,Stony Brook Seawolves,UMass Lowell River Hawks,43,29,72,73,58,131
+401270852,2020-12-27,Jacksonville State Gamecocks,Carver College Cougars,54,22,76,104,45,149
+401256954,2020-12-27,Vermont Catamounts,NJIT Highlanders,52,33,85,92,78,170
+401273056,2020-12-27,Detroit Mercy Titans,Oakland Golden Grizzlies,42,44,86,80,83,163
+401270628,2020-12-27,Vanderbilt Commodores,Alcorn State Braves,41,21,62,87,59,146
+401266977,2020-12-27,Southern Illinois Salukis,Evansville Purple Aces,28,19,47,63,57,120
+401266975,2020-12-27,Loyola Chicago Ramblers,Illinois State Redbirds,39,23,62,90,60,150
+401266974,2020-12-27,Northern Iowa Panthers,Missouri State Bears,32,42,74,59,79,138
+401271123,2020-12-27,Providence Friars,DePaul Blue Demons,34,29,63,95,90,185
+401258558,2020-12-27,Purdue Fort Wayne Mastodons,Robert Morris Colonials,48,34,82,87,82,169
+401271393,2020-12-28,UC Irvine Anteaters,UC Santa Barbara Gauchos,36,28,64,75,56,131
+401271434,2020-12-29,Gonzaga Bulldogs,Northern Arizona Lumberjacks,51,23,74,88,58,146
+401263342,2020-12-29,Wisconsin Badgers,Maryland Terrapins,28,24,52,64,70,134
+401263341,2020-12-29,Minnesota Golden Gophers,Michigan State Spartans,36,16,52,81,56,137
+401255768,2020-12-30,Gonzaga Bulldogs,Utah Tech Trailblazers,63,38,101,112,67,179
+401254047,2020-12-29,Baylor Bears,Central Arkansas Bears,53,35,88,93,56,149
+401254084,2020-12-29,West Virginia Mountaineers,Northeastern Huskies,34,26,60,73,51,124
+401263343,2020-12-30,Iowa Hawkeyes,Northwestern Wildcats,45,36,81,87,72,159
+401259594,2020-12-30,Texas Tech Red Raiders,Incarnate Word Cardinals,41,19,60,79,51,130
+401263344,2020-12-30,Rutgers Scarlet Knights,Purdue Boilermakers,40,34,74,81,76,157
+401265031,2020-12-30,Clemson Tigers,Florida State Seminoles,29,34,63,77,67,144
+401265030,2020-12-29,Virginia Tech Hokies,Miami Hurricanes,42,33,75,80,78,158
+401274073,2020-12-30,Baylor Bears,Alcorn State Braves,59,27,86,105,76,181
+401258721,2020-12-31,Missouri Tigers,Tennessee Volunteers,25,38,63,53,73,126
+401265054,2020-12-30,Notre Dame Fighting Irish,Virginia Cavaliers,24,30,54,57,66,123
+401263346,2020-12-30,Ohio State Buckeyes,Nebraska Cornhuskers,38,21,59,90,54,144
+401263348,2020-12-31,Wisconsin Badgers,Minnesota Golden Gophers,29,22,51,71,59,130
+401263347,2021-01-01,Maryland Terrapins,Michigan Wolverines,44,46,90,73,84,157
+401265351,2021-01-01,Oregon Ducks,California Golden Bears,36,35,71,82,69,151
+401261861,2021-01-01,Canisius Golden Griffins,Saint Peter's Peacocks,40,21,61,70,58,128
+401261893,2021-01-01,Marist Red Foxes,Niagara Purple Eagles,23,26,49,63,61,124
+401261488,2021-01-01,Incarnate Word Cardinals,McMurry War Hawks,43,25,68,81,54,135
+401257512,2021-01-01,Lipscomb Bisons,Liberty Flames,42,29,71,77,70,147
+401253996,2021-01-01,Rice Owls,UTSA Roadrunners,42,48,90,95,86,181
+401274395,2021-01-01,Montana State Bobcats,Montana-Western Bulldogs,46,34,80,96,67,163
+401258543,2021-01-01,Youngstown State Penguins,Green Bay Phoenix,39,40,79,84,77,161
+401261862,2021-01-01,Fairfield Stags,Rider Broncs,28,36,64,62,70,132
+401257085,2021-01-01,Little Rock Trojans,UT Arlington Mavericks,45,36,81,102,93,195
+401258547,2021-01-01,Robert Morris Colonials,Milwaukee Panthers,30,29,59,67,64,131
+401258529,2021-01-01,Northern Kentucky Norse,Purdue Fort Wayne Mastodons,32,38,70,75,68,143
+401257526,2021-01-01,Kennesaw State Owls,Jacksonville Dolphins,26,20,46,57,62,119
+401257083,2021-01-01,Coastal Carolina Chanticleers,Georgia State Panthers,39,33,72,81,69,150
+401257082,2021-01-01,Georgia Southern Eagles,South Alabama Jaguars,31,49,80,59,88,147

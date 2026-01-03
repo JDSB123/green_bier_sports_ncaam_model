@@ -1,0 +1,905 @@
+game_id,date,home_team,away_team,actual_h1_margin,predicted_h1_margin,model_spread,error,abs_error,actual_fg_margin,h1_fg_ratio,direction_correct
+401168156,2019-11-05,Miami Hurricanes,Louisville Cardinals,-19,-0.8,0.8,18.2,18.2,-13,1.4615384615384615,True
+401169796,2019-11-06,Florida Gators,North Florida Ospreys,17,4.5,-4.5,-12.5,12.5,15,1.1333333333333333,True
+401166020,2019-11-06,Maryland Terrapins,Holy Cross Crusaders,12,16.5,-16.5,4.5,4.5,24,0.5,True
+401175199,2019-11-06,Gonzaga Bulldogs,Alabama State Hornets,12,7.3,-7.3,-4.7,4.7,31,0.3870967741935484,True
+401169778,2019-11-06,Villanova Wildcats,Army Black Knights,23,10.9,-10.9,-12.1,12.1,43,0.5348837209302325,True
+401168441,2019-11-05,Seton Hall Pirates,Wagner Seahawks,15,14.4,-14.4,-0.5999999999999996,0.5999999999999996,34,0.4411764705882353,True
+401169597,2019-11-06,Texas Tech Red Raiders,Eastern Illinois Panthers,15,4.6,-4.6,-10.4,10.4,25,0.6,True
+401170001,2019-11-06,Memphis Tigers,South Carolina State Bulldogs,18,3.2,-3.2,-14.8,14.8,33,0.5454545454545454,True
+401169593,2019-11-05,Baylor Bears,Central Arkansas Bears,21,2.3,-2.3,-18.7,18.7,44,0.4772727272727273,True
+401166408,2019-11-06,Utah State Aggies,Montana State Bobcats,3,2.5,-2.5,-0.5,0.5,8,0.375,True
+401169787,2019-11-06,Xavier Musketeers,Jacksonville Dolphins,21,8.8,-8.8,-12.2,12.2,19,1.105263157894737,True
+401175202,2019-11-06,Wisconsin Badgers,Saint Mary's Gaels,-6,5.6,-5.6,11.6,11.6,-2,3.0,False
+401169797,2019-11-06,Auburn Tigers,Georgia Southern Eagles,4,5.1,-5.1,1.0999999999999996,1.0999999999999996,9,0.4444444444444444,True
+401170102,2019-11-06,VCU Rams,Saint Francis Red Flash,14,8.2,-8.2,-5.800000000000001,5.800000000000001,14,1.0,True
+401168159,2019-11-07,North Carolina Tar Heels,Notre Dame Fighting Irish,-1,2.7,-2.7,3.7,3.7,11,-0.09090909090909091,False
+401168161,2019-11-07,Syracuse Orange,Virginia Cavaliers,-6,2.9,-2.9,8.9,8.9,-14,0.42857142857142855,False
+401166022,2019-11-07,Ohio State Buckeyes,Cincinnati Bearcats,-7,-2.2,2.2,4.8,4.8,8,-0.875,True
+401166414,2019-11-07,Arizona Wildcats,Northern Arizona Lumberjacks,22,3.6,-3.6,-18.4,18.4,39,0.5641025641025641,True
+401166023,2019-11-07,Purdue Boilermakers,Green Bay Phoenix,13,10.1,-10.1,-2.9000000000000004,2.9000000000000004,22,0.5909090909090909,True
+401175914,2019-11-08,Marshall Thundering Herd,Robert Morris Colonials,6,4.9,-4.9,-1.0999999999999996,1.0999999999999996,7,0.8571428571428571,True
+401171546,2019-11-08,Hartford Hawks,Winthrop Eagles,-6,5.9,-5.9,11.9,11.9,-10,0.6,False
+401171520,2019-11-08,Clemson Tigers,Presbyterian Blue Hose,22,10.0,-10.0,-12.0,12.0,34,0.6470588235294118,True
+401170342,2019-11-08,North Florida Ospreys,Florida National Conquistadors,3,3.6,-3.6,0.6000000000000001,0.6000000000000001,8,0.375,True
+401166024,2019-11-08,Rutgers Scarlet Knights,Bryant Bulldogs,8,11.5,-11.5,3.5,3.5,2,4.0,True
+401176061,2019-11-08,Samford Bulldogs,Kentucky Wesleyan Panthers,12,-5.5,5.5,-17.5,17.5,26,0.46153846153846156,False
+401174699,2019-11-08,Troy Trojans,UAB Blazers,4,0.9,-0.9,-3.1,3.1,-1,-4.0,True
+401170559,2019-11-08,Washington State Cougars,Seattle U Redhawks,22,7.9,-7.9,-14.1,14.1,31,0.7096774193548387,True
+401166415,2019-11-08,Air Force Falcons,Idaho State Bengals,-11,2.0,-2.0,13.0,13.0,-10,1.1,False
+401169808,2019-11-09,Kentucky Wildcats,Eastern Kentucky Colonels,21,3.6,-3.6,-17.4,17.4,42,0.5,True
+401169601,2019-11-09,Kansas Jayhawks,UNC Greensboro Spartans,4,10.2,-10.2,6.199999999999999,6.199999999999999,12,0.3333333333333333,True
+401168162,2019-11-09,Duke Blue Devils,Colorado State Rams,16,6.7,-6.7,-9.3,9.3,34,0.47058823529411764,True
+401168164,2019-11-09,UNC Wilmington Seahawks,North Carolina Tar Heels,-11,-2.6,2.6,8.4,8.4,-16,0.6875,True
+401169788,2019-11-09,Xavier Musketeers,Siena Saints,9,6.8,-6.8,-2.2,2.2,18,0.5,True
+401169810,2019-11-09,LSU Tigers,Bowling Green Falcons,10,9.7,-9.7,-0.3000000000000007,0.3000000000000007,9,1.1111111111111112,True
+401170106,2019-11-09,VCU Rams,North Texas Mean Green,10,3.8,-3.8,-6.2,6.2,3,3.3333333333333335,True
+401166028,2019-11-10,Maryland Terrapins,Rhode Island Rams,3,6.3,-6.3,3.3,3.3,18,0.16666666666666666,True
+401175206,2019-11-10,Gonzaga Bulldogs,Arkansas-Pine Bluff Golden Lions,26,2.6,-2.6,-23.4,23.4,50,0.52,True
+401168442,2019-11-09,Seton Hall Pirates,Stony Brook Seawolves,-2,11.5,-11.5,13.5,13.5,17,-0.11764705882352941,False
+401166030,2019-11-10,Purdue Boilermakers,Texas Longhorns,3,4.7,-4.7,1.7000000000000002,1.7000000000000002,-4,-0.75,True
+401166054,2019-11-11,Michigan State Spartans,Binghamton Bearcats,31,14.1,-14.1,-16.9,16.9,53,0.5849056603773585,True
+401168168,2019-11-10,Florida Gators,Florida State Seminoles,-4,4.5,-4.5,8.5,8.5,-12,0.3333333333333333,False
+401168171,2019-11-10,Virginia Cavaliers,James Madison Dukes,8,0.6,-0.6,-7.4,7.4,31,0.25806451612903225,True
+401166055,2019-11-10,Ohio State Buckeyes,UMass Lowell River Hawks,13,4.8,-4.8,-8.2,8.2,20,0.65,True
+401169934,2019-11-11,Arizona Wildcats,Illinois Fighting Illini,1,4.2,-4.2,3.2,3.2,21,0.047619047619047616,True
+401171548,2019-11-12,Saint Mary's Gaels,Winthrop Eagles,-1,7.3,-7.3,8.3,8.3,-2,0.5,False
+401169817,2019-11-13,Kentucky Wildcats,Evansville Purple Aces,-4,12.5,-12.5,16.5,16.5,-3,1.3333333333333333,False
+401175210,2019-11-13,Gonzaga Bulldogs,North Dakota Fighting Hawks,19,12.9,-12.9,-6.1,6.1,31,0.6129032258064516,True
+401173654,2019-11-13,Utah State Aggies,Denver Pioneers,26,8.2,-8.2,-17.8,17.8,41,0.6341463414634146,True
+401170570,2019-11-13,Washington Huskies,Mount St. Mary's Mountaineers,0,9.2,-9.2,9.2,9.2,10,0.0,
+401169789,2019-11-13,Xavier Musketeers,Missouri Tigers,7,5.9,-5.9,-1.0999999999999996,1.0999999999999996,5,1.4,True
+401169820,2019-11-13,South Alabama Jaguars,Auburn Tigers,-8,3.4,-3.4,11.4,11.4,-1,8.0,False
+401168179,2019-11-14,Louisville Cardinals,Indiana State Sycamores,21,5.2,-5.2,-15.8,15.8,29,0.7241379310344828,True
+401169613,2019-11-14,Texas Tech Red Raiders,Houston Christian Huskies,15,4.3,-4.3,-10.7,10.7,29,0.5172413793103449,True
+401169823,2019-11-13,VCU Rams,LSU Tigers,12,2.8,-2.8,-9.2,9.2,2,6.0,True
+401169825,2019-11-15,Florida Gators,Towson Tigers,0,8.0,-8.0,8.0,8.0,6,0.0,
+401169615,2019-11-16,Kansas Jayhawks,Monmouth Hawks,38,13.5,-13.5,-24.5,24.5,55,0.6909090909090909,True
+401169828,2019-11-16,Texas A&M Aggies,Gonzaga Bulldogs,-21,-0.6,0.6,20.4,20.4,-30,0.7,True
+401173658,2019-11-16,Utah State Aggies,North Carolina A&T Aggies,15,1.8,-1.8,-13.2,13.2,27,0.5555555555555556,True
+401169790,2019-11-16,Xavier Musketeers,Missouri State Bears,2,5.9,-5.9,3.9000000000000004,3.9000000000000004,3,0.6666666666666666,True
+401169614,2019-11-16,Baylor Bears,Texas State Bobcats,0,7.0,-7.0,7.0,7.0,9,0.0,
+401166072,2019-11-16,Maryland Terrapins,Oakland Golden Grizzlies,13,10.8,-10.8,-2.1999999999999993,2.1999999999999993,30,0.43333333333333335,True
+401170576,2019-11-17,Colorado Buffaloes,San Diego Toreros,3,11.0,-11.0,8.0,8.0,18,0.16666666666666666,True
+401168443,2019-11-17,Saint Louis Billikens,Seton Hall Pirates,-15,0.7,-0.7,15.7,15.7,-17,0.8823529411764706,False
+401170582,2019-11-18,Oregon Ducks,UT Arlington Mavericks,9,7.1,-7.1,-1.9000000000000004,1.9000000000000004,20,0.45,True
+401171562,2019-11-18,Saint Mary's Gaels,Cal Poly Mustangs,25,10.3,-10.3,-14.7,14.7,31,0.8064516129032258,True
+401170580,2019-11-17,Arizona Wildcats,New Mexico State Aggies,22,10.1,-10.1,-11.9,11.9,30,0.7333333333333333,True
+401173661,2019-11-19,Utah State Aggies,UTSA Roadrunners,12,5.4,-5.4,-6.6,6.6,32,0.375,True
+401170584,2019-11-19,Colorado Buffaloes,UC Irvine Anteaters,10,5.4,-5.4,-4.6,4.6,16,0.625,True
+401166079,2019-11-20,Maryland Terrapins,Fairfield Stags,14,13.1,-13.1,-0.9000000000000004,0.9000000000000004,19,0.7368421052631579,True
+401170587,2019-11-20,Washington Huskies,Maine Black Bears,18,9.0,-9.0,-9.0,9.0,19,0.9473684210526315,True
+401168198,2019-11-20,Florida State Seminoles,Chattanooga Mocs,12,6.0,-6.0,-6.0,6.0,36,0.3333333333333333,True
+401172375,2019-11-21,Old Dominion Monarchs,James Madison Dukes,-5,-3.2,3.2,1.7999999999999998,1.7999999999999998,-2,2.5,True
+401172089,2019-11-21,Saint Peter's Peacocks,Wagner Seahawks,-10,8.5,-8.5,18.5,18.5,-4,2.5,False
+401172082,2019-11-21,Yale Bulldogs,Siena Saints,0,6.6,-6.6,6.6,6.6,11,0.0,
+401171776,2019-11-21,Drexel Dragons,Bryant Bulldogs,10,5.0,-5.0,-5.0,5.0,12,0.8333333333333334,True
+401170370,2019-11-21,NJIT Highlanders,Binghamton Bearcats,8,5.4,-5.4,-2.5999999999999996,2.5999999999999996,-2,-4.0,True
+401170136,2019-11-21,Massachusetts Minutemen,Rider Broncs,11,2.7,-2.7,-8.3,8.3,10,1.1,True
+401169845,2019-11-21,Tennessee Volunteers,Alabama State Hornets,11,2.7,-2.7,-8.3,8.3,35,0.3142857142857143,True
+401168459,2019-11-21,St. John's Red Storm,Columbia Lions,22,9.5,-9.5,-12.5,12.5,19,1.1578947368421053,True
+401168203,2019-11-21,Virginia Tech Hokies,Delaware State Hornets,18,13.3,-13.3,-4.699999999999999,4.699999999999999,36,0.5,True
+401168200,2019-11-21,Louisville Cardinals,South Carolina Upstate Spartans,6,6.6,-6.6,0.5999999999999996,0.5999999999999996,26,0.23076923076923078,True
+401168199,2019-11-21,Georgia Bulldogs,Georgia Tech Yellow Jackets,8,3.6,-3.6,-4.4,4.4,4,2.0,True
+401166438,2019-11-21,Boston College Eagles,Eastern Washington Eagles,2,0.8,-0.8,-1.2,1.2,4,0.5,True
+401166082,2019-11-21,Indiana Hoosiers,Princeton Tigers,4,7.1,-7.1,3.0999999999999996,3.0999999999999996,25,0.16,True
+401166081,2019-11-21,Rutgers Scarlet Knights,Stephen F. Austin Lumberjacks,5,6.4,-6.4,1.4000000000000004,1.4000000000000004,12,0.4166666666666667,True
+401170372,2019-11-21,Lipscomb Bisons,Belmont Bruins,1,-2.4,2.4,-3.4,3.4,-6,-0.16666666666666666,False
+401170371,2019-11-21,Florida Gulf Coast Eagles,Florida Atlantic Owls,-13,3.6,-3.6,16.6,16.6,2,-6.5,False
+401168202,2019-11-21,Syracuse Orange,Cornell Big Red,1,9.9,-9.9,8.9,8.9,19,0.05263157894736842,True
+401176040,2019-11-21,UAB Blazers,Mount St. Mary's Mountaineers,2,5.7,-5.7,3.7,3.7,7,0.2857142857142857,True
+401173621,2019-11-21,Northern Iowa Panthers,Cornell College (IA) Rams,29,11.2,-11.2,-17.8,17.8,22,1.3181818181818181,True
+401173595,2019-11-21,Loyola Chicago Ramblers,IU Indianapolis Jaguars,8,2.8,-2.8,-5.2,5.2,23,0.34782608695652173,True
+401170137,2019-11-21,Saint Louis Billikens,High Point Panthers,11,11.8,-11.8,0.8000000000000007,0.8000000000000007,12,0.9166666666666666,True
+401170042,2019-11-21,Tulsa Golden Hurricane,SE Louisiana Lions,0,7.6,-7.6,7.6,7.6,7,0.0,
+401170003,2019-11-21,Memphis Tigers,Little Rock Trojans,5,4.5,-4.5,-0.5,0.5,10,0.5,True
+401169847,2019-11-21,Vanderbilt Commodores,Austin Peay Governors,1,2.6,-2.6,1.6,1.6,18,0.05555555555555555,True
+401169846,2019-11-21,Texas A&M Aggies,Troy Trojans,-8,10.2,-10.2,18.2,18.2,4,-2.0,False
+401172586,2019-11-21,Western Illinois Leathernecks,Northern Illinois Huskies,-5,3.6,-3.6,8.6,8.6,-5,1.0,False
+401168201,2019-11-21,North Carolina Tar Heels,Elon Phoenix,-1,6.5,-6.5,7.5,7.5,14,-0.07142857142857142,False
+401173666,2019-11-21,Colorado State Rams,Arkansas State Red Wolves,6,-0.2,0.2,-6.2,6.2,-2,-3.0,False
+401166083,2019-11-21,Illinois Fighting Illini,The Citadel Bulldogs,14,13.8,-13.8,-0.1999999999999993,0.1999999999999993,28,0.5,True
+401173664,2019-11-21,UNLV Rebels,Texas State Bobcats,0,2.8,-2.8,2.8,2.8,-7,-0.0,
+401170588,2019-11-21,Oregon State Beavers,UC Santa Barbara Gauchos,7,9.0,-9.0,2.0,2.0,11,0.6363636363636364,True
+401166441,2019-11-21,Portland State Vikings,Portland Pilots,0,3.6,-3.6,3.6,3.6,-7,-0.0,
+401173663,2019-11-21,San Diego Toreros,San Diego State Aztecs,-8,3.6,-3.6,11.6,11.6,-17,0.47058823529411764,False
+401170589,2019-11-22,Arizona Wildcats,South Dakota State Jackrabbits,-3,8.5,-8.5,11.5,11.5,7,-0.42857142857142855,False
+401166087,2019-11-23,Maryland Terrapins,George Mason Patriots,12,8.9,-8.9,-3.0999999999999996,3.0999999999999996,23,0.5217391304347826,True
+401166091,2019-11-23,Ohio State Buckeyes,Purdue Fort Wayne Mastodons,17,-2.0,2.0,-19.0,19.0,39,0.4358974358974359,False
+401169449,2019-11-23,Oregon Ducks,Houston Cougars,5,3.3,-3.3,-1.7000000000000002,1.7000000000000002,12,0.4166666666666667,True
+401166443,2019-11-23,Washington Huskies,Montana Grizzlies,2,4.5,-4.5,2.5,2.5,17,0.11764705882352941,True
+401168444,2019-11-23,Seton Hall Pirates,Florida A&M Rattlers,12,4.0,-4.0,-8.0,8.0,36,0.3333333333333333,True
+401170144,2019-11-24,VCU Rams,Florida Gulf Coast Eagles,27,2.2,-2.2,-24.8,24.8,30,0.9,True
+401170595,2019-11-25,Washington Huskies,San Diego Toreros,11,9.5,-9.5,-1.5,1.5,19,0.5789473684210527,True
+401170148,2019-11-26,VCU Rams,Alabama State Hornets,18,2.8,-2.8,-15.2,15.2,16,1.125,True
+401168219,2019-11-27,Duke Blue Devils,Stephen F. Austin Lumberjacks,5,9.8,-9.8,4.800000000000001,4.800000000000001,-2,-2.5,True
+401168224,2019-11-27,Virginia Cavaliers,Maine Black Bears,10,9.1,-9.1,-0.9000000000000004,0.9000000000000004,20,0.5,True
+401169453,2019-11-28,Temple Owls,Maryland Terrapins,5,-1.5,1.5,-6.5,6.5,-7,-0.7142857142857143,False
+401171832,2019-11-28,Elon Phoenix,UT Arlington Mavericks,-2,2.4,-2.4,4.4,4.4,-10,0.2,False
+401183482,2019-11-28,Michigan Wolverines,North Carolina Tar Heels,5,7.4,-7.4,2.4000000000000004,2.4000000000000004,9,0.5555555555555556,True
+401169862,2019-11-28,Harvard Crimson,Texas A&M Aggies,4,-0.8,0.8,-4.8,4.8,11,0.36363636363636365,False
+401170517,2019-11-28,Cal Poly Mustangs,Tennessee State Tigers,-13,-2.8,2.8,10.2,10.2,-10,1.3,True
+401183481,2019-11-28,Gonzaga Bulldogs,Oregon Ducks,6,6.0,-6.0,0.0,0.0,1,6.0,True
+401170602,2019-11-28,Fairfield Stags,USC Trojans,-3,-4.7,4.7,-1.7000000000000002,1.7000000000000002,-7,0.42857142857142855,True
+401168225,2019-11-28,Charleston Cougars,Wake Forest Demon Deacons,-2,-1.5,1.5,0.5,0.5,-9,0.2222222222222222,True
+401168407,2019-11-28,Marquette Golden Eagles,Davidson Wildcats,-1,4.7,-4.7,5.7,5.7,10,-0.1,False
+401183480,2019-11-28,Iowa State Cyclones,Alabama Crimson Tide,15,4.3,-4.3,-10.7,10.7,15,1.0,True
+401169635,2019-11-29,Texas Tech Red Raiders,Iowa Hawkeyes,-10,4.8,-4.8,14.8,14.8,-11,0.9090909090909091,False
+401169452,2019-11-29,Pennsylvania Quakers,UCF Knights,1,1.3,-1.3,0.30000000000000004,0.30000000000000004,1,1.0,True
+401183479,2019-11-29,Southern Miss Golden Eagles,Seton Hall Pirates,-9,-1.9,1.9,7.1,7.1,-25,0.36,True
+401168318,2019-11-29,Creighton Bluejays,San Diego State Aztecs,-15,13.9,-13.9,28.9,28.9,-31,0.4838709677419355,False
+401170601,2019-11-29,Arizona Wildcats,Pepperdine Waves,0,9.5,-9.5,9.5,9.5,2,0.0,
+401168226,2019-11-30,Duke Blue Devils,Winthrop Eagles,7,11.7,-11.7,4.699999999999999,4.699999999999999,13,0.5384615384615384,True
+401168228,2019-11-29,Western Kentucky Hilltoppers,Louisville Cardinals,-14,2.6,-2.6,16.6,16.6,-17,0.8235294117647058,False
+401173677,2019-11-30,Saint Mary's Gaels,Utah State Aggies,-2,6.2,-6.2,8.2,8.2,8,-0.25,False
+401169864,2019-11-30,Florida Gators,Marshall Thundering Herd,-8,9.4,-9.4,17.4,17.4,6,-1.3333333333333333,False
+401169792,2019-11-30,Xavier Musketeers,Lipscomb Bisons,14,10.3,-10.3,-3.6999999999999993,3.6999999999999993,25,0.56,True
+401169781,2019-12-01,Villanova Wildcats,La Salle Explorers,20,10.0,-10.0,-10.0,10.0,11,1.8181818181818181,True
+401170606,2019-12-03,Washington Huskies,South Dakota Coyotes,9,5.6,-5.6,-3.4000000000000004,3.4000000000000004,20,0.45,True
+401169455,2019-12-04,Memphis Tigers,Bradley Braves,10,4.0,-4.0,-6.0,6.0,15,0.6666666666666666,True
+401169640,2019-12-04,Baylor Bears,Maryland Eastern Shore Hawks,17,5.2,-5.2,-11.8,11.8,32,0.53125,True
+401170156,2019-12-04,Dayton Flyers,Houston Christian Huskies,7,5.1,-5.1,-1.9000000000000004,1.9000000000000004,31,0.22580645161290322,True
+401175220,2019-12-05,Gonzaga Bulldogs,Texas Southern Tigers,23,7.8,-7.8,-15.2,15.2,39,0.5897435897435898,True
+401170608,2019-12-05,Colorado Buffaloes,Loyola Marymount Lions,-4,8.1,-8.1,12.1,12.1,12,-0.3333333333333333,False
+401169873,2019-12-05,Tennessee Volunteers,Florida A&M Rattlers,21,2.1,-2.1,-18.9,18.9,29,0.7241379310344828,True
+401166467,2019-12-05,Washington Huskies,Eastern Washington Eagles,12,3.6,-3.6,-8.4,8.4,10,1.2,True
+401169782,2019-12-04,Villanova Wildcats,Pennsylvania Quakers,6,10.2,-10.2,4.199999999999999,4.199999999999999,11,0.5454545454545454,True
+401169876,2019-12-06,Auburn Tigers,Furman Paladins,-8,5.4,-5.4,13.4,13.4,3,-2.6666666666666665,False
+401168505,2019-12-07,Louisville Cardinals,Pittsburgh Panthers,14,9.0,-9.0,-5.0,5.0,18,0.7777777777777778,True
+401166103,2019-12-06,Michigan Wolverines,Iowa Hawkeyes,12,5.3,-5.3,-6.7,6.7,12,1.0,True
+401170519,2019-12-07,Virginia Tech Hokies,Duke Blue Devils,3,0.6,-0.6,-2.4,2.4,-14,-0.21428571428571427,True
+401169646,2019-12-08,Kansas Jayhawks,Colorado Buffaloes,12,7.4,-7.4,-4.6,4.6,14,0.8571428571428571,True
+401166104,2019-12-07,Maryland Terrapins,Illinois Fighting Illini,-14,4.0,-4.0,18.0,18.0,1,-14.0,False
+401166105,2019-12-07,Ohio State Buckeyes,Penn State Nittany Lions,11,2.6,-2.6,-8.4,8.4,32,0.34375,True
+401169879,2019-12-07,Kentucky Wildcats,Fairleigh Dickinson Knights,20,11.7,-11.7,-8.3,8.3,31,0.6451612903225806,True
+401169647,2019-12-07,Baylor Bears,Arizona Wildcats,11,5.0,-5.0,-6.0,6.0,5,2.2,True
+401170004,2019-12-07,UAB Blazers,Memphis Tigers,14,0.0,-0.0,-14.0,14.0,-8,-1.75,False
+401169783,2019-12-07,Saint Joseph's Hawks,Villanova Wildcats,-16,-6.4,6.4,9.6,9.6,-12,1.3333333333333333,True
+401168293,2019-12-07,Butler Bulldogs,Florida Gators,9,2.7,-2.7,-6.3,6.3,14,0.6428571428571429,True
+401184943,2019-12-08,Virginia Cavaliers,North Carolina Tar Heels,6,5.0,-5.0,-1.0,1.0,9,0.6666666666666666,True
+401170617,2019-12-09,Washington Huskies,Gonzaga Bulldogs,-4,-1.1,1.1,2.9,2.9,-7,0.5714285714285714,True
+401166107,2019-12-09,Michigan State Spartans,Rutgers Scarlet Knights,5,4.8,-4.8,-0.20000000000000018,0.20000000000000018,12,0.4166666666666667,True
+401168446,2019-12-09,Iowa State Cyclones,Seton Hall Pirates,2,3.0,-3.0,1.0,1.0,10,0.2,True
+401168520,2019-12-08,Florida State Seminoles,Clemson Tigers,-6,5.7,-5.7,11.7,11.7,19,-0.3157894736842105,False
+401170170,2019-12-10,Duquesne Dukes,Columbia Lions,24,14.3,-14.3,-9.7,9.7,36,0.6666666666666666,True
+401177955,2019-12-10,South Dakota Coyotes,Alabama State Hornets,4,-0.1,0.1,-4.1,4.1,14,0.2857142857142857,False
+401166109,2019-12-10,Iowa Hawkeyes,Minnesota Golden Gophers,8,3.0,-3.0,-5.0,5.0,20,0.4,True
+401169649,2019-12-11,Kansas Jayhawks,Milwaukee Panthers,25,16.2,-16.2,-8.8,8.8,27,0.9259259259259259,True
+401166110,2019-12-11,Penn State Nittany Lions,Maryland Terrapins,10,-2.2,2.2,-12.2,12.2,7,1.4285714285714286,False
+401168294,2019-12-11,Baylor Bears,Butler Bulldogs,10,5.5,-5.5,-4.5,4.5,1,10.0,True
+401170618,2019-12-11,Colorado Buffaloes,Northern Iowa Panthers,-1,3.3,-3.3,4.3,4.3,-3,0.3333333333333333,False
+401166111,2019-12-12,Illinois Fighting Illini,Michigan Wolverines,2,2.2,-2.2,0.20000000000000018,0.20000000000000018,9,0.2222222222222222,True
+401172940,2019-12-13,Abilene Christian Wildcats,Howard Payne Yellow Jackets,19,11.6,-11.6,-7.4,7.4,69,0.2753623188405797,True
+401169652,2019-12-13,West Virginia Mountaineers,Austin Peay Governors,17,8.6,-8.6,-8.4,8.4,31,0.5483870967741935,True
+401169653,2019-12-13,Iowa State Cyclones,Iowa Hawkeyes,-15,3.6,-3.6,18.6,18.6,-16,0.9375,False
+401173623,2019-12-13,Grand Canyon Lopes,Northern Iowa Panthers,-17,-7.4,7.4,9.6,9.6,-24,0.7083333333333334,True
+401166481,2019-12-13,Portland State Vikings,Portland Bible Arrows,35,3.6,-3.6,-31.4,31.4,53,0.660377358490566,True
+401170622,2019-12-14,Colorado State Rams,Colorado Buffaloes,-15,3.6,-3.6,18.6,18.6,-8,1.875,False
+401168250,2019-12-14,Louisville Cardinals,Eastern Kentucky Colonels,18,4.6,-4.6,-13.4,13.4,32,0.5625,True
+401169657,2019-12-14,Kansas Jayhawks,Kansas City Roos,19,3.6,-3.6,-15.4,15.4,41,0.4634146341463415,True
+401166114,2019-12-14,Michigan Wolverines,Oregon Ducks,-8,5.0,-5.0,13.0,13.0,-1,8.0,False
+401170623,2019-12-15,Arizona Wildcats,Gonzaga Bulldogs,-1,1.7,-1.7,2.7,2.7,-4,0.25,False
+401168249,2019-12-14,Kentucky Wildcats,Georgia Tech Yellow Jackets,6,5.1,-5.1,-0.9000000000000004,0.9000000000000004,14,0.42857142857142855,True
+401169462,2019-12-14,Tennessee Volunteers,Memphis Tigers,-1,4.1,-4.1,5.1,5.1,-4,0.25,False
+401170176,2019-12-15,Dayton Flyers,Drake Bulldogs,12,9.8,-9.8,-2.1999999999999993,2.1999999999999993,31,0.3870967741935484,True
+401171734,2019-12-14,Oakland Golden Grizzlies,Michigan State Spartans,-15,-4.2,4.2,10.8,10.8,-23,0.6521739130434783,True
+401168295,2019-12-14,Butler Bulldogs,Southern Jaguars,18,8.1,-8.1,-9.9,9.9,25,0.72,True
+401166118,2019-12-15,Minnesota Golden Gophers,Ohio State Buckeyes,9,10.2,-10.2,1.1999999999999993,1.1999999999999993,13,0.6923076923076923,True
+401168255,2019-12-15,North Carolina Tar Heels,Wofford Terriers,4,6.7,-6.7,2.7,2.7,-4,-1.0,True
+401169659,2019-12-17,Texas Tech Red Raiders,Southern Miss Golden Eagles,-7,9.6,-9.6,16.6,16.6,6,-1.1666666666666667,False
+401166121,2019-12-18,Ohio State Buckeyes,Southeast Missouri State Redhawks,9,0.6,-0.6,-8.4,8.4,32,0.28125,True
+401170181,2019-12-18,Dayton Flyers,North Texas Mean Green,15,7.1,-7.1,-7.9,7.9,13,1.1538461538461537,True
+401168258,2019-12-18,Florida State Seminoles,North Florida Ospreys,9,3.6,-3.6,-5.4,5.4,17,0.5294117647058824,True
+401170630,2019-12-18,Washington Huskies,Seattle U Redhawks,-1,7.9,-7.9,8.9,8.9,22,-0.045454545454545456,False
+401168261,2019-12-19,Gonzaga Bulldogs,North Carolina Tar Heels,7,8.6,-8.6,1.5999999999999996,1.5999999999999996,13,0.5384615384615384,True
+401169891,2019-12-19,Kentucky Wildcats,Utah Utes,-4,7.5,-7.5,11.5,11.5,-3,1.3333333333333333,False
+401166495,2019-12-19,Oregon Ducks,Montana Grizzlies,13,6.2,-6.2,-6.8,6.8,33,0.3939393939393939,True
+401168264,2019-12-18,Virginia Cavaliers,Stony Brook Seawolves,7,9.6,-9.6,2.5999999999999996,2.5999999999999996,12,0.5833333333333334,True
+401166122,2019-12-19,Northwestern Wildcats,Michigan State Spartans,-10,-0.9,0.9,9.1,9.1,-5,2.0,True
+401182455,2019-12-19,San Diego State Aztecs,San Diego Christian Hawks,18,3.6,-3.6,-14.4,14.4,44,0.4090909090909091,True
+401169895,2019-12-19,Cincinnati Bearcats,Tennessee Volunteers,4,4.7,-4.7,0.7000000000000002,0.7000000000000002,12,0.3333333333333333,True
+401168265,2019-12-20,Duke Blue Devils,Wofford Terriers,13,11.5,-11.5,-1.5,1.5,29,0.4482758620689655,True
+401168447,2019-12-20,Seton Hall Pirates,Maryland Terrapins,9,3.6,-3.6,-5.4,5.4,4,2.25,True
+401166123,2019-12-20,Penn State Nittany Lions,Central Connecticut Blue Devils,20,-0.3,0.3,-20.3,20.3,29,0.6896551724137931,False
+401169661,2019-12-21,Villanova Wildcats,Kansas Jayhawks,0,1.6,-1.6,1.6,1.6,1,0.0,
+401166502,2019-12-21,Gonzaga Bulldogs,Eastern Washington Eagles,31,8.3,-8.3,-22.7,22.7,35,0.8857142857142857,True
+401170635,2019-12-22,Oregon Ducks,Texas Southern Tigers,3,5.0,-5.0,2.0,2.0,6,0.5,True
+401169900,2019-12-21,Auburn Tigers,Lehigh Mountain Hawks,7,11.6,-11.6,4.6,4.6,23,0.30434782608695654,True
+401166128,2019-12-21,Michigan Wolverines,Presbyterian Blue Hose,23,14.1,-14.1,-8.9,8.9,42,0.5476190476190477,True
+401166129,2019-12-22,Michigan State Spartans,Eastern Michigan Eagles,21,3.6,-3.6,-17.4,17.4,53,0.39622641509433965,True
+401169898,2019-12-21,Tennessee Volunteers,Jacksonville State Gamecocks,4,7.8,-7.8,3.8,3.8,22,0.18181818181818182,True
+401169666,2019-12-21,Texas Tech Red Raiders,UT Rio Grande Valley Vaqueros,-1,11.8,-11.8,12.8,12.8,10,-0.1,False
+401168276,2019-12-22,Virginia Cavaliers,South Carolina Gamecocks,-9,4.6,-4.6,13.6,13.6,-11,0.8181818181818182,False
+401170200,2019-12-24,Dayton Flyers,Grambling Tigers,18,15.1,-15.1,-2.9000000000000004,2.9000000000000004,28,0.6428571428571429,True
+401182623,2019-12-26,Washington Huskies,Houston Cougars,5,1.3,-1.3,-3.7,3.7,-4,-1.25,True
+401170937,2019-12-28,Loyola Maryland Greyhounds,UMass Lowell River Hawks,3,11.6,-11.6,8.6,8.6,12,0.25,True
+401168280,2019-12-28,Kentucky Wildcats,Louisville Cardinals,8,2.6,-2.6,-5.4,5.4,8,1.0,True
+401168277,2019-12-28,Duke Blue Devils,Brown Bears,6,13.5,-13.5,7.5,7.5,25,0.24,True
+401169467,2019-12-28,Memphis Tigers,New Orleans Privateers,27,10.8,-10.8,-16.2,16.2,42,0.6428571428571429,True
+401171566,2019-12-29,San Diego State Aztecs,Cal Poly Mustangs,8,4.5,-4.5,-3.5,3.5,16,0.5,True
+401168278,2019-12-28,Florida State Seminoles,North Alabama Lions,21,4.3,-4.3,-16.7,16.7,17,1.2352941176470589,True
+401166136,2019-12-29,Ohio State Buckeyes,West Virginia Mountaineers,6,-3.8,3.8,-9.8,9.8,-8,-0.75,False
+401169669,2019-12-29,Stanford Cardinal,Kansas Jayhawks,-10,-1.6,1.6,8.4,8.4,-16,0.625,True
+401170642,2019-12-29,Oregon Ducks,Alabama State Hornets,24,4.4,-4.4,-19.6,19.6,39,0.6153846153846154,True
+401169913,2019-12-29,Auburn Tigers,Lipscomb Bisons,15,10.8,-10.8,-4.199999999999999,4.199999999999999,27,0.5555555555555556,True
+401166133,2019-12-29,Michigan Wolverines,UMass Lowell River Hawks,17,13.0,-13.0,-4.0,4.0,26,0.6538461538461539,True
+401166140,2019-12-29,Maryland Terrapins,Bryant Bulldogs,5,12.4,-12.4,7.4,7.4,14,0.35714285714285715,True
+401166142,2019-12-30,Michigan State Spartans,Western Michigan Broncos,24,3.6,-3.6,-20.4,20.4,33,0.7272727272727273,True
+401168283,2019-12-29,Virginia Cavaliers,Navy Midshipmen,8,11.3,-11.3,3.3000000000000007,3.3000000000000007,9,0.8888888888888888,True
+401166139,2019-12-29,Penn State Nittany Lions,Cornell Big Red,16,6.2,-6.2,-9.8,9.8,31,0.5161290322580645,True
+401172493,2019-12-31,Gonzaga Bulldogs,Detroit Mercy Titans,16,16.0,-16.0,0.0,0.0,21,0.7619047619047619,True
+401169511,2019-12-31,Memphis Tigers,Tulane Green Wave,10,7.4,-7.4,-2.5999999999999996,2.5999999999999996,11,0.9090909090909091,True
+401169785,2019-12-30,Villanova Wildcats,Xavier Musketeers,7,5.7,-5.7,-1.2999999999999998,1.2999999999999998,6,1.1666666666666667,True
+401170208,2019-12-31,Dayton Flyers,North Florida Ospreys,14,5.5,-5.5,-8.5,8.5,18,0.7777777777777778,True
+401168354,2019-12-31,Duke Blue Devils,Boston College Eagles,26,11.3,-11.3,-14.7,14.7,39,0.6666666666666666,True
+401168297,2020-01-01,St. John's Red Storm,Butler Bulldogs,-21,1.5,-1.5,22.5,22.5,-2,10.5,False
+401168521,2019-12-31,Florida State Seminoles,Georgia Tech Yellow Jackets,2,5.0,-5.0,3.0,3.0,12,0.16666666666666666,True
+401175232,2020-01-03,Portland Pilots,Gonzaga Bulldogs,7,-8.9,8.9,-15.9,15.9,-13,-0.5384615384615384,False
+401170644,2020-01-03,Colorado Buffaloes,Oregon Ducks,6,3.2,-3.2,-2.8,2.8,9,0.6666666666666666,True
+401166145,2020-01-03,Michigan State Spartans,Illinois Fighting Illini,6,4.4,-4.4,-1.5999999999999996,1.5999999999999996,20,0.3,True
+401170214,2020-01-03,La Salle Explorers,Dayton Flyers,-22,-3.7,3.7,18.3,18.3,-26,0.8461538461538461,True
+401166148,2020-01-04,Ohio State Buckeyes,Wisconsin Badgers,-4,-3.3,3.3,0.7000000000000002,0.7000000000000002,-4,1.0,True
+401175236,2020-01-05,Gonzaga Bulldogs,Pepperdine Waves,0,11.7,-11.7,11.7,11.7,5,0.0,
+401168355,2020-01-05,Miami Hurricanes,Duke Blue Devils,-14,-2.6,2.6,11.4,11.4,-33,0.42424242424242425,True
+401169679,2020-01-04,Kansas Jayhawks,West Virginia Mountaineers,-6,6.0,-6.0,12.0,12.0,7,-0.8571428571428571,False
+401170650,2020-01-04,Utah Utes,Oregon Ducks,-5,-0.1,0.1,4.9,4.9,-5,1.0,True
+401169681,2020-01-05,Baylor Bears,Texas Longhorns,13,7.0,-7.0,-6.0,6.0,15,0.8666666666666667,True
+401168506,2020-01-04,Louisville Cardinals,Florida State Seminoles,-7,4.6,-4.6,11.6,11.6,-13,0.5384615384615384,False
+401166273,2020-01-04,Mississippi State Bulldogs,Auburn Tigers,-5,1.5,-1.5,6.5,6.5,-12,0.4166666666666667,False
+401169468,2020-01-04,Memphis Tigers,Georgia Bulldogs,0,2.9,-2.9,2.9,2.9,-3,-0.0,
+401168413,2020-01-04,Marquette Golden Eagles,Villanova Wildcats,17,2.2,-2.2,-14.8,14.8,11,1.5454545454545454,True
+401168298,2020-01-04,Butler Bulldogs,Creighton Bluejays,10,1.4,-1.4,-8.6,8.6,14,0.7142857142857143,True
+401173725,2020-01-05,Utah State Aggies,San Diego State Aztecs,-7,7.3,-7.3,14.3,14.3,-9,0.7777777777777778,False
+401166149,2020-01-04,Maryland Terrapins,Indiana Hoosiers,8,4.7,-4.7,-3.3,3.3,16,0.5,True
+401166272,2020-01-04,Kentucky Wildcats,Missouri Tigers,5,6.8,-6.8,1.7999999999999998,1.7999999999999998,12,0.4166666666666667,True
+401168473,2020-01-04,Virginia Cavaliers,Virginia Tech Hokies,13,3.6,-3.6,-9.4,9.4,26,0.5,True
+401166150,2020-01-04,Penn State Nittany Lions,Iowa Hawkeyes,1,-1.7,1.7,-2.7,2.7,3,0.3333333333333333,False
+401169678,2020-01-04,Texas Tech Red Raiders,Oklahoma State Cowboys,6,5.5,-5.5,-0.5,0.5,35,0.17142857142857143,True
+401170649,2020-01-05,Arizona Wildcats,Arizona State Sun Devils,19,3.6,-3.6,-15.4,15.4,28,0.6785714285714286,True
+401166151,2020-01-05,Michigan State Spartans,Michigan Wolverines,10,3.0,-3.0,-7.0,7.0,18,0.5555555555555556,True
+401170220,2020-01-05,Saint Joseph's Hawks,Dayton Flyers,0,-7.3,7.3,-7.3,7.3,-13,-0.0,
+401169683,2020-01-07,Oklahoma State Cowboys,West Virginia Mountaineers,-9,1.7,-1.7,10.7,10.7,-14,0.6428571428571429,False
+401169685,2020-01-08,Texas Tech Red Raiders,Baylor Bears,-3,2.7,-2.7,5.7,5.7,-5,0.6,False
+401166154,2020-01-08,Maryland Terrapins,Ohio State Buckeyes,6,10.3,-10.3,4.300000000000001,4.300000000000001,12,0.5,True
+401168507,2020-01-08,Louisville Cardinals,Miami Hurricanes,11,8.0,-8.0,-3.0,3.0,16,0.6875,True
+401166278,2020-01-08,Georgia Bulldogs,Kentucky Wildcats,6,2.1,-2.1,-3.9,3.9,-9,-0.6666666666666666,True
+401168325,2020-01-08,Creighton Bluejays,Villanova Wildcats,8,4.6,-4.6,-3.4000000000000004,3.4000000000000004,-5,-1.6,True
+401168474,2020-01-08,Boston College Eagles,Virginia Cavaliers,4,0.1,-0.1,-3.9,3.9,7,0.5714285714285714,True
+401166156,2020-01-08,Rutgers Scarlet Knights,Penn State Nittany Lions,-5,8.5,-8.5,13.5,13.5,11,-0.45454545454545453,False
+401168356,2020-01-09,Georgia Tech Yellow Jackets,Duke Blue Devils,-11,-0.7,0.7,10.3,10.3,-9,1.2222222222222223,True
+401169686,2020-01-09,Iowa State Cyclones,Kansas Jayhawks,-20,-0.0,0.0,20.0,20.0,-26,0.7692307692307693,True
+401166282,2020-01-09,Auburn Tigers,Vanderbilt Commodores,4,8.0,-8.0,4.0,4.0,4,1.0,True
+401173729,2020-01-09,Wyoming Cowboys,San Diego State Aztecs,-11,4.4,-4.4,15.4,15.4,-20,0.55,False
+401168522,2020-01-09,Wake Forest Demon Deacons,Florida State Seminoles,-7,0.8,-0.8,7.8,7.8,-10,0.7,False
+401175240,2020-01-10,San Diego Toreros,Gonzaga Bulldogs,-37,-7.3,7.3,29.7,29.7,-44,0.8409090909090909,True
+401166160,2020-01-10,Michigan State Spartans,Minnesota Golden Gophers,4,4.0,-4.0,0.0,0.0,16,0.25,True
+401170655,2020-01-10,Oregon Ducks,Arizona Wildcats,-2,3.0,-3.0,5.0,5.0,1,-2.0,False
+401166159,2020-01-10,Michigan Wolverines,Purdue Boilermakers,4,5.4,-5.4,1.4000000000000004,1.4000000000000004,6,0.6666666666666666,True
+401168299,2020-01-11,Providence Friars,Butler Bulldogs,-12,4.2,-4.2,16.2,16.2,-12,1.0,False
+401166161,2020-01-11,Iowa Hawkeyes,Maryland Terrapins,14,3.0,-3.0,-11.0,11.0,18,0.7777777777777778,True
+401175242,2020-01-11,Loyola Marymount Lions,Gonzaga Bulldogs,-16,-3.9,3.9,12.1,12.1,-25,0.64,True
+401168357,2020-01-12,Duke Blue Devils,Wake Forest Demon Deacons,26,9.4,-9.4,-16.6,16.6,31,0.8387096774193549,True
+401169688,2020-01-11,Kansas Jayhawks,Baylor Bears,-13,4.9,-4.9,17.9,17.9,-12,1.0833333333333333,False
+401166287,2020-01-11,Auburn Tigers,Georgia Bulldogs,11,4.5,-4.5,-6.5,6.5,22,0.5,True
+401170659,2020-01-12,Oregon Ducks,Arizona State Sun Devils,9,3.0,-3.0,-6.0,6.0,9,1.0,True
+401166163,2020-01-11,Indiana Hoosiers,Ohio State Buckeyes,-3,9.2,-9.2,12.2,12.2,12,-0.25,False
+401168508,2020-01-11,Notre Dame Fighting Irish,Louisville Cardinals,-12,1.3,-1.3,13.3,13.3,-3,4.0,False
+401166283,2020-01-11,Kentucky Wildcats,Alabama Crimson Tide,10,4.4,-4.4,-5.6,5.6,9,1.1111111111111112,True
+401170229,2020-01-11,Dayton Flyers,Massachusetts Minutemen,26,10.9,-10.9,-15.1,15.1,28,0.9285714285714286,True
+401168396,2020-01-11,Villanova Wildcats,Georgetown Hoyas,3,6.8,-6.8,3.8,3.8,14,0.21428571428571427,True
+401169690,2020-01-11,West Virginia Mountaineers,Texas Tech Red Raiders,6,3.5,-3.5,-2.5,2.5,12,0.5,True
+401168475,2020-01-11,Virginia Cavaliers,Syracuse Orange,-4,4.3,-4.3,8.3,8.3,-8,0.5,False
+401166165,2020-01-11,Penn State Nittany Lions,Wisconsin Badgers,-9,-2.5,2.5,6.5,6.5,-9,1.0,True
+401166167,2020-01-12,Purdue Boilermakers,Michigan State Spartans,17,2.4,-2.4,-14.6,14.6,29,0.5862068965517241,True
+401166166,2020-01-12,Minnesota Golden Gophers,Michigan Wolverines,-1,2.6,-2.6,3.6,3.6,8,-0.125,False
+401169531,2020-01-12,South Florida Bulls,Memphis Tigers,8,5.7,-5.7,-2.3,2.3,-4,-2.0,True
+401170663,2020-01-13,Oregon State Beavers,Arizona Wildcats,0,3.0,-3.0,3.0,3.0,17,0.0,
+401170662,2020-01-12,Colorado Buffaloes,Utah Utes,22,7.1,-7.1,-14.9,14.9,39,0.5641025641025641,True
+401172858,2020-01-14,Loyola Maryland Greyhounds,Boston University Terriers,-25,8.6,-8.6,33.6,33.6,-32,0.78125,False
+401175773,2020-01-14,Maryland Eastern Shore Hawks,North Carolina Central Eagles,-3,6.3,-6.3,9.3,9.3,-5,0.6,False
+401175759,2020-01-14,Howard Bison,South Carolina State Bulldogs,3,-8.1,8.1,-11.1,11.1,-6,-0.5,False
+401175715,2020-01-14,Delaware State Hornets,North Carolina A&T Aggies,-4,-5.7,5.7,-1.7000000000000002,1.7000000000000002,-21,0.19047619047619047,True
+401181598,2020-01-14,Alabama State Hornets,Arkansas-Pine Bluff Golden Lions,-1,-0.9,0.9,0.09999999999999998,0.09999999999999998,-5,0.2,True
+401176145,2020-01-14,Alabama A&M Bulldogs,Mississippi Valley State Delta Devils,-14,5.7,-5.7,19.7,19.7,-6,2.3333333333333335,False
+401166534,2020-01-14,Montana Grizzlies,Portland State Vikings,4,10.2,-10.2,6.199999999999999,6.199999999999999,15,0.26666666666666666,True
+401168358,2020-01-15,Clemson Tigers,Duke Blue Devils,7,-1.3,1.3,-8.3,8.3,7,1.0,False
+401169693,2020-01-15,Oklahoma Sooners,Kansas Jayhawks,-1,-0.7,0.7,0.30000000000000004,0.30000000000000004,-14,0.07142857142857142,True
+401168509,2020-01-15,Pittsburgh Panthers,Louisville Cardinals,3,-1.8,1.8,-4.8,4.8,-5,-0.6,False
+401169694,2020-01-15,West Virginia Mountaineers,TCU Horned Frogs,14,7.0,-7.0,-7.0,7.0,32,0.4375,True
+401170237,2020-01-15,Dayton Flyers,VCU Rams,5,7.0,-7.0,2.0,2.0,14,0.35714285714285715,True
+401168352,2020-01-15,Villanova Wildcats,DePaul Blue Demons,2,8.3,-8.3,6.300000000000001,6.300000000000001,4,0.5,True
+401166170,2020-01-15,Wisconsin Badgers,Maryland Terrapins,5,4.1,-4.1,-0.9000000000000004,0.9000000000000004,2,2.5,True
+401166169,2020-01-14,Ohio State Buckeyes,Nebraska Cornhuskers,13,2.1,-2.1,-10.9,10.9,12,1.0833333333333333,True
+401169695,2020-01-15,Kansas State Wildcats,Texas Tech Red Raiders,-7,5.9,-5.9,12.9,12.9,-14,0.5,False
+401169697,2020-01-16,Baylor Bears,Iowa State Cyclones,5,5.8,-5.8,0.7999999999999998,0.7999999999999998,13,0.38461538461538464,True
+401166296,2020-01-16,Alabama Crimson Tide,Auburn Tigers,9,3.4,-3.4,-5.6,5.6,19,0.47368421052631576,True
+401168300,2020-01-15,Butler Bulldogs,Seton Hall Pirates,10,3.2,-3.2,-6.8,6.8,-8,-1.25,True
+401168476,2020-01-16,Florida State Seminoles,Virginia Cavaliers,7,4.1,-4.1,-2.9000000000000004,2.9000000000000004,4,1.75,True
+401166293,2020-01-15,South Carolina Gamecocks,Kentucky Wildcats,-8,1.7,-1.7,9.7,9.7,3,-2.6666666666666665,False
+401168327,2020-01-16,Georgetown Hoyas,Creighton Bluejays,-1,-0.8,0.8,0.19999999999999996,0.19999999999999996,3,-0.3333333333333333,True
+401175246,2020-01-17,Gonzaga Bulldogs,Santa Clara Broncos,36,10.7,-10.7,-25.3,25.3,50,0.72,True
+401170669,2020-01-17,Washington State Cougars,Oregon Ducks,-3,1.6,-1.6,4.6,4.6,11,-0.2727272727272727,False
+401170666,2020-01-17,Arizona State Sun Devils,Colorado Buffaloes,0,4.7,-4.7,4.7,4.7,-7,-0.0,
+401169536,2020-01-17,Memphis Tigers,Cincinnati Bearcats,11,2.0,-2.0,-9.0,9.0,11,1.0,True
+401170242,2020-01-18,Saint Louis Billikens,Dayton Flyers,8,-0.9,0.9,-8.9,8.9,-2,-4.0,False
+401166174,2020-01-18,Michigan State Spartans,Wisconsin Badgers,15,3.5,-3.5,-11.5,11.5,12,1.25,True
+401166173,2020-01-18,Iowa Hawkeyes,Michigan Wolverines,4,1.9,-1.9,-2.1,2.1,7,0.5714285714285714,True
+401175179,2020-01-19,Gonzaga Bulldogs,BYU Cougars,7,5.9,-5.9,-1.0999999999999996,1.0999999999999996,23,0.30434782608695654,True
+401169698,2020-01-18,Oklahoma State Cowboys,Baylor Bears,9,0.7,-0.7,-8.3,8.3,-7,-1.2857142857142858,True
+401168359,2020-01-18,Duke Blue Devils,Louisville Cardinals,-10,5.1,-5.1,15.1,15.1,-6,1.6666666666666667,False
+401166298,2020-01-18,Florida Gators,Auburn Tigers,5,5.0,-5.0,0.0,0.0,22,0.22727272727272727,True
+401168301,2020-01-18,DePaul Blue Demons,Butler Bulldogs,10,0.4,-0.4,-9.6,9.6,13,0.7692307692307693,True
+401169699,2020-01-18,Texas Longhorns,Kansas Jayhawks,5,-1.2,1.2,-6.2,6.2,-9,-0.5555555555555556,False
+401173744,2020-01-19,San Diego State Aztecs,Nevada Wolf Pack,-2,-3.3,3.3,-1.2999999999999998,1.2999999999999998,13,-0.15384615384615385,True
+401170673,2020-01-18,Washington Huskies,Oregon Ducks,12,1.6,-1.6,-10.4,10.4,-3,-4.0,True
+401168523,2020-01-18,Miami Hurricanes,Florida State Seminoles,-1,0.4,-0.4,1.4,1.4,-4,0.25,False
+401166300,2020-01-18,Arkansas Razorbacks,Kentucky Wildcats,-9,6.9,-6.9,15.9,15.9,-7,1.2857142857142858,False
+401169700,2020-01-18,Kansas State Wildcats,West Virginia Mountaineers,17,6.0,-6.0,-11.0,11.0,16,1.0625,True
+401166176,2020-01-18,Maryland Terrapins,Purdue Boilermakers,16,4.4,-4.4,-11.6,11.6,7,2.2857142857142856,True
+401168450,2020-01-18,St. John's Red Storm,Seton Hall Pirates,13,0.9,-0.9,-12.1,12.1,-3,-4.333333333333333,True
+401170670,2020-01-18,Arizona Wildcats,Colorado Buffaloes,11,4.7,-4.7,-6.3,6.3,21,0.5238095238095238,True
+401166178,2020-01-18,Penn State Nittany Lions,Ohio State Buckeyes,15,4.6,-4.6,-10.4,10.4,14,1.0714285714285714,True
+401169701,2020-01-18,Texas Tech Red Raiders,Iowa State Cyclones,6,4.8,-4.8,-1.2000000000000002,1.2000000000000002,20,0.3,True
+401166175,2020-01-18,Illinois Fighting Illini,Northwestern Wildcats,4,7.2,-7.2,3.2,3.2,4,1.0,True
+401168328,2020-01-18,Creighton Bluejays,Providence Friars,4,5.4,-5.4,1.4000000000000004,1.4000000000000004,4,1.0,True
+401170247,2020-01-19,Fordham Rams,Davidson Wildcats,4,-1.1,1.1,-5.1,5.1,-12,-0.3333333333333333,False
+401172056,2020-01-19,Niagara Purple Eagles,Siena Saints,-6,-0.2,0.2,5.8,5.8,1,-6.0,True
+401166179,2020-01-19,Rutgers Scarlet Knights,Minnesota Golden Gophers,9,2.7,-2.7,-6.3,6.3,8,1.125,True
+401174976,2020-01-19,North Dakota State Bison,North Dakota Fighting Hawks,7,3.6,-3.6,-3.4,3.4,9,0.7777777777777778,True
+401171985,2020-01-19,Marist Red Foxes,Iona Gaels,11,5.2,-5.2,-5.8,5.8,10,1.1,True
+401171940,2020-01-19,Canisius Golden Griffins,Rider Broncs,10,4.7,-4.7,-5.3,5.3,9,1.1111111111111112,True
+401170846,2020-01-19,Maine Black Bears,Binghamton Bearcats,13,5.5,-5.5,-7.5,7.5,23,0.5652173913043478,True
+401173565,2020-01-19,Illinois State Redbirds,Loyola Chicago Ramblers,-4,5.1,-5.1,9.1,9.1,-12,0.3333333333333333,False
+401173534,2020-01-19,Southern Illinois Salukis,Drake Bulldogs,8,7.8,-7.8,-0.20000000000000018,0.20000000000000018,17,0.47058823529411764,True
+401174978,2020-01-19,South Dakota Coyotes,South Dakota State Jackrabbits,14,3.6,-3.6,-10.4,10.4,15,0.9333333333333333,True
+401206833,2020-01-19,Kansas City Roos,Grand Canyon Lopes,-4,17.8,-17.8,21.8,21.8,-3,1.3333333333333333,False
+401169541,2020-01-19,Cincinnati Bearcats,East Carolina Pirates,17,9.8,-9.8,-7.199999999999999,7.199999999999999,25,0.68,True
+401168577,2020-01-19,Wake Forest Demon Deacons,Boston College Eagles,7,5.5,-5.5,-1.5,1.5,18,0.3888888888888889,True
+401170675,2020-01-20,UCLA Bruins,California Golden Bears,1,4.7,-4.7,3.7,3.7,10,0.1,True
+401169704,2020-01-21,Baylor Bears,Oklahoma Sooners,11,6.5,-6.5,-4.5,4.5,4,2.75,True
+401169703,2020-01-21,West Virginia Mountaineers,Texas Longhorns,25,6.2,-6.2,-18.8,18.8,38,0.6578947368421053,True
+401169705,2020-01-22,Kansas Jayhawks,Kansas State Wildcats,16,3.6,-3.6,-12.4,12.4,21,0.7619047619047619,True
+401173746,2020-01-22,San Diego State Aztecs,Wyoming Cowboys,13,2.8,-2.8,-10.2,10.2,17,0.7647058823529411,True
+401168360,2020-01-22,Duke Blue Devils,Miami Hurricanes,24,9.8,-9.8,-14.2,14.2,30,0.8,True
+401168302,2020-01-22,Villanova Wildcats,Butler Bulldogs,10,4.8,-4.8,-5.2,5.2,15,0.6666666666666666,True
+401166305,2020-01-22,Kentucky Wildcats,Georgia Bulldogs,6,5.1,-5.1,-0.9000000000000004,0.9000000000000004,10,0.6,True
+401166180,2020-01-22,Northwestern Wildcats,Maryland Terrapins,14,-0.4,0.4,-14.4,14.4,-11,-1.2727272727272727,False
+401169706,2020-01-22,TCU Horned Frogs,Texas Tech Red Raiders,-4,0.3,-0.3,4.3,4.3,11,-0.36363636363636365,False
+401166181,2020-01-22,Purdue Boilermakers,Illinois Fighting Illini,1,3.1,-3.1,2.1,2.1,-17,-0.058823529411764705,True
+401168510,2020-01-23,Louisville Cardinals,Georgia Tech Yellow Jackets,-6,6.1,-6.1,12.1,12.1,4,-1.5,False
+401170250,2020-01-23,Dayton Flyers,St. Bonaventure Bonnies,18,9.9,-9.9,-8.1,8.1,26,0.6923076923076923,True
+401168434,2020-01-23,Seton Hall Pirates,Providence Friars,4,3.5,-3.5,-0.5,0.5,9,0.4444444444444444,True
+401166308,2020-01-23,Auburn Tigers,South Carolina Gamecocks,8,4.9,-4.9,-3.0999999999999996,3.0999999999999996,13,0.6153846153846154,True
+401166183,2020-01-23,Iowa Hawkeyes,Rutgers Scarlet Knights,-5,3.9,-3.9,8.9,8.9,5,-1.0,False
+401169545,2020-01-23,Tulsa Golden Hurricane,Memphis Tigers,23,3.4,-3.4,-19.6,19.6,40,0.575,True
+401166185,2020-01-24,Indiana Hoosiers,Michigan State Spartans,7,2.1,-2.1,-4.9,4.9,4,1.75,True
+401170677,2020-01-24,Oregon Ducks,USC Trojans,2,4.7,-4.7,2.7,2.7,9,0.2222222222222222,True
+401170676,2020-01-24,Colorado Buffaloes,Washington State Cougars,5,5.2,-5.2,0.20000000000000018,0.20000000000000018,22,0.22727272727272727,True
+401168303,2020-01-25,Butler Bulldogs,Marquette Golden Eagles,-4,3.7,-3.7,7.7,7.7,4,-1.0,False
+401175256,2020-01-26,Gonzaga Bulldogs,Pacific Tigers,15,9.6,-9.6,-5.4,5.4,33,0.45454545454545453,True
+401168524,2020-01-26,Florida State Seminoles,Notre Dame Fighting Irish,10,4.8,-4.8,-5.2,5.2,1,10.0,True
+401168511,2020-01-25,Louisville Cardinals,Clemson Tigers,21,6.8,-6.8,-14.2,14.2,18,1.1666666666666667,True
+401170257,2020-01-25,Richmond Spiders,Dayton Flyers,-8,0.2,-0.2,8.2,8.2,-8,1.0,False
+401168435,2020-01-25,Providence Friars,Villanova Wildcats,-7,2.9,-2.9,9.9,9.9,-4,1.75,False
+401169548,2020-01-25,Memphis Tigers,SMU Mustangs,9,3.7,-3.7,-5.3,5.3,-4,-2.25,True
+401166188,2020-01-25,Michigan Wolverines,Illinois Fighting Illini,-4,5.0,-5.0,9.0,9.0,-2,2.0,False
+401170680,2020-01-26,Arizona State Sun Devils,Arizona Wildcats,-13,3.6,-3.6,16.6,16.6,1,-13.0,False
+401170681,2020-01-26,Colorado Buffaloes,Washington Huskies,18,5.2,-5.2,-12.8,12.8,14,1.2857142857142858,True
+401166189,2020-01-25,Rutgers Scarlet Knights,Nebraska Cornhuskers,5,8.3,-8.3,3.3000000000000007,3.3000000000000007,3,1.6666666666666667,True
+401173755,2020-01-26,UNLV Rebels,San Diego State Aztecs,-6,8.9,-8.9,14.9,14.9,-4,1.5,False
+401166191,2020-01-26,Minnesota Golden Gophers,Michigan State Spartans,-8,3.2,-3.2,11.2,11.2,-18,0.4444444444444444,False
+401170685,2020-01-26,Oregon Ducks,UCLA Bruins,22,5.8,-5.8,-16.2,16.2,21,1.0476190476190477,True
+401166190,2020-01-26,Indiana Hoosiers,Maryland Terrapins,-9,2.5,-2.5,11.5,11.5,-1,9.0,False
+401169551,2020-01-26,Houston Cougars,South Florida Bulls,8,3.9,-3.9,-4.1,4.1,19,0.42105263157894735,True
+401169718,2020-01-28,Oklahoma State Cowboys,Kansas Jayhawks,-5,-0.7,0.7,4.3,4.3,-15,0.3333333333333333,True
+401166193,2020-01-28,Iowa Hawkeyes,Wisconsin Badgers,0,2.5,-2.5,2.5,2.5,6,0.0,
+401168480,2020-01-29,Virginia Cavaliers,Florida State Seminoles,-1,3.1,-3.1,4.1,4.1,5,-0.2,False
+401168468,2020-01-28,St. John's Red Storm,Villanova Wildcats,-13,0.0,-0.0,13.0,13.0,-20,0.65,True
+401168361,2020-01-29,Duke Blue Devils,Pittsburgh Panthers,11,10.9,-10.9,-0.09999999999999964,0.09999999999999964,12,0.9166666666666666,True
+401168304,2020-01-29,Georgetown Hoyas,Butler Bulldogs,11,1.8,-1.8,-9.2,9.2,-5,-2.2,True
+401166195,2020-01-29,Rutgers Scarlet Knights,Purdue Boilermakers,12,3.6,-3.6,-8.4,8.4,7,1.7142857142857142,True
+401169720,2020-01-30,Iowa State Cyclones,Baylor Bears,-7,1.4,-1.4,8.4,8.4,-14,0.5,False
+401173759,2020-01-30,New Mexico Lobos,San Diego State Aztecs,-23,5.9,-5.9,28.9,28.9,-28,0.8214285714285714,False
+401168512,2020-01-30,Boston College Eagles,Louisville Cardinals,-2,-2.1,2.1,-0.10000000000000009,0.10000000000000009,-17,0.11764705882352941,True
+401170264,2020-01-30,Duquesne Dukes,Dayton Flyers,-8,4.1,-4.1,12.1,12.1,-4,2.0,False
+401168374,2020-01-29,Seton Hall Pirates,DePaul Blue Demons,-1,7.5,-7.5,8.5,8.5,7,-0.14285714285714285,False
+401169722,2020-01-30,Texas Tech Red Raiders,West Virginia Mountaineers,4,3.7,-3.7,-0.2999999999999998,0.2999999999999998,8,0.5,True
+401166315,2020-01-29,Kentucky Wildcats,Vanderbilt Commodores,-7,8.5,-8.5,15.5,15.5,9,-0.7777777777777778,False
+401166196,2020-01-29,Michigan State Spartans,Northwestern Wildcats,11,8.1,-8.1,-2.9000000000000004,2.9000000000000004,29,0.3793103448275862,True
+401169555,2020-01-30,East Carolina Pirates,Houston Cougars,-12,-3.2,3.2,8.8,8.8,-10,1.2,True
+401166316,2020-01-30,LSU Tigers,Alabama Crimson Tide,18,3.7,-3.7,-14.3,14.3,14,1.2857142857142858,True
+401166197,2020-01-30,Penn State Nittany Lions,Indiana Hoosiers,0,-1.1,1.1,-1.1,1.1,15,0.0,
+401175260,2020-01-31,Santa Clara Broncos,Gonzaga Bulldogs,-4,-3.5,3.5,0.5,0.5,-15,0.26666666666666666,True
+401170687,2020-01-31,California Golden Bears,Oregon Ducks,0,0.2,-0.2,0.2,0.2,-5,-0.0,
+401166199,2020-01-31,Maryland Terrapins,Iowa Hawkeyes,4,4.2,-4.2,0.20000000000000018,0.20000000000000018,10,0.4,True
+401166198,2020-01-31,Illinois Fighting Illini,Minnesota Golden Gophers,4,3.2,-3.2,-0.7999999999999998,0.7999999999999998,8,0.5,True
+401170689,2020-01-31,UCLA Bruins,Colorado Buffaloes,12,1.7,-1.7,-10.3,10.3,4,3.0,True
+401172335,2020-01-31,Pennsylvania Quakers,Harvard Crimson,7,4.5,-4.5,-2.5,2.5,3,2.3333333333333335,True
+401172670,2020-02-01,Buffalo Bulls,Bowling Green Falcons,11,11.1,-11.1,0.09999999999999964,0.09999999999999964,-1,-11.0,True
+401172501,2020-02-01,Detroit Mercy Titans,Oakland Golden Grizzlies,-9,1.7,-1.7,10.7,10.7,-13,0.6923076923076923,False
+401172322,2020-02-01,Princeton Tigers,Dartmouth Big Green,5,0.4,-0.4,-4.6,4.6,22,0.22727272727272727,True
+401172285,2020-02-01,Yale Bulldogs,Columbia Lions,19,10.1,-10.1,-8.9,8.9,31,0.6129032258064516,True
+401172266,2020-02-01,Brown Bears,Cornell Big Red,5,4.7,-4.7,-0.2999999999999998,0.2999999999999998,11,0.45454545454545453,True
+401172027,2020-02-01,Niagara Purple Eagles,Marist Red Foxes,-16,0.2,-0.2,16.2,16.2,-19,0.8421052631578947,False
+401172007,2020-02-01,Saint Peter's Peacocks,Manhattan Jaspers,16,7.4,-7.4,-8.6,8.6,17,0.9411764705882353,True
+401171987,2020-02-01,Iona Gaels,Siena Saints,-16,1.5,-1.5,17.5,17.5,-23,0.6956521739130435,False
+401171966,2020-02-01,Rider Broncs,Fairfield Stags,-3,9.0,-9.0,12.0,12.0,16,-0.1875,False
+401171943,2020-02-01,Canisius Golden Griffins,Quinnipiac Bobcats,1,3.7,-3.7,2.7,2.7,-17,-0.058823529411764705,True
+401170269,2020-02-01,Rhode Island Rams,VCU Rams,22,2.8,-2.8,-19.2,19.2,12,1.8333333333333333,True
+401172524,2020-02-01,Green Bay Phoenix,Northern Kentucky Norse,2,-3.6,3.6,-5.6,5.6,-9,-0.2222222222222222,False
+401169725,2020-02-01,Baylor Bears,TCU Horned Frogs,11,7.7,-7.7,-3.3,3.3,16,0.6875,True
+401175264,2020-02-01,San Francisco Dons,Gonzaga Bulldogs,8,-1.2,1.2,-9.2,9.2,-4,-2.0,False
+401169726,2020-02-01,Kansas Jayhawks,Texas Tech Red Raiders,9,5.9,-5.9,-3.0999999999999996,3.0999999999999996,3,3.0,True
+401173765,2020-02-02,San Diego State Aztecs,Utah State Aggies,-8,-0.1,0.1,7.9,7.9,12,-0.6666666666666666,True
+401168525,2020-02-01,Virginia Tech Hokies,Florida State Seminoles,-5,3.1,-3.1,8.1,8.1,-11,0.45454545454545453,False
+401170270,2020-02-01,Dayton Flyers,Fordham Rams,19,11.5,-11.5,-7.5,7.5,14,1.3571428571428572,True
+401168331,2020-02-01,Villanova Wildcats,Creighton Bluejays,-12,2.6,-2.6,14.6,14.6,-15,0.8,False
+401168362,2020-02-02,Syracuse Orange,Duke Blue Devils,-4,-0.4,0.4,3.6,3.6,-9,0.4444444444444444,True
+401168451,2020-02-01,Seton Hall Pirates,Xavier Musketeers,-12,4.9,-4.9,16.9,16.9,-12,1.0,False
+401170693,2020-02-01,Stanford Cardinal,Oregon Ducks,-8,1.8,-1.8,9.8,9.8,10,-0.8,False
+401169723,2020-02-01,West Virginia Mountaineers,Kansas State Wildcats,3,1.2,-1.2,-1.8,1.8,9,0.3333333333333333,True
+401166322,2020-02-01,Auburn Tigers,Kentucky Wildcats,-1,3.0,-3.0,4.0,4.0,9,-0.1111111111111111,False
+401166204,2020-02-01,Wisconsin Badgers,Michigan State Spartans,16,3.7,-3.7,-12.3,12.3,1,16.0,True
+401168305,2020-02-01,Butler Bulldogs,Providence Friars,-6,3.0,-3.0,9.0,9.0,-4,1.5,False
+401170694,2020-02-02,USC Trojans,Colorado Buffaloes,-9,2.9,-2.9,11.9,11.9,-21,0.42857142857142855,False
+401169559,2020-02-01,Cincinnati Bearcats,Houston Cougars,-10,2.8,-2.8,12.8,12.8,2,-5.0,False
+401166201,2020-02-02,Nebraska Cornhuskers,Penn State Nittany Lions,-5,4.0,-4.0,9.0,9.0,-12,0.4166666666666667,False
+401166200,2020-02-01,Michigan Wolverines,Rutgers Scarlet Knights,3,5.5,-5.5,2.5,2.5,6,0.5,True
+401166205,2020-02-02,Iowa Hawkeyes,Illinois Fighting Illini,-1,3.4,-3.4,4.4,4.4,7,-0.14285714285714285,False
+401169728,2020-02-04,Kansas State Wildcats,Baylor Bears,-5,4.9,-4.9,9.9,9.9,-6,0.8333333333333334,False
+401169729,2020-02-04,Kansas Jayhawks,Texas Longhorns,-2,8.4,-8.4,10.4,10.4,11,-0.18181818181818182,False
+401168498,2020-02-04,Florida State Seminoles,North Carolina Tar Heels,1,5.7,-5.7,4.7,4.7,6,0.16666666666666666,True
+401168363,2020-02-05,Boston College Eagles,Duke Blue Devils,3,-4.1,4.1,-7.1,7.1,-8,-0.375,False
+401166206,2020-02-05,Maryland Terrapins,Rutgers Scarlet Knights,-5,4.4,-4.4,9.4,9.4,5,-1.0,False
+401166326,2020-02-05,Arkansas Razorbacks,Auburn Tigers,-2,7.6,-7.6,9.6,9.6,-3,0.6666666666666666,False
+401166327,2020-02-05,Kentucky Wildcats,Mississippi State Bulldogs,8,6.3,-6.3,-1.7000000000000002,1.7000000000000002,8,1.0,True
+401166208,2020-02-05,Michigan State Spartans,Penn State Nittany Lions,-6,9.9,-9.9,15.9,15.9,-5,1.2,False
+401168514,2020-02-06,Louisville Cardinals,Wake Forest Demon Deacons,-12,7.5,-7.5,19.5,19.5,10,-1.2,False
+401168306,2020-02-05,Butler Bulldogs,Villanova Wildcats,4,2.4,-2.4,-1.6,1.6,3,1.3333333333333333,True
+401168400,2020-02-06,Georgetown Hoyas,Seton Hall Pirates,-10,1.2,-1.2,11.2,11.2,-7,1.4285714285714286,False
+401169731,2020-02-06,West Virginia Mountaineers,Iowa State Cyclones,14,4.7,-4.7,-9.3,9.3,15,0.9333333333333333,True
+401166210,2020-02-06,Purdue Boilermakers,Iowa Hawkeyes,25,3.4,-3.4,-21.6,21.6,36,0.6944444444444444,True
+401166331,2020-02-06,Vanderbilt Commodores,LSU Tigers,5,-0.8,0.8,-5.8,5.8,9,0.5555555555555556,False
+401168332,2020-02-06,Providence Friars,Creighton Bluejays,-4,1.8,-1.8,5.8,5.8,17,-0.23529411764705882,False
+401175268,2020-02-07,Gonzaga Bulldogs,Loyola Marymount Lions,8,11.1,-11.1,3.0999999999999996,3.0999999999999996,18,0.4444444444444444,True
+401170698,2020-02-07,Arizona Wildcats,USC Trojans,10,5.5,-5.5,-4.5,4.5,5,2.0,True
+401170700,2020-02-07,Colorado Buffaloes,California Golden Bears,0,6.8,-6.8,6.8,6.8,6,0.0,
+401169567,2020-02-07,Houston Cougars,Tulane Green Wave,18,9.4,-9.4,-8.6,8.6,13,1.3846153846153846,True
+401166211,2020-02-08,Illinois Fighting Illini,Maryland Terrapins,2,3.2,-3.2,1.2000000000000002,1.2000000000000002,-9,-0.2222222222222222,True
+401169736,2020-02-08,Baylor Bears,Oklahoma State Cowboys,9,6.5,-6.5,-2.5,2.5,8,1.125,True
+401175272,2020-02-09,Saint Mary's Gaels,Gonzaga Bulldogs,-25,0.1,-0.1,25.1,25.1,-30,0.8333333333333334,False
+401169733,2020-02-08,TCU Horned Frogs,Kansas Jayhawks,-13,-1.9,1.9,11.1,11.1,-14,0.9285714285714286,True
+401173772,2020-02-09,Air Force Falcons,San Diego State Aztecs,-7,5.2,-5.2,12.2,12.2,-15,0.4666666666666667,False
+401168482,2020-02-08,Louisville Cardinals,Virginia Cavaliers,14,5.0,-5.0,-9.0,9.0,7,2.0,True
+401170281,2020-02-08,Dayton Flyers,Saint Louis Billikens,8,8.1,-8.1,0.09999999999999964,0.09999999999999964,6,1.3333333333333333,True
+401168364,2020-02-08,North Carolina Tar Heels,Duke Blue Devils,9,-1.5,1.5,-10.5,10.5,-2,-4.5,False
+401168526,2020-02-08,Florida State Seminoles,Miami Hurricanes,3,6.8,-6.8,3.8,3.8,18,0.16666666666666666,True
+401168452,2020-02-08,Villanova Wildcats,Seton Hall Pirates,4,4.5,-4.5,0.5,0.5,-6,-0.6666666666666666,True
+401166332,2020-02-08,Auburn Tigers,LSU Tigers,-12,3.7,-3.7,15.7,15.7,1,-12.0,False
+401169734,2020-02-08,Oklahoma Sooners,West Virginia Mountaineers,7,1.7,-1.7,-5.3,5.3,10,0.7,True
+401170705,2020-02-09,Oregon State Beavers,Oregon Ducks,-4,3.6,-3.6,7.6,7.6,10,-0.4,False
+401166333,2020-02-08,Tennessee Volunteers,Kentucky Wildcats,-7,2.0,-2.0,9.0,9.0,-13,0.5384615384615384,False
+401166214,2020-02-08,Michigan Wolverines,Michigan State Spartans,6,4.2,-4.2,-1.7999999999999998,1.7999999999999998,9,0.6666666666666666,True
+401166213,2020-02-08,Iowa Hawkeyes,Nebraska Cornhuskers,11,8.7,-8.7,-2.3000000000000007,2.3000000000000007,24,0.4583333333333333,True
+401168333,2020-02-08,Creighton Bluejays,St. John's Red Storm,10,8.3,-8.3,-1.6999999999999993,1.6999999999999993,12,0.8333333333333334,True
+401166215,2020-02-08,Penn State Nittany Lions,Minnesota Golden Gophers,14,-2.1,2.1,-16.1,16.1,6,2.3333333333333335,False
+401170702,2020-02-09,Arizona Wildcats,UCLA Bruins,-1,6.6,-6.6,7.6,7.6,-13,0.07692307692307693,False
+401170704,2020-02-08,Colorado Buffaloes,Stanford Cardinal,-11,5.0,-5.0,16.0,16.0,7,-1.5714285714285714,False
+401168307,2020-02-09,Marquette Golden Eagles,Butler Bulldogs,8,3.5,-3.5,-4.5,4.5,19,0.42105263157894735,True
+401169739,2020-02-11,Texas Longhorns,Baylor Bears,-6,0.2,-0.2,6.2,6.2,-7,0.8571428571428571,False
+401168365,2020-02-11,Duke Blue Devils,Florida State Seminoles,1,6.2,-6.2,5.2,5.2,5,0.2,True
+401169738,2020-02-11,Texas Tech Red Raiders,TCU Horned Frogs,25,6.9,-6.9,-18.1,18.1,46,0.5434782608695652,True
+401173777,2020-02-12,San Diego State Aztecs,New Mexico Lobos,2,1.3,-1.3,-0.7,0.7,23,0.08695652173913043,True
+401170287,2020-02-12,Dayton Flyers,Rhode Island Rams,14,8.0,-8.0,-6.0,6.0,14,1.0,True
+401166219,2020-02-12,Maryland Terrapins,Nebraska Cornhuskers,13,9.1,-9.1,-3.9000000000000004,3.9000000000000004,2,6.5,True
+401166339,2020-02-12,Vanderbilt Commodores,Kentucky Wildcats,9,-1.3,1.3,-10.3,10.3,-14,-0.6428571428571429,False
+401166220,2020-02-11,Purdue Boilermakers,Penn State Nittany Lions,-12,8.3,-8.3,20.3,20.3,-12,1.0,False
+401166218,2020-02-12,Illinois Fighting Illini,Michigan State Spartans,-17,2.8,-2.8,19.8,19.8,-1,17.0,False
+401166342,2020-02-12,LSU Tigers,Missouri Tigers,-6,6.2,-6.2,12.2,12.2,4,-1.5,False
+401169741,2020-02-13,West Virginia Mountaineers,Kansas Jayhawks,6,1.2,-1.2,-4.8,4.8,-9,-0.6666666666666666,True
+401168515,2020-02-13,Georgia Tech Yellow Jackets,Louisville Cardinals,5,1.1,-1.1,-3.9,3.9,6,0.8333333333333334,True
+401168334,2020-02-12,Seton Hall Pirates,Creighton Bluejays,-2,1.6,-1.6,3.6,3.6,-5,0.4,False
+401166344,2020-02-13,Auburn Tigers,Alabama Crimson Tide,3,3.8,-3.8,0.7999999999999998,0.7999999999999998,4,0.75,True
+401168419,2020-02-13,Villanova Wildcats,Marquette Golden Eagles,9,5.0,-5.0,-4.0,4.0,1,9.0,True
+401168308,2020-02-12,Butler Bulldogs,Xavier Musketeers,9,4.4,-4.4,-4.6,4.6,5,1.8,True
+401169577,2020-02-13,South Florida Bulls,Houston Cougars,-5,3.3,-3.3,8.3,8.3,-4,1.25,False
+401170709,2020-02-14,Oregon Ducks,Colorado Buffaloes,-9,4.0,-4.0,13.0,13.0,8,-1.125,False
+401166223,2020-02-14,Indiana Hoosiers,Iowa Hawkeyes,15,3.1,-3.1,-11.9,11.9,12,1.25,True
+401172692,2020-02-14,Toledo Rockets,Buffalo Bulls,-24,-0.5,0.5,23.5,23.5,-16,1.5,True
+401174456,2020-02-15,Northern Kentucky Norse,IU Indianapolis Jaguars,3,4.3,-4.3,1.2999999999999998,1.2999999999999998,14,0.21428571428571427,True
+401172690,2020-02-15,Central Michigan Chippewas,Akron Zips,-3,7.2,-7.2,10.2,10.2,-13,0.23076923076923078,False
+401172345,2020-02-15,Princeton Tigers,Yale Bulldogs,-18,0.5,-0.5,18.5,18.5,-24,0.75,False
+401172305,2020-02-15,Harvard Crimson,Cornell Big Red,27,5.1,-5.1,-21.9,21.9,22,1.2272727272727273,True
+401172288,2020-02-15,Dartmouth Big Green,Columbia Lions,-4,10.1,-10.1,14.1,14.1,2,-2.0,False
+401172270,2020-02-15,Pennsylvania Quakers,Brown Bears,6,5.2,-5.2,-0.7999999999999998,0.7999999999999998,-12,-0.5,True
+401172068,2020-02-15,Saint Peter's Peacocks,Quinnipiac Bobcats,18,1.7,-1.7,-16.3,16.3,12,1.5,True
+401171990,2020-02-15,Iona Gaels,Manhattan Jaspers,23,6.4,-6.4,-16.6,16.6,23,1.0,True
+401171970,2020-02-15,Marist Red Foxes,Fairfield Stags,0,8.8,-8.8,8.8,8.8,-4,-0.0,
+401171947,2020-02-15,Canisius Golden Griffins,Monmouth Hawks,6,6.3,-6.3,0.2999999999999998,0.2999999999999998,-14,-0.42857142857142855,True
+401170291,2020-02-15,St. Bonaventure Bonnies,Davidson Wildcats,-19,0.5,-0.5,19.5,19.5,-29,0.6551724137931034,False
+401175005,2020-02-15,North Dakota State Bison,Purdue Fort Wayne Mastodons,10,-2.0,2.0,-12.0,12.0,10,1.0,False
+401175004,2020-02-15,South Dakota State Jackrabbits,Denver Pioneers,-3,8.4,-8.4,11.4,11.4,12,-0.25,False
+401172078,2020-02-15,Siena Saints,Rider Broncs,22,3.9,-3.9,-18.1,18.1,9,2.4444444444444446,True
+401169746,2020-02-15,Baylor Bears,West Virginia Mountaineers,11,4.6,-4.6,-6.4,6.4,11,1.0,True
+401175278,2020-02-16,Pepperdine Waves,Gonzaga Bulldogs,-4,-4.5,4.5,-0.5,0.5,-12,0.3333333333333333,True
+401169743,2020-02-15,Kansas Jayhawks,Oklahoma Sooners,9,7.9,-7.9,-1.0999999999999996,1.0999999999999996,17,0.5294117647058824,True
+401168516,2020-02-15,Clemson Tigers,Louisville Cardinals,17,0.4,-0.4,-16.6,16.6,15,1.1333333333333333,True
+401170293,2020-02-15,Massachusetts Minutemen,Dayton Flyers,-5,-3.7,3.7,1.2999999999999998,1.2999999999999998,-8,0.625,True
+401168366,2020-02-15,Duke Blue Devils,Notre Dame Fighting Irish,10,7.7,-7.7,-2.3,2.3,34,0.29411764705882354,True
+401168527,2020-02-15,Florida State Seminoles,Syracuse Orange,8,4.8,-4.8,-3.2,3.2,3,2.6666666666666665,True
+401166224,2020-02-15,Michigan State Spartans,Maryland Terrapins,-8,4.0,-4.0,12.0,12.0,-7,1.1428571428571428,False
+401168438,2020-02-16,Providence Friars,Seton Hall Pirates,14,3.7,-3.7,-10.3,10.3,3,4.666666666666667,True
+401166350,2020-02-15,Missouri Tigers,Auburn Tigers,13,1.0,-1.0,-12.0,12.0,12,1.0833333333333333,True
+401166227,2020-02-15,Penn State Nittany Lions,Northwestern Wildcats,14,2.1,-2.1,-11.9,11.9,16,0.875,True
+401170714,2020-02-16,Oregon State Beavers,Colorado Buffaloes,-9,4.0,-4.0,13.0,13.0,-22,0.4090909090909091,False
+401168309,2020-02-15,Butler Bulldogs,Georgetown Hoyas,-1,5.4,-5.4,6.4,6.4,-7,0.14285714285714285,False
+401169473,2020-02-15,SMU Mustangs,Houston Cougars,11,1.4,-1.4,-9.6,9.6,1,11.0,True
+401166228,2020-02-15,Rutgers Scarlet Knights,Illinois Fighting Illini,2,3.2,-3.2,1.2000000000000002,1.2000000000000002,15,0.13333333333333333,True
+401168335,2020-02-16,Creighton Bluejays,DePaul Blue Demons,14,9.5,-9.5,-4.5,4.5,29,0.4827586206896552,True
+401169744,2020-02-15,Oklahoma State Cowboys,Texas Tech Red Raiders,-2,1.7,-1.7,3.7,3.7,3,-0.6666666666666666,False
+401166349,2020-02-15,Alabama Crimson Tide,LSU Tigers,11,3.5,-3.5,-7.5,7.5,6,1.8333333333333333,True
+401169471,2020-02-16,Temple Owls,Villanova Wildcats,4,-2.3,2.3,-6.3,6.3,-20,-0.2,False
+401170719,2020-02-17,Oregon Ducks,Utah Utes,14,7.3,-7.3,-6.7,6.7,18,0.7777777777777778,True
+401166230,2020-02-16,Minnesota Golden Gophers,Iowa Hawkeyes,5,4.2,-4.2,-0.7999999999999998,0.7999999999999998,-3,-1.6666666666666667,True
+401169748,2020-02-18,Kansas Jayhawks,Iowa State Cyclones,10,7.2,-7.2,-2.8,2.8,20,0.5,True
+401169750,2020-02-19,Oklahoma Sooners,Baylor Bears,-6,0.7,-0.7,6.7,6.7,-11,0.5454545454545454,False
+401170299,2020-02-19,VCU Rams,Dayton Flyers,-7,0.2,-0.2,7.2,7.2,-5,1.4,False
+401168528,2020-02-19,Florida State Seminoles,Pittsburgh Panthers,5,7.9,-7.9,2.9000000000000004,2.9000000000000004,15,0.3333333333333333,True
+401166232,2020-02-18,Penn State Nittany Lions,Illinois Fighting Illini,-4,-1.7,1.7,2.3,2.3,-6,0.6666666666666666,True
+401166356,2020-02-19,LSU Tigers,Kentucky Wildcats,-1,2.9,-2.9,3.9,3.9,-3,0.3333333333333333,False
+401168336,2020-02-19,Marquette Golden Eagles,Creighton Bluejays,-10,1.1,-1.1,11.1,11.1,-8,1.25,False
+401169749,2020-02-19,West Virginia Mountaineers,Oklahoma State Cowboys,-5,5.5,-5.5,10.5,10.5,18,-0.2777777777777778,False
+401168517,2020-02-20,Louisville Cardinals,Syracuse Orange,7,5.9,-5.9,-1.0999999999999996,1.0999999999999996,24,0.2916666666666667,True
+401168378,2020-02-20,DePaul Blue Demons,Villanova Wildcats,-20,-1.1,1.1,18.9,18.9,-20,1.0,True
+401166357,2020-02-20,Georgia Bulldogs,Auburn Tigers,6,2.7,-2.7,-3.3,3.3,10,0.6,True
+401168310,2020-02-19,Seton Hall Pirates,Butler Bulldogs,-6,4.0,-4.0,10.0,10.0,2,-3.0,False
+401169480,2020-02-20,Houston Cougars,Tulsa Golden Hurricane,6,6.0,-6.0,0.0,0.0,33,0.18181818181818182,True
+401175281,2020-02-21,Gonzaga Bulldogs,San Francisco Dons,-9,8.4,-8.4,17.4,17.4,17,-0.5294117647058824,False
+401170722,2020-02-21,Arizona State Sun Devils,Oregon Ducks,11,4.2,-4.2,-6.8,6.8,5,2.2,True
+401170723,2020-02-21,Colorado Buffaloes,USC Trojans,-3,4.3,-4.3,7.3,7.3,4,-0.75,False
+401166236,2020-02-21,Iowa Hawkeyes,Ohio State Buckeyes,11,9.8,-9.8,-1.1999999999999993,1.1999999999999993,9,1.2222222222222223,True
+401175188,2020-02-21,BYU Cougars,Santa Clara Broncos,10,8.2,-8.2,-1.8000000000000007,1.8000000000000007,10,1.0,True
+401170721,2020-02-21,Arizona Wildcats,Oregon State Beavers,10,4.2,-4.2,-5.8,5.8,26,0.38461538461538464,True
+401176505,2020-02-21,Merrimack Warriors,Sacred Heart Pioneers,0,2.4,-2.4,2.4,2.4,7,0.0,
+401172505,2020-02-22,Detroit Mercy Titans,Green Bay Phoenix,-8,1.0,-1.0,9.0,9.0,-17,0.47058823529411764,False
+401172346,2020-02-22,Harvard Crimson,Princeton Tigers,-4,1.6,-1.6,5.6,5.6,1,-4.0,False
+401172325,2020-02-22,Dartmouth Big Green,Pennsylvania Quakers,1,7.9,-7.9,6.9,6.9,7,0.14285714285714285,True
+401172307,2020-02-22,Cornell Big Red,Yale Bulldogs,5,-3.0,3.0,-8.0,8.0,-1,-5.0,False
+401172272,2020-02-22,Columbia Lions,Brown Bears,5,2.9,-2.9,-2.1,2.1,-6,-0.8333333333333334,True
+401172029,2020-02-22,Marist Red Foxes,Monmouth Hawks,-1,4.8,-4.8,5.8,5.8,-4,0.25,False
+401172011,2020-02-22,Manhattan Jaspers,Saint Peter's Peacocks,0,-0.2,0.2,-0.2,0.2,-3,-0.0,
+401171993,2020-02-22,Iona Gaels,Rider Broncs,5,1.7,-1.7,-3.3,3.3,1,5.0,True
+401171972,2020-02-22,Fairfield Stags,Niagara Purple Eagles,-15,2.1,-2.1,17.1,17.1,1,-15.0,False
+401171948,2020-02-22,Quinnipiac Bobcats,Canisius Golden Griffins,-7,3.5,-3.5,10.5,10.5,2,-3.5,False
+401176506,2020-02-22,Robert Morris Colonials,Mount St. Mary's Mountaineers,-5,5.8,-5.8,10.8,10.8,8,-0.625,False
+401176503,2020-02-22,Wagner Seahawks,Central Connecticut Blue Devils,-6,-5.2,5.2,0.7999999999999998,0.7999999999999998,12,-0.5,True
+401175150,2020-02-22,Oakland Golden Grizzlies,Milwaukee Panthers,-1,5.5,-5.5,6.5,6.5,7,-0.14285714285714285,False
+401170304,2020-02-22,Saint Louis Billikens,VCU Rams,14,2.5,-2.5,-11.5,11.5,18,0.7777777777777778,True
+401169753,2020-02-22,Baylor Bears,Kansas Jayhawks,-3,2.3,-2.3,5.3,5.3,-3,1.0,False
+401175189,2020-02-23,BYU Cougars,Gonzaga Bulldogs,8,1.3,-1.3,-6.7,6.7,13,0.6153846153846154,True
+401173792,2020-02-23,San Diego State Aztecs,UNLV Rebels,-12,-1.7,1.7,10.3,10.3,-3,4.0,True
+401170308,2020-02-22,Dayton Flyers,Duquesne Dukes,-2,3.1,-3.1,5.1,5.1,10,-0.2,False
+401168368,2020-02-23,Duke Blue Devils,Virginia Tech Hokies,26,6.6,-6.6,-19.4,19.4,24,1.0833333333333333,True
+401166363,2020-02-22,Kentucky Wildcats,Florida Gators,0,2.8,-2.8,2.8,2.8,6,0.0,
+401168501,2020-02-22,Louisville Cardinals,North Carolina Tar Heels,13,6.9,-6.9,-6.1,6.1,17,0.7647058823529411,True
+401169786,2020-02-22,Xavier Musketeers,Villanova Wildcats,-9,1.5,-1.5,10.5,10.5,-9,1.0,False
+401166360,2020-02-22,Auburn Tigers,Tennessee Volunteers,-8,4.6,-4.6,12.6,12.6,7,-1.1428571428571428,False
+401170726,2020-02-23,Arizona Wildcats,Oregon Ducks,-3,4.2,-4.2,7.2,7.2,-1,3.0,False
+401169755,2020-02-22,TCU Horned Frogs,West Virginia Mountaineers,-2,0.2,-0.2,2.2,2.2,7,-0.2857142857142857,False
+401170728,2020-02-22,Colorado Buffaloes,UCLA Bruins,3,5.5,-5.5,2.5,2.5,-7,-0.42857142857142855,True
+401168420,2020-02-22,Providence Friars,Marquette Golden Eagles,14,4.3,-4.3,-9.7,9.7,12,1.1666666666666667,True
+401169484,2020-02-22,Memphis Tigers,Houston Cougars,4,1.0,-1.0,-3.0,3.0,1,4.0,True
+401166241,2020-02-23,Ohio State Buckeyes,Maryland Terrapins,7,-3.1,3.1,-10.1,10.1,7,1.0,False
+401166239,2020-02-23,Indiana Hoosiers,Penn State Nittany Lions,13,8.3,-8.3,-4.699999999999999,4.699999999999999,8,1.625,True
+401168311,2020-02-23,Creighton Bluejays,Butler Bulldogs,19,5.8,-5.8,-13.2,13.2,22,0.8636363636363636,True
+401168453,2020-02-23,Seton Hall Pirates,St. John's Red Storm,14,6.3,-6.3,-7.7,7.7,16,0.875,True
+401169759,2020-02-25,Kansas Jayhawks,Oklahoma State Cowboys,10,7.9,-7.9,-2.0999999999999996,2.0999999999999996,25,0.4,True
+401168518,2020-02-25,Florida State Seminoles,Louisville Cardinals,-8,2.6,-2.6,10.6,10.6,15,-0.5333333333333333,False
+401169758,2020-02-25,Texas Longhorns,West Virginia Mountaineers,6,1.0,-1.0,-5.0,5.0,10,0.6,True
+401169761,2020-02-26,Baylor Bears,Kansas State Wildcats,26,2.3,-2.3,-23.7,23.7,19,1.368421052631579,True
+401170312,2020-02-26,George Mason Patriots,Dayton Flyers,-5,-3.3,3.3,1.7000000000000002,1.7000000000000002,-7,0.7142857142857143,True
+401173796,2020-02-26,San Diego State Aztecs,Colorado State Rams,-2,-3.8,3.8,-1.7999999999999998,1.7999999999999998,6,-0.3333333333333333,True
+401168369,2020-02-26,Wake Forest Demon Deacons,Duke Blue Devils,0,-2.2,2.2,-2.2,2.2,12,0.0,
+401166368,2020-02-26,Texas A&M Aggies,Kentucky Wildcats,-9,2.0,-2.0,11.0,11.0,-9,1.0,False
+401166244,2020-02-26,Michigan State Spartans,Iowa Hawkeyes,-6,4.6,-4.6,10.6,10.6,8,-0.75,False
+401169762,2020-02-26,Oklahoma Sooners,Texas Tech Red Raiders,10,1.7,-1.7,-8.3,8.3,14,0.7142857142857143,True
+401166245,2020-02-27,Minnesota Golden Gophers,Maryland Terrapins,16,3.7,-3.7,-12.3,12.3,-1,-16.0,True
+401168470,2020-02-26,Villanova Wildcats,St. John's Red Storm,2,7.2,-7.2,5.2,5.2,11,0.18181818181818182,True
+401166246,2020-02-27,Penn State Nittany Lions,Rutgers Scarlet Knights,18,-1.3,1.3,-19.3,19.3,1,18.0,False
+401175288,2020-02-28,Gonzaga Bulldogs,San Diego Toreros,12,14.5,-14.5,2.5,2.5,35,0.34285714285714286,True
+401170734,2020-02-28,Oregon Ducks,Oregon State Beavers,4,3.6,-3.6,-0.3999999999999999,0.3999999999999999,15,0.26666666666666666,True
+401166247,2020-02-28,Michigan Wolverines,Wisconsin Badgers,-10,4.1,-4.1,14.1,14.1,-7,1.4285714285714286,False
+401170733,2020-02-28,California Golden Bears,Colorado Buffaloes,12,0.4,-0.4,-11.6,11.6,14,0.8571428571428571,True
+401166248,2020-02-28,Nebraska Cornhuskers,Ohio State Buckeyes,-16,5.1,-5.1,21.1,21.1,-21,0.7619047619047619,False
+401170318,2020-02-29,Dayton Flyers,Davidson Wildcats,18,6.6,-6.6,-11.4,11.4,15,1.2,True
+401169764,2020-02-29,Kansas State Wildcats,Kansas Jayhawks,-1,3.6,-3.6,4.6,4.6,-4,0.25,False
+401169765,2020-02-29,TCU Horned Frogs,Baylor Bears,-7,-0.5,0.5,6.5,6.5,3,-2.3333333333333335,True
+401175292,2020-03-01,Gonzaga Bulldogs,Saint Mary's Gaels,0,7.1,-7.1,7.1,7.1,10,0.0,
+401173804,2020-03-01,Nevada Wolf Pack,San Diego State Aztecs,9,10.5,-10.5,1.5,1.5,-7,-1.2857142857142858,True
+401168530,2020-02-29,Clemson Tigers,Florida State Seminoles,-7,1.5,-1.5,8.5,8.5,1,-7.0,False
+401168370,2020-02-29,Virginia Cavaliers,Duke Blue Devils,0,0.6,-0.6,0.6,0.6,2,0.0,
+401166378,2020-02-29,Kentucky Wildcats,Auburn Tigers,3,4.2,-4.2,1.2000000000000002,1.2000000000000002,7,0.42857142857142855,True
+401166252,2020-03-01,Maryland Terrapins,Michigan State Spartans,-11,3.2,-3.2,14.2,14.2,-12,0.9166666666666666,False
+401168439,2020-02-29,Villanova Wildcats,Providence Friars,-12,4.3,-4.3,16.3,16.3,-4,3.0,False
+401168421,2020-02-29,Marquette Golden Eagles,Seton Hall Pirates,-9,3.0,-3.0,12.0,12.0,-9,1.0,False
+401166251,2020-02-29,Iowa Hawkeyes,Penn State Nittany Lions,1,8.9,-8.9,7.9,7.9,9,0.1111111111111111,True
+401175190,2020-02-29,Pepperdine Waves,BYU Cougars,3,-2.0,2.0,-5.0,5.0,-17,-0.17647058823529413,False
+401169767,2020-02-29,West Virginia Mountaineers,Oklahoma Sooners,-4,5.5,-5.5,9.5,9.5,-11,0.36363636363636365,False
+401169763,2020-02-29,Texas Tech Red Raiders,Texas Longhorns,7,6.2,-6.2,-0.7999999999999998,0.7999999999999998,-10,-0.7,True
+401168337,2020-03-01,St. John's Red Storm,Creighton Bluejays,7,-1.1,1.1,-8.1,8.1,20,0.35,False
+401168519,2020-03-01,Louisville Cardinals,Virginia Tech Hokies,0,5.0,-5.0,5.0,5.0,16,0.0,
+401166255,2020-03-01,Ohio State Buckeyes,Michigan Wolverines,3,-4.3,4.3,-7.3,7.3,14,0.21428571428571427,False
+401170741,2020-03-01,Stanford Cardinal,Colorado Buffaloes,7,2.2,-2.2,-4.8,4.8,8,0.875,True
+401169498,2020-03-01,Houston Cougars,Cincinnati Bearcats,7,4.4,-4.4,-2.5999999999999996,2.5999999999999996,13,0.5384615384615384,True
+401166381,2020-03-04,Kentucky Wildcats,Tennessee Volunteers,11,5.2,-5.2,-5.8,5.8,-8,-1.375,True
+401166259,2020-03-04,Rutgers Scarlet Knights,Maryland Terrapins,6,2.8,-2.8,-3.2,3.2,11,0.5454545454545454,True
+401166258,2020-03-04,Penn State Nittany Lions,Michigan State Spartans,15,-2.7,2.7,-17.7,17.7,-8,-1.875,False
+401166257,2020-03-04,Iowa Hawkeyes,Purdue Boilermakers,-17,3.8,-3.8,20.8,20.8,-9,1.8888888888888888,False
+401169772,2020-03-05,Kansas Jayhawks,TCU Horned Frogs,-2,9.1,-9.1,11.1,11.1,9,-0.2222222222222222,False
+401170327,2020-03-05,Rhode Island Rams,Dayton Flyers,-16,-0.8,0.8,15.2,15.2,-27,0.5925925925925926,True
+401168531,2020-03-05,Notre Dame Fighting Irish,Florida State Seminoles,7,2.4,-2.4,-4.6,4.6,-2,-3.5,True
+401168454,2020-03-05,Seton Hall Pirates,Villanova Wildcats,-3,2.7,-2.7,5.7,5.7,-2,1.5,False
+401168338,2020-03-05,Creighton Bluejays,Georgetown Hoyas,15,8.0,-8.0,-7.0,7.0,15,1.0,True
+401166383,2020-03-05,Auburn Tigers,Texas A&M Aggies,-7,4.7,-4.7,11.7,11.7,-3,2.3333333333333335,False
+401168490,2020-03-05,Miami Hurricanes,Virginia Cavaliers,-1,1.2,-1.2,2.2,2.2,-2,0.5,False
+401166261,2020-03-05,Wisconsin Badgers,Northwestern Wildcats,6,8.0,-8.0,2.0,2.0,15,0.4,True
+401170744,2020-03-06,Oregon Ducks,California Golden Bears,26,7.0,-7.0,-19.0,19.0,34,0.7647058823529411,True
+401166263,2020-03-06,Ohio State Buckeyes,Illinois Fighting Illini,-7,-2.6,2.6,4.4,4.4,8,-0.875,True
+401166262,2020-03-05,Michigan Wolverines,Nebraska Cornhuskers,4,10.5,-10.5,6.5,6.5,24,0.16666666666666666,True
+401211135,2020-03-06,Northern Iowa Panthers,Drake Bulldogs,-10,7.9,-7.9,17.9,17.9,-21,0.47619047619047616,False
+401211136,2020-03-06,Bradley Braves,Southern Illinois Salukis,-3,1.3,-1.3,4.3,4.3,5,-0.6,False
+401211066,2020-03-06,Samford Bulldogs,VMI Keydets,-22,-2.8,2.8,19.2,19.2,-18,1.2222222222222223,True
+401172724,2020-03-06,Bowling Green Falcons,Buffalo Bulls,-7,-3.9,3.9,3.1,3.1,-4,1.75,True
+401211137,2020-03-07,Loyola Chicago Ramblers,Valparaiso Beacons,14,7.1,-7.1,-6.9,6.9,-1,-14.0,True
+401172723,2020-03-07,Central Michigan Chippewas,Western Michigan Broncos,4,3.6,-3.6,-0.3999999999999999,0.3999999999999999,17,0.23529411764705882,True
+401172722,2020-03-07,Toledo Rockets,Eastern Michigan Eagles,6,-0.3,0.3,-6.3,6.3,22,0.2727272727272727,False
+401172327,2020-03-07,Dartmouth Big Green,Yale Bulldogs,-3,3.9,-3.9,6.9,6.9,-11,0.2727272727272727,False
+401172310,2020-03-07,Pennsylvania Quakers,Cornell Big Red,3,6.2,-6.2,3.2,3.2,14,0.21428571428571427,True
+401172293,2020-03-07,Princeton Tigers,Columbia Lions,21,6.8,-6.8,-14.2,14.2,23,0.9130434782608695,True
+401172276,2020-03-07,Harvard Crimson,Brown Bears,-3,4.2,-4.2,7.2,7.2,-9,0.3333333333333333,False
+401172046,2020-03-07,Monmouth Hawks,Siena Saints,-9,1.7,-1.7,10.7,10.7,-14,0.6428571428571429,False
+401171996,2020-03-07,Saint Peter's Peacocks,Iona Gaels,0,4.5,-4.5,4.5,4.5,3,0.0,
+401171977,2020-03-07,Manhattan Jaspers,Fairfield Stags,-17,4.2,-4.2,21.2,21.2,-16,1.0625,False
+401171953,2020-03-07,Canisius Golden Griffins,Niagara Purple Eagles,-1,8.3,-8.3,9.3,9.3,4,-0.25,False
+401170332,2020-03-07,Duquesne Dukes,Richmond Spiders,-8,7.7,-7.7,15.7,15.7,-11,0.7272727272727273,False
+401168566,2020-03-07,Clemson Tigers,Georgia Tech Yellow Jackets,-11,2.8,-2.8,13.8,13.8,-3,3.6666666666666665,False
+401211067,2020-03-07,Wofford Terriers,The Citadel Bulldogs,19,8.2,-8.2,-10.8,10.8,17,1.1176470588235294,True
+401211063,2020-03-07,Belmont Bruins,Eastern Kentucky Colonels,9,1.6,-1.6,-7.4,7.4,10,0.9,True
+401210998,2020-03-07,Radford Highlanders,Hampton Pirates,-5,5.4,-5.4,10.4,10.4,-8,0.625,False
+401211158,2020-03-07,San Francisco Dons,Loyola Marymount Lions,13,6.6,-6.6,-6.4,6.4,29,0.4482758620689655,True
+401170333,2020-03-07,Davidson Wildcats,VCU Rams,-2,3.7,-3.7,5.7,5.7,10,-0.2,False
+401211138,2020-03-07,Indiana State Sycamores,Missouri State Bears,-10,6.1,-6.1,16.1,16.1,-27,0.37037037037037035,False
+401211159,2020-03-07,Pepperdine Waves,Santa Clara Broncos,15,2.6,-2.6,-12.4,12.4,11,1.3636363636363635,True
+401211057,2020-03-07,Utah State Aggies,Wyoming Cowboys,7,6.2,-6.2,-0.7999999999999998,0.7999999999999998,7,1.0,True
+401169774,2020-03-07,Texas Tech Red Raiders,Kansas Jayhawks,-8,1.3,-1.3,9.3,9.3,-4,2.0,False
+401170334,2020-03-08,Dayton Flyers,George Washington Revolutionaries,1,7.6,-7.6,6.6,6.6,25,0.04,True
+401169773,2020-03-07,West Virginia Mountaineers,Baylor Bears,2,2.6,-2.6,0.6000000000000001,0.6000000000000001,12,0.16666666666666666,True
+401166388,2020-03-07,Florida Gators,Kentucky Wildcats,10,4.4,-4.4,-5.6,5.6,-1,-10.0,True
+401168532,2020-03-07,Florida State Seminoles,Boston College Eagles,18,8.1,-8.1,-9.9,9.9,18,1.0,True
+401168339,2020-03-07,Creighton Bluejays,Seton Hall Pirates,0,5.6,-5.6,5.6,5.6,17,0.0,
+401168492,2020-03-07,Virginia Cavaliers,Louisville Cardinals,7,2.2,-2.2,-4.8,4.8,3,2.3333333333333335,True
+401168372,2020-03-07,Duke Blue Devils,North Carolina Tar Heels,8,8.7,-8.7,0.6999999999999993,0.6999999999999993,13,0.6153846153846154,True
+401170748,2020-03-08,Oregon Ducks,Stanford Cardinal,5,5.4,-5.4,0.40000000000000036,0.40000000000000036,13,0.38461538461538464,True
+401166386,2020-03-07,Tennessee Volunteers,Auburn Tigers,-11,2.6,-2.6,13.6,13.6,-22,0.5,False
+401166265,2020-03-07,Northwestern Wildcats,Penn State Nittany Lions,0,5.1,-5.1,5.1,5.1,11,0.0,
+401166264,2020-03-07,Indiana Hoosiers,Wisconsin Badgers,3,2.1,-2.1,-0.8999999999999999,0.8999999999999999,-4,-0.75,True
+401166268,2020-03-08,Maryland Terrapins,Michigan Wolverines,13,2.5,-2.5,-10.5,10.5,13,1.0,True
+401166269,2020-03-08,Michigan State Spartans,Ohio State Buckeyes,6,10.7,-10.7,4.699999999999999,4.699999999999999,11,0.5454545454545454,True
+401166267,2020-03-08,Illinois Fighting Illini,Iowa Hawkeyes,0,3.8,-3.8,3.8,3.8,2,0.0,
+401169507,2020-03-08,Houston Cougars,Memphis Tigers,-4,6.2,-6.2,10.2,10.2,7,-0.5714285714285714,False
+401210970,2020-03-09,Hofstra Pride,Delaware Blue Hens,12,10.2,-10.2,-1.8000000000000007,1.8000000000000007,14,0.8571428571428571,True
+401211651,2020-03-09,Ohio Bobcats,Central Michigan Chippewas,22,-3.5,3.5,-25.5,25.5,20,1.1,False
+401211649,2020-03-09,Toledo Rockets,Western Michigan Broncos,7,-0.3,0.3,-7.3,7.3,3,2.3333333333333335,False
+401211558,2020-03-09,Georgia Southern Eagles,Louisiana Ragin' Cajuns,-4,8.1,-8.1,12.1,12.1,1,-4.0,False
+401211086,2020-03-09,North Dakota State Bison,Oral Roberts Golden Eagles,3,1.0,-1.0,-2.0,2.0,6,0.5,True
+401211074,2020-03-09,East Tennessee State Buccaneers,Wofford Terriers,5,7.0,-7.0,2.0,2.0,14,0.35714285714285715,True
+401210971,2020-03-10,Northeastern Huskies,Elon Phoenix,16,10.3,-10.3,-5.699999999999999,5.699999999999999,8,2.0,True
+401211162,2020-03-10,Gonzaga Bulldogs,San Francisco Dons,5,8.4,-8.4,3.4000000000000004,3.4000000000000004,4,1.25,True
+401211639,2020-03-10,Northern Kentucky Norse,Green Bay Phoenix,-1,10.8,-10.8,11.8,11.8,11,-0.09090909090909091,False
+401211087,2020-03-10,North Dakota Fighting Hawks,Purdue Fort Wayne Mastodons,7,-2.0,2.0,-9.0,9.0,17,0.4117647058823529,False
+401211163,2020-03-10,BYU Cougars,Saint Mary's Gaels,6,4.9,-4.9,-1.0999999999999996,1.0999999999999996,-1,-6.0,True
+401211585,2020-03-10,Wake Forest Demon Deacons,Pittsburgh Panthers,1,5.4,-5.4,4.4,4.4,-9,-0.1111111111111111,True
+401211030,2020-03-10,Fairfield Stags,Manhattan Jaspers,0,3.0,-3.0,3.0,3.0,-18,-0.0,
+401211040,2020-03-10,Delaware State Hornets,Maryland Eastern Shore Hawks,1,-7.7,7.7,-8.7,8.7,4,0.25,False
+401211092,2020-03-10,Prairie View A&M Panthers,Alabama A&M Bulldogs,10,-4.1,4.1,-14.1,14.1,22,0.45454545454545453,False
+401211586,2020-03-10,Virginia Tech Hokies,North Carolina Tar Heels,-6,5.0,-5.0,11.0,11.0,-22,0.2727272727272727,False
+401211108,2020-03-10,Vermont Catamounts,UMBC Retrievers,5,6.5,-6.5,1.5,1.5,7,0.7142857142857143,True
+401211107,2020-03-10,Stony Brook Seawolves,Hartford Hawks,-12,-0.9,0.9,11.1,11.1,-6,2.0,True
+401210972,2020-03-10,Hofstra Pride,Northeastern Huskies,-2,-3.1,3.1,-1.1,1.1,9,-0.2222222222222222,True
+401210963,2020-03-10,Robert Morris Colonials,Saint Francis Red Flash,9,4.0,-4.0,-5.0,5.0,10,0.9,True
+401211031,2020-03-10,Iona Gaels,Canisius Golden Griffins,4,0.9,-0.9,-3.1,3.1,10,0.4,True
+401211041,2020-03-11,South Carolina State Bulldogs,Howard Bison,-7,15.3,-15.3,22.3,22.3,-7,1.0,False
+401211089,2020-03-11,Texas Southern Tigers,Grambling Tigers,8,11.3,-11.3,3.3000000000000007,3.3000000000000007,13,0.6153846153846154,True
+401211164,2020-03-11,Gonzaga Bulldogs,Saint Mary's Gaels,1,7.1,-7.1,6.1,6.1,18,0.05555555555555555,True
+401211090,2020-03-11,Southern Jaguars,Alabama State Hornets,1,-1.3,1.3,-2.3,2.3,14,0.07142857142857142,False
+401211088,2020-03-11,North Dakota State Bison,North Dakota Fighting Hawks,27,3.6,-3.6,-23.4,23.4,36,0.75,True
+401211032,2020-03-11,Niagara Purple Eagles,Marist Red Foxes,1,0.2,-0.2,-0.8,0.8,2,0.5,True
+401211587,2020-03-11,Clemson Tigers,Miami Hurricanes,-2,4.7,-4.7,6.7,6.7,5,-0.4,False
+401210901,2020-03-11,George Mason Patriots,Saint Joseph's Hawks,11,7.1,-7.1,-3.9000000000000004,3.9000000000000004,7,1.5714285714285714,True
+401210974,2020-03-11,Southern Utah Thunderbirds,Idaho Vandals,2,3.9,-3.9,1.9,1.9,6,0.3333333333333333,True
+401211618,2020-03-11,Oregon State Beavers,Utah Utes,-8,7.3,-7.3,15.3,15.3,2,-4.0,False
+401210902,2020-03-11,George Washington Revolutionaries,Fordham Rams,-15,7.9,-7.9,22.9,22.9,-20,0.75,False
+401210976,2020-03-11,Northern Arizona Lumberjacks,Idaho State Bengals,-15,8.8,-8.8,23.8,23.8,-2,7.5,False
+401211619,2020-03-11,Arizona Wildcats,Washington Huskies,5,6.3,-6.3,1.2999999999999998,1.2999999999999998,7,0.7142857142857143,True
+401211075,2020-03-11,Northwestern State Demons,Texas A&M-Corpus Christi Islanders,6,1.6,-1.6,-4.4,4.4,17,0.35294117647058826,True
+401211042,2020-03-11,North Carolina Central Eagles,Delaware State Hornets,13,12.9,-12.9,-0.09999999999999964,0.09999999999999964,17,0.7647058823529411,True
+401211003,2020-03-11,Minnesota Golden Gophers,Northwestern Wildcats,-2,7.7,-7.7,9.7,9.7,17,-0.11764705882352941,False
+401211589,2020-03-11,Notre Dame Fighting Irish,Boston College Eagles,15,7.0,-7.0,-8.0,8.0,22,0.6818181818181818,True
+401211560,2020-03-11,Georgia State Panthers,Georgia Southern Eagles,-1,3.6,-3.6,4.6,4.6,-19,0.05263157894736842,False
+401211469,2020-03-11,Oklahoma State Cowboys,Iowa State Cyclones,2,2.8,-2.8,0.7999999999999998,0.7999999999999998,1,2.0,True
+401211033,2020-03-11,Siena Saints,Manhattan Jaspers,9,8.5,-8.5,-0.5,0.5,14,0.6428571428571429,True
+401211019,2020-03-11,Old Dominion Monarchs,Florida Atlantic Owls,0,-0.1,0.1,-0.1,0.1,-10,-0.0,
+401210943,2020-03-11,Georgetown Hoyas,St. John's Red Storm,9,3.8,-3.8,-5.2,5.2,-13,-0.6923076923076923,True
+401211660,2020-03-11,Colgate Raiders,Boston University Terriers,4,4.2,-4.2,0.20000000000000018,0.20000000000000018,-3,-1.3333333333333333,True
+401211020,2020-03-11,Florida International Panthers,Rice Owls,7,9.1,-9.1,2.0999999999999996,2.0999999999999996,9,0.7777777777777778,True
+401211043,2020-03-12,North Carolina A&T Aggies,Howard Bison,12,14.4,-14.4,2.4000000000000004,2.4000000000000004,9,1.3333333333333333,True
+401211004,2020-03-12,Indiana Hoosiers,Nebraska Cornhuskers,9,8.0,-8.0,-1.0,1.0,25,0.36,True
+401211620,2020-03-12,Stanford Cardinal,California Golden Bears,-10,5.4,-5.4,15.4,15.4,-12,0.8333333333333334,False
+401211590,2020-03-12,Syracuse Orange,North Carolina Tar Heels,21,4.5,-4.5,-16.5,16.5,28,0.75,True
+401211457,2020-03-12,Arkansas Razorbacks,Vanderbilt Commodores,12,11.9,-11.9,-0.09999999999999964,0.09999999999999964,13,0.9230769230769231,True
+401211034,2020-03-12,Saint Peter's Peacocks,Iona Gaels,4,4.5,-4.5,0.5,0.5,2,2.0,True
+401211021,2020-03-12,UAB Blazers,UTSA Roadrunners,6,3.7,-3.7,-2.3,2.3,5,1.2,True
+401210944,2020-03-12,Xavier Musketeers,DePaul Blue Demons,-4,6.1,-6.1,10.1,10.1,-4,1.0,False
+401211470,2020-03-12,TCU Horned Frogs,Kansas State Wildcats,-10,-1.9,1.9,8.1,8.1,-4,2.5,True
+401211022,2020-03-12,Marshall Thundering Herd,UTEP Miners,11,5.1,-5.1,-5.9,5.9,8,1.375,True
+401211621,2020-03-12,Colorado Buffaloes,Washington State Cougars,-10,5.2,-5.2,15.2,15.2,-14,0.7142857142857143,False
+401259032,2020-11-26,Wisconsin Badgers,Eastern Illinois Panthers,23,2.6,-2.6,-20.4,20.4,10,2.3,True
+401262371,2020-11-25,Illinois Fighting Illini,North Carolina A&T Aggies,39,5.8,-5.8,-33.2,33.2,62,0.6290322580645161,True
+401263445,2020-11-25,Michigan State Spartans,Eastern Michigan Eagles,16,3.6,-3.6,-12.4,12.4,16,1.0,True
+401259558,2020-11-26,Texas Tech Red Raiders,Northwestern State Demons,28,6.4,-6.4,-21.6,21.6,43,0.6511627906976745,True
+401252794,2020-11-25,North Carolina Tar Heels,Charleston Cougars,7,9.9,-9.9,2.9000000000000004,2.9000000000000004,19,0.3684210526315789,True
+401257055,2020-11-25,Houston Cougars,Lamar Cardinals,20,14.6,-14.6,-5.4,5.4,44,0.45454545454545453,True
+401254076,2020-11-26,Texas Longhorns,UT Rio Grande Valley Vaqueros,16,12.2,-12.2,-3.8000000000000007,3.8000000000000007,36,0.4444444444444444,True
+401262106,2020-11-26,San Diego State Aztecs,UCLA Bruins,6,-2.7,2.7,-8.7,8.7,15,0.4,False
+401263457,2020-11-25,Ohio State Buckeyes,Illinois State Redbirds,17,0.1,-0.1,-16.9,16.9,27,0.6296296296296297,True
+401259563,2020-11-26,Rutgers Scarlet Knights,Sacred Heart Pioneers,15,11.0,-11.0,-4.0,4.0,23,0.6521739130434783,True
+401262142,2020-11-25,Michigan Wolverines,Bowling Green Falcons,7,12.8,-12.8,5.800000000000001,5.800000000000001,14,0.5,True
+401263442,2020-11-27,Iowa Hawkeyes,Southern Jaguars,23,16.6,-16.6,-6.399999999999999,6.399999999999999,27,0.8518518518518519,True
+401263459,2020-11-28,Wisconsin Badgers,Arkansas-Pine Bluff Golden Lions,34,3.7,-3.7,-30.3,30.3,34,1.0,True
+401262373,2020-11-27,Illinois Fighting Illini,Ohio Bobcats,1,7.1,-7.1,6.1,6.1,2,0.5,True
+401259559,2020-11-27,Texas Tech Red Raiders,Sam Houston Bearkats,28,0.6,-0.6,-27.4,27.4,32,0.875,True
+401260378,2020-11-27,UCLA Bruins,Pepperdine Waves,-7,6.6,-6.6,13.6,13.6,9,-0.7777777777777778,False
+401262136,2020-11-28,Rutgers Scarlet Knights,Fairleigh Dickinson Knights,14,11.2,-11.2,-2.8000000000000007,2.8000000000000007,21,0.6666666666666666,True
+401260037,2020-11-29,Michigan State Spartans,Notre Dame Fighting Irish,13,9.0,-9.0,-4.0,4.0,10,1.3,True
+401265778,2020-11-29,Baylor Bears,Washington Huskies,14,13.9,-13.9,-0.09999999999999964,0.09999999999999964,34,0.4117647058823529,True
+401261448,2020-11-29,Arizona State Sun Devils,Houston Christian Huskies,34,-1.0,1.0,-35.0,35.0,23,1.4782608695652173,False
+401265151,2020-11-29,Rutgers Scarlet Knights,Hofstra Pride,11,6.2,-6.2,-4.8,4.8,14,0.7857142857142857,True
+401262491,2020-11-29,Michigan Wolverines,Oakland Golden Grizzlies,-2,13.1,-13.1,15.1,15.1,10,-0.2,False
+401263458,2020-11-29,Ohio State Buckeyes,UMass Lowell River Hawks,0,10.6,-10.6,10.6,10.6,10,0.0,
+401254077,2020-11-30,Davidson Wildcats,Texas Longhorns,-4,1.9,-1.9,5.9,5.9,-2,2.0,False
+401255063,2020-11-30,Providence Friars,Indiana Hoosiers,-13,2.3,-2.3,15.3,15.3,-21,0.6190476190476191,False
+401257670,2020-11-30,Duquesne Dukes,Little Rock Trojans,-4,7.0,-7.0,11.0,11.0,-10,0.4,False
+401255039,2020-11-30,Boston College Eagles,St. John's Red Storm,-12,0.7,-0.7,12.7,12.7,-4,3.0,False
+401265813,2020-12-01,Hofstra Pride,Fairleigh Dickinson Knights,-9,8.5,-8.5,17.5,17.5,15,-0.6,False
+401261567,2020-12-01,UCF Knights,Auburn Tigers,9,2.6,-2.6,-6.4,6.4,8,1.125,True
+401259021,2020-12-01,Mercer Bears,Georgia State Panthers,5,0.4,-0.4,-4.6,4.6,17,0.29411764705882354,True
+401257488,2020-12-01,Xavier Musketeers,Eastern Kentucky Colonels,9,3.7,-3.7,-5.3,5.3,3,3.0,True
+401255064,2020-12-01,UNLV Rebels,North Carolina Tar Heels,-7,-3.7,3.7,3.3,3.3,-27,0.25925925925925924,True
+401254102,2020-12-01,Tennessee Tech Golden Eagles,Chattanooga Mocs,1,1.9,-1.9,0.8999999999999999,0.8999999999999999,-8,-0.125,True
+401265493,2020-12-01,Minnesota Golden Gophers,Loyola Marymount Lions,5,4.2,-4.2,-0.7999999999999998,0.7999999999999998,3,1.6666666666666667,True
+401264954,2020-12-01,LSU Tigers,SE Louisiana Lions,32,18.0,-18.0,-14.0,14.0,53,0.6037735849056604,True
+401261573,2020-12-01,SMU Mustangs,Texas A&M-Corpus Christi Islanders,25,0.2,-0.2,-24.8,24.8,37,0.6756756756756757,True
+401258867,2020-12-01,Mississippi State Bulldogs,Texas State Bobcats,2,2.9,-2.9,0.8999999999999999,0.8999999999999999,17,0.11764705882352941,True
+401254051,2020-12-01,Kansas State Wildcats,Kansas City Roos,10,3.6,-3.6,-6.4,6.4,4,2.5,True
+401265993,2020-12-01,Seton Hall Pirates,Iona Gaels,-2,6.5,-6.5,8.5,8.5,22,-0.09090909090909091,False
+401260160,2020-12-01,Wyoming Cowboys,Texas Southern Tigers,19,-1.5,1.5,-20.5,20.5,-2,-9.5,False
+401257634,2020-12-01,Nevada Wolf Pack,Pacific Tigers,2,4.1,-4.1,2.0999999999999996,2.0999999999999996,12,0.16666666666666666,True
+401255065,2020-12-01,Alabama Crimson Tide,Stanford Cardinal,-12,7.7,-7.7,19.7,19.7,-18,0.6666666666666666,False
+401263460,2020-12-01,Wisconsin Badgers,Green Bay Phoenix,22,9.5,-9.5,-12.5,12.5,40,0.55,True
+401260337,2020-12-01,Virginia Cavaliers,Saint Francis Red Flash,32,11.0,-11.0,-21.0,21.0,25,1.28,True
+401266546,2020-12-03,Oregon Ducks,Missouri Tigers,-11,4.8,-4.8,15.8,15.8,-8,1.375,False
+401260332,2020-12-03,Florida State Seminoles,North Florida Ospreys,15,3.6,-3.6,-11.4,11.4,28,0.5357142857142857,True
+401264539,2020-12-04,Iowa Hawkeyes,Western Illinois Leathernecks,22,4.6,-4.6,-17.4,17.4,41,0.5365853658536586,True
+401261744,2020-12-04,Virginia Tech Hokies,VMI Keydets,7,7.4,-7.4,0.40000000000000036,0.40000000000000036,7,1.0,True
+401257440,2020-12-04,California Golden Bears,Arizona State Sun Devils,-1,0.9,-0.9,1.9,1.9,-8,0.125,False
+401255012,2020-12-05,Marquette Golden Eagles,Wisconsin Badgers,5,-0.1,0.1,-5.1,5.1,2,2.5,False
+401263446,2020-12-04,Michigan State Spartans,Detroit Mercy Titans,0,5.1,-5.1,5.1,5.1,7,0.0,
+401266749,2020-12-05,Texas Tech Red Raiders,Troy Trojans,25,11.5,-11.5,-13.5,13.5,34,0.7352941176470589,True
+401266523,2020-12-05,Oregon Ducks,Seton Hall Pirates,6,5.7,-5.7,-0.2999999999999998,0.2999999999999998,13,0.46153846153846156,True
+401254034,2020-12-05,Kansas Jayhawks,North Dakota State Bison,2,8.0,-8.0,6.0,6.0,4,0.5,True
+401260964,2020-12-05,Houston Cougars,South Carolina Gamecocks,-4,11.7,-11.7,15.7,15.7,10,-0.4,False
+401263447,2020-12-06,Michigan State Spartans,Western Michigan Broncos,4,3.6,-3.6,-0.3999999999999999,0.3999999999999999,18,0.2222222222222222,True
+401259561,2020-12-06,Texas Tech Red Raiders,Grambling Tigers,14,12.7,-12.7,-1.3000000000000007,1.3000000000000007,41,0.34146341463414637,True
+401267814,2020-12-07,Richmond Spiders,Wofford Terriers,7,0.1,-0.1,-6.9,6.9,5,1.4,True
+401267863,2020-12-08,Tennessee Volunteers,Colorado Buffaloes,7,0.6,-0.6,-6.4,6.4,9,0.7777777777777778,True
+401268090,2020-12-09,Wisconsin Badgers,Rhode Island Rams,17,9.1,-9.1,-7.9,7.9,11,1.5454545454545454,True
+401260962,2020-12-10,Texas Longhorns,Texas State Bobcats,13,3.6,-3.6,-9.4,9.4,21,0.6190476190476191,True
+401259562,2020-12-10,Texas Tech Red Raiders,Abilene Christian Wildcats,9,6.4,-6.4,-2.5999999999999996,2.5999999999999996,7,1.2857142857142858,True
+401260702,2020-12-09,Richmond Spiders,Northern Iowa Panthers,-2,-2.2,2.2,-0.20000000000000018,0.20000000000000018,10,-0.2,True
+401262674,2020-12-11,Arizona State Sun Devils,San Diego State Aztecs,-2,8.7,-8.7,10.7,10.7,-12,0.16666666666666666,False
+401265149,2020-12-12,Iowa Hawkeyes,Iowa State Cyclones,11,3.6,-3.6,-7.4,7.4,28,0.39285714285714285,True
+401263602,2020-12-12,Creighton Bluejays,Nebraska Cornhuskers,4,7.3,-7.3,3.3,3.3,24,0.16666666666666666,True
+401254978,2020-12-12,Georgetown Hoyas,Villanova Wildcats,13,0.6,-0.6,-12.4,12.4,-13,-1.0,True
+401268678,2020-12-11,West Virginia Mountaineers,North Texas Mean Green,-8,3.6,-3.6,11.6,11.6,12,-0.6666666666666666,False
+401262374,2020-12-13,Missouri Tigers,Illinois Fighting Illini,8,0.4,-0.4,-7.6,7.6,3,2.6666666666666665,True
+401258875,2020-12-12,Tennessee Volunteers,Cincinnati Bearcats,6,6.0,-6.0,0.0,0.0,9,0.6666666666666666,True
+401268610,2020-12-12,North Carolina Tar Heels,North Carolina Central Eagles,2,3.6,-3.6,1.6,1.6,6,0.3333333333333333,True
+401257378,2020-12-12,Texas Tech Red Raiders,Texas A&M-Corpus Christi Islanders,12,4.3,-4.3,-7.7,7.7,20,0.6,True
+401256760,2020-12-12,Florida State Seminoles,Florida Gators,10,0.8,-0.8,-9.2,9.2,12,0.8333333333333334,True
+401262677,2020-12-13,Iowa Hawkeyes,Northern Illinois Huskies,24,4.6,-4.6,-19.4,19.4,53,0.4528301886792453,True
+401263448,2020-12-13,Michigan State Spartans,Oakland Golden Grizzlies,4,13.1,-13.1,9.1,9.1,18,0.2222222222222222,True
+401254083,2020-12-13,West Virginia Mountaineers,Richmond Spiders,22,6.0,-6.0,-16.0,16.0,16,1.375,True
+401262475,2020-12-13,Grand Canyon Lopes,Arizona State Sun Devils,1,-1.9,1.9,-2.9,2.9,-1,-1.0,False
+401254985,2020-12-15,Creighton Bluejays,Marquette Golden Eagles,9,7.3,-7.3,-1.7000000000000002,1.7000000000000002,-5,-1.8,True
+401263327,2020-12-14,Maryland Terrapins,Rutgers Scarlet Knights,1,4.8,-4.8,3.8,3.8,-14,-0.07142857142857142,True
+401269392,2020-12-16,Wisconsin Badgers,Loyola Chicago Ramblers,5,4.3,-4.3,-0.7000000000000002,0.7000000000000002,14,0.35714285714285715,True
+401263328,2020-12-16,Illinois Fighting Illini,Minnesota Golden Gophers,11,8.3,-8.3,-2.6999999999999993,2.6999999999999993,27,0.4074074074074074,True
+401260175,2020-12-16,Florida State Seminoles,Georgia Tech Yellow Jackets,7,2.8,-2.8,-4.2,4.2,13,0.5384615384615384,True
+401254987,2020-12-17,Villanova Wildcats,Butler Bulldogs,7,9.4,-9.4,2.4000000000000004,2.4000000000000004,19,0.3684210526315789,True
+401259552,2020-12-17,Texas Longhorns,Sam Houston Bearkats,18,-0.3,0.3,-18.3,18.3,16,1.125,False
+401263329,2020-12-17,Purdue Boilermakers,Ohio State Buckeyes,5,4.6,-4.6,-0.40000000000000036,0.40000000000000036,7,0.7142857142857143,True
+401253834,2020-12-18,Texas Tech Red Raiders,Kansas Jayhawks,-3,3.1,-3.1,6.1,6.1,-1,3.0,False
+401254988,2020-12-18,St. John's Red Storm,Creighton Bluejays,-7,0.2,-0.2,7.2,7.2,-18,0.3888888888888889,False
+401253835,2020-12-19,West Virginia Mountaineers,Iowa State Cyclones,-1,0.3,-0.3,1.3,1.3,5,-0.2,False
+401258877,2020-12-19,Tennessee Volunteers,Tennessee Tech Golden Eagles,27,3.6,-3.6,-23.4,23.4,54,0.5,True
+401261637,2020-12-18,San Diego State Aztecs,BYU Cougars,-15,-3.7,3.7,11.3,11.3,-10,1.5,True
+401255666,2020-12-19,Gonzaga Bulldogs,Iowa Hawkeyes,14,5.7,-5.7,-8.3,8.3,11,1.2727272727272727,True
+401253836,2020-12-19,Kansas State Wildcats,Baylor Bears,-29,-1.0,1.0,28.0,28.0,-31,0.9354838709677419,True
+401270594,2020-12-20,Villanova Wildcats,Saint Joseph's Hawks,8,12.4,-12.4,4.4,4.4,20,0.4,True
+401260333,2020-12-20,Florida State Seminoles,UCF Knights,5,6.0,-6.0,1.0,1.0,-12,-0.4166666666666667,True
+401263349,2020-12-21,Northwestern Wildcats,Michigan State Spartans,13,-1.3,1.3,-14.3,14.3,14,0.9285714285714286,False
+401253837,2020-12-20,Texas Longhorns,Oklahoma State Cowboys,-5,4.2,-4.2,9.2,9.2,3,-1.6666666666666667,False
+401263350,2020-12-20,Rutgers Scarlet Knights,Illinois Fighting Illini,-4,-0.3,0.3,3.7,3.7,3,-1.3333333333333333,True
+401261645,2020-12-22,Gonzaga Bulldogs,Northwestern State Demons,13,11.6,-11.6,-1.4000000000000004,1.4000000000000004,38,0.34210526315789475,True
+401254046,2020-12-22,Baylor Bears,Arkansas-Pine Bluff Golden Lions,43,7.1,-7.1,-35.9,35.9,57,0.7543859649122807,True
+401268966,2020-12-21,Tennessee Volunteers,Saint Joseph's Hawks,23,9.9,-9.9,-13.1,13.1,36,0.6388888888888888,True
+401262393,2020-12-22,Virginia Tech Hokies,Longwood Lancers,4,10.0,-10.0,6.0,6.0,26,0.15384615384615385,True
+401271433,2020-12-23,Gonzaga Bulldogs,Northwestern State Demons,26,11.6,-11.6,-14.4,14.4,17,1.5294117647058822,True
+401253838,2020-12-23,Kansas Jayhawks,West Virginia Mountaineers,-1,4.8,-4.8,5.8,5.8,14,-0.07142857142857142,False
+401263331,2020-12-23,Iowa Hawkeyes,Purdue Boilermakers,10,7.0,-7.0,-3.0,3.0,15,0.6666666666666666,True
+401264248,2020-12-23,Houston Cougars,Temple Owls,10,11.1,-11.1,1.0999999999999996,1.0999999999999996,26,0.38461538461538464,True
+401263330,2020-12-23,Wisconsin Badgers,Nebraska Cornhuskers,1,7.2,-7.2,6.2,6.2,14,0.07142857142857142,True
+401258865,2020-12-23,Missouri Tigers,Bradley Braves,2,8.4,-8.4,6.4,6.4,1,2.0,True
+401253839,2020-12-23,Oklahoma Sooners,Texas Tech Red Raiders,-8,2.4,-2.4,10.4,10.4,-2,4.0,False
+401270547,2020-12-22,Virginia Cavaliers,William & Mary Tribe,22,10.2,-10.2,-11.8,11.8,36,0.6111111111111112,True
+401255019,2020-12-24,Marquette Golden Eagles,Villanova Wildcats,-6,-0.8,0.8,5.2,5.2,-17,0.35294117647058826,True
+401263333,2020-12-23,Ohio State Buckeyes,Rutgers Scarlet Knights,-10,4.0,-4.0,14.0,14.0,12,-0.8333333333333334,False
+401255016,2020-12-23,Creighton Bluejays,Xavier Musketeers,2,5.8,-5.8,3.8,3.8,5,0.4,True
+401263336,2020-12-26,Minnesota Golden Gophers,Iowa Hawkeyes,5,-2.0,2.0,-7.0,7.0,7,0.7142857142857143,False
+401263335,2020-12-25,Michigan State Spartans,Wisconsin Badgers,0,5.0,-5.0,5.0,5.0,-9,-0.0,
+401263337,2020-12-25,Nebraska Cornhuskers,Michigan Wolverines,-2,-1.7,1.7,0.30000000000000004,0.30000000000000004,-11,0.18181818181818182,True
+401270544,2020-12-26,Gonzaga Bulldogs,Virginia Cavaliers,13,8.2,-8.2,-4.800000000000001,4.800000000000001,23,0.5652173913043478,True
+401268673,2020-12-26,UCF Knights,Houston Cougars,0,-2.9,2.9,-2.9,2.9,-9,-0.0,
+401263339,2020-12-26,Illinois Fighting Illini,Indiana Hoosiers,2,6.5,-6.5,4.5,4.5,9,0.2222222222222222,True
+401263340,2020-12-26,Northwestern Wildcats,Ohio State Buckeyes,0,2.4,-2.4,2.4,2.4,1,0.0,
+401266976,2020-12-27,Indiana State Sycamores,Drake Bulldogs,-1,4.8,-4.8,5.8,5.8,-18,0.05555555555555555,False
+401256952,2020-12-27,New Hampshire Wildcats,Hartford Hawks,-4,5.6,-5.6,9.6,9.6,8,-0.5,False
+401256951,2020-12-27,UMBC Retrievers,Binghamton Bearcats,0,3.2,-3.2,3.2,3.2,7,0.0,
+401271573,2020-12-27,Monmouth Hawks,Canisius Golden Griffins,14,3.7,-3.7,-10.3,10.3,18,0.7777777777777778,True
+401256953,2020-12-27,Stony Brook Seawolves,UMass Lowell River Hawks,14,9.1,-9.1,-4.9,4.9,15,0.9333333333333333,True
+401256954,2020-12-27,Vermont Catamounts,NJIT Highlanders,19,9.8,-9.8,-9.2,9.2,14,1.3571428571428572,True
+401273056,2020-12-27,Detroit Mercy Titans,Oakland Golden Grizzlies,-2,10.6,-10.6,12.6,12.6,-3,0.6666666666666666,False
+401266977,2020-12-27,Southern Illinois Salukis,Evansville Purple Aces,9,11.9,-11.9,2.9000000000000004,2.9000000000000004,6,1.5,True
+401266975,2020-12-27,Loyola Chicago Ramblers,Illinois State Redbirds,16,2.0,-2.0,-14.0,14.0,30,0.5333333333333333,True
+401266974,2020-12-27,Northern Iowa Panthers,Missouri State Bears,-10,7.8,-7.8,17.8,17.8,-20,0.5,False
+401271123,2020-12-27,Providence Friars,DePaul Blue Demons,5,5.8,-5.8,0.7999999999999998,0.7999999999999998,5,1.0,True
+401258558,2020-12-27,Purdue Fort Wayne Mastodons,Robert Morris Colonials,14,6.5,-6.5,-7.5,7.5,5,2.8,True
+401271393,2020-12-28,UC Irvine Anteaters,UC Santa Barbara Gauchos,8,2.6,-2.6,-5.4,5.4,19,0.42105263157894735,True
+401271434,2020-12-29,Gonzaga Bulldogs,Northern Arizona Lumberjacks,28,9.8,-9.8,-18.2,18.2,30,0.9333333333333333,True
+401263342,2020-12-29,Wisconsin Badgers,Maryland Terrapins,4,5.0,-5.0,1.0,1.0,-6,-0.6666666666666666,True
+401263341,2020-12-29,Minnesota Golden Gophers,Michigan State Spartans,20,-1.3,1.3,-21.3,21.3,25,0.8,False
+401255768,2020-12-30,Gonzaga Bulldogs,Utah Tech Trailblazers,25,9.5,-9.5,-15.5,15.5,45,0.5555555555555556,True
+401254047,2020-12-29,Baylor Bears,Central Arkansas Bears,18,7.1,-7.1,-10.9,10.9,37,0.4864864864864865,True
+401254084,2020-12-29,West Virginia Mountaineers,Northeastern Huskies,8,7.7,-7.7,-0.2999999999999998,0.2999999999999998,22,0.36363636363636365,True
+401263343,2020-12-30,Iowa Hawkeyes,Northwestern Wildcats,9,9.3,-9.3,0.3000000000000007,0.3000000000000007,15,0.6,True
+401259594,2020-12-30,Texas Tech Red Raiders,Incarnate Word Cardinals,22,13.1,-13.1,-8.9,8.9,28,0.7857142857142857,True
+401263344,2020-12-30,Rutgers Scarlet Knights,Purdue Boilermakers,6,2.2,-2.2,-3.8,3.8,5,1.2,True
+401265031,2020-12-30,Clemson Tigers,Florida State Seminoles,-5,2.6,-2.6,7.6,7.6,10,-0.5,False
+401265030,2020-12-29,Virginia Tech Hokies,Miami Hurricanes,9,7.6,-7.6,-1.4000000000000004,1.4000000000000004,2,4.5,True
+401258721,2020-12-31,Missouri Tigers,Tennessee Volunteers,-13,3.5,-3.5,16.5,16.5,-20,0.65,False
+401265054,2020-12-30,Notre Dame Fighting Irish,Virginia Cavaliers,-6,0.8,-0.8,6.8,6.8,-9,0.6666666666666666,False
+401263346,2020-12-30,Ohio State Buckeyes,Nebraska Cornhuskers,17,5.0,-5.0,-12.0,12.0,36,0.4722222222222222,True
+401263348,2020-12-31,Wisconsin Badgers,Minnesota Golden Gophers,7,6.9,-6.9,-0.09999999999999964,0.09999999999999964,12,0.5833333333333334,True
+401263347,2021-01-01,Maryland Terrapins,Michigan Wolverines,-2,0.8,-0.8,2.8,2.8,-11,0.18181818181818182,False
+401265351,2021-01-01,Oregon Ducks,California Golden Bears,1,7.5,-7.5,6.5,6.5,13,0.07692307692307693,True
+401261861,2021-01-01,Canisius Golden Griffins,Saint Peter's Peacocks,19,8.7,-8.7,-10.3,10.3,12,1.5833333333333333,True
+401261893,2021-01-01,Marist Red Foxes,Niagara Purple Eagles,-3,6.0,-6.0,9.0,9.0,2,-1.5,False
+401257512,2021-01-01,Lipscomb Bisons,Liberty Flames,13,1.2,-1.2,-11.8,11.8,7,1.8571428571428572,True
+401253996,2021-01-01,Rice Owls,UTSA Roadrunners,-6,6.6,-6.6,12.6,12.6,9,-0.6666666666666666,False
+401274395,2021-01-01,Montana State Bobcats,Montana-Western Bulldogs,12,3.6,-3.6,-8.4,8.4,29,0.41379310344827586,True
+401261862,2021-01-01,Fairfield Stags,Rider Broncs,-8,7.6,-7.6,15.6,15.6,-8,1.0,False
+401257085,2021-01-01,Little Rock Trojans,UT Arlington Mavericks,9,10.7,-10.7,1.6999999999999993,1.6999999999999993,9,1.0,True
+401258547,2021-01-01,Robert Morris Colonials,Milwaukee Panthers,1,1.7,-1.7,0.7,0.7,3,0.3333333333333333,True
+401258529,2021-01-01,Northern Kentucky Norse,Purdue Fort Wayne Mastodons,-6,2.5,-2.5,8.5,8.5,7,-0.8571428571428571,False
+401257083,2021-01-01,Coastal Carolina Chanticleers,Georgia State Panthers,6,5.1,-5.1,-0.9000000000000004,0.9000000000000004,12,0.5,True
+401257082,2021-01-01,Georgia Southern Eagles,South Alabama Jaguars,-18,-1.4,1.4,16.6,16.6,-29,0.6206896551724138,True
