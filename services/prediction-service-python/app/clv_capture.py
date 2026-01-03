@@ -141,7 +141,12 @@ def capture_pregame_closing_lines(
                                 closing_total_1h = float(outcome.get("point", 0))
                                 break
             
-            if any([closing_spread, closing_total, closing_spread_1h, closing_total_1h]):
+            # Use 'is not None' to properly handle 0.0 values (pick'em games)
+            has_data = (closing_spread is not None or 
+                       closing_total is not None or 
+                       closing_spread_1h is not None or 
+                       closing_total_1h is not None)
+            if has_data:
                 snapshots_captured += 1
                 updated = capture_closing_lines(
                     engine,

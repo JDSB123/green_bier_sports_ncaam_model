@@ -535,12 +535,21 @@ def get_betting_splits_for_games(
             game_key = f"{home}_vs_{away}"
             result[game_key] = splits_by_teams[key]
         else:
-            # Try fuzzy match (partial team name)
+            # Try fuzzy match - require BOTH teams to match (not substring)
+            # This prevents "iowa" from matching "iowa_state_vs_clemson"
             for splits_key, splits in splits_by_teams.items():
-                if home_norm in splits_key or away_norm in splits_key:
-                    game_key = f"{home}_vs_{away}"
-                    result[game_key] = splits
-                    break
+                splits_parts = splits_key.split("_vs_")
+                if len(splits_parts) == 2:
+                    splits_home, splits_away = splits_parts
+                    # Require exact word boundary match, not substring
+                    home_match = (home_norm == splits_home or 
+                                  home_norm == splits_away)
+                    away_match = (away_norm == splits_home or 
+                                  away_norm == splits_away)
+                    if home_match and away_match:
+                        game_key = f"{home}_vs_{away}"
+                        result[game_key] = splits
+                        break
     
     logger.info(
         "betting_splits_matched",
