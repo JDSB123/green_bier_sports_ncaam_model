@@ -132,9 +132,17 @@ def fetch_event_h1_odds(event_id: str, game_date: str) -> Optional[Dict]:
 
 
 def fetch_espn_scoreboard(game_date: str) -> List[Dict]:
-    """Fetch ESPN scoreboard for a date to get game IDs."""
+    """Fetch ESPN scoreboard for a date to get game IDs.
+    
+    IMPORTANT: Must use groups=50 (D1) and limit=300 to get ALL games,
+    not just the 3-5 nationally featured games.
+    """
     url = ESPN_SCOREBOARD_URL
-    params = {"dates": game_date.replace("-", "")}
+    params = {
+        "dates": game_date.replace("-", ""),
+        "groups": "50",  # D1 basketball - CRITICAL for getting all games!
+        "limit": "300",  # Get all games, not just featured
+    }
     
     try:
         resp = requests.get(url, params=params, timeout=30)
