@@ -1,7 +1,12 @@
 """
-NCAA Prediction Engine
+NCAA Prediction Engine v33.10
 
 Orchestrator for modular market-specific prediction models.
+
+ARCHITECTURE (v33.10):
+1. Analytical models predict fair lines (spread/total)
+2. ML models (when available) predict P(bet wins) directly
+3. Fallback to statistical CDF when ML models not trained
 
 Each market has its own independently-backtested model:
 - FG Spread: 3,318 games, MAE 10.57, HCA 5.8
@@ -13,8 +18,9 @@ Each market has its own independently-backtested model:
 from dataclasses import dataclass
 from datetime import datetime
 import math
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from uuid import UUID
+import numpy as np
 
 from app import __version__ as APP_VERSION
 from app.models import (
@@ -35,6 +41,17 @@ from app.predictors import (
 from app.config import settings
 import structlog
 
+# Optional ML imports
+try:
+    from app.ml.models import ModelRegistry
+    from app.ml.features import FeatureEngineer, GameFeatures
+    HAS_ML_MODELS = True
+except ImportError:
+    HAS_ML_MODELS = False
+    ModelRegistry = None
+    FeatureEngineer = None
+    GameFeatures = None
+
 
 # Extreme total thresholds - predictions outside these ranges are unreliable
 # From backtest: FG model under-predicts high games, over-predicts low games
@@ -46,23 +63,72 @@ H1_TOTAL_MAX_RELIABLE = 85.0   # Above this, model under-predicts
 
 class PredictionEngineV33:
     """
-    v33.6.5 Prediction Engine - Modular architecture with 4 independent models.
+    v33.10 Prediction Engine - Modular architecture with ML probability models.
+    
+    ARCHITECTURE:
+    1. Analytical models (FGSpreadModel, etc.) predict fair lines
+    2. ML models (XGBoost) predict P(bet wins) directly when available
+    3. Statistical CDF fallback when ML not trained
     
     Provides same interface as BarttorvikPredictor for drop-in replacement.
     """
 
-    def __init__(self):
-        """Initialize with v33.6.5 modular models."""
+    # Map bet types to ML model names
+    BET_TYPE_TO_ML_MODEL = {
+        BetType.SPREAD: "fg_spread",
+        BetType.TOTAL: "fg_total",
+        BetType.SPREAD_1H: "h1_spread",
+        BetType.TOTAL_1H: "h1_total",
+    }
+
+    def __init__(self, use_ml_models: bool = True):
+        """
+        Initialize with v33.10 modular models.
+        
+        Args:
+            use_ml_models: If True and ML models are trained, use them for
+                          probability predictions. Falls back to statistical
+                          CDF if models not available.
+        """
         self.config = settings.model
         self.logger = structlog.get_logger()
         self.version_tag = f"v{APP_VERSION}"
         self.bayes_priors: dict[BetType, dict[str, float]] = {}
         
-        # Store models for reference
+        # Analytical models for fair line prediction
         self.fg_spread_model = fg_spread_model
         self.fg_total_model = fg_total_model
         self.h1_spread_model = h1_spread_model
         self.h1_total_model = h1_total_model
+        
+        # ML models for probability prediction (optional)
+        self._use_ml = use_ml_models and HAS_ML_MODELS
+        self._ml_registry: Optional["ModelRegistry"] = None
+        self._feature_engineer: Optional["FeatureEngineer"] = None
+        self._ml_loaded = False
+        
+        if self._use_ml:
+            self._load_ml_models()
+    
+    def _load_ml_models(self) -> None:
+        """Load trained ML models if available."""
+        if not HAS_ML_MODELS:
+            self.logger.debug("ML models not available (missing xgboost)")
+            return
+        
+        try:
+            self._ml_registry = ModelRegistry()
+            self._feature_engineer = FeatureEngineer()
+            self._ml_loaded = self._ml_registry.load_models()
+            
+            if self._ml_loaded:
+                available = self._ml_registry.available_models
+                self.logger.info(f"ML models loaded: {available}")
+            else:
+                self.logger.debug("No trained ML models found, using statistical fallback")
+        except Exception as e:
+            self.logger.warning(f"Failed to load ML models: {e}")
+            self._ml_loaded = False
 
     def set_bayes_priors(self, priors: dict) -> None:
         """Inject Bayesian priors for confidence calibration."""
@@ -265,19 +331,33 @@ class PredictionEngineV33:
         self,
         prediction: Prediction,
         market_odds: MarketOdds,
+        home_ratings: Optional[TeamRatings] = None,
+        away_ratings: Optional[TeamRatings] = None,
+        is_neutral: bool = False,
     ) -> List[BettingRecommendation]:
         """
         Generate betting recommendations from predictions and market odds.
         
         Uses model-specific minimum edges and confidence thresholds.
         
+        v33.10: Optionally uses ML models for probability prediction when
+        home_ratings and away_ratings are provided.
+        
         Args:
             prediction: Prediction object from make_prediction()
             market_odds: Current market odds
+            home_ratings: Home team ratings (for ML models)
+            away_ratings: Away team ratings (for ML models)
+            is_neutral: Neutral site flag
             
         Returns:
             List of BettingRecommendation objects
         """
+        # Store for use in _create_recommendation
+        self._current_home_ratings = home_ratings
+        self._current_away_ratings = away_ratings
+        self._current_is_neutral = is_neutral
+        
         recommendations = []
 
         # ─────────────────────────────────────────────────────────────────────
@@ -421,7 +501,16 @@ class PredictionEngineV33:
         if final_confidence < self.config.min_confidence:
             return None
 
-        implied_prob = self._calibrated_probability(edge, final_confidence, bet_type)
+        # Get probability (ML model if available, otherwise statistical)
+        implied_prob = self._calibrated_probability(
+            edge, 
+            final_confidence, 
+            bet_type,
+            home_ratings=getattr(self, '_current_home_ratings', None),
+            away_ratings=getattr(self, '_current_away_ratings', None),
+            market_odds=market_odds,
+            is_neutral=getattr(self, '_current_is_neutral', False),
+        )
         price = self._get_pick_price(bet_type, pick, market_odds)
         ev_percent, kelly = self._calculate_ev_kelly(implied_prob, price)
 
@@ -550,28 +639,185 @@ class PredictionEngineV33:
             return default_rate, prior_weight
         return hit_rate, prior_weight
 
+    def _get_ml_probability(
+        self,
+        bet_type: BetType,
+        home_ratings: TeamRatings,
+        away_ratings: TeamRatings,
+        market_odds: MarketOdds,
+        is_neutral: bool = False,
+    ) -> Optional[float]:
+        """
+        Get probability from trained ML model if available.
+        
+        Returns None if ML model not available for this bet type.
+        """
+        if not self._ml_loaded or self._ml_registry is None:
+            return None
+        
+        ml_model_name = self.BET_TYPE_TO_ML_MODEL.get(bet_type)
+        if ml_model_name is None or not self._ml_registry.has_model(ml_model_name):
+            return None
+        
+        try:
+            # Build features
+            game_features = GameFeatures(
+                game_id="inference",
+                game_date="",
+                home_team=home_ratings.team_name,
+                away_team=away_ratings.team_name,
+                
+                # Efficiency
+                home_adj_o=home_ratings.adj_o,
+                home_adj_d=home_ratings.adj_d,
+                away_adj_o=away_ratings.adj_o,
+                away_adj_d=away_ratings.adj_d,
+                home_tempo=home_ratings.tempo,
+                away_tempo=away_ratings.tempo,
+                home_rank=home_ratings.rank,
+                away_rank=away_ratings.rank,
+                
+                # Four factors
+                home_efg=home_ratings.efg,
+                home_efgd=home_ratings.efgd,
+                away_efg=away_ratings.efg,
+                away_efgd=away_ratings.efgd,
+                home_tor=home_ratings.tor,
+                home_tord=home_ratings.tord,
+                away_tor=away_ratings.tor,
+                away_tord=away_ratings.tord,
+                home_orb=home_ratings.orb,
+                home_drb=home_ratings.drb,
+                away_orb=away_ratings.orb,
+                away_drb=away_ratings.drb,
+                home_ftr=home_ratings.ftr,
+                home_ftrd=home_ratings.ftrd,
+                away_ftr=away_ratings.ftr,
+                away_ftrd=away_ratings.ftrd,
+                
+                # Shooting
+                home_two_pt_pct=home_ratings.two_pt_pct,
+                home_two_pt_pct_d=home_ratings.two_pt_pct_d,
+                away_two_pt_pct=away_ratings.two_pt_pct,
+                away_two_pt_pct_d=away_ratings.two_pt_pct_d,
+                home_three_pt_pct=home_ratings.three_pt_pct,
+                home_three_pt_pct_d=home_ratings.three_pt_pct_d,
+                away_three_pt_pct=away_ratings.three_pt_pct,
+                away_three_pt_pct_d=away_ratings.three_pt_pct_d,
+                home_three_pt_rate=home_ratings.three_pt_rate,
+                home_three_pt_rate_d=home_ratings.three_pt_rate_d,
+                away_three_pt_rate=away_ratings.three_pt_rate,
+                away_three_pt_rate_d=away_ratings.three_pt_rate_d,
+                
+                # Quality
+                home_barthag=home_ratings.barthag,
+                home_wab=home_ratings.wab,
+                away_barthag=away_ratings.barthag,
+                away_wab=away_ratings.wab,
+                
+                # Market
+                spread_open=market_odds.spread_open,
+                total_open=market_odds.total_open,
+                spread_current=market_odds.spread,
+                total_current=market_odds.total,
+                sharp_spread=market_odds.sharp_spread,
+                sharp_total=market_odds.sharp_total,
+                square_spread=market_odds.square_spread,
+                square_total=market_odds.square_total,
+                
+                # Situational
+                is_neutral=is_neutral,
+                
+                # Public betting
+                public_bet_pct_home=market_odds.public_bet_pct_home,
+                public_money_pct_home=market_odds.public_money_pct_home,
+                public_bet_pct_over=market_odds.public_bet_pct_over,
+                public_money_pct_over=market_odds.public_money_pct_over,
+            )
+            
+            # Extract features
+            X = self._feature_engineer.extract_features(game_features)
+            X = X.reshape(1, -1)
+            
+            # Get probability
+            proba = self._ml_registry.predict_proba(ml_model_name, X)
+            if proba is not None:
+                return float(proba[0])
+            
+        except Exception as e:
+            self.logger.warning(f"ML prediction failed for {bet_type}: {e}")
+        
+        return None
+
     def _calibrated_probability(
         self,
         edge: float,
         confidence: float,
         bet_type: BetType,
+        home_ratings: Optional[TeamRatings] = None,
+        away_ratings: Optional[TeamRatings] = None,
+        market_odds: Optional[MarketOdds] = None,
+        is_neutral: bool = False,
     ) -> float:
-        """Blend edge-based probability with Bayesian prior."""
+        """
+        Convert edge to win probability.
+        
+        v33.10: Uses ML model if available, otherwise statistical CDF.
+        
+        The formula (statistical fallback): P(cover) = Φ(edge / sigma) blended with prior
+        
+        Key insight: Even large edges have uncertainty because:
+        1. Our model has error (MAE ~10-13 points)
+        2. Markets incorporate information we don't have
+        3. Game outcomes have inherent variance
+        """
+        # Try ML model first (if available and we have all inputs)
+        if (
+            self._ml_loaded 
+            and home_ratings is not None 
+            and away_ratings is not None 
+            and market_odds is not None
+        ):
+            ml_prob = self._get_ml_probability(
+                bet_type, home_ratings, away_ratings, market_odds, is_neutral
+            )
+            if ml_prob is not None:
+                self.logger.debug(f"Using ML probability for {bet_type}: {ml_prob:.3f}")
+                return ml_prob
+        
+        # Fallback: Statistical CDF approach
         sigma = self._get_edge_sigma(bet_type)
         conf = min(1.0, max(0.0, confidence))
 
         if sigma <= 0:
             base_prob = conf
         else:
+            # Cap edge at 2.5 sigma to prevent overconfidence
+            # This limits max probability to ~99.4% even for huge edges
+            max_z = 2.5
             z = edge / sigma
-            edge_prob = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+            z_capped = min(z, max_z)
+            
+            # Log when we cap (useful for debugging)
+            if z > max_z:
+                self.logger.debug(
+                    f"Edge capped: {edge:.1f} pts (z={z:.2f} -> {z_capped:.2f})"
+                )
+            
+            edge_prob = 0.5 * (1.0 + math.erf(z_capped / math.sqrt(2.0)))
             edge_prob = min(0.99, max(0.01, edge_prob))
+            
+            # Blend with confidence: move from 50% toward edge_prob
+            # Lower confidence = stay closer to 50%
             base_prob = 0.5 + (edge_prob - 0.5) * conf
 
+        # Bayesian regularization toward historical hit rate
         prior_rate, prior_weight = self._get_bayes_prior(bet_type)
         model_weight = max(1.0, prior_weight * max(0.25, conf))
         blended = (prior_rate * prior_weight + base_prob * model_weight) / (prior_weight + model_weight)
-        return min(0.99, max(0.01, blended))
+        
+        # Hard floor/ceiling to prevent extreme Kelly sizing
+        return min(0.85, max(0.15, blended))
 
     def _calculate_ev_kelly(
         self,

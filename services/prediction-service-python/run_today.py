@@ -1446,10 +1446,15 @@ def get_prediction(
     )
     
     # Generate recommendations
+    # v33.10: Pass ratings for ML probability models
     recommendations = []
     if market_odds_obj:
         recommendations = prediction_engine.generate_recommendations(
-            prediction, market_odds_obj
+            prediction, 
+            market_odds_obj,
+            home_ratings=home_ratings_obj,
+            away_ratings=away_ratings_obj,
+            is_neutral=is_neutral,
         )
 
     # Persist to Postgres (prediction + recommendations)
