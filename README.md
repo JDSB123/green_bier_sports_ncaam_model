@@ -1,5 +1,9 @@
 # NCAA Basketball v33.6.5
 
+> 📘 **For AI Assistants (Grok, Claude, etc.):** See [GROK_SETUP.md](GROK_SETUP.md) for comprehensive AI-friendly setup instructions.
+> 
+> 🔓 **Repository Owner:** To make this repo public, see [MAKING_REPO_PUBLIC.md](MAKING_REPO_PUBLIC.md) for step-by-step instructions.
+
 ## Single Point of Entry
 
 ```powershell
