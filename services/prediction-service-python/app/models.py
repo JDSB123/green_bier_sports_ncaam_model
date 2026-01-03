@@ -175,6 +175,10 @@ class MarketOdds(BaseModel):
     # Sharp book reference (Pinnacle/Circa)
     sharp_spread: Optional[float] = None
     sharp_total: Optional[float] = None
+    
+    # Square book reference (DraftKings/FanDuel) for sharp vs square comparison
+    square_spread: Optional[float] = None
+    square_total: Optional[float] = None
 
     # Opening lines (for market movement/steam context)
     spread_open: Optional[float] = None

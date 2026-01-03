@@ -637,30 +637,47 @@ class PredictionEngineV33:
         pick: Pick,
         market_odds: MarketOdds,
     ) -> float:
-        """Adjust confidence using line movement/steam/RLM signals when available."""
-        move = self._get_market_move(bet_type, market_odds)
-        if move is None:
-            return confidence
-
-        move_threshold, steam_threshold = self._get_move_thresholds(bet_type)
-        aligned = self._is_move_aligned(bet_type, pick, move)
-
+        """Adjust confidence using line movement/steam/RLM/sharp-square signals."""
         adjusted = confidence
-        if abs(move) >= move_threshold:
-            if aligned:
-                adjusted *= (1 + self.config.market_move_confidence_boost)
-            else:
-                adjusted *= (1 - self.config.market_move_confidence_penalty)
+        
+        # 1. Line movement signals (requires opening line)
+        move = self._get_market_move(bet_type, market_odds)
+        if move is not None:
+            move_threshold, steam_threshold = self._get_move_thresholds(bet_type)
+            aligned = self._is_move_aligned(bet_type, pick, move)
 
-        if abs(move) >= steam_threshold:
-            if aligned:
-                adjusted *= (1 + self.config.steam_confidence_boost)
-            else:
-                adjusted *= (1 - self.config.steam_confidence_penalty)
+            if abs(move) >= move_threshold:
+                if aligned:
+                    adjusted *= (1 + self.config.market_move_confidence_boost)
+                else:
+                    adjusted *= (1 - self.config.market_move_confidence_penalty)
 
-        if self._is_reverse_line_move(bet_type, move, market_odds):
-            if aligned:
+            if abs(move) >= steam_threshold:
+                if aligned:
+                    adjusted *= (1 + self.config.steam_confidence_boost)
+                else:
+                    adjusted *= (1 - self.config.steam_confidence_penalty)
+
+            # RLM detection (if public percentages available)
+            if self._is_reverse_line_move(bet_type, move, market_odds):
+                if aligned:
+                    adjusted *= (1 + self.config.rlm_confidence_boost)
+
+        # 2. Sharp vs Square divergence (alternative to public percentages)
+        # When sharp books have moved but square books haven't, that's actionable
+        divergence_detected, divergence_amount = self._detect_sharp_square_divergence(
+            bet_type, market_odds
+        )
+        if divergence_detected:
+            aligned_with_sharps = self._is_aligned_with_sharp_divergence(
+                bet_type, pick, market_odds
+            )
+            if aligned_with_sharps:
+                # Boost confidence when we agree with sharps
                 adjusted *= (1 + self.config.rlm_confidence_boost)
+            else:
+                # Penalty when we're going against sharps
+                adjusted *= (1 - self.config.market_move_confidence_penalty)
 
         return min(0.99, max(0.01, adjusted))
 
@@ -742,6 +759,80 @@ class PredictionEngineV33:
         if public_under and move > 0:
             return True
         return False
+
+    def _detect_sharp_square_divergence(
+        self,
+        bet_type: BetType,
+        market_odds: MarketOdds,
+    ) -> tuple[bool, float]:
+        """
+        Detect when sharp books (Pinnacle) have moved but square books haven't.
+        
+        This is an alternative to public betting percentages - we infer sharp action
+        from the difference between sharp and square lines.
+        
+        Returns: (divergence_detected, divergence_amount)
+        """
+        divergence_threshold = 0.5  # Half-point difference is meaningful
+        
+        if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+            sharp = market_odds.sharp_spread
+            square = market_odds.square_spread
+            if sharp is None or square is None:
+                # Fallback: compare sharp to consensus spread
+                square = market_odds.spread
+            if sharp is None or square is None:
+                return False, 0.0
+            
+            divergence = abs(sharp - square)
+            return divergence >= divergence_threshold, divergence
+        
+        else:  # Totals
+            sharp = market_odds.sharp_total
+            square = market_odds.square_total
+            if sharp is None or square is None:
+                square = market_odds.total
+            if sharp is None or square is None:
+                return False, 0.0
+            
+            divergence = abs(sharp - square)
+            return divergence >= 1.0, divergence  # Full point for totals
+    
+    def _is_aligned_with_sharp_divergence(
+        self,
+        bet_type: BetType,
+        pick: Pick,
+        market_odds: MarketOdds,
+    ) -> bool:
+        """
+        Check if our pick is on the same side as the sharp divergence.
+        
+        If sharp spread is more negative than square (sharps favor home more),
+        and we're picking HOME, we're aligned with sharps.
+        """
+        if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
+            sharp = market_odds.sharp_spread
+            square = market_odds.square_spread or market_odds.spread
+            if sharp is None or square is None:
+                return True  # No data = neutral
+            
+            sharps_favor_home = sharp < square  # More negative = more home favorite
+            if pick == Pick.HOME:
+                return sharps_favor_home
+            else:  # AWAY
+                return not sharps_favor_home
+        
+        else:  # Totals
+            sharp = market_odds.sharp_total
+            square = market_odds.square_total or market_odds.total
+            if sharp is None or square is None:
+                return True
+            
+            sharps_favor_over = sharp > square  # Higher total = over
+            if pick == Pick.OVER:
+                return sharps_favor_over
+            else:  # UNDER
+                return not sharps_favor_over
 
     def _get_market_probability(
         self,

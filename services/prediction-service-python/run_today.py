@@ -654,6 +654,21 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
               AND market_type IN ('spreads', 'totals')
             ORDER BY game_id, market_type, time DESC
         ),
+        -- Square book reference (DraftKings/FanDuel) for sharp vs square comparison
+        square_odds AS (
+            SELECT DISTINCT ON (game_id, market_type)
+                game_id,
+                market_type,
+                home_line as square_home_line,
+                total_line as square_total_line
+            FROM odds_snapshots
+            WHERE bookmaker IN ('draftkings', 'fanduel')
+              AND period = 'full'
+              AND market_type IN ('spreads', 'totals')
+            ORDER BY game_id, market_type, 
+              (bookmaker = 'draftkings') DESC,
+              time DESC
+        ),
         -- Latest ratings (filtered by target date to prevent future data leakage)
         -- v6.3: ALL 22 Barttorvik fields are REQUIRED - no fallbacks, no optional data
         -- The Go sync service captures everything - we use everything
@@ -736,6 +751,9 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             -- Sharp book reference (Pinnacle)
             MAX(CASE WHEN so.market_type = 'spreads' THEN so.sharp_home_line END) as sharp_spread,
             MAX(CASE WHEN so.market_type = 'totals' THEN so.sharp_total_line END) as sharp_total,
+            -- Square book reference (DraftKings/FanDuel) for sharp vs square divergence
+            MAX(CASE WHEN sq.market_type = 'spreads' THEN sq.square_home_line END) as square_spread,
+            MAX(CASE WHEN sq.market_type = 'totals' THEN sq.square_total_line END) as square_total,
             -- Home team ratings (ALL 22 fields - REQUIRED)
             htr.adj_o as home_adj_o,
             htr.adj_d as home_adj_d,
@@ -792,6 +810,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         LEFT JOIN open_odds_1h oo1h ON g.id = oo1h.game_id
         LEFT JOIN sharp_open_odds soo ON g.id = soo.game_id
         LEFT JOIN sharp_odds so ON g.id = so.game_id
+        LEFT JOIN square_odds sq ON g.id = sq.game_id
         LEFT JOIN latest_ratings htr ON ht.id = htr.team_id
         LEFT JOIN latest_ratings atr ON at.id = atr.team_id
         WHERE DATE(g.commence_time AT TIME ZONE 'America/Chicago') = :target_date
@@ -947,6 +966,9 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 # Sharp book reference (Pinnacle)
                 "sharp_spread": float(row.sharp_spread) if row.sharp_spread is not None else None,
                 "sharp_total": float(row.sharp_total) if row.sharp_total is not None else None,
+                # Square book reference (DraftKings/FanDuel) for sharp vs square divergence
+                "square_spread": float(row.square_spread) if row.square_spread is not None else None,
+                "square_total": float(row.square_total) if row.square_total is not None else None,
                 # Opening lines (consensus)
                 "spread_open": float(row.spread_open) if row.spread_open is not None else None,
                 "total_open": float(row.total_open) if row.total_open is not None else None,
@@ -1383,6 +1405,9 @@ def get_prediction(
             # Sharp book reference (Pinnacle) for CLV tracking
             sharp_spread=market_odds.get("sharp_spread"),
             sharp_total=market_odds.get("sharp_total"),
+            # Square book reference (DraftKings/FanDuel) for sharp vs square divergence
+            square_spread=market_odds.get("square_spread"),
+            square_total=market_odds.get("square_total"),
             # Opening lines (consensus + sharp)
             spread_open=market_odds.get("spread_open"),
             total_open=market_odds.get("total_open"),
@@ -2483,6 +2508,9 @@ def main():
             # Sharp book reference (Pinnacle) for CLV tracking
             "sharp_spread": game.get("sharp_spread"),
             "sharp_total": game.get("sharp_total"),
+            # Square book reference (DraftKings/FanDuel) for sharp vs square divergence
+            "square_spread": game.get("square_spread"),
+            "square_total": game.get("square_total"),
             # Opening lines (consensus + sharp)
             "spread_open": game.get("spread_open"),
             "total_open": game.get("total_open"),
