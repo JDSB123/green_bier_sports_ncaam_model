@@ -2445,6 +2445,22 @@ def main():
     # v6.2: Setup situational adjuster for rest day calculations
     situational_adjuster = SituationalAdjuster()
 
+    # v33.9: Fetch Action Network betting splits for public/sharp detection
+    betting_splits_map = {}
+    try:
+        from app.betting_splits import get_betting_splits_for_games, ActionNetworkError
+        betting_splits_map = get_betting_splits_for_games(games, target_datetime)
+        if betting_splits_map:
+            print(f"[OK] Fetched betting splits for {len(betting_splits_map)} games")
+        else:
+            print("[INFO] No betting splits available (may be off-season or no games)")
+    except ImportError:
+        print("[INFO] Betting splits module not available")
+    except ActionNetworkError as e:
+        print(f"[WARN] Betting splits fetch failed: {e}")
+    except Exception as e:
+        print(f"[WARN] Betting splits error: {e}")
+
     # Process each game
     all_picks = []
     games_processed = 0
@@ -2519,6 +2535,21 @@ def main():
             "sharp_spread_open": game.get("sharp_spread_open"),
             "sharp_total_open": game.get("sharp_total_open"),
         }
+        
+        # v33.9: Add Action Network betting splits if available
+        game_key = f"{game['home']}_vs_{game['away']}"
+        if game_key in betting_splits_map:
+            splits = betting_splits_map[game_key]
+            # Public betting percentages (tickets)
+            if splits.spread_home_public is not None:
+                market_odds["public_bet_pct_home"] = splits.spread_home_public / 100.0
+            if splits.total_over_public is not None:
+                market_odds["public_bet_pct_over"] = splits.total_over_public / 100.0
+            # Money percentages (handle - for sharp detection)
+            if splits.spread_home_money is not None:
+                market_odds["public_money_pct_home"] = splits.spread_home_money / 100.0
+            if splits.total_over_money is not None:
+                market_odds["public_money_pct_over"] = splits.total_over_money / 100.0
 
         # v6.2: Compute rest info for situational adjustments
         game_datetime = game.get("datetime_cst")
