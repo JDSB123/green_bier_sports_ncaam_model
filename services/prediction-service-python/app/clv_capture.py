@@ -31,7 +31,10 @@ def capture_pregame_closing_lines(
         sport_key: Optional sport key for odds API
         
     Returns:
-        Dict with 'games_checked', 'snapshots_captured', 'recommendations_updated'
+        Dict with:
+        - games_checked: number of games considered in the window
+        - snapshots_inserted: number of odds_snapshots rows inserted/updated
+        - error: optional error string when odds API client initialization fails
     """
     from app.odds_api_client import OddsApiClient, OddsApiError
     
@@ -76,8 +79,7 @@ def capture_pregame_closing_lines(
     except OddsApiError as e:
         return {
             "games_checked": len(games),
-            "snapshots_captured": 0,
-            "recommendations_updated": 0,
+            "snapshots_inserted": 0,
             "error": str(e),
         }
     
