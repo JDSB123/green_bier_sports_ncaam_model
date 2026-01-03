@@ -89,11 +89,8 @@ def capture_pregame_closing_lines(
         games_checked += 1
         
         try:
-            # Fetch current odds for this event
-            event_odds = client.get_event_odds(
-                external_id,
-                markets="spreads,totals,spreads_h1,totals_h1",
-            )
+            # Fetch current odds for this event from sharp books
+            event_odds = client.get_closing_lines_for_event(external_id)
             
             bookmakers = event_odds.get("bookmakers") or []
             if not bookmakers:

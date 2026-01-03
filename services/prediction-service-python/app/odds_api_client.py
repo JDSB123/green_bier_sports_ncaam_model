@@ -268,3 +268,41 @@ class OddsApiClient:
                 continue
         return out
 
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PREMIUM MARKETS - Additional endpoints from The Odds API
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    def get_alternate_lines(
+        self,
+        event_id: str,
+        bookmakers: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get alternate spread/total lines for line shopping."""
+        markets = "alternate_spreads,alternate_totals,alternate_spreads_h1,alternate_totals_h1"
+        return self.get_event_odds(event_id, markets=markets, bookmakers=bookmakers)
+
+    def get_team_totals(
+        self,
+        event_id: str,
+        bookmakers: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get team totals (over/under on individual team scores)."""
+        markets = "team_totals,alternate_team_totals"
+        return self.get_event_odds(event_id, markets=markets, bookmakers=bookmakers)
+
+    def get_player_props(
+        self,
+        event_id: str,
+        bookmakers: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get NCAAB player props (points, rebounds, assists, threes, etc.)."""
+        markets = "player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists"
+        return self.get_event_odds(event_id, markets=markets, bookmakers=bookmakers)
+
+    def get_closing_lines_for_event(
+        self,
+        event_id: str,
+    ) -> Dict[str, Any]:
+        """Get current lines for CLV capture from sharp books."""
+        return self.get_event_odds(event_id, markets="spreads,totals,spreads_h1,totals_h1", bookmakers="pinnacle,bovada,circa")
