@@ -1390,6 +1390,11 @@ def get_prediction(
             total_1h_open=market_odds.get("total_1h_open"),
             sharp_spread_open=market_odds.get("sharp_spread_open"),
             sharp_total_open=market_odds.get("sharp_total_open"),
+            # v33.7: Public betting sentiment (from SportsDataIO)
+            public_bet_pct_home=market_odds.get("public_bet_pct_home"),
+            public_money_pct_home=market_odds.get("public_money_pct_home"),
+            public_bet_pct_over=market_odds.get("public_bet_pct_over"),
+            public_money_pct_over=market_odds.get("public_money_pct_over"),
         )
     
     # Generate prediction (v6.2: pass rest info for situational adjustments)
@@ -2412,6 +2417,21 @@ def main():
     print(f"[OK] Found {len(games)} games")
     print()
 
+    # v33.7: Fetch public betting sentiment from SportsDataIO
+    betting_sentiment = {}
+    try:
+        from app.sportsdata_client import get_sportsdata_client
+        sportsdata = get_sportsdata_client()
+        if sportsdata.is_available():
+            print("[INFO] Fetching public betting sentiment from SportsDataIO...")
+            betting_sentiment = sportsdata.get_betting_splits_for_date(target_date)
+            print(f"  [OK] Got betting splits for {len(betting_sentiment)} games")
+        else:
+            print("[INFO] SportsDataIO not configured - RLM/public splits unavailable")
+    except Exception as e:
+        print(f"[WARN] Failed to fetch betting sentiment: {type(e).__name__}: {e}")
+        print("       Continuing without public betting data")
+
     # v6.2: Setup situational adjuster for rest day calculations
     situational_adjuster = SituationalAdjuster()
 
@@ -2486,6 +2506,15 @@ def main():
             "sharp_spread_open": game.get("sharp_spread_open"),
             "sharp_total_open": game.get("sharp_total_open"),
         }
+
+        # v33.7: Add public betting sentiment if available
+        matchup_key = f"{game['home']} vs {game['away']}"
+        sentiment = betting_sentiment.get(matchup_key)
+        if sentiment:
+            market_odds["public_bet_pct_home"] = sentiment.spread_bet_pct_home
+            market_odds["public_money_pct_home"] = sentiment.spread_money_pct_home
+            market_odds["public_bet_pct_over"] = sentiment.total_bet_pct_over
+            market_odds["public_money_pct_over"] = sentiment.total_money_pct_over
 
         # v6.2: Compute rest info for situational adjustments
         game_datetime = game.get("datetime_cst")

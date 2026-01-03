@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# GREEN BIER SPORT VENTURES - NCAAM v33.6.5
+# GREEN BIER SPORT VENTURES - NCAAM v33.7.0
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enterprise-ready sports prediction model with:
 # - Dynamic port allocation (no conflicts with other sports)
@@ -24,6 +24,8 @@ secrets:
     file: ./secrets/teams_webhook_url.txt
   teams_webhook_secret:
     file: ./secrets/teams_webhook_secret.txt
+  sportsdata_api_key:
+    file: ./secrets/sportsdata_api_key.txt
 
 x-common-env: &common-env
   environment:
@@ -131,7 +133,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
-    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.6.6
+    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.7.0
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
@@ -140,6 +142,7 @@ services:
       - redis_password
       - teams_webhook_url
       - teams_webhook_secret
+      - sportsdata_api_key
     environment:
       # Sport-parameterized configuration (enables multi-sport deployment)
       SPORT: ${SPORT:-ncaam}

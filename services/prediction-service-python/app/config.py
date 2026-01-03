@@ -272,21 +272,24 @@ class ModelConfig(BaseSettings):
         default=50,
         description="Minimum settled samples before using recent hit rate."
     )
+    # v33.7: Calibrated from historical backtest residuals
+    # FG: Small sample (N~50), using typical NCAAM σ≈12-13
+    # 1H: Large sample (N=904), empirical σ≈10.3 spread, 10.1 total
     edge_sigma_spread: float = Field(
-        default=11.0,
-        description="Sigma for spread edge-to-prob conversion."
+        default=12.5,
+        description="Sigma for spread edge-to-prob conversion. (Calibrated: typical NCAAM ~12-13)"
     )
     edge_sigma_total: float = Field(
-        default=13.0,
-        description="Sigma for total edge-to-prob conversion."
+        default=12.0,
+        description="Sigma for total edge-to-prob conversion. (Backtest σ≈10.7, conservative +1)"
     )
     edge_sigma_spread_1h: float = Field(
-        default=9.0,
-        description="Sigma for 1H spread edge-to-prob conversion."
+        default=10.5,
+        description="Sigma for 1H spread edge-to-prob conversion. (Backtest σ≈10.3)"
     )
     edge_sigma_total_1h: float = Field(
-        default=9.0,
-        description="Sigma for 1H total edge-to-prob conversion."
+        default=10.5,
+        description="Sigma for 1H total edge-to-prob conversion. (Backtest σ≈10.1)"
     )
 
     # ─────────────────────────────────────────────────────────────────────────
