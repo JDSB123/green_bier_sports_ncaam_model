@@ -8,7 +8,7 @@ This script trains two models:
 
 Features include:
 - Full game spread/total relationship to 1H lines
-- Team matchup context (when Barttorvik data available)
+- Team matchup context from Barttorvik ratings
 - Line value indicators
 
 Usage:
@@ -18,6 +18,7 @@ Usage:
 
 import argparse
 import csv
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -35,6 +36,68 @@ except ImportError:
     sys.exit(1)
 
 
+def load_barttorvik_ratings(filepath: Path) -> Dict:
+    """Load Barttorvik ratings lookup."""
+    if not filepath.exists():
+        return {}
+    with open(filepath) as f:
+        return json.load(f)
+
+
+def load_team_aliases(filepath: Path) -> Dict[str, str]:
+    """Load team aliases from export."""
+    if not filepath.exists():
+        return {}
+    with open(filepath) as f:
+        return json.load(f)
+
+
+def normalize_for_lookup(name: str, aliases: Dict[str, str]) -> str:
+    """Normalize team name for Barttorvik lookup."""
+    if not name:
+        return ""
+    
+    key = name.lower().strip()
+    
+    # Try alias lookup first
+    if key in aliases:
+        canonical = aliases[key].lower().strip()
+        # Normalize for Barttorvik format
+        canonical = canonical.replace("state", "st").replace(".", "").strip()
+        return canonical
+    
+    # Basic normalization
+    key = key.replace("state", "st").replace(".", "").strip()
+    return key
+
+
+def get_team_ratings(team_name: str, season: str, ratings: Dict, aliases: Dict) -> Optional[Dict]:
+    """Get Barttorvik ratings for a team in a season."""
+    normalized = normalize_for_lookup(team_name, aliases)
+    
+    if not normalized:
+        return None
+    
+    # Try exact key
+    key = f"{normalized}_{season}"
+    if key in ratings:
+        return ratings[key]
+    
+    # Try variations
+    variations = [
+        normalized,
+        normalized.replace(" st", " state"),
+        normalized.replace("st ", "state "),
+    ]
+    
+    for var in variations:
+        key = f"{var}_{season}"
+        if key in ratings:
+            return ratings[key]
+    
+    return None
+
+
 def load_training_data(filepath: Path) -> pd.DataFrame:
     """Load 1H training data CSV."""
     df = pd.read_csv(filepath)
@@ -50,13 +113,19 @@ def load_training_data(filepath: Path) -> pd.DataFrame:
     return df
 
 
-def build_h1_features(df: pd.DataFrame) -> pd.DataFrame:
+def build_h1_features(df: pd.DataFrame, ratings: Dict = None, aliases: Dict = None) -> pd.DataFrame:
     """
     Build features for 1H prediction.
     
     Features are designed to NOT use future information.
+    Includes Barttorvik team ratings when available.
     """
     features = pd.DataFrame(index=df.index)
+    
+    if ratings is None:
+        ratings = {}
+    if aliases is None:
+        aliases = {}
     
     # 1. Line-based features (available at prediction time)
     features["h1_spread"] = df["h1_spread"].astype(float)
@@ -98,6 +167,60 @@ def build_h1_features(df: pd.DataFrame) -> pd.DataFrame:
     # 6. Day of week (weekends have more casual bettors)
     features["day_of_week"] = df["date"].dt.dayofweek
     features["is_weekend"] = (features["day_of_week"] >= 5).astype(int)
+    
+    # 7. Barttorvik team strength features (if available)
+    if ratings:
+        home_adjoe = []
+        home_adjde = []
+        away_adjoe = []
+        away_adjde = []
+        home_tempo = []
+        away_tempo = []
+        
+        for idx, row in df.iterrows():
+            home = row.get("home_team", "")
+            away = row.get("away_team", "")
+            game_date = row.get("date")
+            
+            # Determine season (e.g., 2024-01 -> "2024", 2024-11 -> "2025")
+            if game_date:
+                month = game_date.month
+                year = game_date.year
+                season = str(year + 1) if month >= 10 else str(year)
+            else:
+                season = "2024"
+            
+            home_r = get_team_ratings(home, season, ratings, aliases)
+            away_r = get_team_ratings(away, season, ratings, aliases)
+            
+            home_adjoe.append(home_r.get("adjoe", 100.0) if home_r else 100.0)
+            home_adjde.append(home_r.get("adjde", 100.0) if home_r else 100.0)
+            away_adjoe.append(away_r.get("adjoe", 100.0) if away_r else 100.0)
+            away_adjde.append(away_r.get("adjde", 100.0) if away_r else 100.0)
+            home_tempo.append(home_r.get("adj_tempo", 68.0) if home_r else 68.0)
+            away_tempo.append(away_r.get("adj_tempo", 68.0) if away_r else 68.0)
+        
+        features["home_adjoe"] = home_adjoe
+        features["home_adjde"] = home_adjde
+        features["away_adjoe"] = away_adjoe
+        features["away_adjde"] = away_adjde
+        features["home_tempo"] = home_tempo
+        features["away_tempo"] = away_tempo
+        
+        # Derived features
+        features["home_net_rating"] = features["home_adjoe"] - features["home_adjde"]
+        features["away_net_rating"] = features["away_adjoe"] - features["away_adjde"]
+        features["rating_diff"] = features["home_net_rating"] - features["away_net_rating"]
+        features["avg_tempo"] = (features["home_tempo"] + features["away_tempo"]) / 2
+        features["tempo_diff"] = features["home_tempo"] - features["away_tempo"]
+        
+        # Expected total based on ratings
+        features["expected_fg_total"] = (
+            features["home_adjoe"] * features["away_adjde"] / 100 +
+            features["away_adjoe"] * features["home_adjde"] / 100
+        ) * features["avg_tempo"] / 68  # Tempo adjustment
+        
+        features["market_total_vs_expected"] = features["fg_total"] - features["expected_fg_total"]
     
     # Fill NaN values
     features = features.fillna(0)
@@ -201,9 +324,17 @@ def main():
     # Load data
     df = load_training_data(args.data)
     
+    # Load Barttorvik ratings and aliases
+    training_dir = Path(__file__).parent.parent / "training_data"
+    ratings = load_barttorvik_ratings(training_dir / "barttorvik_lookup.json")
+    aliases = load_team_aliases(training_dir / "team_aliases_db.json")
+    
+    print(f"Loaded {len(ratings)} Barttorvik ratings")
+    print(f"Loaded {len(aliases)} team aliases")
+    
     # Build features
     print("\nBuilding features...")
-    features = build_h1_features(df)
+    features = build_h1_features(df, ratings, aliases)
     
     print(f"Feature columns: {list(features.columns)}")
     print(f"Feature matrix shape: {features.shape}")
