@@ -203,8 +203,11 @@ Write-Host "  [OK] Redis password generated (32 chars)" -ForegroundColor Gray
 if ([string]::IsNullOrWhiteSpace($BasketballApiKey)) {
     $basketballSecretPath = Join-Path $PSScriptRoot "..\secrets\basketball_api_key.txt"
     if (Test-Path $basketballSecretPath) {
-        $BasketballApiKey = (Get-Content $basketballSecretPath -Raw).Trim()
-        Write-Host "  [OK] Basketball API key loaded from secrets file" -ForegroundColor Gray
+        $rawBasketballKey = Get-Content $basketballSecretPath -Raw -ErrorAction SilentlyContinue
+        if (-not [string]::IsNullOrWhiteSpace($rawBasketballKey)) {
+            $BasketballApiKey = $rawBasketballKey.Trim()
+            Write-Host "  [OK] Basketball API key loaded from secrets file" -ForegroundColor Gray
+        }
     }
 }
 
@@ -212,7 +215,10 @@ if ([string]::IsNullOrWhiteSpace($BasketballApiKey)) {
 if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
     $teamsSecretPath = Join-Path $PSScriptRoot "..\secrets\teams_webhook_url.txt"
     if (Test-Path $teamsSecretPath -PathType Leaf) {
-        $TeamsWebhookUrl = (Get-Content $teamsSecretPath -Raw).Trim()
+        $rawTeamsWebhookUrl = Get-Content $teamsSecretPath -Raw -ErrorAction SilentlyContinue
+        if (-not [string]::IsNullOrWhiteSpace($rawTeamsWebhookUrl)) {
+            $TeamsWebhookUrl = $rawTeamsWebhookUrl.Trim()
+        }
     }
 }
 
