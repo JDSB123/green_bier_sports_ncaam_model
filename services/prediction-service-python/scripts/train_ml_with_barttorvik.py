@@ -43,11 +43,56 @@ except ImportError:
     HAS_ML = False
 
 
-def normalize_team_name(name: str) -> str:
-    """Normalize team name for matching."""
+def load_team_aliases(aliases_path: Path = None) -> Dict[str, str]:
+    """
+    Load team aliases from database export or fallback file.
+    Returns dict mapping lowercase alias -> canonical name.
+    """
+    # Try database export first
+    if aliases_path is None:
+        aliases_path = Path(__file__).parent.parent / "training_data" / "team_aliases_db.json"
+    
+    if aliases_path.exists():
+        with open(aliases_path) as f:
+            return json.load(f)
+    
+    # Fallback - minimal normalization
+    return {}
+
+
+# Global alias lookup (loaded once)
+_TEAM_ALIASES: Dict[str, str] = {}
+
+
+def normalize_team_name(name: str, aliases: Dict[str, str] = None) -> str:
+    """
+    Normalize team name using database aliases.
+    
+    First tries exact match in aliases, then falls back to simple normalization.
+    """
     if not name:
         return ""
-    name = name.lower().strip()
+    
+    if aliases is None:
+        aliases = _TEAM_ALIASES
+    
+    # Try exact match (lowercase)
+    key = name.lower().strip()
+    if key in aliases:
+        return aliases[key].lower().strip()
+    
+    # Try with common suffix removal
+    for suffix in [" tigers", " bulldogs", " wildcats", " bears", " eagles", 
+                   " cardinals", " blue devils", " tar heels", " crimson tide",
+                   " spartans", " wolverines", " buckeyes", " hoosiers",
+                   " jayhawks", " cougars", " huskies", " ducks", " beavers"]:
+        if key.endswith(suffix):
+            base = key[:-len(suffix)].strip()
+            if base in aliases:
+                return aliases[base].lower().strip()
+    
+    # Simple normalization fallback
+    name = key
     name = name.replace("state", "st")
     name = name.replace("university", "")
     name = name.replace("college", "")
@@ -79,29 +124,62 @@ def load_ratings(json_path: Path) -> Dict[str, Dict[int, Dict]]:
         return json.load(f)
 
 
+def normalize_for_ratings(name: str) -> str:
+    """Normalize name for ratings lookup (remove periods, handle State->St)."""
+    if not name:
+        return ""
+    name = name.lower().strip()
+    name = name.replace(".", "")
+    name = name.replace("'", "")
+    name = name.replace("-", " ")
+    # Critical: Convert "State" to "St" for Barttorvik matching
+    name = name.replace(" state", " st")
+    name = name.replace("state ", "st ")
+    # Handle university variants
+    name = name.replace(" university", "")
+    name = name.replace("university ", "")
+    return " ".join(name.split())
+
+
 def get_team_ratings(
     team: str, 
     season: int, 
     ratings_lookup: Dict,
     default_ratings: Dict,
+    aliases: Dict[str, str] = None,
 ) -> Tuple[Dict, bool]:
     """
     Get team ratings for a specific season.
     
+    Uses database aliases for accurate matching.
     Returns: (ratings_dict, found)
     """
-    norm_team = normalize_team_name(team)
+    if aliases is None:
+        aliases = _TEAM_ALIASES
     
+    # First, resolve team name through aliases
+    team_lower = team.lower().strip()
+    
+    # Check if team name is in aliases -> get canonical
+    if team_lower in aliases:
+        canonical = aliases[team_lower]
+        norm_team = normalize_for_ratings(canonical)
+    else:
+        # Try with mascot removal, then normalize
+        resolved = normalize_team_name(team, aliases)
+        norm_team = normalize_for_ratings(resolved)
+    
+    # Look up in ratings
     if norm_team in ratings_lookup:
         season_ratings = ratings_lookup[norm_team]
         if str(season) in season_ratings:
             return season_ratings[str(season)], True
-        # Try adjacent season
         if str(season - 1) in season_ratings:
             return season_ratings[str(season - 1)], True
     
-    # Try partial matches
+    # Try partial matches (for edge cases)
     for key in ratings_lookup:
+        # Use normalized comparison
         if norm_team in key or key in norm_team:
             season_ratings = ratings_lookup[key]
             if str(season) in season_ratings:
@@ -352,6 +430,15 @@ def main():
     print(f"\nLoading ratings from {args.ratings}...")
     ratings = load_ratings(args.ratings)
     print(f"Loaded ratings for {len(ratings)} teams")
+    
+    # Load team aliases from database export
+    global _TEAM_ALIASES
+    aliases_path = args.games.parent / "team_aliases_db.json"
+    if aliases_path.exists():
+        _TEAM_ALIASES = load_team_aliases(aliases_path)
+        print(f"Loaded {len(_TEAM_ALIASES)} team aliases from database")
+    else:
+        print("WARNING: No team_aliases_db.json found - using simple normalization")
     
     # Engineer features
     X, y_spread, y_total, valid_mask = engineer_features(df, ratings)
