@@ -2114,13 +2114,13 @@ def main():
         "--team-matching-lookback-days",
         type=int,
         default=int(os.getenv("TEAM_MATCHING_LOOKBACK_DAYS", "7")),
-        help="Lookback window (days) for team matching enforcement (default: 30)"
+        help="Lookback window (days) for team matching enforcement (default: 7)"
     )
     parser.add_argument(
         "--min-team-resolution-rate",
         type=float,
         default=float(os.getenv("MIN_TEAM_RESOLUTION_RATE", "0.98")),
-        help="Minimum recent team resolution rate (0-1) required (default: 0.99)"
+        help="Minimum recent team resolution rate (0-1) required (default: 0.98)"
     )
     parser.add_argument(
         "--min-ratings-pct",
@@ -2269,9 +2269,14 @@ def main():
             f"unresolved={unresolved} (lookback {tm_recent.get('lookback_days', 0)}d)"
         )
         
+        # If the audit table is empty, treat this as "unknown" rather than blocking.
+        if int(total or 0) <= 0:
+            print("  [WARN]  No team resolution audit entries found in lookback window.")
+            print("          Skipping enforcement (cannot assess recent matching quality yet).")
+            health_summary.setdefault("notes", []).append("team matching audit empty (skipped enforcement)")
         # FIX: Gate is now a WARNING for rate < threshold, FATAL only if rate < 0.90
-        # This allows predictions for resolved games while flagging data quality issues
-        if not tm_recent.get("ok"):
+        # This allows predictions for resolved games while flagging data quality issues.
+        elif not tm_recent.get("ok"):
             if rate < 0.90:
                 print("[FATAL] Canonical team matching severely degraded (<90%). Cannot proceed.")
                 exit_with_health(2, "canonical team matching severely degraded")
@@ -2454,6 +2459,7 @@ def main():
     betting_splits_map = {}
     try:
         from app.betting_splits import get_betting_splits_for_games, ActionNetworkError
+        target_datetime = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc)
         betting_splits_map = get_betting_splits_for_games(games, target_datetime)
         if betting_splits_map:
             print(f"[OK] Fetched betting splits for {len(betting_splits_map)} games")

@@ -149,6 +149,8 @@ class OddsSyncService:
         
         self.client = OddsApiClient(api_key=api_key)
         self.game_cache: Dict[str, uuid.UUID] = {}
+        # Count events skipped due to unresolved teams (prevents polluting `teams` with duplicates).
+        self.skipped_unresolved_events: int = 0
 
     def _parse_db_url(self):
         """Parse DATABASE_URL into psycopg2 connection params."""
@@ -176,71 +178,108 @@ class OddsSyncService:
         """Get a database connection."""
         return psycopg2.connect(**self.db_params)
 
-    def _resolve_team_id(self, cur, team_name: str) -> Optional[uuid.UUID]:
+    def _log_and_resolve_team(self, cur, team_name: str, source: str, context: Optional[str]) -> Optional[str]:
+        """
+        Resolve to canonical name and log the attempt in `team_resolution_audit`.
+
+        Preferred path: call `log_team_resolution()` (migration 008) which both resolves and audits.
+        Fallback path: call `resolve_team_name()` if the log function isn't present.
+        """
+        name = (team_name or "").strip()
+        if not name:
+            return None
+        try:
+            cur.execute("SELECT log_team_resolution(%s, %s, %s)", (name, source, context))
+            row = cur.fetchone()
+            return row[0] if row and row[0] else None
+        except Exception:
+            try:
+                cur.execute("SELECT resolve_team_name(%s)", (name,))
+                row = cur.fetchone()
+                resolved = row[0] if row and row[0] else None
+                # Best-effort fallback audit log if log_team_resolution() isn't available.
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO team_resolution_audit (input_name, resolved_name, source, context)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        (name, resolved, source, context),
+                    )
+                except Exception:
+                    pass
+                return resolved
+            except Exception:
+                return None
+
+    def _maybe_store_alias(
+        self,
+        cur,
+        team_id: uuid.UUID,
+        alias: str,
+        source: str,
+        confidence: float = 1.0,
+    ) -> None:
+        """Best-effort: persist variant as an exact alias for future matching."""
+        a = (alias or "").strip()
+        if not a:
+            return
+        try:
+            cur.execute(
+                """
+                INSERT INTO team_aliases (team_id, alias, source, confidence)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (alias, source) DO NOTHING
+                """,
+                (team_id, a, source, float(confidence)),
+            )
+        except Exception:
+            return
+
+    def _resolve_team_id(self, cur, team_name: str, *, source: str, context: Optional[str]) -> Optional[uuid.UUID]:
         """
         Resolve a team name to its ID using strict matching.
 
-        Priority order (NEVER settle for partial/fuzzy matches):
-        1. Exact canonical_name match (case-insensitive)
-        2. resolve_team_name() database function (uses 950+ aliases)
-        3. Python-side normalization then exact match
+        Priority order:
+        1. DB `log_team_resolution()` / `resolve_team_name()` (single source of truth)
+        2. Python-side normalization as a back-compat fallback
+        3. Return None if unresolved (caller decides what to do)
 
         Returns None if no match found - caller must handle.
         """
-        # Normalize with Python aliases first
-        normalized = normalize_team_name(team_name)
+        original = (team_name or "").strip()
+        if not original:
+            return None
 
-        # Step 1: Try exact match on canonical_name
+        canonical = self._log_and_resolve_team(cur, original, source=source, context=context)
+
+        if not canonical:
+            normalized = normalize_team_name(original)
+            if normalized and normalized != original:
+                canonical = self._log_and_resolve_team(cur, normalized, source=source, context=context)
+
+        if not canonical:
+            return None
+
         cur.execute(
             """
-            SELECT t.id FROM teams t
+            SELECT t.id
+            FROM teams t
             LEFT JOIN team_ratings tr ON t.id = tr.team_id
-            WHERE LOWER(t.canonical_name) = LOWER(%s)
-            ORDER BY tr.team_id IS NOT NULL DESC
+            WHERE t.canonical_name = %s
+            ORDER BY tr.team_id IS NOT NULL DESC, t.canonical_name
             LIMIT 1
             """,
-            (normalized,)
+            (canonical,),
         )
         row = cur.fetchone()
-        if row:
-            return row[0]
+        if not row:
+            return None
 
-        # Step 2: Use database resolve_team_name() function
-        cur.execute("SELECT resolve_team_name(%s)", (team_name,))
-        resolved = cur.fetchone()
-        if resolved and resolved[0]:
-            cur.execute(
-                """
-                SELECT t.id FROM teams t
-                LEFT JOIN team_ratings tr ON t.id = tr.team_id
-                WHERE t.canonical_name = %s
-                ORDER BY tr.team_id IS NOT NULL DESC
-                LIMIT 1
-                """,
-                (resolved[0],)
-            )
-            row = cur.fetchone()
-            if row:
-                return row[0]
-
-        # Step 3: Try normalized name exact match
-        if normalized != team_name:
-            cur.execute(
-                """
-                SELECT t.id FROM teams t
-                LEFT JOIN team_ratings tr ON t.id = tr.team_id
-                WHERE LOWER(t.canonical_name) = LOWER(%s)
-                ORDER BY tr.team_id IS NOT NULL DESC
-                LIMIT 1
-                """,
-                (normalized,)
-            )
-            row = cur.fetchone()
-            if row:
-                return row[0]
-
-        # NO FUZZY/PARTIAL MATCHING - return None
-        return None
+        team_id = row[0]
+        if original.lower() != canonical.lower():
+            self._maybe_store_alias(cur, team_id=team_id, alias=original, source=source, confidence=1.0)
+        return team_id
 
     def _get_or_create_game_id(
         self,
@@ -249,8 +288,12 @@ class OddsSyncService:
         home_team: str,
         away_team: str,
         commence_time: Optional[datetime]
-    ) -> uuid.UUID:
-        """Get or create a game_id for an external event."""
+    ) -> Optional[uuid.UUID]:
+        """Get or create a game_id for an external event.
+
+        If a team cannot be resolved, we skip the event (and commit audit rows) rather
+        than inserting new teams that will not have ratings and will create duplicates.
+        """
         if external_id in self.game_cache:
             return self.game_cache[external_id]
 
@@ -266,9 +309,18 @@ class OddsSyncService:
                 self.game_cache[external_id] = game_id
                 return game_id
 
-            # Resolve team IDs using strict matching
-            home_team_id = self._resolve_team_id(cur, home_team)
-            away_team_id = self._resolve_team_id(cur, away_team)
+            # Resolve team IDs using canonical matcher + audit logging
+            home_team_id = self._resolve_team_id(cur, home_team, source="the_odds_api", context="home_team")
+            away_team_id = self._resolve_team_id(cur, away_team, source="the_odds_api", context="away_team")
+
+            # If either side is unresolved, commit audit rows (best-effort) and skip.
+            if not home_team_id or not away_team_id:
+                try:
+                    conn.commit()
+                except Exception:
+                    pass
+                self.skipped_unresolved_events += 1
+                return None
 
             # Try to match existing game by resolved teams and date
             if home_team_id and away_team_id and commence_time:
@@ -295,23 +347,6 @@ class OddsSyncService:
                     self.game_cache[external_id] = game_id
                     return game_id
 
-            # Create teams if not found (log warning - these won't have ratings)
-            if not home_team_id:
-                print(f"    WARNING: Creating new team '{home_team}' (no ratings)")
-                cur.execute(
-                    "INSERT INTO teams (canonical_name) VALUES (%s) RETURNING id",
-                    (home_team,)
-                )
-                home_team_id = cur.fetchone()[0]
-
-            if not away_team_id:
-                print(f"    WARNING: Creating new team '{away_team}' (no ratings)")
-                cur.execute(
-                    "INSERT INTO teams (canonical_name) VALUES (%s) RETURNING id",
-                    (away_team,)
-                )
-                away_team_id = cur.fetchone()[0]
-            
             # Create new game
             game_id = uuid.uuid4()
             cur.execute(
@@ -452,6 +487,7 @@ class OddsSyncService:
         conn = self._get_connection()
         snapshots = []
         now = datetime.now(timezone.utc)
+        processed_events = 0
         
         try:
             for event in events:
@@ -475,6 +511,9 @@ class OddsSyncService:
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time
                 )
+                if not game_id:
+                    continue
+                processed_events += 1
                 
                 for bookmaker in event.get("bookmakers", []):
                     bookie_key = bookmaker.get("key", "")
@@ -492,8 +531,9 @@ class OddsSyncService:
                         })
             
             stored = self._store_snapshots(conn, snapshots)
-            print(f"    ✓ Full-game: {len(events)} events, {stored} snapshots")
-            return len(events), stored
+            skipped = int(self.skipped_unresolved_events or 0)
+            print(f"    ✓ Full-game: {processed_events}/{len(events)} events, {stored} snapshots (skipped_unresolved_total={skipped})")
+            return processed_events, stored
         finally:
             conn.close()
 
@@ -509,6 +549,7 @@ class OddsSyncService:
         conn = self._get_connection()
         snapshots = []
         now = datetime.now(timezone.utc)
+        processed_events = 0
         
         try:
             for event in events:
@@ -532,6 +573,9 @@ class OddsSyncService:
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time
                 )
+                if not game_id:
+                    continue
+                processed_events += 1
                 
                 for bookmaker in event.get("bookmakers", []):
                     bookie_key = bookmaker.get("key", "")
@@ -551,8 +595,9 @@ class OddsSyncService:
                             })
             
             stored = self._store_snapshots(conn, snapshots)
-            print(f"    ✓ 1H: {len(events)} events, {stored} snapshots")
-            return len(events), stored
+            skipped = int(self.skipped_unresolved_events or 0)
+            print(f"    ✓ 1H: {processed_events}/{len(events)} events, {stored} snapshots (skipped_unresolved_total={skipped})")
+            return processed_events, stored
         finally:
             conn.close()
 
@@ -568,6 +613,7 @@ class OddsSyncService:
         conn = self._get_connection()
         snapshots = []
         now = datetime.now(timezone.utc)
+        processed_events = 0
         
         try:
             for event in events:
@@ -591,6 +637,9 @@ class OddsSyncService:
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time
                 )
+                if not game_id:
+                    continue
+                processed_events += 1
                 
                 for bookmaker in event.get("bookmakers", []):
                     bookie_key = bookmaker.get("key", "")
@@ -610,8 +659,9 @@ class OddsSyncService:
                             })
             
             stored = self._store_snapshots(conn, snapshots)
-            print(f"    ✓ 2H: {len(events)} events, {stored} snapshots")
-            return len(events), stored
+            skipped = int(self.skipped_unresolved_events or 0)
+            print(f"    ✓ 2H: {processed_events}/{len(events)} events, {stored} snapshots (skipped_unresolved_total={skipped})")
+            return processed_events, stored
         finally:
             conn.close()
 
@@ -623,6 +673,7 @@ class OddsSyncService:
             "h2": {"events": 0, "snapshots": 0},
             "total_events": 0,
             "total_snapshots": 0,
+            "skipped_unresolved_events": 0,
             "success": True,
             "error": None,
         }
@@ -654,6 +705,7 @@ class OddsSyncService:
             results["error"] = str(e)
             print(f"    ❌ Odds sync error: {e}")
         
+        results["skipped_unresolved_events"] = int(self.skipped_unresolved_events or 0)
         return results
 
 
