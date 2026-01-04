@@ -1,12 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NCAAM - Azure Container Apps Deployment (versioned by imageTag)
+// NCAAM - Azure Container Apps Deployment v33.10.0
 // ═══════════════════════════════════════════════════════════════════════════════
 // Deploys:
+// - Azure Key Vault (secrets storage) - NEW in v33.10.0
 // - Azure Container Registry (ACR)
 // - Azure Database for PostgreSQL Flexible Server
 // - Azure Cache for Redis
 // - Azure Container Apps Environment
 // - NCAAM Prediction Service Container App
+//
+// v33.10.0 Changes:
+// - Added Azure Key Vault for secure secrets management
+// - All API keys and passwords stored in Key Vault
+// - Container Apps reference Key Vault secrets
 // ═══════════════════════════════════════════════════════════════════════════════
 
 targetScope = 'resourceGroup'
@@ -180,6 +186,105 @@ resource redis 'Microsoft.Cache/redis@2023-08-01' = {
     redisConfiguration: {
       'maxmemory-policy': 'allkeys-lru'
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
+// AZURE KEY VAULT - Secure secrets storage (v33.10.0)
+// ─────────────────────────────────────────────────────────────────────────────────
+
+var keyVaultName = '${resourcePrefix}${replace(resourceNameSuffix, '-', '')}kv'
+
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: keyVaultName
+  location: location
+  tags: commonTags
+  properties: {
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+    enabledForDeployment: false
+    enabledForDiskEncryption: false
+    enabledForTemplateDeployment: true
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 90
+    enableRbacAuthorization: true
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+// Store secrets in Key Vault
+resource kvSecretPostgres 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'postgres-password'
+  properties: {
+    value: postgresPassword
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretOddsApi 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'odds-api-key'
+  properties: {
+    value: oddsApiKey
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretRedis 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'redis-password'
+  properties: {
+    value: redis.listKeys().primaryKey
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretTeamsWebhook 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (teamsWebhookUrl != '') {
+  parent: keyVault
+  name: 'teams-webhook-url'
+  properties: {
+    value: teamsWebhookUrl
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretBasketballApi 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (basketballApiKey != '') {
+  parent: keyVault
+  name: 'basketball-api-key'
+  properties: {
+    value: basketballApiKey
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretAcr 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'acr-password'
+  properties: {
+    value: acr.listCredentials().passwords[0].value
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'database-url'
+  properties: {
+    value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretRedisUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'redis-url'
+  properties: {
+    value: 'rediss://:${redis.listKeys().primaryKey}@${redis.properties.hostName}:6380'
+    contentType: 'text/plain'
   }
 }
 
@@ -812,3 +917,5 @@ output ratingsJobName string = ratingsSyncJob.name
 output oddsJobName string = oddsIngestionJob.name
 output containerEnvName string = containerEnv.name
 output actionGroupId string = actionGroup.id
+output keyVaultName string = keyVault.name
+output keyVaultUri string = keyVault.properties.vaultUri

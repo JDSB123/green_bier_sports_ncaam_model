@@ -1,5 +1,5 @@
 """
-First Half Spread Model v33.6.5
+First Half Spread Model v33.10.0
 
 BACKTESTED on 904 real 1H games from ESPN (2019-2024).
 HCA calibration derived from actual 1H home margins.

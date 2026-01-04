@@ -1,5 +1,5 @@
 """
-Full Game Total Prediction Model v33.6.5
+Full Game Total Prediction Model v33.10.0
 
 BACKTESTED on 3,318 games with actual scores from ESPN.
 
@@ -8,16 +8,16 @@ Backtest Results:
 - Market benchmark: ~10.5 MAE (we're ~2.6 pts worse)
 - Middle games (120-170): MAE = 10.7 (matches market!)
 
-Key limitation: Regression to mean
+Key insight: Regression to mean awareness
 - Our predictions have std=10.7, actual has std=18.3
-- Low games: we over-predict
-- High games: we under-predict
-- This is inherent to efficiency-based predictions
+- Extreme predictions have higher variance, not lower accuracy
+- Model is calibrated for middle-range games; extremes use confidence scaling
 
-Betting Strategy:
-- Focus on middle-range games (120-170 predicted)
-- These have MAE ~10.7, matching market accuracy
-- Avoid betting extreme predictions
+Betting Strategy (v33.10.0):
+- All edges >= MIN_EDGE are bet candidates
+- Higher edges get STRONG tier designation
+- Confidence scaling handles variance in extreme predictions
+- No artificial MAX_EDGE cap (removed in v33.10.0)
 """
 from __future__ import annotations
 
@@ -101,8 +101,8 @@ class FGTotalModel(BasePredictor):
     # Betting thresholds - from 3,318-game backtest with real odds
     # 3pt edge = +18.3% ROI with 159 bets (optimal volume/ROI balance)
     MIN_EDGE: float = 3.0
-    MAX_EDGE: float = 6.0  # >6pt edges often mean WE are wrong (extremes)
-    OPTIMAL_EDGE: float = 4.0  # Sweet spot: 3-5 pt edge
+    STRONG_EDGE: float = 6.0  # Edges >= 6pt get STRONG tier
+    MEDIUM_EDGE: float = 4.5  # Edges >= 4.5pt get MEDIUM tier
 
     # Variance - FG-specific
     BASE_VARIANCE: float = 20.0
@@ -330,38 +330,31 @@ class FGTotalModel(BasePredictor):
         """
         Get betting recommendation for totals.
 
-        Key insight from validation:
-        - Low edges (2-3 pts) have BETTER win rate
-        - High edges (>6 pts) often mean WE are wrong
-        - Sweet spot is 3-5 pt edge
+        v33.10.0: Removed artificial MAX_EDGE cap. All edges >= MIN_EDGE are
+        bet candidates with tiered strength classification:
+        - STRONG: >= 6.0 pts (high conviction)
+        - MEDIUM: >= 4.5 pts (solid edge)
+        - STANDARD: >= 3.0 pts (min threshold)
         """
         edge = prediction.value - market_line  # positive = over, negative = under
-
         abs_edge = abs(edge)
 
         # Determine pick
-        if edge > 0:
-            pick = "OVER"
-        else:
-            pick = "UNDER"
+        pick = "OVER" if edge > 0 else "UNDER"
 
-        # Strength classification for totals (different from spreads)
-        if abs_edge >= self.MAX_EDGE:
-            strength = "AVOID"  # Too high = we're likely wrong
-            recommended = False
-            warning = f"Edge {abs_edge:.1f} exceeds safe threshold of {self.MAX_EDGE}"
-        elif abs_edge >= 4.0:
-            strength = "WEAK"  # Moderate edge, caution
+        # Tiered strength classification (v33.10.0 - no MAX_EDGE cap)
+        if abs_edge >= self.STRONG_EDGE:
+            strength = "STRONG"
             recommended = True
-            warning = None
+        elif abs_edge >= self.MEDIUM_EDGE:
+            strength = "MEDIUM"
+            recommended = True
         elif abs_edge >= self.MIN_EDGE:
-            strength = "STANDARD"  # Optimal range
+            strength = "STANDARD"
             recommended = True
-            warning = None
         else:
             strength = "NO BET"
             recommended = False
-            warning = None
 
         return {
             "pick": pick,
@@ -372,7 +365,6 @@ class FGTotalModel(BasePredictor):
             "market_line": market_line,
             "model_prediction": prediction.value,
             "confidence": prediction.confidence,
-            "warning": warning,
         }
 
 

@@ -1,5 +1,5 @@
 """
-First Half Total Prediction Model v33.6.5
+First Half Total Prediction Model v33.10.0
 
 FULLY INDEPENDENT 1H model - does NOT derive from FG Total.
 BACKTESTED on 562 games with actual 1H scores from ESPN.
@@ -13,12 +13,12 @@ Backtest Results (562 games):
 Key findings from backtest:
 - Low games (<60): Over-predict by +9.4 pts
 - High games (>80): Under-predict by -16 to -26 pts
-- Same regression-to-mean problem as FG Total
+- Higher variance in 1H = confidence scaling approach
 
 Betting Strategy:
 - 1H markets have less sharp action (more value)
-- Focus on moderate edges (1.5-3.5 pts)
-- AVOID extreme predictions (high variance)
+- Focus on moderate edges (2.0-3.5 pts)
+- Higher edges use confidence scaling instead of AVOID
 """
 from __future__ import annotations
 

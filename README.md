@@ -1,4 +1,4 @@
-# NCAA Basketball v33.6.5
+# NCAA Basketball v33.10.0
 
 ## Single Point of Entry
 

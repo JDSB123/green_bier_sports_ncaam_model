@@ -1,9 +1,9 @@
 """
-NCAA Prediction Engine v33.10
+NCAA Prediction Engine v33.10.0
 
 Orchestrator for modular market-specific prediction models.
 
-ARCHITECTURE (v33.10):
+ARCHITECTURE (v33.10.0):
 1. Analytical models predict fair lines (spread/total)
 2. ML models (when available) predict P(bet wins) directly
 3. Fallback to statistical CDF when ML models not trained
@@ -13,6 +13,10 @@ Each market has its own independently-backtested model:
 - FG Total: 3,318 games, MAE 13.1, Calibration +7.0
 - 1H Spread: 904 games, MAE 8.25, HCA 3.6
 - 1H Total: 562 games, MAE 8.88, Calibration +2.7
+
+Version History:
+- v33.10.0: Azure Key Vault integration, removed FG Total MAX_EDGE cap
+- v33.7.0: Initial stable release with modular architecture
 """
 
 from dataclasses import dataclass
