@@ -136,7 +136,7 @@ services:
     #   PREDICTION_IMAGE=ncaam-prediction:local
     # and running:
     #   docker compose build prediction-service
-    image: ${PREDICTION_IMAGE:-ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.11.0}
+    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.11.0
     build:
       context: .
       dockerfile: services/prediction-service-python/Dockerfile
