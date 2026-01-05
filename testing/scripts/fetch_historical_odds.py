@@ -259,7 +259,8 @@ def fetch_date_range(
                         print(f"    {parsed['away_team']} @ {parsed['home_team']}: "
                               f"spread={parsed['spread']}, total={parsed['total']}")
 
-                time.sleep(0.3)  # Rate limiting
+                # Lower throttle for faster backfills; still polite to API.
+                time.sleep(0.05)  # Was 0.3
 
             days_since_save += 1
 
@@ -276,7 +277,7 @@ def fetch_date_range(
             time.sleep(5)  # Wait before continuing
 
         current += timedelta(days=1)
-        time.sleep(0.5)
+        time.sleep(0.05)  # Was 0.5
 
     if failed_dates:
         print(f"\n[WARN] Failed to fetch {len(failed_dates)} dates: {failed_dates[:10]}...")

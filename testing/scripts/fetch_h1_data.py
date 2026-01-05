@@ -243,7 +243,8 @@ def main() -> int:
         else:
             failed_count += 1
 
-        time.sleep(0.15)  # Be nice to ESPN (max ~6 req/sec)
+        # Throttle requests; lowered for faster bulk backfills while remaining polite.
+        time.sleep(0.02)  # Was 0.15
 
     # Final save
     save_h1_data(h1_games, output_file)
