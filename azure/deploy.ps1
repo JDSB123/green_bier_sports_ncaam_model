@@ -172,11 +172,13 @@ function Invoke-AcrTagCleanup {
         }
 
         foreach ($t in $toDelete) {
-            Write-Host "    Deleting: ${repo}:$t" -ForegroundColor DarkGray
+            Write-Host "    Untagging: ${repo}:$t" -ForegroundColor DarkGray
             try {
-                az acr repository delete --name $RegistryName --image "${repo}:$t" --yes --output none | Out-Null
+                # Use `untag` (tag-only) to avoid deleting the underlying manifest that may be shared
+                # with the deployment tag (e.g., if `latest` points at the same digest as `vX.Y.Z`).
+                az acr repository untag --name $RegistryName --image "${repo}:$t" --output none | Out-Null
             } catch {
-                Write-Warning "    Failed to delete ${repo}:$t : $_"
+                Write-Warning "    Failed to untag ${repo}:$t : $_"
             }
         }
     }
