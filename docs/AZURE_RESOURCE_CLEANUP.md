@@ -52,6 +52,10 @@ cd azure
 .\deploy.ps1 -OddsApiKey "YOUR_KEY"
 ```
 
+Cleanup behavior (keeps infra tidy; ROI/pick history lives in Postgres):
+- **ACR**: old image tags are pruned after a healthy deploy (default: keep 1 tag per repo).
+- **ACA**: container apps run in single-revision mode and keep only a small number of inactive revisions.
+
 Default values:
 - **Resource Group:** `NCAAM-GBSV-MODEL-RG`
 - **Location:** `centralus`

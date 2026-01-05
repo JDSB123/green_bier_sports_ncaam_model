@@ -41,7 +41,7 @@
 
 ### Prediction Service (Python)
 - `services/prediction-service-python/` - Core prediction engine
-   - `app/prediction_engine_v33.py` - Orchestrator/adapter (v33.6.5)
+   - `app/prediction_engine_v33.py` - Orchestrator/adapter (v33.10.0)
    - `app/predictors/` - Modular models (FG/H1 Spread & Total)
   - `app/main.py` - FastAPI endpoints
   - `run_today.py` - Daily picks orchestrator

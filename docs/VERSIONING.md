@@ -8,7 +8,7 @@ v{MAJOR}.{MINOR}.{PATCH}
 
 ## Single source of truth
 
-- **Repository root `VERSION`** is the only source of the running version (example: `33.6.5`).
+- **Repository root `VERSION`** is the only source of the running version (example: `33.10.0`).
 - **Runtime** loads it via `services/prediction-service-python/app/__init__.py` and surfaces it via `/health`.
 - **Deploy tooling** (`azure/deploy.ps1`) prefixes it with `v` and uses it as the container image tag.
 
@@ -16,8 +16,8 @@ v{MAJOR}.{MINOR}.{PATCH}
 
 This repo is intentionally run in a “single active release” mode:
 
-- **Git**: only one release tag is kept (`v33.6.5`).
-- **ACR**: only one image tag is kept per repository (`v33.6.5`).
+- **Git**: only one release tag is kept (`v33.10.0`).
+- **ACR**: old image tags are pruned after a healthy deploy (default: keep 1 tag per repo).
 - **No `:latest` tags** are used for ACR images.
 
 ## Release bump process
@@ -55,7 +55,9 @@ The `/health` endpoint returns the current version from `VERSION`:
 ```json
 {
   "service": "prediction-service",
-  "version": "33.6.5",
+  "version": "33.10.0",
+  "git_sha": "unknown",
+  "build_date": "",
   "status": "ok"
 }
 ```

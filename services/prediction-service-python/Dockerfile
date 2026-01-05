@@ -26,10 +26,18 @@ RUN cargo build --release
 # Stage 3: Python runtime with binaries
 FROM python:3.12-slim
 
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+
+LABEL org.opencontainers.image.revision=$GIT_SHA \
+    org.opencontainers.image.created=$BUILD_DATE
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    GIT_SHA=$GIT_SHA \
+    BUILD_DATE=$BUILD_DATE
 
 # Create non-root user FIRST
 RUN groupadd -r ncaam && useradd -r -g ncaam -u 1001 ncaam

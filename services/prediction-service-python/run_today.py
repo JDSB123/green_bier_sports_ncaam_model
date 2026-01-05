@@ -1472,6 +1472,12 @@ def get_prediction(
                 "home_health": home_health,
                 "away_health": away_health,
                 "generated_at": datetime.now(timezone.utc).isoformat(),
+                "build": {
+                    "service_version": settings.service_version,
+                    "model_version": prediction.model_version,
+                    "git_sha": getattr(settings, "git_sha", "unknown"),
+                    "build_date": getattr(settings, "build_date", ""),
+                },
             }
             persist_prediction_and_recommendations(
                 engine=engine,

@@ -18,12 +18,21 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/ratings-sync ./main.g
 
 # Runtime
 FROM alpine:3.19
+
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+
+LABEL org.opencontainers.image.revision=$GIT_SHA \
+    org.opencontainers.image.created=$BUILD_DATE
+
 RUN apk add --no-cache ca-certificates && update-ca-certificates
 WORKDIR /app
 COPY --from=builder /out/ratings-sync /app/ratings-sync
 
 # DATABASE_URL is NOT set here - the Go code builds it from /run/secrets/db_password
 # This allows Docker Compose secrets to work correctly
-ENV RUN_ONCE=true
+ENV RUN_ONCE=true \
+    GIT_SHA=$GIT_SHA \
+    BUILD_DATE=$BUILD_DATE
 
 ENTRYPOINT ["/app/ratings-sync"]

@@ -19,6 +19,12 @@ RUN cargo build --release
 # Runtime image - hardened
 FROM debian:bookworm-slim
 
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+
+LABEL org.opencontainers.image.revision=$GIT_SHA \
+    org.opencontainers.image.created=$BUILD_DATE
+
 # Create non-root user
 RUN groupadd -r ncaam && useradd -r -g ncaam -u 1001 ncaam && \
     apt-get update && apt-get install -y --no-install-recommends \
@@ -35,7 +41,9 @@ COPY --from=builder --chown=ncaam:ncaam /app/odds-ingestion/target/release/odds-
 # Switch to non-root user
 USER ncaam
 
-ENV RUST_LOG=info
+ENV RUST_LOG=info \
+    GIT_SHA=$GIT_SHA \
+    BUILD_DATE=$BUILD_DATE
 
 EXPOSE 8083
 ENTRYPOINT ["/app/odds-ingestion"]

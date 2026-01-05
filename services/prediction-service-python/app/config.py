@@ -399,6 +399,14 @@ class Settings(BaseSettings):
     # Service
     service_name: str = "prediction-service"
     service_version: str = APP_VERSION  # Single source of truth (VERSION)
+    git_sha: str = Field(
+        default="unknown",
+        description="Git commit SHA used to build the container image (GIT_SHA env var).",
+    )
+    build_date: str = Field(
+        default="",
+        description="UTC build timestamp for the container image (BUILD_DATE env var).",
+    )
     debug: bool = False
 
     # Feature Store

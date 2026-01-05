@@ -319,6 +319,9 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
     managedEnvironmentId: containerEnv.id
     configuration: {
       activeRevisionsMode: 'Single'
+      // Keep infra clean: allow only a small number of inactive revisions.
+      // Historical ROI tracking lives in Postgres, not in old container revisions.
+      maxInactiveRevisions: 1
       ingress: {
         external: true
         targetPort: 8082
@@ -482,6 +485,9 @@ resource webApp 'Microsoft.App/containerApps@2023-05-01' = {
     managedEnvironmentId: containerEnv.id
     configuration: {
       activeRevisionsMode: 'Single'
+      // Keep infra clean: allow only a small number of inactive revisions.
+      // Historical ROI tracking lives in Postgres, not in old container revisions.
+      maxInactiveRevisions: 1
       ingress: {
         external: true
         targetPort: 8080

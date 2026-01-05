@@ -84,13 +84,13 @@ That's it. One command. Everything runs inside the container.
                     └─────────────┘
 ```
 
-## Model Parameters (v33.6.5)
+## Model Parameters (v33.10.0)
 
 **Full Game:**
 - Home Court Advantage (Spread): 5.8 pts (backtested from 3,318 games)
 - Home Court Advantage (Total): 0.0 pts (zero-sum)
 - Minimum Spread Edge: 2.0 pts
-- Minimum Total Edge: 3.0 pts (max 6.0)
+- Minimum Total Edge: 3.0 pts (no MAX_EDGE cap; totals are range-gated)
 
 **First Half:**
 - Home Court Advantage (Spread): 3.6 pts (backtested from 904 1H games)

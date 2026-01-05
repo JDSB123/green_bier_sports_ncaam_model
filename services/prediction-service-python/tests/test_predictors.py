@@ -2,10 +2,10 @@
 Tests for prediction models.
 
 Tests all 4 independent prediction models:
-- FG Spread (v33.6.5, HCA=5.8)
-- FG Total (v33.6.5, Calibration=+7.0)
-- H1 Spread (v33.6.5, HCA=3.6)
-- H1 Total (v33.6.5, Calibration=+2.7)
+- FG Spread (v33.10.0, HCA=5.8)
+- FG Total (v33.10.0, Calibration=+7.0)
+- H1 Spread (v33.10.0, HCA=3.6)
+- H1 Total (v33.10.0, Calibration=+2.7)
 """
 
 import pytest
@@ -252,9 +252,9 @@ class TestMinEdgeThresholds:
         """H1 Total MIN_EDGE should be 2.0."""
         assert h1_total_model.MIN_EDGE == 2.0, f"Expected 2.0, got {h1_total_model.MIN_EDGE}"
 
-    def test_fg_total_max_edge(self):
-        """FG Total MAX_EDGE should be 6.0 (avoid extremes)."""
-        assert fg_total_model.MAX_EDGE == 6.0, f"Expected 6.0, got {fg_total_model.MAX_EDGE}"
+    def test_fg_total_no_max_edge_cap(self):
+        """FG Total should not enforce a MAX_EDGE cap (v33.10.0)."""
+        assert not hasattr(fg_total_model, "MAX_EDGE")
 
     def test_h1_total_max_edge(self):
         """H1 Total MAX_EDGE should be 3.5 (1H has more variance)."""

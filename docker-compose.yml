@@ -4,7 +4,7 @@
 # Enterprise-ready sports prediction model with:
 # - Dynamic port allocation (no conflicts with other sports)
 # - Sport-parameterized database (multi-sport capable)
-# - 6 independent market predictions (Spread/ML/Total x FG/1H)
+# - 4 independent market predictions (Spread/Total x FG/1H)
 # - Self-contained Docker secrets (no .env dependencies)
 # ═══════════════════════════════════════════════════════════════════════════════
 

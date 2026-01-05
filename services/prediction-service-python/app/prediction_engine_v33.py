@@ -156,7 +156,7 @@ class PredictionEngineV33:
         away_health: Optional[dict] = None,
     ) -> Prediction:
         """
-        Generate predictions using v33.6.5 modular models.
+        Generate predictions using v33.10.0 modular models.
         
         Each market gets its own specialized model:
         - FG Spread: Proven statistical edge

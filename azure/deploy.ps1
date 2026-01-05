@@ -18,6 +18,8 @@
 #   -OddsApiKey     The Odds API key (auto-fetched from existing app if omitted)
 #   -TeamsWebhookUrl  Microsoft Teams webhook for notifications
 #   -ImageTag       Container image tag (defaults to v<VERSION_FILE>)
+#   -PruneAcrImages Remove old image tags from ACR after successful deploy
+#   -KeepAcrTags    How many tags to keep per repo (default: 1)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(
@@ -55,6 +57,14 @@ param(
     [Parameter(Mandatory=$false)]
     [switch]$QuickDeploy,
 
+    # Cleanup / retention controls (ACR/ACA)
+    [Parameter(Mandatory=$false)]
+    [switch]$PruneAcrImages,
+
+    [Parameter(Mandatory=$false)]
+    [ValidateRange(1, 25)]
+    [int]$KeepAcrTags = 1,
+
     [Parameter(Mandatory=$false)]
     [string]$ImageTag
 )
@@ -70,7 +80,14 @@ if ($QuickDeploy) {
     Write-Host "  [QUICK DEPLOY MODE] Skipping infra, using parallel builds" -ForegroundColor Magenta
 }
 
+# Default to keeping ACR clean: historical retention should live in Postgres (ROI/picks),
+# not in old container image tags. Allow override via `-PruneAcrImages:$false`.
+if (-not $PSBoundParameters.ContainsKey('PruneAcrImages')) {
+    $PruneAcrImages = $true
+}
+
 $ErrorActionPreference = 'Stop'
+$deploymentHealthy = $false
 
 # Resolve version tag if not provided
 if (-not $ImageTag -or [string]::IsNullOrWhiteSpace($ImageTag)) {
@@ -101,7 +118,69 @@ $webImageName = 'gbsv-web'
 $ratingsImageName = "$baseName-ratings-sync"
 $oddsImageName = "$baseName-odds-ingestion"
 $resourcePrefix = "$baseName-$Environment"
-$acrName = 'ncaamstablegbsvacr'
+# Keep naming consistent with `azure/main.bicep`:
+# acrName = replace('${resourcePrefix}${replace(resourceNameSuffix, '-', '')}acr', '-', '')
+$acrName = ("{0}gbsvacr" -f $resourcePrefix).Replace("-", "")
+
+function Invoke-AcrTagCleanup {
+    param(
+        [Parameter(Mandatory=$true)][string]$RegistryName,
+        [Parameter(Mandatory=$true)][string[]]$Repositories,
+        [Parameter(Mandatory=$true)][string]$KeepTag,
+        [Parameter(Mandatory=$true)][int]$KeepCount
+    )
+
+    Write-Host ""
+    Write-Host "[CLEANUP] ACR tag cleanup (keep $KeepCount tag(s) incl. $KeepTag)..." -ForegroundColor Cyan
+
+    foreach ($repo in $Repositories) {
+        Write-Host "  Repo: $repo" -ForegroundColor Gray
+
+        # Get tags newest-first
+        $raw = az acr repository show-tags --name $RegistryName --repository $repo --orderby time_desc -o tsv 2>$null
+        $tags = @()
+        if ($raw) {
+            $tags = ($raw -split "`r?`n") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+        }
+
+        if (-not $tags -or $tags.Count -eq 0) {
+            Write-Host "    (no tags found)" -ForegroundColor DarkGray
+            continue
+        }
+
+        if (-not ($tags -contains $KeepTag)) {
+            Write-Host "    [SKIP] KeepTag '$KeepTag' not present; refusing to delete." -ForegroundColor Yellow
+            continue
+        }
+
+        # Always keep the deployment tag, plus N-1 most recent others.
+        $keep = New-Object 'System.Collections.Generic.HashSet[string]'
+        [void]$keep.Add($KeepTag)
+        foreach ($t in $tags) {
+            if ($keep.Count -ge $KeepCount) { break }
+            if ($t -ne $KeepTag) { [void]$keep.Add($t) }
+        }
+
+        $toDelete = @()
+        foreach ($t in $tags) {
+            if (-not $keep.Contains($t)) { $toDelete += $t }
+        }
+
+        if (-not $toDelete -or $toDelete.Count -eq 0) {
+            Write-Host "    OK (nothing to delete)" -ForegroundColor Green
+            continue
+        }
+
+        foreach ($t in $toDelete) {
+            Write-Host "    Deleting: $repo:$t" -ForegroundColor DarkGray
+            try {
+                az acr repository delete --name $RegistryName --image "$repo:$t" --yes --output none | Out-Null
+            } catch {
+                Write-Warning "    Failed to delete $repo:$t : $_"
+            }
+        }
+    }
+}
 
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
@@ -297,6 +376,13 @@ if (-not $SkipBuild) {
 
     Push-Location "$PSScriptRoot\.."
 
+    # Build metadata for version-control traceability (baked into images)
+    $gitSha = "unknown"
+    try {
+        $gitSha = (git rev-parse HEAD).Trim()
+    } catch { }
+    $buildDate = (Get-Date).ToUniversalTime().ToString("o")
+
     $images = @(
         @{ Name = "${acrLoginServer}/${baseName}-prediction:${ImageTag}"; Context = "."; Dockerfile = "services/prediction-service-python/Dockerfile" },
         @{ Name = "${acrLoginServer}/${webImageName}:${ImageTag}"; Context = "services/web-frontend"; Dockerfile = "services/web-frontend/Dockerfile" },
@@ -328,16 +414,16 @@ if (-not $SkipBuild) {
             $useNoCache = $NoCache
 
             $job = Start-Job -ScriptBlock {
-                param($name, $context, $dockerfile, $noCache, $root)
+                param($name, $context, $dockerfile, $noCache, $root, $gitSha, $buildDate)
                 Set-Location $root
                 # IMPORTANT: capture build output so the job returns a single object.
                 # If we let `docker build` write to the pipeline, Receive-Job returns
                 # many strings + the final object, and `$result.ExitCode` becomes
                 # an array containing `$null`, which incorrectly marks builds failed.
                 if ($noCache) {
-                    $output = & docker build --no-cache -t $name -f $dockerfile $context 2>&1
+                    $output = & docker build --no-cache --build-arg "GIT_SHA=$gitSha" --build-arg "BUILD_DATE=$buildDate" -t $name -f $dockerfile $context 2>&1
                 } else {
-                    $output = & docker build -t $name -f $dockerfile $context 2>&1
+                    $output = & docker build --build-arg "GIT_SHA=$gitSha" --build-arg "BUILD_DATE=$buildDate" -t $name -f $dockerfile $context 2>&1
                 }
 
                 $exit = $LASTEXITCODE
@@ -346,7 +432,7 @@ if (-not $SkipBuild) {
                     Image    = $name
                     Output   = $output
                 }
-            } -ArgumentList $imgName, $imgContext, $imgDockerfile, $useNoCache, $repoRoot
+            } -ArgumentList $imgName, $imgContext, $imgDockerfile, $useNoCache, $repoRoot, $gitSha, $buildDate
 
             $buildJobs += @{ Job = $job; Image = $imgName }
             Write-Host "    Started: $imgName" -ForegroundColor Gray
@@ -397,9 +483,9 @@ if (-not $SkipBuild) {
         foreach ($img in $images) {
             Write-Host "  Building image: $($img.Name)" -ForegroundColor Gray
             if ($NoCache) {
-                docker build --no-cache -t $($img.Name) -f $($img.Dockerfile) $($img.Context)
+                docker build --no-cache --build-arg "GIT_SHA=$gitSha" --build-arg "BUILD_DATE=$buildDate" -t $($img.Name) -f $($img.Dockerfile) $($img.Context)
             } else {
-                docker build -t $($img.Name) -f $($img.Dockerfile) $($img.Context)
+                docker build --build-arg "GIT_SHA=$gitSha" --build-arg "BUILD_DATE=$buildDate" -t $($img.Name) -f $($img.Dockerfile) $($img.Context)
             }
             if ($LASTEXITCODE -ne 0) {
                 Pop-Location
@@ -495,9 +581,25 @@ if ($containerAppUrl) {
     if (-not $healthy) {
         Write-Host "  ! Health check did not pass after $maxAttempts attempts (container may still be starting)" -ForegroundColor Yellow
         Write-Host "    Check logs: az containerapp logs show -n $containerAppName -g $ResourceGroup --follow" -ForegroundColor Gray
+    } else {
+        $deploymentHealthy = $true
     }
 } else {
     Write-Host "  ! Could not retrieve container app URL" -ForegroundColor Yellow
+}
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# OPTIONAL: ACR CLEANUP (KEEP ONLY RECENT TAGS)
+# ─────────────────────────────────────────────────────────────────────────────────
+
+if ($PruneAcrImages) {
+    if (-not $deploymentHealthy) {
+        Write-Host ""
+        Write-Host "[CLEANUP] Skipping ACR cleanup because deployment health is not confirmed." -ForegroundColor Yellow
+    } else {
+        $repos = @("${baseName}-prediction", $webImageName, $ratingsImageName, $oddsImageName)
+        Invoke-AcrTagCleanup -RegistryName $acrName -Repositories $repos -KeepTag $ImageTag -KeepCount $KeepAcrTags
+    }
 }
 
 # ─────────────────────────────────────────────────────────────────────────────────

@@ -609,6 +609,8 @@ async def health():
     return {
         "service": settings.service_name,
         "version": settings.service_version,
+        "git_sha": getattr(settings, "git_sha", "unknown"),
+        "build_date": getattr(settings, "build_date", ""),
         "status": "ok",
     }
 
@@ -630,7 +632,13 @@ async def get_metrics():
     # Always emit a build/info metric so the payload is never empty and
     # scrapers can validate the endpoint is alive.
     lines.append("# TYPE prediction_service_build_info gauge")
-    lines.append(f'prediction_service_build_info{{version="{settings.service_version}"}} 1')
+    lines.append(
+        'prediction_service_build_info{'
+        f'version="{settings.service_version}",'
+        f'git_sha="{getattr(settings, "git_sha", "unknown")}",'
+        f'build_date="{getattr(settings, "build_date", "")}"'
+        "} 1"
+    )
     
     # Counters
     for name, value in all_metrics["counters"].items():

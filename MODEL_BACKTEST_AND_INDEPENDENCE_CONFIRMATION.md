@@ -1,6 +1,6 @@
 # Model Backtest & Independence Confirmation
-**Date:** December 24, 2025  
-**Version:** v33.6.5 (CURRENT)  
+**Date:** January 2026  
+**Version:** v33.10.0 (CURRENT)  
 **Status:** ✅ CONFIRMED - Model is fully back-tested and independent
 
 ---
@@ -15,7 +15,7 @@ Your model **IS** truly back-tested and independent. Here's the evidence:
 
 ### ✅ 4 INDEPENDENT MARKET MODELS - All Back-Tested
 
-Your system has **moved beyond monolithic** to **modular independent models** (v33.6.5):
+Your system has **moved beyond monolithic** to **modular independent models** (v33.10.0):
 
 #### Model 1: FG Spread
 - **Backtest:** 3,318 games (2019-2024) with ESPN real scores
@@ -68,10 +68,10 @@ Each model has its **own constants, calibration, and formulas**:
 
 | Model | HCA | Calibration | LEAGUE_AVG_TEMPO | LEAGUE_AVG_EFF | Variance | Min Edge |
 |-------|-----|-------------|------------------|-----------------|----------|----------|
-| **FG Spread** | 5.8 | 0.0 | 67.6 | 105.5 | 11.0 | 7.0 pts |
-| **FG Total** | 0.0 | +7.0 | 67.6 | 105.5 | 20.0 | 2.0 pts |
+| **FG Spread** | 5.8 | 0.0 | 67.6 | 105.5 | 11.0 | 2.0 pts |
+| **FG Total** | 0.0 | +7.0 | 67.6 | 105.5 | 20.0 | 3.0 pts |
 | **1H Spread** | 3.6 | 0.0 | 67.6 | 105.5 | 12.65 | 3.5 pts |
-| **1H Total** | 0.0 | +2.7 | 67.6 | 105.5 | 11.0 | 1.5 pts |
+| **1H Total** | 0.0 | +2.7 | 67.6 | 105.5 | 11.0 | 2.0 pts |
 
 **Each model:**
 - ✅ Has its own `predict()` method
@@ -87,12 +87,13 @@ Each model has its **own constants, calibration, and formulas**:
 - ❌ Each model has independent tempo/efficiency constants
 - ✅ All constants explicitly defined per model
 
-### ✅ No Machine Learning - Pure Rule-Based
+### ✅ Deterministic line models + optional ML probabilities
 
 **Current architecture:**
-- Uses mathematical **formulas**, not learned models
-- All calculations traceable and deterministic
-- No neural networks, no random forests, no statistical learning
+- **Spreads/totals (fair lines)** are produced by deterministic formula models (traceable).
+- **Win probability / EV** uses:
+  - Trained ML models (XGBoost) when present, otherwise
+  - Statistical CDF fallback (default behavior).
 
 **Formula structure:**
 ```
@@ -133,12 +134,14 @@ Where:
 - Stated goal: Move to independent market models
 - Each market gets its own model class
 
-### v33.6.5 (CURRENT - Dec 24, 2025) - Full Independence
+### v33.10.0 (CURRENT) - Full Independence + ML probability option
 - ✅ 4 completely independent models
 - ✅ Each with own backtest (3,318 FG / 904-562 1H)
 - ✅ Each with own calibration constants
 - ✅ Each with own validation metrics
 - ✅ No cross-contamination between markets
+- ✅ Optional ML probability models (XGBoost) when trained models exist
+- ✅ Removed FG Total MAX_EDGE cap (totals are range-gated instead)
 
 **This is a significant architectural improvement** - from one big model to 4 focused independent models.
 

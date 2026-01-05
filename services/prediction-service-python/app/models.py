@@ -1,5 +1,5 @@
 """
-Domain models for NCAA Basketball Prediction Service v33.6.5.
+Domain models for NCAA Basketball Prediction Service.
 
 Clean, simple data structures focused on what matters for profitable predictions.
 """
@@ -11,6 +11,10 @@ from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
+
+from app import __version__ as APP_VERSION
+
+DEFAULT_MODEL_VERSION = f"v{APP_VERSION}"
 
 
 class BetType(str, Enum):
@@ -269,7 +273,7 @@ class Prediction:
     total_edge_1h_signed: float = 0.0
 
     # Model metadata
-    model_version: str = "v33.10.0"
+    model_version: str = DEFAULT_MODEL_VERSION
     created_at: datetime = field(default_factory=datetime.utcnow)
 
     def calculate_edges(self, market: MarketOdds) -> None:
@@ -361,7 +365,7 @@ class BettingRecommendation:
     clv_percent: Optional[float] = None            # CLV as % (clv / closing_line * 100)
 
     # Metadata
-    model_version: str = "v33.10.0"
+    model_version: str = DEFAULT_MODEL_VERSION
     created_at: datetime = field(default_factory=datetime.utcnow)
 
     def calculate_clv(self, closing_line: float, captured_at: datetime) -> None:
