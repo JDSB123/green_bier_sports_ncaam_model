@@ -6,6 +6,7 @@
 #   .\deploy.ps1 -QuickDeploy                        # Fast code-only update (RECOMMENDED)
 #   .\deploy.ps1 -SkipInfra -ParallelBuild           # Skip infra + parallel builds
 #   .\deploy.ps1 -SkipInfra -SkipBuild               # Update container apps only
+#   .\deploy.ps1 -ForceMigrations                    # Fix schema mismatches
 #
 # Performance Flags:
 #   -QuickDeploy    Fastest option for code updates (implies -SkipInfra -ParallelBuild)
@@ -14,12 +15,16 @@
 #   -ParallelBuild  Build all 4 Docker images concurrently
 #   -NoCache        Force full Docker rebuild (slower, use for dependency changes)
 #
+# Schema Management:
+#   -ForceMigrations  Force apply missing database migrations (fixes schema issues)
+#   -SkipHealthCheck  Skip schema validation during deployment
+#
 # Other Options:
-#   -OddsApiKey     The Odds API key (auto-fetched from existing app if omitted)
+#   -OddsApiKey       The Odds API key (auto-fetched from existing app if omitted)
 #   -TeamsWebhookUrl  Microsoft Teams webhook for notifications
-#   -ImageTag       Container image tag (defaults to v<VERSION_FILE>)
-#   -PruneAcrImages Remove old image tags from ACR after successful deploy
-#   -KeepAcrTags    How many tags to keep per repo (default: 1)
+#   -ImageTag         Container image tag (defaults to v<VERSION_FILE>)
+#   -PruneAcrImages   Remove old image tags from ACR after successful deploy
+#   -KeepAcrTags      How many tags to keep per repo (default: 1)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 param(
@@ -62,6 +67,13 @@ param(
 
     [Parameter(Mandatory=$false)]
     [switch]$QuickDeploy,
+
+    # Migration controls
+    [Parameter(Mandatory=$false)]
+    [switch]$ForceMigrations,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$SkipHealthCheck,
 
     # Cleanup / retention controls (ACR/ACA)
     [Parameter(Mandatory=$false)]
@@ -575,12 +587,41 @@ Write-Host "[5/6] Running database migrations..." -ForegroundColor Green
 # Get container app name
 $containerAppName = "$resourcePrefix-prediction"
 
-# Execute migrations inside container
-Write-Host "  Running migrations via container exec..." -ForegroundColor Gray
+if ($ForceMigrations) {
+    Write-Host "  [FORCE] Forcing application of missing migrations..." -ForegroundColor Yellow
 
-# Note: Container Apps doesn't support direct exec like Kubernetes
-# Migrations are run on container startup via run_migrations.py
-Write-Host "  [OK] Migrations will run automatically on container startup" -ForegroundColor Gray
+    # Force apply migrations by restarting with FORCE_MISSING_MIGRATIONS env var
+    Write-Host "  Setting FORCE_MISSING_MIGRATIONS=true on container..." -ForegroundColor Gray
+
+    # Update container environment to force migrations
+    az containerapp update `
+        --name $containerAppName `
+        --resource-group $ResourceGroup `
+        --set-env-vars FORCE_MISSING_MIGRATIONS=true `
+        --output none
+
+    Write-Host "  Restarting container to apply migrations..." -ForegroundColor Gray
+    az containerapp revision restart `
+        --name $containerAppName `
+        --resource-group $ResourceGroup `
+        --revision "$containerAppName--0000015"
+
+    # Wait for migration to complete
+    Write-Host "  Waiting for migrations to complete..." -ForegroundColor Gray
+    Start-Sleep -Seconds 30
+
+    # Remove the force flag after migration
+    az containerapp update `
+        --name $containerAppName `
+        --resource-group $ResourceGroup `
+        --remove-env-vars FORCE_MISSING_MIGRATIONS `
+        --output none
+
+    Write-Host "  [OK] Forced migrations applied" -ForegroundColor Green
+} else {
+    Write-Host "  Running migrations via container startup..." -ForegroundColor Gray
+    Write-Host "  [OK] Migrations will run automatically on container startup" -ForegroundColor Gray
+}
 
 # ─────────────────────────────────────────────────────────────────────────────────
 # VERIFY DEPLOYMENT
@@ -607,9 +648,21 @@ if ($containerAppUrl) {
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
             $health = Invoke-RestMethod -Uri "https://$containerAppUrl/health" -TimeoutSec 5
-            Write-Host "  [OK] Health check passed on attempt $attempt : $($health.status)" -ForegroundColor Green
-            $healthy = $true
-            break
+            $status = $health.status
+
+            # Check for schema issues
+            if ($status -eq "degraded" -and $health.database -and $health.database.missing_migrations) {
+                Write-Host "    Attempt $attempt/$maxAttempts - schema issues detected: $($health.database.missing_migrations -join ', ')" -ForegroundColor Yellow
+                if (-not $SkipHealthCheck) {
+                    Write-Host "    [WARN] Schema validation failed. Use -ForceMigrations to fix." -ForegroundColor Yellow
+                }
+            } elseif ($status -eq "ok") {
+                Write-Host "  [OK] Health check passed on attempt $attempt : $status" -ForegroundColor Green
+                $healthy = $true
+                break
+            } else {
+                Write-Host "    Attempt $attempt/$maxAttempts - status: $status, waiting..." -ForegroundColor Gray
+            }
         } catch {
             if ($attempt -lt $maxAttempts) {
                 Write-Host "    Attempt $attempt/$maxAttempts - not ready yet, waiting..." -ForegroundColor Gray

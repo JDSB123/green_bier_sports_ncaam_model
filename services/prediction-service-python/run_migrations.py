@@ -329,8 +329,16 @@ def main() -> int:
                 applied = _get_applied(cur)
                 baseline = int(os.getenv("MIGRATIONS_BASELINE", "0")) or _detect_existing_baseline(cur)
 
-                # If we have a pre-tracked schema, baseline protects from re-running early migrations.
-                to_apply = _files_to_apply(files, applied, baseline)
+                # FORCE_MISSING_MIGRATIONS: Apply all missing migrations regardless of baseline
+                # This fixes deployed databases that are missing recent migrations
+                force_missing = os.getenv("FORCE_MISSING_MIGRATIONS", "").lower() in ("true", "1", "yes")
+
+                if force_missing:
+                    print("🔧 FORCE_MISSING_MIGRATIONS enabled - applying all missing migrations")
+                    to_apply = [f for f in files if f.name not in applied]
+                else:
+                    # If we have a pre-tracked schema, baseline protects from re-running early migrations.
+                    to_apply = _files_to_apply(files, applied, baseline)
                 if not to_apply:
                     print("No pending migrations.")
                     return 0

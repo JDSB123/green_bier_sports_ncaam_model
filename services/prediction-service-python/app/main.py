@@ -17,6 +17,7 @@ from slowapi.errors import RateLimitExceeded
 import subprocess
 import os
 from pathlib import Path
+from sqlalchemy import text
 from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
 from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendation
 from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_total_model
@@ -605,14 +606,66 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint."""
-    return {
+    """Health check endpoint with database and schema validation."""
+    health_status = {
         "service": settings.service_name,
         "version": settings.service_version,
         "git_sha": getattr(settings, "git_sha", "unknown"),
         "build_date": getattr(settings, "build_date", ""),
         "status": "ok",
     }
+
+    # Check database connectivity and schema
+    try:
+        engine = _get_db_engine()
+        if engine:
+            with engine.connect() as conn:
+                # Check if required migrations are applied
+                required_migrations = [
+                    '012_recommendation_probabilities.sql',
+                    '021_schema_migrations_table.sql'
+                ]
+
+                result = conn.execute(text("""
+                    SELECT filename FROM public.schema_migrations
+                    WHERE filename = ANY(:migrations)
+                """), {"migrations": required_migrations})
+
+                applied = {row[0] for row in result}
+                missing = [m for m in required_migrations if m not in applied]
+
+                if missing:
+                    health_status.update({
+                        "status": "degraded",
+                        "database": {
+                            "connected": True,
+                            "missing_migrations": missing,
+                            "schema_issue": "Required migrations not applied"
+                        }
+                    })
+                else:
+                    health_status["database"] = {
+                        "connected": True,
+                        "schema_valid": True
+                    }
+        else:
+            health_status.update({
+                "status": "error",
+                "database": {
+                    "connected": False,
+                    "error": "Database not configured"
+                }
+            })
+    except Exception as e:
+        health_status.update({
+            "status": "error",
+            "database": {
+                "connected": False,
+                "error": str(e)
+            }
+        })
+
+    return health_status
 
 
 @app.get("/metrics")
