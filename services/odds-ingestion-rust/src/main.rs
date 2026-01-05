@@ -114,6 +114,11 @@ pub struct Config {
     pub enable_h2: bool,
     /// If true, unresolved teams cause the event to be skipped (no auto-creation).
     pub strict_team_matching: bool,
+    /// If true, allow odds ingestion to CREATE new teams when resolution fails.
+    /// Default is FALSE to prevent unrated duplicate teams (production-safe).
+    pub allow_team_creation: bool,
+    /// If true, allow fuzzy resolution (best-effort). Default FALSE for safety.
+    pub enable_fuzzy_resolution: bool,
     /// If true, run once and exit (no polling loop)
     pub run_once: bool,
     /// API rate limit (requests per minute). Default: 30
@@ -199,6 +204,12 @@ impl Config {
             strict_team_matching: env::var("STRICT_TEAM_MATCHING")
                 .map(|v| v.to_lowercase() != "false")
                 .unwrap_or(true),
+            allow_team_creation: env::var("ALLOW_TEAM_CREATION")
+                .map(|v| v.to_lowercase() == "true")
+                .unwrap_or(false),
+            enable_fuzzy_resolution: env::var("ENABLE_FUZZY_RESOLUTION")
+                .map(|v| v.to_lowercase() == "true")
+                .unwrap_or(false),
             rate_limit_per_minute: env::var("RATE_LIMIT_PER_MINUTE")
                 .unwrap_or_else(|_| "30".to_string())
                 .parse()
@@ -1110,30 +1121,32 @@ impl OddsIngestionService {
             }
         }
 
-        // STEP 1.5: Try fuzzy resolution as additional option (even if we have unrated matches)
-        // Fuzzy resolution can find rated teams that strict resolution missed
-        if let Some((id, canonical, has_ratings)) = self.resolve_team_fuzzy(team_name).await? {
-            if has_ratings {
-                // Found rated team via fuzzy match: attach raw name as alias (if different) and return.
-                if team_name.to_lowercase() != canonical.to_lowercase() {
-                    sqlx::query(
-                        r#"
-                        INSERT INTO team_aliases (team_id, alias, source)
-                        VALUES ($1, $2, 'the_odds_api')
-                        ON CONFLICT (alias, source) DO NOTHING
-                        "#
-                    )
-                    .bind(id)
-                    .bind(team_name)
-                    .execute(&self.db)
-                    .await?;
+        // Optional STEP 1.5: Fuzzy resolution (disabled by default for safety)
+        if self.config.enable_fuzzy_resolution {
+            // Fuzzy resolution can find rated teams that strict resolution missed
+            if let Some((id, canonical, has_ratings)) = self.resolve_team_fuzzy(team_name).await? {
+                if has_ratings {
+                    // Found rated team via fuzzy match: attach raw name as alias (if different) and return.
+                    if team_name.to_lowercase() != canonical.to_lowercase() {
+                        sqlx::query(
+                            r#"
+                            INSERT INTO team_aliases (team_id, alias, source)
+                            VALUES ($1, $2, 'the_odds_api')
+                            ON CONFLICT (alias, source) DO NOTHING
+                            "#
+                        )
+                        .bind(id)
+                        .bind(team_name)
+                        .execute(&self.db)
+                        .await?;
+                    }
+                    return Ok(id);
                 }
-                return Ok(id);
-            }
 
-            // If we don't have any unrated matches yet, keep this as fallback
-            if best_unrated.is_none() {
-                best_unrated = Some((id, canonical));
+                // If we don't have any unrated matches yet, keep this as fallback
+                if best_unrated.is_none() {
+                    best_unrated = Some((id, canonical));
+                }
             }
         }
 
@@ -1154,7 +1167,9 @@ impl OddsIngestionService {
             return Ok(id);
         }
 
-        if self.config.strict_team_matching {
+        // If we still can't resolve to an existing team, do NOT auto-create by default.
+        // This prevents unrated duplicate team rows (production-safe).
+        if self.config.strict_team_matching || !self.config.allow_team_creation {
             sqlx::query(
                 r#"
                 INSERT INTO team_resolution_audit (input_name, resolved_name, source, context, has_ratings)
@@ -1167,12 +1182,12 @@ impl OddsIngestionService {
             .await?;
 
             return Err(anyhow!(
-                "Unresolved team name (strict matching enabled): {}",
+                "Unresolved team name (auto-create disabled): {}",
                 team_name
             ));
         }
 
-        // STEP 2: Create new team ONLY with normalized canonical name
+        // STEP 2 (opt-in): Create new team ONLY with normalized canonical name
         let canonical_name = self.normalize_team_name(team_name);
         let team_id = Uuid::new_v4();
         // IMPORTANT:

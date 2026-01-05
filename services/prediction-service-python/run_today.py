@@ -385,6 +385,8 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     # Go/Rust binaries expect standard postgres:// URL, not SQLAlchemy's postgresql+psycopg2://
     clean_db_url = DATABASE_URL.replace("+psycopg2", "")
     
+    ratings_timeout = int(os.getenv("RATINGS_SYNC_TIMEOUT_SECONDS", "180"))
+    odds_timeout = int(os.getenv("RUST_ODDS_SYNC_TIMEOUT_SECONDS", "240"))
     try:
         result = subprocess.run(
             ["/app/bin/ratings-sync"],
@@ -395,7 +397,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
             },
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=ratings_timeout,
         )
         if result.returncode == 0:
             print("  [OK] Ratings synced successfully")
@@ -408,7 +410,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                     print(f"      {line}")
             ratings_success = False
     except subprocess.TimeoutExpired:
-        print("  [WARN]  Ratings sync timed out (>2 min)")
+        print(f"  [WARN]  Ratings sync timed out (>{ratings_timeout}s)")
         ratings_success = False
     except Exception as e:
         print(f"  [WARN]  Ratings sync error: {e}")
@@ -442,7 +444,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                 },
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=odds_timeout,
             )
             if result.returncode == 0:
                 print("  [OK] Odds synced successfully (Rust)")
@@ -454,7 +456,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                     for line in error_lines:
                         print(f"      {line}")
         except subprocess.TimeoutExpired:
-            print("  [WARN]  Rust odds sync timed out (>2 min)")
+            print(f"  [WARN]  Rust odds sync timed out (>{odds_timeout}s)")
         except Exception as e:
             print(f"  [WARN]  Rust odds sync error: {e}")
     

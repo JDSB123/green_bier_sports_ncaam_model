@@ -264,7 +264,17 @@ docker compose up -d
 | `Location` | `centralus` | Azure region |
 | `ResourceGroup` | `NCAAM-GBSV-MODEL-RG` | Resource group name |
 | `Environment` | `stable` | Deployment environment |
-| `ImageTag` | `v<VERSION>` (e.g., `v33.10.0`) | Container image tag (read from repo `VERSION`) |
+| `ImageTag` | `v<VERSION>` (e.g., `v33.11.0`) | Container image tag (read from repo `VERSION`) |
+
+### Runtime Safety / Reliability Knobs
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RATINGS_SYNC_TIMEOUT_SECONDS` | `180` | Max seconds allowed for Go ratings sync in `run_today.py` |
+| `RUST_ODDS_SYNC_TIMEOUT_SECONDS` | `240` | Max seconds allowed for Rust odds sync before Python fallback |
+| `STRICT_TEAM_MATCHING` | `true` | Odds ingestion skips unresolved teams (no auto-create) |
+| `ALLOW_TEAM_CREATION` | `false` | **Do not enable in prod**; prevents unrated duplicate teams |
+| `ENABLE_FUZZY_RESOLUTION` | `false` | **Do not enable in prod**; best-effort matching can mis-map teams |
 
 ---
 

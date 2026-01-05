@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# GREEN BIER SPORT VENTURES - NCAAM v33.10.0
+# GREEN BIER SPORT VENTURES - NCAAM v33.11.0
 # ═══════════════════════════════════════════════════════════════════════════════
 # Enterprise-ready sports prediction model with:
 # - Dynamic port allocation (no conflicts with other sports)
@@ -203,7 +203,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   ratings-sync:
-    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-ratings-sync:${IMAGE_TAG:-v33.10.0}
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-ratings-sync:${IMAGE_TAG:-v33.11.0}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_ratings_sync
     <<: [*common-env, *resource-limits]
     secrets:
@@ -240,7 +240,7 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   odds-full-once:
-    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.10.0}
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.11.0}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_full_once
     <<: [*common-env, *security-opts, *resource-limits]
     secrets:
@@ -273,7 +273,7 @@ services:
     restart: "no"
 
   odds-1h-once:
-    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.10.0}
+    image: ${ACR_LOGIN_SERVER:-ncaamstablegbsvacr.azurecr.io}/ncaam-odds-ingestion:${IMAGE_TAG:-v33.11.0}
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_odds_h1_once
     <<: [*common-env, *security-opts, *resource-limits]
     secrets:

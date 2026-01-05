@@ -1,0 +1,43 @@
+name: build-and-deploy (template)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # NOTE: This is a template. You must configure secrets for ACR/Azure:
+      # - AZURE_CREDENTIALS (service principal JSON)
+      # - ACR_LOGIN_SERVER (e.g. ncaamstablegbsvacr.azurecr.io)
+      # - ACR_USERNAME / ACR_PASSWORD or use az acr login via Azure auth
+      #
+      # Then build and push images with a version tag (e.g. v33.11.0).
+
+      - name: Login to Azure (required)
+        run: |
+          echo "Configure Azure login here (template)."
+
+      - name: Build + push images (template)
+        run: |
+          echo "docker buildx build ... --push (template)"
+
+  migrate:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run migrations (template)
+        run: |
+          echo "Run /app/run_migrations.py as a one-shot job (template)"
+
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy (template)
+        run: |
+          echo "Update ACA revisions to the new image tags (template)"
+
