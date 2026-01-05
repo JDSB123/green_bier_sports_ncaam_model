@@ -4,14 +4,18 @@ Import standardized team name mappings from R package datasets.
 
 This script imports team name variants from established R packages:
 - ncaahoopR: Maps variants across NCAA, ESPN, WarrenNolan, Trank (Bart Torvik), 247Sports
-- hoopR: Maps ESPN and KenPom variants
+- hoopR: Maps ESPN and KenPom variants (includes ESPN IDs for master table)
 - toRvik/cbbdata: Bart Torvik native formats
+
+The script performs two operations:
+1. Imports team name aliases into team_aliases table
+2. Updates teams master table with external IDs (ESPN, NCAA) and location data (city, state)
 
 Usage:
     # From CSV exported from R
     python import_standardized_team_mappings.py --source ncaahoopr --input ncaahoopr_dict.csv
     
-    # From JSON
+    # From JSON (includes ESPN IDs for master table)
     python import_standardized_team_mappings.py --source hoopr --input hoopr_teams_links.json --format json
     
     # Dry run (preview changes)
@@ -53,7 +57,7 @@ def get_db_engine():
     return create_engine(db_url, pool_pre_ping=True)
 
 
-def load_ncaahoopr_dict(csv_path: Path) -> List[Tuple[str, str, str]]:
+def load_ncaahoopr_dict(csv_path: Path) -> Tuple[List[Tuple[str, str, str]], Dict[str, Dict]]:
     """
     Load ncaahoopR dict dataset.
     
@@ -61,9 +65,13 @@ def load_ncaahoopr_dict(csv_path: Path) -> List[Tuple[str, str, str]]:
     - Columns: NCAA, ESPN, WarrenNolan, Trank, X247Sports, etc.
     - Each row is a team with variants across sources
     
-    Returns: List of (canonical_name, alias, source) tuples
+    Returns:
+        Tuple of (mappings, master_data)
+        - mappings: List of (canonical_name, alias, source) tuples
+        - master_data: Dict mapping canonical_name to master table fields
     """
     mappings = []
+    master_data = {}
     
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -73,6 +81,9 @@ def load_ncaahoopr_dict(csv_path: Path) -> List[Tuple[str, str, str]]:
             canonical = row.get('NCAA', '').strip()
             if not canonical:
                 continue
+            
+            # Build master data entry (ncaahoopR may have location/ID columns)
+            master_entry = {}
             
             # Map each source column to our source names
             source_mapping = {
@@ -86,11 +97,21 @@ def load_ncaahoopr_dict(csv_path: Path) -> List[Tuple[str, str, str]]:
                 alias = row.get(csv_col, '').strip()
                 if alias and alias != canonical:
                     mappings.append((canonical, alias, source_name))
+            
+            # Check for ESPN ID column (if present in ncaahoopR dict)
+            if 'ESPN_ID' in row and row['ESPN_ID']:
+                try:
+                    master_entry['espn_id'] = int(row['ESPN_ID'])
+                except (ValueError, TypeError):
+                    pass
+            
+            if master_entry:
+                master_data[canonical] = master_entry
     
-    return mappings
+    return mappings, master_data
 
 
-def load_hoopr_teams_links(json_path: Path) -> List[Tuple[str, str, str]]:
+def load_hoopr_teams_links(json_path: Path) -> Tuple[List[Tuple[str, str, str]], Dict[str, Dict]]:
     """
     Load hoopR teams_links dataset.
     
@@ -104,9 +125,13 @@ def load_hoopr_teams_links(json_path: Path) -> List[Tuple[str, str, str]]:
         }
     }
     
-    Returns: List of (canonical_name, alias, source) tuples
+    Returns:
+        Tuple of (mappings, master_data)
+        - mappings: List of (canonical_name, alias, source) tuples
+        - master_data: Dict mapping canonical_name to master table fields
     """
     mappings = []
+    master_data = {}
     
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -116,7 +141,16 @@ def load_hoopr_teams_links(json_path: Path) -> List[Tuple[str, str, str]]:
         if not canonical:
             continue
         
-        # ESPN variants
+        # Build master data entry
+        master_entry = {}
+        
+        # ESPN ID and name
+        if 'espn_id' in links and links['espn_id']:
+            try:
+                master_entry['espn_id'] = int(links['espn_id'])
+            except (ValueError, TypeError):
+                pass
+        
         if 'espn_name' in links:
             alias = links['espn_name'].strip()
             if alias and alias != canonical:
@@ -127,21 +161,29 @@ def load_hoopr_teams_links(json_path: Path) -> List[Tuple[str, str, str]]:
             alias = links['kenpom_name'].strip()
             if alias and alias != canonical:
                 mappings.append((canonical, alias, 'kenpom'))
+        
+        if master_entry:
+            master_data[canonical] = master_entry
     
-    return mappings
+    return mappings, master_data
 
 
-def load_torvik_teams(csv_path: Path) -> List[Tuple[str, str, str]]:
+def load_torvik_teams(csv_path: Path) -> Tuple[List[Tuple[str, str, str]], Dict[str, Dict]]:
     """
     Load toRvik/cbbdata team names.
     
     Expected CSV format:
     - team_name column with Bart Torvik canonical names
     - May include variants in other columns
+    - May include location/ID columns
     
-    Returns: List of (canonical_name, alias, source) tuples
+    Returns:
+        Tuple of (mappings, master_data)
+        - mappings: List of (canonical_name, alias, source) tuples
+        - master_data: Dict mapping canonical_name to master table fields
     """
     mappings = []
+    master_data = {}
     
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -155,24 +197,46 @@ def load_torvik_teams(csv_path: Path) -> List[Tuple[str, str, str]]:
             # Add as barttorvik source variant
             mappings.append((canonical, canonical, 'barttorvik'))
             
+            # Build master data entry
+            master_entry = {}
+            
+            # Check for master table columns
+            if 'espn_id' in row and row.get('espn_id'):
+                try:
+                    master_entry['espn_id'] = int(row['espn_id'])
+                except (ValueError, TypeError):
+                    pass
+            if 'city' in row and row.get('city'):
+                master_entry['city'] = row['city'].strip()
+            if 'state' in row and row.get('state'):
+                master_entry['state'] = row['state'].strip()
+            
             # Check for variant columns
             for col in row:
                 if col != 'team_name' and row[col]:
                     alias = row[col].strip()
                     if alias and alias != canonical:
                         mappings.append((canonical, alias, 'barttorvik'))
+            
+            if master_entry:
+                master_data[canonical] = master_entry
     
-    return mappings
+    return mappings, master_data
 
 
 def load_generic_csv(csv_path: Path, canonical_col: str = 'canonical', 
-                     alias_col: str = 'alias', source_col: str = 'source') -> List[Tuple[str, str, str]]:
+                     alias_col: str = 'alias', source_col: str = 'source') -> Tuple[List[Tuple[str, str, str]], Dict[str, Dict]]:
     """
     Load generic CSV with canonical, alias, source columns.
+    Also supports master table columns: espn_id, ncaa_id, sports_ref_id, city, state
     
-    Returns: List of (canonical_name, alias, source) tuples
+    Returns:
+        Tuple of (mappings, master_data)
+        - mappings: List of (canonical_name, alias, source) tuples
+        - master_data: Dict mapping canonical_name to master table fields
     """
     mappings = []
+    master_data = {}
     
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -184,8 +248,30 @@ def load_generic_csv(csv_path: Path, canonical_col: str = 'canonical',
             
             if canonical and alias:
                 mappings.append((canonical, alias, source))
+            
+            # Extract master data if columns present
+            master_entry = {}
+            if 'espn_id' in row and row.get('espn_id'):
+                try:
+                    master_entry['espn_id'] = int(row['espn_id'])
+                except (ValueError, TypeError):
+                    pass
+            if 'ncaa_id' in row and row.get('ncaa_id'):
+                try:
+                    master_entry['ncaa_id'] = int(row['ncaa_id'])
+                except (ValueError, TypeError):
+                    pass
+            if 'sports_ref_id' in row and row.get('sports_ref_id'):
+                master_entry['sports_ref_id'] = row['sports_ref_id'].strip()
+            if 'city' in row and row.get('city'):
+                master_entry['city'] = row['city'].strip()
+            if 'state' in row and row.get('state'):
+                master_entry['state'] = row['state'].strip()
+            
+            if master_entry and canonical:
+                master_data[canonical] = master_entry
     
-    return mappings
+    return mappings, master_data
 
 
 def resolve_canonical_to_team_id(engine, canonical_name: str) -> Optional[str]:
@@ -222,6 +308,81 @@ def find_team_by_alias(engine, alias: str) -> Optional[Tuple[str, str]]:
         if result:
             return (result[0], result[1])
         return None
+
+
+def update_teams_master_data(engine, master_data: Dict[str, Dict], 
+                            dry_run: bool = False) -> Dict:
+    """
+    Update teams master table with external IDs and location data.
+    
+    Args:
+        engine: SQLAlchemy engine
+        master_data: Dict mapping canonical_name to master table fields
+        dry_run: If True, only report what would be updated
+    
+    Returns:
+        Statistics dict
+    """
+    stats = {
+        'total': len(master_data),
+        'updated': 0,
+        'skipped_not_found': 0,
+        'skipped_no_changes': 0,
+        'errors': 0,
+    }
+    
+    if not master_data:
+        return stats
+    
+    print(f"\nUpdating master table for {len(master_data)} teams...")
+    
+    with engine.connect() as conn:
+        for canonical, fields in master_data.items():
+            # Resolve canonical to team_id
+            team_id = resolve_canonical_to_team_id(engine, canonical)
+            
+            if not team_id:
+                stats['skipped_not_found'] += 1
+                continue
+            
+            # Build UPDATE statement - only update NULL fields (preserve existing)
+            updates = []
+            params = {'team_id': team_id}
+            
+            for field, value in fields.items():
+                if field in ['espn_id', 'ncaa_id', 'sports_ref_id', 'city', 'state']:
+                    updates.append(f"{field} = COALESCE({field}, :{field})")
+                    params[field] = value
+            
+            if not updates:
+                stats['skipped_no_changes'] += 1
+                continue
+            
+            if dry_run:
+                print(f"  [DRY RUN] Would update {canonical}: {', '.join([f'{k}={v}' for k, v in fields.items()])}")
+                stats['updated'] += 1
+                continue
+            
+            # Update only NULL fields (preserve existing data)
+            update_sql = f"""
+                UPDATE teams
+                SET {', '.join(updates)}
+                WHERE id = :team_id
+            """
+            
+            try:
+                result = conn.execute(text(update_sql), params)
+                conn.commit()
+                
+                if result.rowcount > 0:
+                    stats['updated'] += 1
+                else:
+                    stats['skipped_no_changes'] += 1
+            except Exception as e:
+                print(f"ERROR updating {canonical}: {e}")
+                stats['errors'] += 1
+    
+    return stats
 
 
 def import_mappings(engine, mappings: List[Tuple[str, str, str]], 
@@ -368,20 +529,21 @@ def main():
         print("Mode: DRY RUN (no changes will be made)")
     print()
     
-    # Load mappings based on source type
+    # Load mappings and master data based on source type
+    master_data = {}
     try:
         if args.source == 'ncaahoopr':
-            mappings = load_ncaahoopr_dict(args.input)
+            mappings, master_data = load_ncaahoopr_dict(args.input)
         elif args.source == 'hoopr':
             if args.format == 'json':
-                mappings = load_hoopr_teams_links(args.input)
+                mappings, master_data = load_hoopr_teams_links(args.input)
             else:
                 print("ERROR: hoopr source requires --format json")
                 sys.exit(1)
         elif args.source == 'torvik':
-            mappings = load_torvik_teams(args.input)
+            mappings, master_data = load_torvik_teams(args.input)
         elif args.source == 'generic':
-            mappings = load_generic_csv(
+            mappings, master_data = load_generic_csv(
                 args.input,
                 args.canonical_col,
                 args.alias_col,
@@ -393,11 +555,14 @@ def main():
         traceback.print_exc()
         sys.exit(1)
     
-    if not mappings:
-        print("WARNING: No mappings loaded from input file")
+    if not mappings and not master_data:
+        print("WARNING: No mappings or master data loaded from input file")
         sys.exit(1)
     
-    print(f"Loaded {len(mappings)} mappings")
+    if mappings:
+        print(f"Loaded {len(mappings)} mappings")
+    if master_data:
+        print(f"Loaded master data for {len(master_data)} teams")
     
     # Connect to database
     try:
@@ -407,33 +572,61 @@ def main():
         sys.exit(1)
     
     # Import mappings
-    try:
-        stats = import_mappings(engine, mappings, args.source, args.dry_run)
-    except Exception as e:
-        print(f"ERROR importing mappings: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    alias_stats = {}
+    if mappings:
+        try:
+            alias_stats = import_mappings(engine, mappings, args.source, args.dry_run)
+        except Exception as e:
+            print(f"ERROR importing mappings: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
+    
+    # Update master table
+    master_stats = {}
+    if master_data:
+        try:
+            master_stats = update_teams_master_data(engine, master_data, args.dry_run)
+        except Exception as e:
+            print(f"ERROR updating master table: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
     
     # Print statistics
     print("\n" + "=" * 70)
     print("Import Statistics")
     print("=" * 70)
-    print(f"Total mappings:        {stats['total']}")
-    print(f"Resolved to teams:     {stats['resolved']}")
-    print(f"Unresolved canonicals: {stats['unresolved_canonical']}")
-    print(f"Inserted:              {stats['inserted']}")
-    print(f"Skipped (duplicate):    {stats['skipped_duplicate']}")
-    print(f"Skipped (self-ref):    {stats['skipped_self']}")
-    print(f"Errors:                {stats['errors']}")
+    
+    if alias_stats:
+        print("\n📝 Team Aliases:")
+        print(f"  Total mappings:        {alias_stats['total']}")
+        print(f"  Resolved to teams:     {alias_stats['resolved']}")
+        print(f"  Unresolved canonicals: {alias_stats['unresolved_canonical']}")
+        print(f"  Inserted:              {alias_stats['inserted']}")
+        print(f"  Skipped (duplicate):   {alias_stats['skipped_duplicate']}")
+        print(f"  Skipped (self-ref):    {alias_stats['skipped_self']}")
+        print(f"  Errors:                {alias_stats['errors']}")
+    
+    if master_stats:
+        print("\n🏆 Master Table Updates:")
+        print(f"  Total teams:           {master_stats['total']}")
+        print(f"  Updated:               {master_stats['updated']}")
+        print(f"  Skipped (not found):   {master_stats['skipped_not_found']}")
+        print(f"  Skipped (no changes):   {master_stats['skipped_no_changes']}")
+        print(f"  Errors:                {master_stats['errors']}")
+    
     print()
     
-    if stats['unresolved_canonical'] > 0:
+    if alias_stats and alias_stats.get('unresolved_canonical', 0) > 0:
         print("⚠️  Some canonical names were not found in the database.")
         print("   You may need to update team names or add missing teams.")
     
-    if not args.dry_run and stats['inserted'] > 0:
-        print(f"✅ Successfully imported {stats['inserted']} new aliases!")
+    if not args.dry_run:
+        if alias_stats and alias_stats.get('inserted', 0) > 0:
+            print(f"✅ Successfully imported {alias_stats['inserted']} new aliases!")
+        if master_stats and master_stats.get('updated', 0) > 0:
+            print(f"✅ Successfully updated {master_stats['updated']} teams in master table!")
 
 
 if __name__ == "__main__":

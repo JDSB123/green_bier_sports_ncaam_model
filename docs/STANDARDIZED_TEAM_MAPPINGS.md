@@ -123,6 +123,12 @@ FROM team_aliases ta
 JOIN teams t ON ta.team_id = t.id
 WHERE t.canonical_name = 'Duke'
 ORDER BY ta.source, ta.alias;
+
+-- Check master table updates (external IDs and location)
+SELECT canonical_name, espn_id, ncaa_id, sports_ref_id, city, state
+FROM teams
+WHERE espn_id IS NOT NULL OR city IS NOT NULL
+ORDER BY canonical_name;
 ```
 
 ## Source Naming Convention
@@ -141,8 +147,9 @@ The import script prefixes source names to avoid conflicts:
 1. **Comprehensive Coverage:** Adds 1000+ additional team name variants
 2. **KenPom Support:** First-time support for KenPom team name mappings
 3. **ESPN Enhancement:** More comprehensive ESPN variants
-4. **Community Standard:** Uses mappings maintained by the analytics community
-5. **Conference Realignments:** Packages are updated for conference changes
+4. **Master Table Enrichment:** Automatically populates external IDs (ESPN, NCAA) and location data (city, state) in the teams master table
+5. **Community Standard:** Uses mappings maintained by the analytics community
+6. **Conference Realignments:** Packages are updated for conference changes
 
 ## Integration with Existing System
 
@@ -150,8 +157,10 @@ The imported mappings integrate seamlessly with the existing team matching syste
 
 1. **Uses Existing Infrastructure:** Aliases are stored in `team_aliases` table
 2. **Works with `resolve_team_name()`:** All aliases are automatically used by the resolution function
-3. **Source Tracking:** Each alias is tagged with its source for auditability
-4. **No Conflicts:** Uses `ON CONFLICT DO NOTHING` to avoid duplicate aliases
+3. **Master Table Updates:** External IDs (ESPN, NCAA, Sports-Reference) and location data (city, state) are automatically populated in the `teams` table (from migration 014)
+4. **Source Tracking:** Each alias is tagged with its source for auditability
+5. **No Conflicts:** Uses `ON CONFLICT DO NOTHING` to avoid duplicate aliases
+6. **Preserves Existing Data:** Master table updates only fill NULL fields, preserving manually entered data
 
 ## Custom CSV Format
 
