@@ -37,6 +37,12 @@ param(
     [string]$TeamsWebhookUrl = '',
 
     [Parameter(Mandatory=$false)]
+    [string]$ActionNetworkUsername = '',
+
+    [Parameter(Mandatory=$false)]
+    [SecureString]$ActionNetworkPasswordSecure,
+
+    [Parameter(Mandatory=$false)]
     [string]$Location = 'centralus',
 
     [Parameter(Mandatory=$false)]
@@ -115,8 +121,9 @@ if (-not $ImageTag -or [string]::IsNullOrWhiteSpace($ImageTag)) {
 
 $baseName = 'ncaam'
 $webImageName = 'gbsv-web'
-$ratingsImageName = "$baseName-ratings-sync"
-$oddsImageName = "$baseName-odds-ingestion"
+# REMOVED (v33.11.0): Standalone ratings-sync and odds-ingestion images
+# These binaries are now built INTO the prediction-service via multi-stage Docker build.
+# The prediction service embeds Go (ratings-sync) and Rust (odds-ingestion) binaries.
 $resourcePrefix = "$baseName-$Environment"
 # Keep naming consistent with `azure/main.bicep`:
 # acrName = replace('${resourcePrefix}${replace(resourceNameSuffix, '-', '')}acr', '-', '')
@@ -314,6 +321,39 @@ if ($TeamsWebhookUrl) {
     }
 }
 
+# Optional: Load Action Network credentials from repo secret files
+# Convert SecureString to plain text for Bicep deployment (Bicep handles secure params)
+$ActionNetworkPassword = ''
+if ($ActionNetworkPasswordSecure) {
+    $ActionNetworkPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($ActionNetworkPasswordSecure)
+    )
+}
+
+if ([string]::IsNullOrWhiteSpace($ActionNetworkUsername)) {
+    $anUserPath = Join-Path $PSScriptRoot "..\secrets\action_network_username.txt"
+    if (Test-Path $anUserPath -PathType Leaf) {
+        $rawAnUser = Get-Content $anUserPath -Raw -ErrorAction SilentlyContinue
+        if (-not [string]::IsNullOrWhiteSpace($rawAnUser)) {
+            $ActionNetworkUsername = $rawAnUser.Trim()
+        }
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($ActionNetworkPassword)) {
+    $anPassPath = Join-Path $PSScriptRoot "..\secrets\action_network_password.txt"
+    if (Test-Path $anPassPath -PathType Leaf) {
+        $rawAnPass = Get-Content $anPassPath -Raw -ErrorAction SilentlyContinue
+        if (-not [string]::IsNullOrWhiteSpace($rawAnPass)) {
+            $ActionNetworkPassword = $rawAnPass.Trim()
+        }
+    }
+}
+
+if ($ActionNetworkUsername -and $ActionNetworkPassword) {
+    Write-Host "  [OK] Action Network credentials loaded (premium betting splits enabled)" -ForegroundColor Gray
+}
+
 # ─────────────────────────────────────────────────────────────────────────────────
 # DEPLOY INFRASTRUCTURE
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -340,6 +380,8 @@ if (-not $SkipInfra) {
             oddsApiKey=$OddsApiKey `
             basketballApiKey=$BasketballApiKey `
             teamsWebhookUrl=$TeamsWebhookUrl `
+            actionNetworkUsername=$ActionNetworkUsername `
+            actionNetworkPassword=$ActionNetworkPassword `
             imageTag=$ImageTag `
             resourceNameSuffix='-gbsv' `
         --output json | ConvertFrom-Json
@@ -385,11 +427,12 @@ if (-not $SkipBuild) {
     } catch { }
     $buildDate = (Get-Date).ToUniversalTime().ToString("o")
 
+    # v33.11.0: Reduced to 2 images (prediction + web)
+    # Go (ratings-sync) and Rust (odds-ingestion) binaries are built INTO prediction-service
+    # via multi-stage Docker build - no separate images needed.
     $images = @(
         @{ Name = "${acrLoginServer}/${baseName}-prediction:${ImageTag}"; Context = "."; Dockerfile = "services/prediction-service-python/Dockerfile" },
-        @{ Name = "${acrLoginServer}/${webImageName}:${ImageTag}"; Context = "services/web-frontend"; Dockerfile = "services/web-frontend/Dockerfile" },
-        @{ Name = "${acrLoginServer}/${ratingsImageName}:${ImageTag}"; Context = "services/ratings-sync-go"; Dockerfile = "services/ratings-sync-go/Dockerfile" },
-        @{ Name = "${acrLoginServer}/${oddsImageName}:${ImageTag}"; Context = "services/odds-ingestion-rust"; Dockerfile = "services/odds-ingestion-rust/Dockerfile" }
+        @{ Name = "${acrLoginServer}/${webImageName}:${ImageTag}"; Context = "services/web-frontend"; Dockerfile = "services/web-frontend/Dockerfile" }
     )
 
     # Determine cache flag
@@ -515,13 +558,8 @@ if (-not $SkipBuild) {
         az containerapp update --name "${resourcePrefix}-web" --resource-group $ResourceGroup --image "${acrLoginServer}/${webImageName}:${ImageTag}" --output none
     } catch { }
 
-    try {
-        az containerapp job update --name "${resourcePrefix}-ratings-sync" --resource-group $ResourceGroup --image "${acrLoginServer}/${ratingsImageName}:${ImageTag}" --output none
-    } catch { }
-
-    try {
-        az containerapp job update --name "${resourcePrefix}-odds-ingestion" --resource-group $ResourceGroup --image "${acrLoginServer}/${oddsImageName}:${ImageTag}" --output none
-    } catch { }
+    # REMOVED (v33.11.0): Standalone ratings-sync and odds-ingestion jobs
+    # These are now embedded in the prediction-service container
 } else {
     Write-Host ""
     Write-Host "[4/6] Skipping Docker build (--SkipBuild)" -ForegroundColor Yellow
@@ -599,7 +637,8 @@ if ($PruneAcrImages) {
         Write-Host ""
         Write-Host "[CLEANUP] Skipping ACR cleanup because deployment health is not confirmed." -ForegroundColor Yellow
     } else {
-        $repos = @("${baseName}-prediction", $webImageName, $ratingsImageName, $oddsImageName)
+        # v33.11.0: Only 2 repos now (prediction + web)
+        $repos = @("${baseName}-prediction", $webImageName)
         Invoke-AcrTagCleanup -RegistryName $acrName -Repositories $repos -KeepTag $ImageTag -KeepCount $KeepAcrTags
     }
 }

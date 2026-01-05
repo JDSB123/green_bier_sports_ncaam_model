@@ -39,6 +39,12 @@ echo -n "YOUR_TEAMS_WEBHOOK_URL" > teams_webhook_url.txt
 # Code reads from: /run/secrets/teams_webhook_secret (Docker) or env var TEAMS_WEBHOOK_SECRET (Azure)
 # This should match the secret configured in your Teams outgoing webhook
 echo -n "YOUR_TEAMS_WEBHOOK_SECRET" > teams_webhook_secret.txt
+
+# Action Network credentials (OPTIONAL - for premium betting splits data)
+# Code reads from env vars ACTION_NETWORK_USERNAME and ACTION_NETWORK_PASSWORD
+# Premium access unlocks money % data for sharp/RLM detection
+echo -n "YOUR_ACTION_NETWORK_EMAIL" > action_network_username.txt
+echo -n "YOUR_ACTION_NETWORK_PASSWORD" > action_network_password.txt
 ```
 
 ### 2. Secure File Permissions

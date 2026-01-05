@@ -47,6 +47,14 @@ param teamsWebhookUrl string = ''
 @secure()
 param basketballApiKey string = ''
 
+@description('Action Network username (for betting splits)')
+@secure()
+param actionNetworkUsername string = ''
+
+@description('Action Network password (for betting splits)')
+@secure()
+param actionNetworkPassword string = ''
+
 @description('Container image tag')
 param imageTag string = 'v0.0.0'
 
@@ -64,9 +72,8 @@ var redisName = '${resourcePrefix}${resourceNameSuffix}-redis'
 var containerEnvName = '${resourcePrefix}-env'
 var containerAppName = '${resourcePrefix}-prediction'
 var webAppName = '${resourcePrefix}-web'
-var ratingsJobName = '${resourcePrefix}-ratings-sync'
-var oddsJobName = '${resourcePrefix}-odds-ingestion'
 var logAnalyticsName = '${resourcePrefix}-logs'
+// REMOVED: ratingsJobName and oddsJobName - jobs consolidated into prediction service (v33.11.0)
 
 // Common tags for resource organization (especially for enterprise resource group)
 var commonTags = {
@@ -261,6 +268,24 @@ resource kvSecretBasketballApi 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = 
   }
 }
 
+resource kvSecretActionNetworkUsername 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (actionNetworkUsername != '') {
+  parent: keyVault
+  name: 'action-network-username'
+  properties: {
+    value: actionNetworkUsername
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretActionNetworkPassword 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (actionNetworkPassword != '') {
+  parent: keyVault
+  name: 'action-network-password'
+  properties: {
+    value: actionNetworkPassword
+    contentType: 'text/plain'
+  }
+}
+
 resource kvSecretAcr 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
   name: 'acr-password'
@@ -365,6 +390,18 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
             name: 'teams-webhook-url'
             value: teamsWebhookUrl
           }
+        ] : [],
+        (actionNetworkUsername != '') ? [
+          {
+            name: 'action-network-username'
+            value: actionNetworkUsername
+          }
+        ] : [],
+        (actionNetworkPassword != '') ? [
+          {
+            name: 'action-network-password'
+            value: actionNetworkPassword
+          }
         ] : []
       )
     }
@@ -422,6 +459,18 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
               {
                 name: 'TEAMS_WEBHOOK_URL'
                 secretRef: 'teams-webhook-url'
+              }
+            ] : [],
+            (actionNetworkUsername != '') ? [
+              {
+                name: 'ACTION_NETWORK_USERNAME'
+                secretRef: 'action-network-username'
+              }
+            ] : [],
+            (actionNetworkPassword != '') ? [
+              {
+                name: 'ACTION_NETWORK_PASSWORD'
+                secretRef: 'action-network-password'
               }
             ] : [],
             [
@@ -549,126 +598,23 @@ resource webApp 'Microsoft.App/containerApps@2023-05-01' = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
-// MANUAL-ONLY PIPELINE JOBS (Container Apps Jobs)
+// REMOVED: Standalone Container App Jobs (v33.11.0)
 // ─────────────────────────────────────────────────────────────────────────────────
-
-resource ratingsSyncJob 'Microsoft.App/jobs@2023-05-01' = {
-  name: ratingsJobName
-  location: location
-  tags: commonTags
-  properties: {
-    environmentId: containerEnv.id
-    configuration: {
-      triggerType: 'Manual'
-      replicaTimeout: 1800
-      replicaRetryLimit: 1
-      registries: [
-        {
-          server: acr.properties.loginServer
-          username: acr.listCredentials().username
-          passwordSecretRef: 'acr-password'
-        }
-      ]
-      secrets: [
-        {
-          name: 'acr-password'
-          value: acr.listCredentials().passwords[0].value
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'ratings-sync'
-          image: '${acr.properties.loginServer}/${baseName}-ratings-sync:${imageTag}'
-          resources: {
-            cpu: json('0.5')
-            memory: '1Gi'
-          }
-          env: [
-            {
-              name: 'SPORT'
-              value: 'ncaam'
-            }
-            {
-              name: 'RUN_ONCE'
-              value: 'true'
-            }
-            {
-              name: 'DATABASE_URL'
-              value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
-            }
-          ]
-        }
-      ]
-    }
-  }
-}
-
-resource oddsIngestionJob 'Microsoft.App/jobs@2023-05-01' = {
-  name: oddsJobName
-  location: location
-  tags: commonTags
-  properties: {
-    environmentId: containerEnv.id
-    configuration: {
-      triggerType: 'Manual'
-      replicaTimeout: 1800
-      replicaRetryLimit: 1
-      registries: [
-        {
-          server: acr.properties.loginServer
-          username: acr.listCredentials().username
-          passwordSecretRef: 'acr-password'
-        }
-      ]
-      secrets: [
-        {
-          name: 'acr-password'
-          value: acr.listCredentials().passwords[0].value
-        }
-        {
-          name: 'odds-api-key'
-          value: oddsApiKey
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          name: 'odds-ingestion'
-          image: '${acr.properties.loginServer}/${baseName}-odds-ingestion:${imageTag}'
-          resources: {
-            cpu: json('1.0')
-            memory: '2Gi'
-          }
-          env: [
-            {
-              name: 'SPORT'
-              value: 'ncaam'
-            }
-            {
-              name: 'RUN_ONCE'
-              value: 'true'
-            }
-            {
-              name: 'DATABASE_URL'
-              value: 'postgresql://ncaam:${postgresPassword}@${postgres.properties.fullyQualifiedDomainName}:5432/ncaam?sslmode=require'
-            }
-            {
-              name: 'REDIS_URL'
-              value: 'rediss://:${redis.listKeys().primaryKey}@${redis.properties.hostName}:6380'
-            }
-            {
-              name: 'THE_ODDS_API_KEY'
-              secretRef: 'odds-api-key'
-            }
-          ]
-        }
-      ]
-    }
-  }
-}
+// The prediction service now handles ALL data orchestration internally:
+// - Ratings sync: Embedded Go binary (/app/bin/ratings-sync) + Python fallback
+// - Odds ingestion: Embedded Rust binary (/app/bin/odds-ingestion) + Python fallback
+// - Betting splits: Python (Action Network client)
+// - Barttorvik stats: Python (direct fetch)
+//
+// Single entry point: run_today.py orchestrates parallel data ingestion,
+// team name resolution, validation, and prediction generation.
+//
+// Benefits:
+// - No manual job triggering required
+// - Guaranteed execution order (sync → validate → predict)
+// - Atomic failures (no partial state)
+// - Reduced ACA resource costs
+// ─────────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────────
 // MONITORING & ALERTING
@@ -919,8 +865,7 @@ output postgresHost string = postgres.properties.fullyQualifiedDomainName
 output redisHost string = redis.properties.hostName
 output containerAppUrl string = predictionApp.properties.configuration.ingress.fqdn
 output webAppUrl string = webApp.properties.configuration.ingress.fqdn
-output ratingsJobName string = ratingsSyncJob.name
-output oddsJobName string = oddsIngestionJob.name
+// REMOVED: ratingsJobName and oddsJobName outputs - jobs consolidated into prediction service (v33.11.0)
 output containerEnvName string = containerEnv.name
 output actionGroupId string = actionGroup.id
 output keyVaultName string = keyVault.name
