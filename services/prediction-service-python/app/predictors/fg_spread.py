@@ -24,6 +24,8 @@ from typing import Optional, TYPE_CHECKING
 
 from app import __version__ as APP_VERSION
 from app.predictors.base import BasePredictor, MarketPrediction
+from app.statistical_confidence import statistical_confidence
+from app.models import BetType
 
 # TeamRatings is in app.models (models.py, not the predictors package)
 if TYPE_CHECKING:
@@ -165,47 +167,16 @@ class FGSpreadModel(BasePredictor):
         raw_margin: float
     ) -> float:
         """
-        Calculate prediction confidence (0-1).
+        Calculate statistical confidence using v33.11 methodology.
 
-        Higher confidence when:
-        - Teams have more games played (higher ranks = more coverage)
-        - Net rating difference is larger (clearer skill gap)
-        - Both teams use similar styles (less volatile matchup)
+        Uses proper statistical intervals instead of heuristic multipliers.
         """
-        confidence = 0.70
-
-        # Rank factor (higher ranked teams = more reliable ratings)
-        # Top 100 teams get bonus, bottom 200 get penalty
-        avg_rank = (home.rank + away.rank) / 2
-        if avg_rank < 100:
-            confidence += 0.05
-        elif avg_rank > 250:
-            confidence -= 0.05
-
-        # Net rating gap factor (larger gap = more confident)
-        net_diff = abs(home.net_rating - away.net_rating)
-        if net_diff > 20:
-            confidence += 0.10
-        elif net_diff > 15:
-            confidence += 0.07
-        elif net_diff > 10:
-            confidence += 0.04
-        elif net_diff < 5:
-            confidence -= 0.03
-
-        # Style clash factor (similar 3P rates = more predictable)
-        style_diff = abs(home.three_pt_rate - away.three_pt_rate)
-        if style_diff < 5:
-            confidence += 0.02
-        elif style_diff > 15:
-            confidence -= 0.02
-
-        # Barthag quality factor
-        avg_barthag = (home.barthag + away.barthag) / 2
-        if avg_barthag > 0.7:
-            confidence += 0.03
-
-        return min(0.95, max(0.50, confidence))
+        return statistical_confidence.calculate_prediction_confidence(
+            home_ratings=home,
+            away_ratings=away,
+            bet_type=BetType.SPREAD,
+            predicted_edge=raw_margin
+        )
 
     def get_pick_recommendation(
         self,

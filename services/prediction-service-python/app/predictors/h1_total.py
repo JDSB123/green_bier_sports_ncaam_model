@@ -27,6 +27,8 @@ from typing import Optional, TYPE_CHECKING
 
 from app import __version__ as APP_VERSION
 from app.predictors.base import BasePredictor, MarketPrediction
+from app.statistical_confidence import statistical_confidence
+from app.models import BetType
 
 if TYPE_CHECKING:
     from app.models import TeamRatings
@@ -315,10 +317,14 @@ class H1TotalModel(BasePredictor):
         # Calculate variance
         variance = self._calculate_h1_variance(home, away)
 
-        # 1H Total confidence - start at 0.68 (above 0.65 threshold)
-        # Reduce for large adjustments (extremes are less reliable)
-        # Range: 0.50 - 0.72 (can pass min_confidence=0.65 for standard games)
-        confidence = 0.68 - min(abs(adjustment) * 0.03, 0.18)
+        # v33.11: Statistical confidence for 1H total
+        predicted_edge = total - base_total  # Edge vs baseline prediction
+        confidence = statistical_confidence.calculate_prediction_confidence(
+            home_ratings=home,
+            away_ratings=away,
+            bet_type=BetType.TOTAL_1H,
+            predicted_edge=predicted_edge
+        )
 
         reasoning = (
             f"1H Poss: {self._estimate_h1_possessions(home, away):.1f} | "

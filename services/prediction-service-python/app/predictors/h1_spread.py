@@ -24,6 +24,8 @@ from typing import Optional, TYPE_CHECKING
 
 from app import __version__ as APP_VERSION
 from app.predictors.base import BasePredictor, MarketPrediction
+from app.statistical_confidence import statistical_confidence
+from app.models import BetType
 
 if TYPE_CHECKING:
     from app.models import TeamRatings
@@ -222,40 +224,16 @@ class H1SpreadModel(BasePredictor):
         margin_scale: float
     ) -> float:
         """
-        Calculate 1H spread confidence.
+        Calculate statistical confidence for 1H spread using v33.11 methodology.
 
-        Lower than FG spread because:
-        - Higher variance in 1H
-        - Less data to validate 1H specific patterns
-
-        Higher when:
-        - Large EFG gap (skill shows clearly in 1H)
-        - High margin scale (1H prediction is more differentiated)
+        Uses proper statistical intervals instead of heuristic multipliers.
         """
-        # Start lower than FG
-        confidence = 0.65
-
-        # EFG gap factor
-        efg_diff = abs(home.efg - away.efg)
-        if efg_diff > 5:
-            confidence += 0.05
-        elif efg_diff < 2:
-            confidence -= 0.03
-
-        # Margin scale factor
-        if margin_scale > 0.52:
-            confidence += 0.03
-        elif margin_scale < 0.47:
-            confidence -= 0.03
-
-        # Team quality
-        avg_rank = (home.rank + away.rank) / 2
-        if avg_rank < 100:
-            confidence += 0.02
-        elif avg_rank > 250:
-            confidence -= 0.02
-
-        return min(0.88, max(0.50, confidence))
+        return statistical_confidence.calculate_prediction_confidence(
+            home_ratings=home,
+            away_ratings=away,
+            bet_type=BetType.SPREAD_1H,
+            predicted_edge=margin_scale * 10  # Scale to points for significance testing
+        )
 
     def get_pick_recommendation(
         self,

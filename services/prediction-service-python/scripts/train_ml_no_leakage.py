@@ -180,25 +180,72 @@ def engineer_features_no_leakage(df: pd.DataFrame, min_games: int = 5) -> Tuple[
         if pd.isna(total):
             total = 140.0  # League average
         
-        # Features (ONLY from prior data)
-        f = [
-            home_stats['avg_margin'],           # 0: Home team avg margin (prior games)
-            away_stats['avg_margin'],           # 1: Away team avg margin
-            home_stats['avg_margin'] - away_stats['avg_margin'],  # 2: Margin differential
-            home_stats['win_pct'],              # 3: Home win %
-            away_stats['win_pct'],              # 4: Away win %
-            home_stats['win_pct'] - away_stats['win_pct'],  # 5: Win % differential
-            home_stats['home_margin'],          # 6: Home team's home margin
-            away_stats['away_margin'],          # 7: Away team's away margin
-            home_stats['games_played'],         # 8: Home games played (experience)
-            away_stats['games_played'],         # 9: Away games played
-            spread,                             # 10: Market spread (or estimated)
-            total,                              # 11: Market total
-            abs(spread),                        # 12: Spread magnitude
-            1.0 if spread < 0 else 0.0,         # 13: Is home favorite?
-            float(home_stats['has_data']),      # 14: Home has sufficient data
-            float(away_stats['has_data']),      # 15: Away has sufficient data
-        ]
+        # v33.11: USE ALL 22 BARTTORVIK FIELDS + ADVANCED FEATURES
+        # Build full GameFeatures object with all Barttorvik data
+        game_features = GameFeatures(
+            game_id=f"{home}_{away}_{date_str}",
+            game_date=date_str,
+            home_team=home,
+            away_team=away,
+
+            # CORE EFFICIENCY (from rolling stats)
+            home_adj_o=home_stats.get('avg_adj_o', 100.0),
+            home_adj_d=home_stats.get('avg_adj_d', 100.0),
+            away_adj_o=away_stats.get('avg_adj_o', 100.0),
+            away_adj_d=away_stats.get('avg_adj_d', 100.0),
+            home_tempo=home_stats.get('avg_tempo', 67.6),
+            away_tempo=away_stats.get('avg_tempo', 67.6),
+            home_rank=home_stats.get('avg_rank', 150),
+            away_rank=away_stats.get('avg_rank', 150),
+
+            # FOUR FACTORS (from rolling stats)
+            home_efg=home_stats.get('avg_efg', 50.0),
+            home_efgd=home_stats.get('avg_efgd', 50.0),
+            away_efg=away_stats.get('avg_efg', 50.0),
+            away_efgd=away_stats.get('avg_efgd', 50.0),
+            home_tor=home_stats.get('avg_tor', 18.5),
+            home_tord=home_stats.get('avg_tord', 18.5),
+            away_tor=away_stats.get('avg_tor', 18.5),
+            away_tord=away_stats.get('avg_tord', 18.5),
+            home_orb=home_stats.get('avg_orb', 28.0),
+            home_drb=home_stats.get('avg_drb', 28.0),
+            away_orb=away_stats.get('avg_orb', 28.0),
+            away_drb=away_stats.get('avg_drb', 28.0),
+            home_ftr=home_stats.get('avg_ftr', 33.0),
+            home_ftrd=home_stats.get('avg_ftrd', 33.0),
+            away_ftr=away_stats.get('avg_ftr', 33.0),
+            away_ftrd=away_stats.get('avg_ftrd', 33.0),
+
+            # SHOOTING BREAKDOWN
+            home_two_pt_pct=home_stats.get('avg_two_pt_pct', 50.0),
+            home_two_pt_pct_d=home_stats.get('avg_two_pt_pct_d', 50.0),
+            away_two_pt_pct=away_stats.get('avg_two_pt_pct', 50.0),
+            away_two_pt_pct_d=away_stats.get('avg_two_pt_pct_d', 50.0),
+            home_three_pt_pct=home_stats.get('avg_three_pt_pct', 35.0),
+            home_three_pt_pct_d=home_stats.get('avg_three_pt_pct_d', 35.0),
+            away_three_pt_pct=away_stats.get('avg_three_pt_pct', 35.0),
+            away_three_pt_pct_d=away_stats.get('avg_three_pt_pct_d', 35.0),
+            home_three_pt_rate=home_stats.get('avg_three_pt_rate', 35.0),
+            home_three_pt_rate_d=home_stats.get('avg_three_pt_rate_d', 35.0),
+            away_three_pt_rate=away_stats.get('avg_three_pt_rate', 35.0),
+            away_three_pt_rate_d=away_stats.get('avg_three_pt_rate_d', 35.0),
+
+            # QUALITY METRICS
+            home_barthag=home_stats.get('avg_barthag', 0.5),
+            home_wab=home_stats.get('avg_wab', 0.0),
+            away_barthag=away_stats.get('avg_barthag', 0.5),
+            away_wab=away_stats.get('avg_wab', 0.0),
+
+            # MARKET DATA
+            spread_open=spread,
+            total_open=total,
+            spread_current=spread,
+            total_current=total,
+        )
+
+        # Use proper FeatureEngineer to extract all features
+        feature_engineer = FeatureEngineer()
+        f = feature_engineer.extract_features(game_features).tolist()
         features.append(f)
         
         # Calculate labels (from actual outcome)
@@ -319,14 +366,33 @@ def main():
     print(f"  Training: {train_mask.sum()} games")
     print(f"  Testing:  {test_mask.sum()} games")
     
-    # Feature names for importance
+    # Feature names for importance - MUST match FeatureEngineer.extract_features() output (34 features)
     feature_names = [
-        'home_avg_margin', 'away_avg_margin', 'margin_diff',
-        'home_win_pct', 'away_win_pct', 'win_pct_diff',
-        'home_at_home_margin', 'away_on_road_margin',
-        'home_games', 'away_games',
-        'spread', 'total', 'spread_mag', 'home_fav',
-        'home_has_data', 'away_has_data',
+        # DERIVED EFFICIENCY FEATURES (6)
+        'home_net_eff', 'away_net_eff', 'efficiency_diff',
+        'tempo_avg', 'tempo_diff', 'rank_diff',
+
+        # MATCHUP FEATURES (3)
+        'home_off_vs_away_def', 'away_off_vs_home_def', 'off_def_matchup_diff',
+
+        # FOUR FACTORS MATCHUPS (4)
+        'shooting_matchup', 'turnover_matchup', 'rebound_matchup', 'ftr_matchup',
+
+        # STYLE FEATURES (3)
+        'avg_3pt_rate', 'diff_3pt_rate', 'pace_factor',
+
+        # QUALITY FEATURES (4)
+        'barthag_diff', 'wab_diff', 'home_barthag', 'away_barthag',
+
+        # MARKET FEATURES (6)
+        'spread_open', 'total_open', 'spread_line_move', 'total_line_move',
+        'sharp_sq_spread', 'sharp_sq_total',
+
+        # SITUATIONAL FEATURES (4)
+        'is_neutral', 'rest_diff', 'home_b2b', 'away_b2b',
+
+        # PUBLIC BETTING (4)
+        'public_home_pct', 'sharp_indicator_home', 'public_over_pct', 'sharp_indicator_over',
     ]
     
     # Train spread model

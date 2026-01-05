@@ -27,6 +27,8 @@ import math
 
 from app import __version__ as APP_VERSION
 from app.predictors.base import BasePredictor, MarketPrediction
+from app.statistical_confidence import statistical_confidence
+from app.models import BetType
 
 if TYPE_CHECKING:
     from app.models import TeamRatings
@@ -298,10 +300,14 @@ class FGTotalModel(BasePredictor):
         # Variance
         variance = self._calculate_variance(home, away)
 
-        # Confidence based on variance and adjustment magnitude
-        base_confidence = 0.65
-        adj_penalty = min(abs(adjustment) * 0.02, 0.15)
-        confidence = base_confidence - adj_penalty
+        # v33.11: Statistical confidence using proper intervals
+        predicted_edge = total - (home_score + away_score)  # Edge vs naive total
+        confidence = statistical_confidence.calculate_prediction_confidence(
+            home_ratings=home,
+            away_ratings=away,
+            bet_type=BetType.TOTAL,
+            predicted_edge=predicted_edge
+        )
 
         reasoning = (
             f"Base: {base_total:.1f} | "

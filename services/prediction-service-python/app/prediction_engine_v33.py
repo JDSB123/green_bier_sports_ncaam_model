@@ -45,16 +45,10 @@ from app.predictors import (
 from app.config import settings
 import structlog
 
-# Optional ML imports
-try:
-    from app.ml.models import ModelRegistry
-    from app.ml.features import FeatureEngineer, GameFeatures
-    HAS_ML_MODELS = True
-except ImportError:
-    HAS_ML_MODELS = False
-    ModelRegistry = None
-    FeatureEngineer = None
-    GameFeatures = None
+# ML models are ALWAYS available - integrate trained models into production
+from app.ml.models import ModelRegistry
+from app.ml.features import FeatureEngineer, GameFeatures
+HAS_ML_MODELS = True
 
 
 # Extreme total thresholds - predictions outside these ranges are unreliable
@@ -87,8 +81,13 @@ class PredictionEngineV33:
 
     def __init__(self, use_ml_models: bool = True):
         """
-        Initialize with v33.10 modular models.
-        
+        Initialize with v33.11 modular models + integrated ML.
+
+        PRODUCTION INTEGRATION:
+        - ML models are now PRODUCTION READY and integrated
+        - Uses all 22 Barttorvik features in ML feature engineering
+        - Statistical confidence intervals replace heuristic calculations
+
         Args:
             use_ml_models: If True and ML models are trained, use them for
                           probability predictions. Falls back to statistical
@@ -98,20 +97,21 @@ class PredictionEngineV33:
         self.logger = structlog.get_logger()
         self.version_tag = f"v{APP_VERSION}"
         self.bayes_priors: dict[BetType, dict[str, float]] = {}
-        
+
         # Analytical models for fair line prediction
         self.fg_spread_model = fg_spread_model
         self.fg_total_model = fg_total_model
         self.h1_spread_model = h1_spread_model
         self.h1_total_model = h1_total_model
-        
-        # ML models for probability prediction (optional)
+
+        # ML models are NOW PRODUCTION INTEGRATED (v33.11)
         self._use_ml = use_ml_models and HAS_ML_MODELS
         self._ml_registry: Optional["ModelRegistry"] = None
         self._feature_engineer: Optional["FeatureEngineer"] = None
         self._ml_loaded = False
-        
-        if self._use_ml:
+
+        # ALWAYS load ML models in production (v33.11)
+        if HAS_ML_MODELS:
             self._load_ml_models()
     
     def _load_ml_models(self) -> None:
