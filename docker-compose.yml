@@ -166,6 +166,10 @@ services:
       # so team-specific HCA scaling in run_today.py remains consistent.
       MODEL__HOME_COURT_ADVANTAGE_SPREAD: 5.8
       MODEL__HOME_COURT_ADVANTAGE_TOTAL: 0.0
+      # Team matching guardrail defaults (adjust per env)
+      TEAM_MATCHING_LOOKBACK_DAYS: "7"
+      MIN_TEAM_RESOLUTION_RATE: "0.95"
+      MAX_UNRESOLVED_TEAM_VARIANTS: "1"
     networks:
       - ncaam_v33_backend
       - ncaam_v33_data

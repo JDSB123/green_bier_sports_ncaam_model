@@ -599,12 +599,7 @@ if ($ForceMigrations) {
         --resource-group $ResourceGroup `
         --set-env-vars FORCE_MISSING_MIGRATIONS=true `
         --output none
-
-    Write-Host "  Restarting container to apply migrations..." -ForegroundColor Gray
-    az containerapp revision restart `
-        --name $containerAppName `
-        --resource-group $ResourceGroup `
-        --revision "$containerAppName--0000015"
+    Write-Host "  Restart not required; env update triggers a new revision" -ForegroundColor Gray
 
     # Wait for migration to complete
     Write-Host "  Waiting for migrations to complete..." -ForegroundColor Gray

@@ -332,6 +332,15 @@ def main() -> int:
                 # FORCE_MISSING_MIGRATIONS: Apply all missing migrations regardless of baseline
                 # This fixes deployed databases that are missing recent migrations
                 force_missing = os.getenv("FORCE_MISSING_MIGRATIONS", "").lower() in ("true", "1", "yes")
+                # Auto-enable force mode if critical migrations are missing
+                critical = {
+                    "012_recommendation_probabilities.sql",
+                    "021_schema_migrations_table.sql",
+                }
+                critical_missing = [m for m in critical if m not in applied]
+                if critical_missing and not force_missing:
+                    print(f"🔧 Critical migrations missing ({', '.join(critical_missing)}); enabling FORCE_MISSING_MIGRATIONS")
+                    force_missing = True
 
                 if force_missing:
                     print("🔧 FORCE_MISSING_MIGRATIONS enabled - applying all missing migrations")

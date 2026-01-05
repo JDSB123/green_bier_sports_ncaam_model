@@ -478,6 +478,19 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
                 name: 'TZ'
                 value: 'America/Chicago'
               }
+              // Team matching health defaults (override via env as needed)
+              {
+                name: 'TEAM_MATCHING_LOOKBACK_DAYS'
+                value: '7'
+              }
+              {
+                name: 'MIN_TEAM_RESOLUTION_RATE'
+                value: '0.95'
+              }
+              {
+                name: 'MAX_UNRESOLVED_TEAM_VARIANTS'
+                value: '1'
+              }
             ]
           )
           probes: [

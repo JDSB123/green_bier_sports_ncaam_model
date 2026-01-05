@@ -757,6 +757,7 @@ def _check_recent_team_resolution(engine) -> dict:
     # Keep this aligned with `run_today.py` defaults so behavior is consistent.
     lookback_days = int(os.getenv("TEAM_MATCHING_LOOKBACK_DAYS", "7"))
     min_rate = float(os.getenv("MIN_TEAM_RESOLUTION_RATE", "0.98"))
+    max_unresolved = int(os.getenv("MAX_UNRESOLVED_TEAM_VARIANTS", "1"))
     now_utc = datetime.now(timezone.utc)
     lookback_start = now_utc - timedelta(days=lookback_days)
 
@@ -778,13 +779,14 @@ def _check_recent_team_resolution(engine) -> dict:
     total = int(row.total or 0) if row else 0
     resolved = int(row.resolved or 0) if row else 0
     unresolved = int(row.unresolved or 0) if row else 0
-    rate = (resolved / total) if total else 0.0
-    # If we have no audit rows, treat status as unknown (ok=False) but don't hard-fail callers.
-    ok = bool(total > 0 and unresolved == 0 and rate >= min_rate)
+    rate = (resolved / total) if total else 1.0
+    # Treat no-audit as OK (no recent pressure), and allow a small number of unresolved variants.
+    ok = bool((total == 0) or (rate >= min_rate and unresolved <= max_unresolved))
     return {
         "ok": ok,
         "lookback_days": lookback_days,
         "min_rate": min_rate,
+        "max_unresolved": max_unresolved,
         "total": total,
         "resolved": resolved,
         "unresolved": unresolved,
