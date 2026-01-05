@@ -131,7 +131,15 @@ services:
   # ─────────────────────────────────────────────────────────────────────────────
 
   prediction-service:
-    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.11.0
+    # Default image is the private ACR tag. For local/dev execution without ACR auth,
+    # you can build and run a local image by setting:
+    #   PREDICTION_IMAGE=ncaam-prediction:local
+    # and running:
+    #   docker compose build prediction-service
+    image: ${PREDICTION_IMAGE:-ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.11.0}
+    build:
+      context: .
+      dockerfile: services/prediction-service-python/Dockerfile
     container_name: ${COMPOSE_PROJECT_NAME:-ncaam_v33_model}_prediction
     <<: [*common-env, *security-opts]
     secrets:
