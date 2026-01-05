@@ -172,11 +172,11 @@ function Invoke-AcrTagCleanup {
         }
 
         foreach ($t in $toDelete) {
-            Write-Host "    Deleting: $repo:$t" -ForegroundColor DarkGray
+            Write-Host "    Deleting: ${repo}:$t" -ForegroundColor DarkGray
             try {
-                az acr repository delete --name $RegistryName --image "$repo:$t" --yes --output none | Out-Null
+                az acr repository delete --name $RegistryName --image "${repo}:$t" --yes --output none | Out-Null
             } catch {
-                Write-Warning "    Failed to delete $repo:$t : $_"
+                Write-Warning "    Failed to delete ${repo}:$t : $_"
             }
         }
     }
