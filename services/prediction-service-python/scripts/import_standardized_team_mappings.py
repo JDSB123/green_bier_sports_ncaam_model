@@ -311,7 +311,8 @@ def find_team_by_alias(engine, alias: str) -> Optional[Tuple[str, str]]:
 
 
 def update_teams_master_data(engine, master_data: Dict[str, Dict], 
-                            dry_run: bool = False) -> Dict:
+                            dry_run: bool = False,
+                            override: bool = False) -> Dict:
     """
     Update teams master table with external IDs and location data.
     
@@ -334,7 +335,7 @@ def update_teams_master_data(engine, master_data: Dict[str, Dict],
     if not master_data:
         return stats
     
-    print(f"\nUpdating master table for {len(master_data)} teams...")
+    print(f"\nUpdating master table for {len(master_data)} teams... {'(override enabled)' if override else ''}")
     
     with engine.connect() as conn:
         for canonical, fields in master_data.items():
@@ -345,13 +346,16 @@ def update_teams_master_data(engine, master_data: Dict[str, Dict],
                 stats['skipped_not_found'] += 1
                 continue
             
-            # Build UPDATE statement - only update NULL fields (preserve existing)
+            # Build UPDATE statement
             updates = []
             params = {'team_id': team_id}
             
             for field, value in fields.items():
                 if field in ['espn_id', 'ncaa_id', 'sports_ref_id', 'city', 'state']:
-                    updates.append(f"{field} = COALESCE({field}, :{field})")
+                    if override:
+                        updates.append(f"{field} = :{field}")
+                    else:
+                        updates.append(f"{field} = COALESCE({field}, :{field})")
                     params[field] = value
             
             if not updates:
@@ -363,7 +367,7 @@ def update_teams_master_data(engine, master_data: Dict[str, Dict],
                 stats['updated'] += 1
                 continue
             
-            # Update only NULL fields (preserve existing data)
+            # Update fields (COALESCE only fills NULLs unless override=True)
             update_sql = f"""
                 UPDATE teams
                 SET {', '.join(updates)}
@@ -512,6 +516,8 @@ def main():
                        help='Source column (for generic CSV)')
     parser.add_argument('--dry-run', action='store_true',
                        help='Preview changes without inserting')
+    parser.add_argument('--override-master', action='store_true',
+                       help='Override non-null master fields (espn_id/ncaa_id/sports_ref_id/city/state) when provided')
     
     args = parser.parse_args()
     
@@ -586,7 +592,7 @@ def main():
     master_stats = {}
     if master_data:
         try:
-            master_stats = update_teams_master_data(engine, master_data, args.dry_run)
+            master_stats = update_teams_master_data(engine, master_data, args.dry_run, args.override_master)
         except Exception as e:
             print(f"ERROR updating master table: {e}")
             import traceback
