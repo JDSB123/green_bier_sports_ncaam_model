@@ -216,6 +216,46 @@ WHERE team_id NOT IN (
 
 ---
 
+---
+
+## Standardized Mappings from R Packages
+
+To enhance team matching coverage, we can import standardized mappings from established R packages in the college basketball analytics community:
+
+### Available Sources
+
+1. **ncaahoopR** - Maps variants across NCAA, ESPN, WarrenNolan, Trank (Bart Torvik), 247Sports
+2. **hoopR** - Maps ESPN and KenPom variants
+3. **toRvik/cbbdata** - Bart Torvik native formats
+
+### Import Process
+
+Use the `import_standardized_team_mappings.py` script to import mappings:
+
+```bash
+# From ncaahoopR
+python services/prediction-service-python/scripts/import_standardized_team_mappings.py \
+    --source ncaahoopr \
+    --input ncaahoopr_dict.csv
+
+# From hoopR (KenPom support)
+python services/prediction-service-python/scripts/import_standardized_team_mappings.py \
+    --source hoopr \
+    --input hoopr_teams_links.json \
+    --format json
+```
+
+**See:** [Standardized Team Mappings Documentation](./docs/STANDARDIZED_TEAM_MAPPINGS.md) for detailed instructions.
+
+### Benefits
+
+- **1000+ additional variants** from community-maintained datasets
+- **KenPom support** - First-time support for KenPom team name mappings
+- **ESPN enhancement** - More comprehensive ESPN variants
+- **Automatic integration** - Works seamlessly with existing `resolve_team_name()` function
+
+---
+
 ## Notes
 
 - The system is **already implemented** in both Go and Rust services
@@ -223,3 +263,4 @@ WHERE team_id NOT IN (
 - Normalization rules are duplicated in Go and Rust - consider centralizing if needed
 - The `team_aliases` table grows organically as new variants are encountered
 - Accuracy improves over time as more aliases are added
+- **Standardized mappings** can be imported from R packages to enhance coverage

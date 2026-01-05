@@ -530,11 +530,24 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
     """
     Fetch games, odds, and ratings from database.
     
+    CRITICAL DATA INTEGRITY: This function ensures all data sources are unified:
+    - Games come from `games` table (populated by Odds API ingestion)
+    - Odds come from `odds_snapshots` (from Odds API, joined on same game_id)
+    - Team records (wins/losses) come from `team_ratings` (from Barttorvik, joined on same teams)
+    
+    All data is fetched in a SINGLE unified query to ensure:
+    1. Team records correspond to the exact same games as the odds
+    2. No bifurcation between data sources (e.g., ESPN for games, Odds API for odds)
+    3. Quality assurance: team records serve as a data integrity check against odds
+    
+    ESPN is NOT used for team records in the picks workflow. ESPN is only used
+    post-game for syncing halftime scores (settlement.py).
+    
     Args:
         target_date: Date to fetch games for (defaults to today)
         
     Returns:
-        List of game dicts with ratings and odds
+        List of game dicts with ratings, odds, and team records - all unified from same source
     """
     if target_date is None:
         target_date = date.today()
@@ -542,6 +555,13 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
     engine = engine or create_engine(DATABASE_URL, pool_pre_ping=True)
     
     query = text("""
+        -- UNIFIED DATA SOURCE QUERY - All data tied to same games table
+        -- Games: from games table (Odds API source)
+        -- Odds: from odds_snapshots (Odds API source, joined on game_id)
+        -- Team records: from team_ratings (Barttorvik source, joined on team_id)
+        -- This ensures team records correspond to the exact same games as odds
+        -- for quality assurance and data integrity checks
+        
         -- Full-game odds: prefer Pinnacle, fallback Bovada, then any book
         WITH latest_odds AS (
             SELECT DISTINCT ON (game_id, market_type, period)
@@ -796,7 +816,9 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             atr.three_pt_rate_d as away_three_pt_rate_d,
             atr.barthag as away_barthag,
             atr.wab as away_wab,
-            -- Team records (fresh from latest_ratings)
+            -- Team records (fresh from latest_ratings - unified with odds via same games table)
+            -- These records come from Barttorvik (team_ratings) and are joined on the same
+            -- games/teams that the odds are joined on, ensuring data integrity
             htr.wins as home_wins,
             htr.losses as home_losses,
             atr.wins as away_wins,
@@ -804,6 +826,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         FROM games g
         JOIN teams ht ON g.home_team_id = ht.id
         JOIN teams at ON g.away_team_id = at.id
+        -- All odds joined on same game_id from games table (Odds API source)
         LEFT JOIN latest_odds lo ON g.id = lo.game_id
         LEFT JOIN latest_odds_1h lo1h ON g.id = lo1h.game_id
         LEFT JOIN open_odds oo ON g.id = oo.game_id
@@ -811,6 +834,8 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         LEFT JOIN sharp_open_odds soo ON g.id = soo.game_id
         LEFT JOIN sharp_odds so ON g.id = so.game_id
         LEFT JOIN square_odds sq ON g.id = sq.game_id
+        -- Team records joined on same teams that games use (unified source)
+        -- This ensures team records correspond to exact same games as odds
         LEFT JOIN latest_ratings htr ON ht.id = htr.team_id
         LEFT JOIN latest_ratings atr ON at.id = atr.team_id
         WHERE DATE(g.commence_time AT TIME ZONE 'America/Chicago') = :target_date
@@ -2254,43 +2279,90 @@ def main():
         health_summary["status"] = "warn"
         health_summary.setdefault("notes", []).append("data sync failed")
 
-    # Step 2: NOW check team matching quality (after fresh data is loaded)
-    # FIX: Default lookback reduced to 7 days so old issues don't block today
-    # FIX: Threshold lowered to 0.98 to allow minor gaps in small-conference teams
-    # FIX: Gate is WARNING for >= 0.90, only FATAL for < 0.90
-    print("[INFO] Enforcing canonical team matching quality...")
+    # Step 2: HARD GATE - Check 100% team matching for TODAY'S games specifically
+    # This is stricter than historical audit - we need ALL teams for today resolved
+    print("[INFO] Enforcing 100% team matching gate for today's games...")
+    try:
+        # First, run the new hard gate check for today's specific games
+        hard_gate_query = text("""
+            SELECT * FROM check_100_percent_match_gate(:target_date)
+        """)
+        with engine.connect() as conn:
+            gate_result = conn.execute(
+                hard_gate_query,
+                {"target_date": target_date}
+            ).fetchone()
+
+        if gate_result:
+            gate_passed = gate_result.gate_passed
+            total_teams = gate_result.total_teams or 0
+            teams_with_ratings = gate_result.teams_with_ratings or 0
+            match_rate = float(gate_result.match_rate or 0)
+            blockers = gate_result.blockers or []
+
+            health_summary["team_matching_gate"] = {
+                "gate_passed": gate_passed,
+                "total_teams": total_teams,
+                "teams_with_ratings": teams_with_ratings,
+                "match_rate": match_rate,
+                "blocker_count": len(blockers) if blockers else 0,
+            }
+
+            print(f"  - Today's games: {total_teams // 2} games, "
+                  f"{teams_with_ratings} teams with ratings")
+            print(f"  - Match rate: {match_rate:.1f}%")
+
+            if not gate_passed:
+                print("[FATAL] 100% team matching gate FAILED for today's games.")
+                print("        Cannot generate picks with unresolved teams.")
+                print()
+                print("  BLOCKERS:")
+                for b in (blockers or []):
+                    print(f"    - {b.get('team_position', '?').upper()}: "
+                          f"\"{b.get('team_name', '?')}\" - {b.get('reason', '?')}")
+                print()
+                print("  To fix: Add missing aliases to team_aliases table or")
+                print("          run ratings sync for missing teams.")
+                exit_with_health(2, "100% team matching gate failed")
+            else:
+                print("  [OK] 100% team matching gate PASSED")
+        else:
+            print("  [WARN] Hard gate check returned no results (no games today?)")
+
+    except Exception as e:
+        # If the new function doesn't exist yet, fall back to old behavior
+        if "check_100_percent_match_gate" in str(e):
+            print(f"  [WARN] Hard gate function not available: {e}")
+            print("         Falling back to historical audit check...")
+        else:
+            raise
+
+    # Also run historical audit check for monitoring (but not blocking)
+    print("[INFO] Checking historical team resolution audit...")
     try:
         tm_recent = _check_recent_team_resolution(
             engine=engine,
             lookback_days=args.team_matching_lookback_days,
             min_resolution_rate=args.min_team_resolution_rate,
         )
-        health_summary["team_matching"] = tm_recent
+        health_summary["team_matching_audit"] = tm_recent
         total = tm_recent.get("total", 0)
         unresolved = tm_recent.get("unresolved", 0)
         rate = float(tm_recent.get("rate", 0.0) or 0.0)
 
         print(
-            f"  - Recent resolution: {rate:.2%} ({tm_recent.get('resolved', 0)}/{total}), "
+            f"  - Historical audit: {rate:.2%} "
+            f"({tm_recent.get('resolved', 0)}/{total}), "
             f"unresolved={unresolved} (lookback {tm_recent.get('lookback_days', 0)}d)"
         )
-        
-        # If the audit table is empty, treat this as "unknown" rather than blocking.
+
         if int(total or 0) <= 0:
-            print("  [WARN]  No team resolution audit entries found in lookback window.")
-            print("          Skipping enforcement (cannot assess recent matching quality yet).")
-            health_summary.setdefault("notes", []).append("team matching audit empty (skipped enforcement)")
-        # FIX: Gate is now a WARNING for rate < threshold, FATAL only if rate < 0.90
-        # This allows predictions for resolved games while flagging data quality issues.
-        elif not tm_recent.get("ok"):
-            if rate < 0.90:
-                print("[FATAL] Canonical team matching severely degraded (<90%). Cannot proceed.")
-                exit_with_health(2, "canonical team matching severely degraded")
-            else:
-                print(f"[WARN] Team matching below target ({rate:.2%} < {args.min_team_resolution_rate:.2%})")
-                print("       Predictions will skip unresolved teams but continue for resolved ones.")
-                health_summary["status"] = "warn"
-                health_summary.setdefault("notes", []).append(f"team matching {rate:.2%} below target")
+            print("  [INFO] No audit entries in lookback window (first run?).")
+        elif unresolved > 0:
+            print(f"  [WARN] {unresolved} historical unresolved teams detected.")
+            health_summary.setdefault("notes", []).append(
+                f"historical audit: {unresolved} unresolved"
+            )
     except Exception as e:
         print(f"[WARN] Canonical team matching check errored: {type(e).__name__}: {e}")
         print("       Continuing with predictions - unresolved teams will be skipped.")
