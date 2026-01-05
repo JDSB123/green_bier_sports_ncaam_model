@@ -1110,6 +1110,33 @@ impl OddsIngestionService {
             }
         }
 
+        // STEP 1.5: Try fuzzy resolution as additional option (even if we have unrated matches)
+        // Fuzzy resolution can find rated teams that strict resolution missed
+        if let Some((id, canonical, has_ratings)) = self.resolve_team_fuzzy(team_name).await? {
+            if has_ratings {
+                // Found rated team via fuzzy match: attach raw name as alias (if different) and return.
+                if team_name.to_lowercase() != canonical.to_lowercase() {
+                    sqlx::query(
+                        r#"
+                        INSERT INTO team_aliases (team_id, alias, source)
+                        VALUES ($1, $2, 'the_odds_api')
+                        ON CONFLICT (alias, source) DO NOTHING
+                        "#
+                    )
+                    .bind(id)
+                    .bind(team_name)
+                    .execute(&self.db)
+                    .await?;
+                }
+                return Ok(id);
+            }
+
+            // If we don't have any unrated matches yet, keep this as fallback
+            if best_unrated.is_none() {
+                best_unrated = Some((id, canonical));
+            }
+        }
+
         if let Some((id, canonical)) = best_unrated {
             if team_name.to_lowercase() != canonical.to_lowercase() {
                 sqlx::query(
