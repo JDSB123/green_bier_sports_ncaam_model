@@ -2223,6 +2223,11 @@ def main():
         default=30,
         help="Lookback window for ROI/CLV report in days (default: 30)"
     )
+    parser.add_argument(
+        "--skip-gate",
+        action="store_true",
+        help="Skip 100%% team matching gate (use with --game for specific matchups)"
+    )
     
     args = parser.parse_args()
 
@@ -2283,61 +2288,66 @@ def main():
 
     # Step 2: HARD GATE - Check 100% team matching for TODAY'S games specifically
     # This is stricter than historical audit - we need ALL teams for today resolved
-    print("[INFO] Enforcing 100% team matching gate for today's games...")
-    try:
-        # First, run the new hard gate check for today's specific games
-        hard_gate_query = text("""
-            SELECT * FROM check_100_percent_match_gate(:target_date)
-        """)
-        with engine.connect() as conn:
-            gate_result = conn.execute(
-                hard_gate_query,
-                {"target_date": target_date}
-            ).fetchone()
+    if args.skip_gate:
+        print("[SKIP] 100% team matching gate SKIPPED (--skip-gate flag)")
+        if args.game:
+            print(f"       Proceeding with specific game: {args.game[0]} vs {args.game[1]}")
+    else:
+        print("[INFO] Enforcing 100% team matching gate for today's games...")
+        try:
+            # First, run the new hard gate check for today's specific games
+            hard_gate_query = text("""
+                SELECT * FROM check_100_percent_match_gate(:target_date)
+            """)
+            with engine.connect() as conn:
+                gate_result = conn.execute(
+                    hard_gate_query,
+                    {"target_date": target_date}
+                ).fetchone()
 
-        if gate_result:
-            gate_passed = gate_result.gate_passed
-            total_teams = gate_result.total_teams or 0
-            teams_with_ratings = gate_result.teams_with_ratings or 0
-            match_rate = float(gate_result.match_rate or 0)
-            blockers = gate_result.blockers or []
+            if gate_result:
+                gate_passed = gate_result.gate_passed
+                total_teams = gate_result.total_teams or 0
+                teams_with_ratings = gate_result.teams_with_ratings or 0
+                match_rate = float(gate_result.match_rate or 0)
+                blockers = gate_result.blockers or []
 
-            health_summary["team_matching_gate"] = {
-                "gate_passed": gate_passed,
-                "total_teams": total_teams,
-                "teams_with_ratings": teams_with_ratings,
-                "match_rate": match_rate,
-                "blocker_count": len(blockers) if blockers else 0,
-            }
+                health_summary["team_matching_gate"] = {
+                    "gate_passed": gate_passed,
+                    "total_teams": total_teams,
+                    "teams_with_ratings": teams_with_ratings,
+                    "match_rate": match_rate,
+                    "blocker_count": len(blockers) if blockers else 0,
+                }
 
-            print(f"  - Today's games: {total_teams // 2} games, "
-                  f"{teams_with_ratings} teams with ratings")
-            print(f"  - Match rate: {match_rate:.1f}%")
+                print(f"  - Today's games: {total_teams // 2} games, "
+                      f"{teams_with_ratings} teams with ratings")
+                print(f"  - Match rate: {match_rate:.1f}%")
 
-            if not gate_passed:
-                print("[FATAL] 100% team matching gate FAILED for today's games.")
-                print("        Cannot generate picks with unresolved teams.")
-                print()
-                print("  BLOCKERS:")
-                for b in (blockers or []):
-                    print(f"    - {b.get('team_position', '?').upper()}: "
-                          f"\"{b.get('team_name', '?')}\" - {b.get('reason', '?')}")
-                print()
-                print("  To fix: Add missing aliases to team_aliases table or")
-                print("          run ratings sync for missing teams.")
-                exit_with_health(2, "100% team matching gate failed")
+                if not gate_passed:
+                    print("[FATAL] 100% team matching gate FAILED for today's games.")
+                    print("        Cannot generate picks with unresolved teams.")
+                    print()
+                    print("  BLOCKERS:")
+                    for b in (blockers or []):
+                        print(f"    - {b.get('team_position', '?').upper()}: "
+                              f"\"{b.get('team_name', '?')}\" - {b.get('reason', '?')}")
+                    print()
+                    print("  To fix: Add missing aliases to team_aliases table or")
+                    print("          run ratings sync for missing teams.")
+                    exit_with_health(2, "100% team matching gate failed")
+                else:
+                    print("  [OK] 100% team matching gate PASSED")
             else:
-                print("  [OK] 100% team matching gate PASSED")
-        else:
-            print("  [WARN] Hard gate check returned no results (no games today?)")
+                print("  [WARN] Hard gate check returned no results (no games today?)")
 
-    except Exception as e:
-        # If the new function doesn't exist yet, fall back to old behavior
-        if "check_100_percent_match_gate" in str(e):
-            print(f"  [WARN] Hard gate function not available: {e}")
-            print("         Falling back to historical audit check...")
-        else:
-            raise
+        except Exception as e:
+            # If the new function doesn't exist yet, fall back to old behavior
+            if "check_100_percent_match_gate" in str(e):
+                print(f"  [WARN] Hard gate function not available: {e}")
+                print("         Falling back to historical audit check...")
+            else:
+                raise
 
     # Also run historical audit check for monitoring (but not blocking)
     print("[INFO] Checking historical team resolution audit...")

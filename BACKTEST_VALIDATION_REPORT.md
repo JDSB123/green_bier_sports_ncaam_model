@@ -1,7 +1,7 @@
 # NCAAM Model Validation Report
 
 **Date:** January 2026
-**Model Version:** v33.6.5 (validated; current release is v33.10.0)
+**Model Version:** v33.6.5 (validated; current release is v33.11.0)
 **Validation Type:** No-Leakage Rolling Window
 
 ---
