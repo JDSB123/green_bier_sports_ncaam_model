@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from typing import Optional, List
 from uuid import UUID
 import time
@@ -1338,6 +1338,59 @@ async def get_picks_json(
     except Exception as e:
         logger.error(f"Error fetching picks: {e}")
         return {"error": str(e), "picks": []}
+
+
+@app.get("/api/picks/weekly")
+@limiter.limit("60/minute")
+async def get_weekly_picks(request: Request, days: int = 7):
+    """
+    Fetch picks for the next N days (for website weekly lineup integration).
+    
+    This is the primary endpoint for greenbiersportsventures.com/weekly.
+    
+    Args:
+        days: Number of days to fetch (default 7, max 14)
+    
+    Returns:
+        JSON with picks grouped by date, suitable for rendering a weekly lineup table.
+    """
+    days = min(max(days, 1), 14)  # Clamp to 1-14 days
+    
+    engine = _get_db_engine()
+    if not engine:
+        return {"error": "Database not configured", "days": []}
+    
+    today = date.today()
+    result_days = []
+    
+    for offset in range(days):
+        target_date = today + timedelta(days=offset)
+        try:
+            picks = _fetch_persisted_picks(engine, target_date)
+            if picks:
+                result_days.append({
+                    "date": target_date.isoformat(),
+                    "day_name": target_date.strftime("%A"),
+                    "display_date": target_date.strftime("%B %d"),
+                    "picks": picks,
+                    "total": len(picks),
+                })
+        except Exception as e:
+            logger.warning(f"Error fetching picks for {target_date}: {e}")
+            continue
+    
+    return {
+        "generated_at": datetime.now(CST).isoformat(),
+        "model_version": _model_version_tag(),
+        "range": {
+            "start": today.isoformat(),
+            "end": (today + timedelta(days=days-1)).isoformat(),
+            "days_requested": days,
+        },
+        "days": result_days,
+        "total_picks": sum(d["total"] for d in result_days),
+        "total_days_with_picks": len(result_days),
+    }
 
 
 @app.post("/api/run/{date_param}")

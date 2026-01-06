@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weekly Lineup | Green Bier Sport Ventures</title>
+    <meta name="description" content="NCAAM Basketball Weekly Picks - Model-driven betting recommendations" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .fire-max { background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); }
+      .fire-strong { background: linear-gradient(135deg, #f97316 0%, #eab308 100%); }
+      .fire-good { background: linear-gradient(135deg, #22c55e 0%, #14b8a6 100%); }
+      .fire-standard { background: #475569; }
+      .loading-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen">
+      <!-- Header -->
+      <header class="border-b border-slate-800/60">
+        <div class="mx-auto max-w-6xl px-6 py-6">
+          <div class="flex items-center justify-between gap-6">
+            <div>
+              <a href="/" class="text-sm uppercase tracking-widest text-slate-400 hover:text-slate-200">Green Bier Sport Ventures</a>
+              <h1 class="mt-2 text-2xl font-semibold tracking-tight">Weekly NCAAM Lineup</h1>
+            </div>
+            <div class="hidden sm:flex items-center gap-4">
+              <div id="status" class="rounded-lg border border-slate-800/60 bg-slate-900/30 px-4 py-2 text-sm">
+                <span class="text-slate-400">Loading...</span>
+              </div>
+              <button onclick="refreshPicks()" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold transition-colors">
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="mx-auto max-w-6xl px-6 py-8">
+        <!-- Legend -->
+        <div class="mb-6 flex flex-wrap gap-3 text-sm">
+          <span class="text-slate-400">Fire Rating:</span>
+          <span class="px-2 py-1 rounded fire-max text-white font-medium">MAX (5+ pts)</span>
+          <span class="px-2 py-1 rounded fire-strong text-white font-medium">STRONG (4+ pts)</span>
+          <span class="px-2 py-1 rounded fire-good text-white font-medium">GOOD (3+ pts)</span>
+          <span class="px-2 py-1 rounded fire-standard text-white font-medium">STANDARD</span>
+        </div>
+
+        <!-- Picks Container -->
+        <div id="picks-container" class="space-y-8">
+          <div class="loading-pulse text-slate-400 text-center py-12">
+            Loading weekly picks...
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+          <p class="text-slate-400 text-lg">No picks available for this week.</p>
+          <p class="text-slate-500 mt-2">Check back closer to game time.</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-state" class="hidden text-center py-12">
+          <p class="text-red-400 text-lg">Failed to load picks</p>
+          <p class="text-slate-500 mt-2">Please try again later.</p>
+          <button onclick="refreshPicks()" class="mt-4 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-sm font-semibold transition-colors">
+            Retry
+          </button>
+        </div>
+      </main>
+
+      <!-- Footer -->
+      <footer class="border-t border-slate-800/60 mt-12">
+        <div class="mx-auto max-w-6xl px-6 py-6 flex justify-between items-center text-sm text-slate-400">
+          <span>© <span id="year"></span> Green Bier Sport Ventures</span>
+          <span id="model-version" class="font-mono"></span>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      // Configuration - Update this to your API endpoint
+      const API_BASE = window.location.hostname === 'localhost' 
+        ? 'http://localhost:8082' 
+        : 'https://ncaam-prediction.azurecontainerapps.io';
+      
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      async function loadPicks() {
+        const container = document.getElementById('picks-container');
+        const emptyState = document.getElementById('empty-state');
+        const errorState = document.getElementById('error-state');
+        const statusEl = document.getElementById('status');
+        
+        container.innerHTML = '<div class="loading-pulse text-slate-400 text-center py-12">Loading weekly picks...</div>';
+        emptyState.classList.add('hidden');
+        errorState.classList.add('hidden');
+        
+        try {
+          const res = await fetch(`${API_BASE}/api/picks/weekly?days=7`, {
+            headers: { 'Accept': 'application/json' }
+          });
+          
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          
+          const data = await res.json();
+          
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          
+          // Update status
+          statusEl.innerHTML = `
+            <span class="text-emerald-400">●</span>
+            <span class="ml-2">${data.total_picks} picks</span>
+          `;
+          
+          // Update model version
+          document.getElementById('model-version').textContent = data.model_version || '';
+          
+          if (!data.days || data.days.length === 0) {
+            container.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            return;
+          }
+          
+          container.innerHTML = data.days.map(day => renderDaySection(day)).join('');
+          
+        } catch (e) {
+          console.error('Failed to load picks:', e);
+          container.innerHTML = '';
+          errorState.classList.remove('hidden');
+          statusEl.innerHTML = '<span class="text-red-400">● Error</span>';
+        }
+      }
+      
+      function renderDaySection(day) {
+        return `
+          <section class="rounded-2xl border border-slate-800/60 bg-slate-900/20 overflow-hidden">
+            <div class="bg-slate-900/50 px-6 py-4 border-b border-slate-800/60">
+              <h2 class="text-lg font-semibold">${day.day_name}</h2>
+              <p class="text-sm text-slate-400">${day.display_date} • ${day.total} pick${day.total !== 1 ? 's' : ''}</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-slate-800/40 text-slate-400 text-left">
+                    <th class="px-4 py-3 font-medium">Time</th>
+                    <th class="px-4 py-3 font-medium">Matchup</th>
+                    <th class="px-4 py-3 font-medium">Pick</th>
+                    <th class="px-4 py-3 font-medium">Line</th>
+                    <th class="px-4 py-3 font-medium">Edge</th>
+                    <th class="px-4 py-3 font-medium">Rating</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/40">
+                  ${day.picks.map(pick => renderPickRow(pick)).join('')}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        `;
+      }
+      
+      function renderPickRow(pick) {
+        const fireClass = getFireClass(pick.fire_rating);
+        const periodBadge = pick.period === '1H' 
+          ? '<span class="ml-1 px-1.5 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">1H</span>' 
+          : '';
+        
+        return `
+          <tr class="hover:bg-slate-800/30 transition-colors">
+            <td class="px-4 py-3 text-slate-300">${pick.time_cst || '-'}</td>
+            <td class="px-4 py-3">
+              <span class="font-medium">${pick.matchup}</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="font-semibold text-emerald-400">${pick.pick}</span>
+              ${periodBadge}
+              <span class="ml-1 text-slate-500">${pick.pick_odds || ''}</span>
+            </td>
+            <td class="px-4 py-3 text-slate-300">
+              ${pick.market_line !== null ? pick.market_line : '-'}
+            </td>
+            <td class="px-4 py-3 font-mono ${pick.edge && pick.edge.startsWith('+') ? 'text-emerald-400' : 'text-slate-300'}">
+              ${pick.edge || '-'}
+            </td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-1 rounded text-xs font-medium ${fireClass}">${pick.fire_rating}</span>
+            </td>
+          </tr>
+        `;
+      }
+      
+      function getFireClass(rating) {
+        switch(rating) {
+          case 'MAX': return 'fire-max text-white';
+          case 'STRONG': return 'fire-strong text-white';
+          case 'GOOD': return 'fire-good text-white';
+          default: return 'fire-standard text-white';
+        }
+      }
+      
+      function refreshPicks() {
+        loadPicks();
+      }
+      
+      // Initial load
+      loadPicks();
+      
+      // Auto-refresh every hour
+      setInterval(loadPicks, 3600000);
+    </script>
+  </body>
+</html>
