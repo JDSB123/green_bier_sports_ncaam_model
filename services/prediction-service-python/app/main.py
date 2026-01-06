@@ -853,6 +853,52 @@ def _run_today_path() -> str:
     return str(Path(__file__).resolve().parents[1] / "run_today.py")
 
 
+def _check_and_release_stale_lock(conn, lock_key: int, max_lock_age_seconds: int = 1800) -> bool:
+    """
+    Check if lock is held by a dead process and release it if stale.
+    
+    Returns True if lock was released, False if lock is active or doesn't exist.
+    """
+    try:
+        # Check if lock is held and by which PID
+        result = conn.execute(text("""
+            SELECT pid, granted, mode
+            FROM pg_locks
+            WHERE locktype = 'advisory'
+              AND objid = :lock_key
+              AND classid = 0
+        """), {"lock_key": lock_key}).fetchone()
+        
+        if not result:
+            return False  # No lock exists
+        
+        pid = result[0]
+        granted = result[1]
+        
+        if not granted:
+            return False  # Lock not granted (waiting)
+        
+        # Check if the process is still alive
+        proc_check = conn.execute(text("SELECT pid FROM pg_stat_activity WHERE pid = :pid"), {"pid": pid}).fetchone()
+        
+        if not proc_check:
+            # Process is dead - force release the lock
+            try:
+                conn.execute(text("SELECT pg_advisory_unlock_all() FROM pg_stat_activity WHERE pid = :pid"), {"pid": pid})
+            except:
+                pass
+            # Try to acquire the lock ourselves
+            return bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
+        
+        # Process is alive - check if lock is stale (held too long)
+        # Note: We can't easily check lock age without tracking, so we'll be conservative
+        # and only release if process is definitely dead
+        return False
+        
+    except Exception:
+        return False
+
+
 def _trigger_run_today(
     engine,
     target_date: date,
@@ -867,6 +913,7 @@ def _trigger_run_today(
     Single source-of-truth trigger: run `run_today.py` once for a given date.
 
     - Uses a Postgres advisory lock so concurrent triggers don't duplicate runs.
+    - Automatically detects and releases stale locks from dead processes.
     - Always writes results to Postgres (predictions + betting_recommendations).
     - Returns a small status payload (no large stdout dumps).
     """
@@ -878,17 +925,27 @@ def _trigger_run_today(
     conn = engine.connect()
     try:
         got_lock = False
-        if lock_wait_seconds and lock_wait_seconds > 0:
-            deadline = time.time() + float(lock_wait_seconds)
-            while time.time() < deadline:
-                got_lock = bool(
-                    conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar()
-                )
-                if got_lock:
-                    break
-                time.sleep(0.25)
-        else:
-            got_lock = bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
+        
+        # First, try to get the lock
+        got_lock = bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
+        
+        # If lock is held, check if it's stale (from a dead process)
+        if not got_lock:
+            if _check_and_release_stale_lock(conn, lock_key):
+                got_lock = True
+            elif lock_wait_seconds and lock_wait_seconds > 0:
+                # Wait with retries, checking for stale locks periodically
+                deadline = time.time() + float(lock_wait_seconds)
+                while time.time() < deadline:
+                    if _check_and_release_stale_lock(conn, lock_key):
+                        got_lock = True
+                        break
+                    got_lock = bool(
+                        conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar()
+                    )
+                    if got_lock:
+                        break
+                    time.sleep(0.5)
 
         if not got_lock:
             return {
@@ -897,6 +954,7 @@ def _trigger_run_today(
                 "source": source,
                 "model_version": model_version,
                 "date": target_date.isoformat(),
+                "message": "Another run is in progress. If this persists, the previous run may have crashed - locks auto-release after connection closes.",
             }
 
         argv = [sys.executable, _run_today_path(), "--date", target_date.isoformat()]
@@ -1455,10 +1513,11 @@ async def teams_webhook_handler(request: Request):
             sync=True,
             settle=False,
             allow_data_degrade=False,
-            lock_wait_seconds=0.0,
+            lock_wait_seconds=5.0,  # Wait up to 5 seconds for lock to clear
         )
         if run_result.get("status") == "busy":
-            return {"type": "message", "text": f"⏳ A run is already in progress for {target_date}. Try again soon."}
+            msg = run_result.get("message", f"A run is already in progress for {target_date}")
+            return {"type": "message", "text": f"⏳ {msg}. Try again in a moment."}
 
         picks = _fetch_persisted_picks(engine, target_date)
         if not picks:
