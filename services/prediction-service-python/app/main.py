@@ -432,6 +432,65 @@ async def debug_game_odds():
         return {"error": str(e)}
 
 
+@app.post("/debug/release-lock/{date_param}")
+@limiter.limit("5/minute")
+async def release_lock(request: Request, date_param: str = "today"):
+    """
+    Emergency endpoint to release a stuck advisory lock for a specific date.
+    
+    Use only if you're certain no run is actually in progress.
+    """
+    try:
+        target_date = _get_target_date(date_param)
+    except ValueError:
+        return {"error": f"Invalid date format: {date_param}"}
+    
+    engine = _get_db_engine()
+    if not engine:
+        return {"error": "Database not configured"}
+    
+    model_version = _model_version_tag()
+    lock_key = _advisory_lock_key("run_today", target_date, model_version)
+    
+    try:
+        with engine.connect() as conn:
+            # Check if lock exists
+            lock_exists = conn.execute(text("""
+                SELECT COUNT(*) > 0
+                FROM pg_locks
+                WHERE locktype = 'advisory'
+                  AND objid = :lock_key
+                  AND classid = 0
+                  AND granted = true
+            """), {"lock_key": lock_key}).scalar()
+            
+            if not lock_exists:
+                return {
+                    "ok": True,
+                    "message": f"No lock found for {target_date}",
+                    "date": target_date.isoformat(),
+                }
+            
+            # Try to release (only works if we hold it, but worth trying)
+            released = conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": lock_key}).scalar()
+            
+            if released:
+                return {
+                    "ok": True,
+                    "message": f"Lock released for {target_date}",
+                    "date": target_date.isoformat(),
+                }
+            else:
+                return {
+                    "ok": False,
+                    "message": f"Lock exists but not held by this session. Another process may be running.",
+                    "date": target_date.isoformat(),
+                    "lock_key": lock_key,
+                }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/debug/team-matching")
 async def debug_team_matching():
     """Check if teams from odds ingestion match ratings teams."""
