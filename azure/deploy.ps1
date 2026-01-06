@@ -38,6 +38,7 @@ param(
     [Parameter(Mandatory=$false)]
     [string]$BasketballApiKey = '',
 
+    # DEPRECATED: Incoming webhook removed
     [Parameter(Mandatory=$false)]
     [string]$TeamsWebhookUrl = '',
 
@@ -311,27 +312,9 @@ if ([string]::IsNullOrWhiteSpace($BasketballApiKey)) {
     }
 }
 
-# Optional: Load Teams webhook from repo secret file if not explicitly provided
-if ([string]::IsNullOrWhiteSpace($TeamsWebhookUrl)) {
-    $teamsSecretPath = Join-Path $PSScriptRoot "..\secrets\teams_webhook_url.txt"
-    if (Test-Path $teamsSecretPath -PathType Leaf) {
-        $rawTeamsWebhookUrl = Get-Content $teamsSecretPath -Raw -ErrorAction SilentlyContinue
-        if (-not [string]::IsNullOrWhiteSpace($rawTeamsWebhookUrl)) {
-            $TeamsWebhookUrl = $rawTeamsWebhookUrl.Trim()
-        }
-    }
-}
-
-# Sanity check / ignore placeholder Teams webhook
-if ($TeamsWebhookUrl) {
-    $tw = $TeamsWebhookUrl.ToLowerInvariant()
-    if ($tw.Contains("change_me") -or $tw.StartsWith("your_") -or ($tw -notlike "*webhook.office.com*") -or ($TeamsWebhookUrl.Length -lt 60)) {
-        Write-Host "  [INFO] Teams webhook not configured (placeholder). Skipping Teams webhook env var." -ForegroundColor Gray
-        $TeamsWebhookUrl = ''
-    } else {
-        Write-Host "  [OK] Teams webhook configured (will enable run_today.py --teams)" -ForegroundColor Gray
-    }
-}
+# DEPRECATED: Incoming webhook (API → Teams) removed
+# Teams integration now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
+# No longer loading or configuring TEAMS_WEBHOOK_URL
 
 # Optional: Load Action Network credentials from repo secret files
 # Convert SecureString to plain text for Bicep deployment (Bicep handles secure params)

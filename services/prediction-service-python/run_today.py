@@ -10,8 +10,6 @@ Usage:
     python run_today.py --no-sync          # Skip data sync
     python run_today.py --game "Duke" "UNC"  # Specific game
     python run_today.py --date 2025-12-20    # Specific date
-    python run_today.py --teams            # Send picks to Teams
-    python run_today.py --teams-only       # Only send to Teams (no console)
 """
 
 import sys
@@ -328,17 +326,8 @@ if not REDIS_URL:
 # Output directory for picks/reports
 PICKS_OUTPUT_DIR = os.getenv("PICKS_OUTPUT_DIR", "/app/output")
 
-# Teams Webhook URL for picks notifications (OPTIONAL)
-# - Azure: set env var TEAMS_WEBHOOK_URL
-# - Docker: mount secret file at /run/secrets/teams_webhook_url or set TEAMS_WEBHOOK_URL
-_teams_webhook_file = os.getenv("TEAMS_WEBHOOK_URL_FILE", "/run/secrets/teams_webhook_url")
-TEAMS_WEBHOOK_URL = (
-    os.getenv("TEAMS_WEBHOOK_URL")
-    or _read_optional_secret_file(_teams_webhook_file, "teams_webhook_url")
-    or ""
-)
-
 # Teams Webhook Secret for validating outgoing webhook messages (OPTIONAL)
+# NOTE: Incoming webhooks (API → Teams) are deprecated. Only outgoing webhook (Teams → API) is supported.
 # - Azure: set env var TEAMS_WEBHOOK_SECRET
 # - Docker: mount secret file at /run/secrets/teams_webhook_secret or set TEAMS_WEBHOOK_SECRET
 _teams_webhook_secret_file = os.getenv("TEAMS_WEBHOOK_SECRET_FILE", "/run/secrets/teams_webhook_secret")
@@ -349,18 +338,8 @@ TEAMS_WEBHOOK_SECRET = (
 )
 
 
-def _is_placeholder_teams_webhook(url: str) -> bool:
-    u = (url or "").strip().lower()
-    if not u:
-        return True
-    if "change_me" in u or u.startswith("sample") or u.startswith("your_") or u.startswith("<your"):
-        return True
-    # Basic sanity: Teams webhooks are long and contain webhook.office.com
-    if "webhook.office.com" not in u:
-        return True
-    if len(u) < 60:
-        return True
-    return False
+# DEPRECATED: Incoming webhook functionality removed
+# Teams now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
 
 
 # ==============================================================================
@@ -1669,10 +1648,10 @@ def format_team_display(team: str, record: Optional[str] = None, rank: Optional[
 
 
 # ==============================================================================
-# TEAMS WEBHOOK NOTIFICATION
-# ==============================================================================
-
-def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_WEBHOOK_URL) -> bool:
+# DEPRECATED: Incoming webhook (API → Teams) functionality removed
+# Teams integration now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
+# This function is kept for reference but is no longer called
+def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> bool:
     """
     Send picks to Microsoft Teams via webhook.
     
@@ -1688,9 +1667,9 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         print("  [WARN]  No picks to send to Teams")
         return False
 
-    send_enabled = not _is_placeholder_teams_webhook(webhook_url)
-    if not send_enabled:
-        print("  [WARN]  No Teams webhook URL configured (will still write HTML/CSV artifacts)")
+    # DEPRECATED: Incoming webhook disabled
+    send_enabled = False
+    print("  [INFO]  Incoming webhook (API → Teams) deprecated. Use outgoing webhook (Teams → API) via /teams-webhook endpoint.")
     
     # Sort picks by game time ascending (earliest games first)
     sorted_picks = sorted(all_picks, key=lambda p: p['time_cst'])
@@ -1955,30 +1934,13 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = TEAMS_W
         ]
     }
     
+    # DEPRECATED: Webhook sending disabled (incoming webhook retired)
+    # CSV and HTML files are still generated for manual access
     if not send_enabled:
         return False
-
-    try:
-        response = requests.post(
-            webhook_url,
-            json=card_payload,
-            headers={"Content-Type": "application/json"},
-            timeout=30
-        )
-        
-        if response.status_code == 200 or response.status_code == 202:
-            print(f"  [OK] Picks sent to Teams successfully ({len(sorted_picks)} picks)")
-            return True
-        else:
-            print(f"  [WARN]  Teams webhook returned status {response.status_code}: {response.text[:200]}")
-            return False
-            
-    except requests.exceptions.Timeout:
-        print("  [WARN]  Teams webhook timed out")
-        return False
-    except requests.exceptions.RequestException as e:
-        print(f"  [WARN]  Teams webhook error: {e}")
-        return False
+    
+    # Webhook sending code removed - use outgoing webhook (Teams → API) instead
+    return False
 
 
 # ==============================================================================
@@ -2085,11 +2047,11 @@ def _format_health_summary(summary: Dict[str, object]) -> str:
 
 def send_health_summary_to_teams(
     summary: Dict[str, object],
-    webhook_url: str = TEAMS_WEBHOOK_URL,
+    webhook_url: str = "",
 ) -> bool:
-    if _is_placeholder_teams_webhook(webhook_url):
-        print("  - No Teams webhook URL configured (health summary)")
-        return False
+    # DEPRECATED: Incoming webhook removed
+    print("  - Health summary (incoming webhook deprecated, use outgoing webhook)")
+    return False
 
     payload = {"text": _format_health_summary(summary)}
     try:
@@ -2191,16 +2153,8 @@ def main():
         default=int(os.getenv("MAX_ODDS_AGE_MINUTES_1H", "60")),
         help="Max allowed age for 1H odds snapshots in minutes (default: 60)"
     )
-    parser.add_argument(
-        "--teams",
-        action="store_true",
-        help="Send picks to Microsoft Teams webhook"
-    )
-    parser.add_argument(
-        "--teams-only",
-        action="store_true",
-        help="Only send to Teams (skip console output)"
-    )
+    # DEPRECATED: --teams and --teams-only flags removed (incoming webhooks retired)
+    # Use outgoing webhook endpoint /teams-webhook instead (Teams → API)
     parser.add_argument(
         "--no-settle",
         action="store_true",
@@ -2829,15 +2783,11 @@ def main():
         for away, home, reason, has_home_r, has_away_r, spread, total in skipped_reasons[:30]:
             print(f"  - SKIP ({reason}): {away} @ {home} | ratings(home={has_home_r}, away={has_away_r}) | spread={spread} total={total}")
     
-    # Print executive summary table (unless --teams-only)
-    if not args.teams_only:
-        print_executive_table(all_picks, target_date)
+    # Print executive summary table
+    print_executive_table(all_picks, target_date)
     
-    # Send to Teams if requested
-    if args.teams or args.teams_only:
-        print()
-        print(" Sending picks to Microsoft Teams...")
-        send_picks_to_teams(all_picks, target_date)
+    # DEPRECATED: Incoming webhook (API → Teams) removed
+    # Teams integration now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
 
 
     max_picks = sum(

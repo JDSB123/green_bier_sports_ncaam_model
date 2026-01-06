@@ -20,8 +20,7 @@ secrets:
     file: ./secrets/redis_password.txt
   odds_api_key:
     file: ./secrets/odds_api_key.txt
-  teams_webhook_url:
-    file: ./secrets/teams_webhook_url.txt
+  # DEPRECATED: teams_webhook_url removed (incoming webhook retired)
   teams_webhook_secret:
     file: ./secrets/teams_webhook_secret.txt
 
@@ -145,7 +144,6 @@ services:
       - db_password
       - odds_api_key
       - redis_password
-      - teams_webhook_url
       - teams_webhook_secret
     environment:
       # Sport-parameterized configuration (enables multi-sport deployment)
@@ -158,7 +156,7 @@ services:
       THE_ODDS_API_KEY_FILE: /run/secrets/odds_api_key
       DB_PASSWORD_FILE: /run/secrets/db_password
       REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      TEAMS_WEBHOOK_URL_FILE: /run/secrets/teams_webhook_url
+      # DEPRECATED: TEAMS_WEBHOOK_URL removed (incoming webhook retired)
       TEAMS_WEBHOOK_SECRET_FILE: /run/secrets/teams_webhook_secret
       # Model configuration (matches config.py defaults - single source of truth)
       # NOTE: POLL_INTERVAL_SECONDS is not used (manual-only mode, no polling)

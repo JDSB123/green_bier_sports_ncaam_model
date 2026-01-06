@@ -516,9 +516,9 @@ def run_picks_task():
     """Run the picks generation script in background."""
     try:
         print("[trigger-picks] Starting background picks generation task...", flush=True)
-        # Run run_today.py with --teams flag
+        # Run run_today.py (incoming webhook --teams flag removed)
         result = subprocess.run(
-            ["python", "run_today.py", "--teams"],
+            ["python", "run_today.py"],
             capture_output=True,
             text=True,
             cwd="/app"  # Ensure we run from app root in container
@@ -536,9 +536,9 @@ def run_picks_task():
 @app.get("/trigger-picks")
 @limiter.limit("5/minute")
 async def trigger_picks(request: Request, background_tasks: BackgroundTasks):
-    """Trigger the daily picks generation process and send to Teams."""
+    """Trigger the daily picks generation process."""
     background_tasks.add_task(run_picks_task)
-    return {"message": "Picks generation started in background. Check Teams channel shortly."}
+    return {"message": "Picks generation started in background. Use /teams-webhook endpoint for Teams integration."}
 
 
 @app.get("/trigger-picks-sync")
@@ -547,7 +547,7 @@ async def trigger_picks_sync(request: Request):
     """Synchronous picks trigger for debugging. Returns result directly."""
     try:
         result = subprocess.run(
-            ["python", "run_today.py", "--teams"],
+            ["python", "run_today.py"],
             capture_output=True,
             text=True,
             cwd="/app",

@@ -39,7 +39,9 @@ param postgresPassword string
 @secure()
 param oddsApiKey string
 
-@description('Microsoft Teams incoming webhook URL (optional)')
+// DEPRECATED: Incoming webhook (API → Teams) removed
+// Teams integration now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
+@description('DEPRECATED: Microsoft Teams incoming webhook URL (no longer used)')
 @secure()
 param teamsWebhookUrl string = ''
 
