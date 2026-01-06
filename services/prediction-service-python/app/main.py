@@ -855,48 +855,57 @@ def _run_today_path() -> str:
 
 def _check_and_release_stale_lock(conn, lock_key: int, max_lock_age_seconds: int = 1800) -> bool:
     """
-    Check if lock is held by a dead process and release it if stale.
+    Check if lock is held by a dead/stale connection and release it.
     
-    Returns True if lock was released, False if lock is active or doesn't exist.
+    Postgres advisory locks are automatically released when the connection closes,
+    but if a connection is stuck open, we can detect and handle it.
+    
+    Returns True if lock was released/available, False if lock is actively held.
     """
     try:
-        # Check if lock is held and by which PID
-        result = conn.execute(text("""
-            SELECT pid, granted, mode
+        # Check if lock is currently held
+        lock_held = conn.execute(text("""
+            SELECT COUNT(*) > 0
             FROM pg_locks
             WHERE locktype = 'advisory'
               AND objid = :lock_key
               AND classid = 0
-        """), {"lock_key": lock_key}).fetchone()
+              AND granted = true
+        """), {"lock_key": lock_key}).scalar()
         
-        if not result:
-            return False  # No lock exists
-        
-        pid = result[0]
-        granted = result[1]
-        
-        if not granted:
-            return False  # Lock not granted (waiting)
-        
-        # Check if the process is still alive
-        proc_check = conn.execute(text("SELECT pid FROM pg_stat_activity WHERE pid = :pid"), {"pid": pid}).fetchone()
-        
-        if not proc_check:
-            # Process is dead - force release the lock
-            try:
-                conn.execute(text("SELECT pg_advisory_unlock_all() FROM pg_stat_activity WHERE pid = :pid"), {"pid": pid})
-            except:
-                pass
-            # Try to acquire the lock ourselves
+        if not lock_held:
+            # No lock exists - we can acquire it
             return bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
         
-        # Process is alive - check if lock is stale (held too long)
-        # Note: We can't easily check lock age without tracking, so we'll be conservative
-        # and only release if process is definitely dead
+        # Lock is held - check if the holding connection is still active
+        # Advisory locks are tied to the database session, not the process
+        # If the session is idle for too long, it might be stale
+        active_session = conn.execute(text("""
+            SELECT COUNT(*) > 0
+            FROM pg_locks l
+            JOIN pg_stat_activity a ON l.pid = a.pid
+            WHERE l.locktype = 'advisory'
+              AND l.objid = :lock_key
+              AND l.classid = 0
+              AND l.granted = true
+              AND a.state = 'active'
+              AND a.query NOT LIKE '%pg_advisory%'
+        """), {"lock_key": lock_key}).scalar()
+        
+        if not active_session:
+            # Lock is held but session is not active - might be stale
+            # Try to acquire anyway (will fail if truly held, succeed if connection died)
+            return bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
+        
+        # Lock is actively held by an active session
         return False
         
     except Exception:
-        return False
+        # On any error, just try to acquire the lock
+        try:
+            return bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
+        except:
+            return False
 
 
 def _trigger_run_today(
