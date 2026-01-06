@@ -63,8 +63,10 @@ class FGSpreadModel(BasePredictor):
     # Actual avg home margin: +7.50, Non-neutral bias: -1.08 -> Optimal: 5.8
     HCA: float = 5.8
 
-    # No bias calibration needed for spreads
-    CALIBRATION: float = 0.0
+    # CALIBRATION - from 2,233 game anti-leakage backtest (2022-2025)
+    # Observed bias: -2.1 (model over-predicts home team strength)
+    # Fix: Add +2.1 to spread to center predictions
+    CALIBRATION: float = 2.1
 
     # Betting thresholds - from 3,318-game backtest with real odds
     # 2pt edge = +18.5% ROI with 174 bets (optimal volume/ROI balance)
@@ -130,9 +132,9 @@ class FGSpreadModel(BasePredictor):
         sit_adj = self.calculate_situational_adjustment(home_rest_days, away_rest_days)
 
         # 8. Calculate spread
-        # Spread = -(margin + HCA + matchup + situational)
+        # Spread = -(margin + HCA + matchup + situational) + calibration
         # Negative spread = home favored
-        spread = -(raw_margin + hca + matchup_adj + sit_adj)
+        spread = -(raw_margin + hca + matchup_adj + sit_adj) + self.CALIBRATION
 
         # 9. Calculate variance
         variance = self.calculate_variance(home, away)

@@ -10,16 +10,30 @@ Production code is NOT modified until backtests validate changes.
 
 | Attribute | Value |
 |-----------|-------|
-| Version | 33.12.0 |
+| Version | 33.12.0 → 33.13.0 (pending) |
+| FG Spread Calibration | **+2.1** (was 0.0) |
+| H1 Spread Calibration | **+1.3** (was 0.0) |
 | FG Total Calibration | -9.5 |
 | H1 Total Calibration | -11.8 |
-| FG Spread Calibration | +0.3 |
-| H1 Spread Calibration | +0.3 |
 | Last Deployed | 2026-01-05 |
 
 ---
 
 ## Backtest Run Log
+
+### Run #2 - Spread Calibration (2026-01-06)
+**Purpose:** Fix spread model bias identified in Run #1
+
+| Model | Games | MAE Before | MAE After | Bias Before | Bias After |
+|-------|-------|------------|-----------|-------------|------------|
+| FG Spread | 2,233 | 10.03 | **9.89** | -2.10 | **-0.00** ✅ |
+| H1 Spread | 2,233 | 7.80 | **7.70** | -1.33 | **-0.03** ✅ |
+| FG Total | 2,233 | 14.58 | 14.58 | -0.75 | -0.75 ✅ |
+| H1 Total | 2,233 | 8.50 | 8.50 | -0.29 | -0.29 ✅ |
+
+**Changes Applied:**
+- FGSpread: Added CALIBRATION = +2.1, now applied in calculation
+- H1Spread: Added CALIBRATION = +1.3, now applied in calculation
 
 ### Run #1 - Initial Calibration Validation (2026-01-05)
 **Purpose:** Establish bias corrections for production model
@@ -59,7 +73,8 @@ Production code is NOT modified until backtests validate changes.
 
 | Date | Decision | Rationale | Version Change |
 |------|----------|-----------|----------------|
-| 2026-01-05 | Applied -9.5/-11.8 calibrations | Historical backtest showed persistent bias | 33.11.0 → 33.12.0 |
+| 2026-01-06 | Applied +2.1/+1.3 spread calibrations | 2,233-game backtest showed -2.1/-1.3 bias | 33.12.0 → 33.13.0 |
+| 2026-01-05 | Applied -9.5/-11.8 total calibrations | 3,222-game backtest showed persistent bias | 33.11.0 → 33.12.0 |
 | | | | |
 
 ---

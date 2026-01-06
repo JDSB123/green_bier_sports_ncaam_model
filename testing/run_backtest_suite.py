@@ -34,7 +34,7 @@ from production_parity.roi_simulator import ROISimulator
 
 def run_calibration_validation(seasons: list, verbose: bool = True) -> dict:
     """
-    Run calibration validation across multiple seasons.
+    Run calibration validation across specified seasons.
     
     Uses anti-leakage methodology:
     - Season N games use Season N-1 ratings
@@ -43,39 +43,45 @@ def run_calibration_validation(seasons: list, verbose: bool = True) -> dict:
     print("\n" + "=" * 60)
     print("CALIBRATION VALIDATION")
     print("=" * 60)
+    print(f"Seasons: {seasons}")
     
-    results = {}
+    # Run backtest with season filter
+    backtest = ProductionParityBacktest(seasons=seasons)
+    stats = backtest.run(verbose=verbose)
     
-    for season in seasons:
-        print(f"\n--- Season {season} ---")
-        
-        backtest = ProductionParityBacktest()
-        season_results = backtest.run_season(season)
-        
-        results[season] = season_results
-        
-        if verbose:
-            for model, data in season_results.items():
-                print(f"  {model}: MAE={data['mae']:.2f}, Bias={data['bias']:+.2f}")
+    # Extract results per model
+    results = {
+        "FGSpread": {
+            "games": stats.fg_spread_count,
+            "mae": stats.fg_spread_mae,
+            "direction_accuracy": stats.fg_spread_direction_accuracy,
+        },
+        "FGTotal": {
+            "games": stats.fg_total_count,
+            "mae": stats.fg_total_mae,
+            "direction_accuracy": stats.fg_total_direction_accuracy,
+        },
+        "H1Spread": {
+            "games": stats.h1_spread_count,
+            "mae": stats.h1_spread_mae,
+            "direction_accuracy": stats.h1_spread_direction_accuracy,
+        },
+        "H1Total": {
+            "games": stats.h1_total_count,
+            "mae": stats.h1_total_mae,
+            "direction_accuracy": stats.h1_total_direction_accuracy,
+        },
+    }
     
-    # Aggregate
-    print("\n--- AGGREGATE RESULTS ---")
-    for model in ["FGSpread", "FGTotal", "H1Spread", "H1Total"]:
-        total_games = sum(
-            results[s].get(model, {}).get("games", 0) 
-            for s in seasons
-        )
-        avg_mae = sum(
-            results[s].get(model, {}).get("mae", 0) * results[s].get(model, {}).get("games", 0)
-            for s in seasons
-        ) / max(total_games, 1)
-        avg_bias = sum(
-            results[s].get(model, {}).get("bias", 0) * results[s].get(model, {}).get("games", 0)
-            for s in seasons
-        ) / max(total_games, 1)
-        
-        status = "✅" if abs(avg_bias) < 1.0 else "⚠️"
-        print(f"  {model}: {total_games} games, MAE={avg_mae:.2f}, Bias={avg_bias:+.2f} {status}")
+    # Print summary
+    print("\n" + "-" * 60)
+    print("SUMMARY BY MODEL")
+    print("-" * 60)
+    for model, data in results.items():
+        print(f"  {model}: {data['games']} games, MAE={data['mae']:.2f}, Dir={data['direction_accuracy']*100:.1f}%")
+    
+    print(f"\nTotal games predicted: {stats.games_predicted}")
+    print(f"Games skipped: {stats.games_skipped}")
     
     return results
 

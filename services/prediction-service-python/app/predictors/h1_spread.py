@@ -72,6 +72,11 @@ class H1SpreadModel(BasePredictor):
     # 1H-specific variance (higher than FG)
     BASE_VARIANCE: float = 12.65  # ~15% higher than FG spread variance
 
+    # CALIBRATION - from 2,233 game anti-leakage backtest (2022-2025)
+    # Observed bias: -1.3 (model over-predicts home team strength)
+    # Fix: Add +1.3 to spread to center predictions
+    CALIBRATION: float = 1.3
+
     # Betting thresholds - 1H specific
     MIN_EDGE: float = 3.5
 
@@ -128,8 +133,8 @@ class H1SpreadModel(BasePredictor):
         fg_sit = self.calculate_situational_adjustment(home_rest_days, away_rest_days)
         sit_1h = fg_sit * margin_scale
 
-        # 9. Calculate 1H spread
-        spread_1h = -(raw_margin_1h + hca_1h + matchup_1h + sit_1h)
+        # 9. Calculate 1H spread with calibration
+        spread_1h = -(raw_margin_1h + hca_1h + matchup_1h + sit_1h) + self.CALIBRATION
 
         # 10. Calculate 1H variance (higher than FG)
         variance_1h = self._calculate_1h_variance(home, away)
@@ -151,7 +156,7 @@ class H1SpreadModel(BasePredictor):
             home_component=round(home_base_1h, 2),
             away_component=round(away_base_1h, 2),
             hca_applied=hca_1h,
-            calibration_applied=0.0,
+            calibration_applied=self.CALIBRATION,
             matchup_adj=round(matchup_1h, 2),
             situational_adj=round(sit_1h, 2),
             variance=round(variance_1h, 2),
