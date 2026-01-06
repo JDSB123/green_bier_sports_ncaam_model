@@ -18,8 +18,8 @@ env:
   ACR_LOGIN_SERVER: ncaamstablegbsvacr.azurecr.io
   PRED_IMAGE: ncaam-prediction
   WEB_IMAGE: gbsv-web
-  RATINGS_IMAGE: ncaam-ratings-sync
-  ODDS_IMAGE: ncaam-odds-ingestion
+  # REMOVED (v33.12.0): Standalone ratings-sync and odds-ingestion images
+  # These binaries are now embedded in the prediction-service via multi-stage Docker build
   RESOURCE_GROUP: NCAAM-GBSV-MODEL-RG
 
 jobs:
@@ -127,31 +127,10 @@ jobs:
           docker push $ACR_LOGIN_SERVER/$WEB_IMAGE:${{ steps.version.outputs.tag }}
           docker push $ACR_LOGIN_SERVER/$WEB_IMAGE:latest
 
-          # Ratings sync
-          echo "🔨 Building ratings sync..."
-          docker build --no-cache \
-            --progress=plain \
-            -f services/ratings-sync-go/Dockerfile \
-            -t $ACR_LOGIN_SERVER/$RATINGS_IMAGE:${{ steps.version.outputs.tag }} \
-            -t $ACR_LOGIN_SERVER/$RATINGS_IMAGE:latest \
-            services/ratings-sync-go
-
-          docker push $ACR_LOGIN_SERVER/$RATINGS_IMAGE:${{ steps.version.outputs.tag }}
-          docker push $ACR_LOGIN_SERVER/$RATINGS_IMAGE:latest
-
-          # Odds ingestion
-          echo "🔨 Building odds ingestion..."
-          docker build --no-cache \
-            --progress=plain \
-            -f services/odds-ingestion-rust/Dockerfile \
-            -t $ACR_LOGIN_SERVER/$ODDS_IMAGE:${{ steps.version.outputs.tag }} \
-            -t $ACR_LOGIN_SERVER/$ODDS_IMAGE:latest \
-            services/odds-ingestion-rust
-
-          docker push $ACR_LOGIN_SERVER/$ODDS_IMAGE:${{ steps.version.outputs.tag }}
-          docker push $ACR_LOGIN_SERVER/$ODDS_IMAGE:latest
+          # NOTE (v33.12.0): Standalone ratings-sync and odds-ingestion builds REMOVED
+          # These binaries are embedded in the prediction-service via multi-stage Docker build
           
-          echo "✅ All images built and pushed successfully"
+          echo "✅ All images built and pushed successfully (2 images: prediction + web)"
 
       - name: Deploy to Azure Container Apps (best-effort)
         run: |
@@ -173,22 +152,10 @@ jobs:
             --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.tag }} \
             --output none && echo "✅ Web frontend updated" || echo "⚠️ Web Container App not found or update failed. Skipping."
 
-          # Manual jobs
-          echo "Updating ratings sync job..."
-          az containerapp job update \
-            --name ncaam-stable-ratings-sync \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.tag }} \
-            --output none && echo "✅ Ratings sync updated" || echo "⚠️ Ratings job not found or update failed. Skipping."
-
-          echo "Updating odds ingestion job..."
-          az containerapp job update \
-            --name ncaam-stable-odds-ingestion \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.tag }} \
-            --output none && echo "✅ Odds ingestion updated" || echo "⚠️ Odds ingestion job not found or update failed. Skipping."
+          # NOTE (v33.12.0): Standalone Container App Jobs REMOVED
+          # ratings-sync and odds-ingestion binaries are embedded in prediction-service
           
-          echo "✅ Deployment phase complete"
+          echo "✅ Deployment phase complete (2 apps: prediction + web)"
 
       - name: Update docker-compose.yml with new prediction-service version
         run: |
@@ -217,10 +184,8 @@ jobs:
           echo "- **Tag:** ${{ steps.version.outputs.tag }} (raw: ${{ steps.version.outputs.raw }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Images Built & Pushed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Prediction:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Prediction:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.PRED_IMAGE }}:${{ steps.version.outputs.tag }}\` (includes embedded Go/Rust binaries)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Web:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.WEB_IMAGE }}:${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Ratings Job:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.RATINGS_IMAGE }}:${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Odds Job:** \`${{ env.ACR_LOGIN_SERVER }}/${{ env.ODDS_IMAGE }}:${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Smoke Tests" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Python imports validated" >> $GITHUB_STEP_SUMMARY

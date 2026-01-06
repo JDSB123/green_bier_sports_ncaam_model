@@ -42,11 +42,13 @@ cd azure
 ## Container image tags
 
 ```text
-ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v<VERSION>
+ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v<VERSION>  # Includes embedded Go/Rust binaries
 ncaamstablegbsvacr.azurecr.io/gbsv-web:v<VERSION>
-ncaamstablegbsvacr.azurecr.io/ncaam-ratings-sync:v<VERSION>
-ncaamstablegbsvacr.azurecr.io/ncaam-odds-ingestion:v<VERSION>
 ```
+
+> **Note (v33.12.0):** Standalone `ncaam-ratings-sync` and `ncaam-odds-ingestion` images
+> were removed. The Go (ratings-sync) and Rust (odds-ingestion) binaries are now embedded
+> in the `ncaam-prediction` image via multi-stage Docker build.
 
 ## `/health` version
 
