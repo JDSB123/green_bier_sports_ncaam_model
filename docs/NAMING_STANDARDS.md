@@ -13,15 +13,20 @@
 
 ### Format Pattern
 ```
-{baseName}-stable-{resourceType}
+{baseName}-stable{resourceSuffix}-{resourceType}
 ```
+
+**Default suffix:** `-gbsv` (set by `resourceNameSuffix` in `azure/deploy.ps1`)
+**Suffix applies to:** ACR, PostgreSQL, Redis, and Key Vault (app/env/logs remain `ncaam-stable-*`)
 
 **Examples:**
 - Resource Group: `NCAAM-GBSV-MODEL-RG`
 - Container Registry: `ncaamstablegbsvacr` (no hyphens - Azure requirement)
-- PostgreSQL: `ncaam-stable-postgres`
-- Redis: `ncaam-stable-redis`
+- PostgreSQL: `ncaam-stable-gbsv-postgres`
+- Redis: `ncaam-stable-gbsv-redis`
+- Key Vault: `ncaam-stablegbsvkv`
 - Container App: `ncaam-stable-prediction`
+- Web App: `ncaam-stable-web`
 - Container Environment: `ncaam-stable-env`
 
 ---
@@ -80,18 +85,24 @@
 - **Login Server:** `ncaamstablegbsvacr.azurecr.io`
 
 ### PostgreSQL
-- **Server:** `ncaam-stable-postgres`
+- **Server:** `ncaam-stable-gbsv-postgres`
 - **Database Name:** `ncaam`
 - **Admin User:** `ncaam`
 
 ### Redis Cache
-- **Name:** `ncaam-stable-redis`
+- **Name:** `ncaam-stable-gbsv-redis`
+
+### Key Vault
+- **Name:** `ncaam-stablegbsvkv`
 
 ### Container Apps Environment
 - **Name:** `ncaam-stable-env`
 
 ### Container App
 - **Name:** `ncaam-stable-prediction`
+
+### Web App
+- **Name:** `ncaam-stable-web`
 
 ### Log Analytics
 - **Name:** `ncaam-stable-logs`
@@ -128,7 +139,7 @@ This repository does not include a GitHub Actions workflow; deployments are perf
 ## ✅ Validation Checklist
 
 ### Before Deployment
-- [ ] All resource names follow `ncaam-stable-{resourceType}` pattern
+- [ ] App resources follow `ncaam-stable-{resourceType}`; data resources use `ncaam-stable-gbsv-{resourceType}`
 - [ ] ACR name is `ncaamstablegbsvacr` (no hyphens)
 - [ ] Database name is `ncaam` (lowercase)
 - [ ] Database user is `ncaam` (lowercase)
@@ -162,10 +173,12 @@ NCAAM-GBSV-MODEL-RG
 
 # Resources
 ncaamstablegbsvacr (ACR)
-ncaam-stable-postgres (PostgreSQL)
-ncaam-stable-redis (Redis)
+ncaam-stable-gbsv-postgres (PostgreSQL)
+ncaam-stable-gbsv-redis (Redis)
+ncaam-stablegbsvkv (Key Vault)
 ncaam-stable-env (Container Apps Environment)
 ncaam-stable-prediction (Container App)
+ncaam-stable-web (Web App)
 ncaam-stable-logs (Log Analytics)
 
 # Container Image

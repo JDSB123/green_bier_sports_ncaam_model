@@ -34,10 +34,12 @@ All resources in `NCAAM-GBSV-MODEL-RG`:
 ```
 NCAAM-GBSV-MODEL-RG/
 ├── ncaamstablegbsvacr           # Container Registry
-├── ncaam-stable-postgres    # PostgreSQL Flexible Server
-├── ncaam-stable-redis       # Azure Cache for Redis
+├── ncaam-stable-gbsv-postgres    # PostgreSQL Flexible Server
+├── ncaam-stable-gbsv-redis       # Azure Cache for Redis
 ├── ncaam-stable-env         # Container Apps Environment
 ├── ncaam-stable-prediction  # Container App
+├── ncaam-stable-web         # Container App (web)
+├── ncaam-stablegbsvkv        # Key Vault
 └── ncaam-stable-logs        # Log Analytics Workspace
 ```
 
@@ -71,10 +73,12 @@ Going forward, use this standard:
 |---------------|------|
 | Resource Group | `NCAAM-GBSV-MODEL-RG` |
 | Container Registry | `ncaamstablegbsvacr` |
-| PostgreSQL | `ncaam-stable-postgres` |
-| Redis | `ncaam-stable-redis` |
+| PostgreSQL | `ncaam-stable-gbsv-postgres` |
+| Redis | `ncaam-stable-gbsv-redis` |
+| Key Vault | `ncaam-stablegbsvkv` |
 | Container Apps Env | `ncaam-stable-env` |
 | Container App | `ncaam-stable-prediction` |
+| Web App | `ncaam-stable-web` |
 | Log Analytics | `ncaam-stable-logs` |
 
 ---

@@ -98,9 +98,11 @@ This changes:
 |----------|------|
 | Resource Group | `NCAAM-GBSV-MODEL-RG` |
 | Container Registry | `ncaamstablegbsvacr` |
-| PostgreSQL | `ncaam-stable-postgres` |
-| Redis | `ncaam-stable-redis` |
+| PostgreSQL | `ncaam-stable-gbsv-postgres` |
+| Redis | `ncaam-stable-gbsv-redis` |
+| Key Vault | `ncaam-stablegbsvkv` |
 | Container App | `ncaam-stable-prediction` |
+| Web App | `ncaam-stable-web` |
 | Log Analytics | `ncaam-stable-logs` |
 
 ---

@@ -17,8 +17,8 @@ This directory contains everything needed to deploy the NCAAM prediction model t
 │  │ Azure Container │  │ Azure Database  │  │ Azure Cache for Redis  │ │
 │  │ Registry (ACR)  │  │ for PostgreSQL  │  │                        │ │
 │  │                 │  │                 │  │                        │ │
-│  │ ncaamstablegbsvacr  │  │ Flexible Server │  │ ncaam-stable-redis     │ │
-│  └────────┬────────┘  │ ncaam-stable-pg │  └────────────────────────┘ │
+│  │ ncaamstablegbsvacr  │  │ Flexible Server │  │ ncaam-stable-gbsv-redis │ │
+│  └────────┬────────┘  │ ncaam-stable-gbsv-postgres │  └────────────────────┘ │
 │           │           └────────┬────────┘              │               │
 │           │                    │                       │               │
 │           ▼                    ▼                       ▼               │
@@ -38,6 +38,8 @@ This directory contains everything needed to deploy the NCAAM prediction model t
 │  └──────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+The web frontend runs as `ncaam-stable-web` in the same Container Apps environment.
 
 ## Prerequisites
 
@@ -68,9 +70,11 @@ This will:
 - Deploy Azure Container Registry
 - Deploy Azure Database for PostgreSQL
 - Deploy Azure Cache for Redis
+- Deploy Azure Key Vault
 - Deploy Container Apps Environment
 - Build and push Docker image
 - Deploy the prediction service
+- Deploy the web frontend
 - Run database migrations
 
 ### 3. Verify Deployment
@@ -135,8 +139,9 @@ az deployment group create `
     --parameters `
         environment=stable `
         postgresPassword="$(openssl rand -base64 24)" `
-        redisPassword="$(openssl rand -base64 24)" `
-        oddsApiKey="YOUR_ACTUAL_KEY"
+        oddsApiKey="YOUR_ACTUAL_KEY" `
+        imageTag="v$((Get-Content ..\VERSION).Trim())" `
+        resourceNameSuffix=-gbsv
 ```
 
 ### 3. Build and Push Image
@@ -179,10 +184,11 @@ az containerapp update `
 | Container Registry | Basic | ~$5 |
 | PostgreSQL Flexible | B1ms | ~$15 |
 | Redis Cache | Basic C0 | ~$16 |
+| Key Vault | Standard | ~$1 |
 | Container Apps | Consumption | ~$0-10 (pay per use) |
 | Log Analytics | Per GB | ~$2-5 |
 
-**Total Estimated Cost: ~$40-50/month**
+**Total Estimated Cost: ~$41-51/month**
 
 ## Environment Variables
 
@@ -199,7 +205,7 @@ The container receives these environment variables:
 
 ## Secrets Management
 
-Secrets are managed through Azure Container Apps secrets:
+Secrets are stored in Key Vault (`ncaam-stablegbsvkv`); Container Apps also keep a subset as secrets for runtime access:
 
 - `db-password` - PostgreSQL password (auto-generated)
 - `redis-password` - Redis access key (from Azure)
@@ -285,7 +291,7 @@ az containerapp logs show -n ncaam-stable-prediction -g NCAAM-GBSV-MODEL-RG --ty
 ```powershell
 # Test PostgreSQL connectivity
 az postgres flexible-server execute `
-    -n ncaam-stable-postgres `
+    -n ncaam-stable-gbsv-postgres `
     -g NCAAM-GBSV-MODEL-RG `
     -u ncaam `
     -p "password" `
