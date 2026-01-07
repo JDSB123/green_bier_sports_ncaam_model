@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT_DIR / "services" / "prediction-service-python"))
 
 from .team_resolver import ProductionTeamResolver
 from .ratings_loader import AntiLeakageRatingsLoader, TeamRatings
-from .timezone_utils import get_season_for_game
+from .timezone_utils import get_season_for_game, parse_date_to_cst, format_cst_date
 
 # Import production models
 try:
@@ -50,13 +50,17 @@ class OddsRecord:
     """Historical odds for a game."""
     event_id: str
     commence_time: datetime
+    game_date: str
     home_team: str
     away_team: str
+    home_canonical: str
+    away_canonical: str
     bookmaker: str
-    spread: float
-    total: float
+    spread: Optional[float]
+    total: Optional[float]
     h1_spread: Optional[float] = None
     h1_total: Optional[float] = None
+    timestamp: Optional[datetime] = None
 
 
 @dataclass
@@ -141,76 +145,284 @@ class ROISimulator:
         else:
             self.models = {}
         
-        self.odds_cache: Dict[str, OddsRecord] = {}
+        self.bookmaker_priority = ["pinnacle", "draftkings", "fanduel", "betmgm"]
+        self.odds_cache: Dict[str, Dict[str, OddsRecord]] = {}
         self.results: List[BetResult] = []
     
+    def _normalize_game_date(self, date_str: str) -> str:
+        if not date_str:
+            return ""
+        try:
+            return format_cst_date(parse_date_to_cst(date_str))
+        except (ValueError, TypeError):
+            return date_str[:10]
+
+    def _make_matchup_key(self, home_canonical: str, away_canonical: str, game_date: str) -> str:
+        return f"{home_canonical}|{away_canonical}|{game_date}"
+
+    def _parse_timestamp(self, value: str) -> Optional[datetime]:
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            try:
+                return datetime.fromtimestamp(float(value))
+            except (ValueError, TypeError):
+                return None
+
+    def _get_odds_files(self) -> List[Path]:
+        canonical = self.odds_dir / "odds_canonical_matchups.csv"
+        if canonical.exists():
+            return [canonical]
+
+        consolidated = self.odds_dir / "odds_consolidated_canonical.csv"
+        if consolidated.exists():
+            return [consolidated]
+
+        csv_files = sorted(self.odds_dir.glob("*.csv"))
+        exclude = {
+            "odds_team_rows_canonical.csv",
+            "odds_canonical_matchups.csv",
+            "odds_consolidated_canonical.csv",
+        }
+        return [path for path in csv_files if path.name not in exclude]
+
+    def _record_has_market(self, record: OddsRecord, market: str) -> bool:
+        if market == "fg_spread":
+            return record.spread is not None
+        if market == "fg_total":
+            return record.total is not None
+        if market == "h1_spread":
+            return record.h1_spread is not None
+        if market == "h1_total":
+            return record.h1_total is not None
+        return False
+
+    def _select_best_record(
+        self,
+        records: Optional[Dict[str, OddsRecord]],
+        market: str,
+    ) -> Optional[OddsRecord]:
+        if not records:
+            return None
+
+        for book in self.bookmaker_priority:
+            record = records.get(book)
+            if record and self._record_has_market(record, market):
+                return record
+
+        fallback = []
+        for record in records.values():
+            if self._record_has_market(record, market):
+                fallback.append(record)
+
+        if not fallback:
+            return None
+
+        fallback.sort(key=lambda r: r.timestamp or datetime.max)
+        return fallback[0]
+
+    def _swap_record(self, record: OddsRecord) -> OddsRecord:
+        return OddsRecord(
+            event_id=record.event_id,
+            commence_time=record.commence_time,
+            game_date=record.game_date,
+            home_team=record.away_team,
+            away_team=record.home_team,
+            home_canonical=record.away_canonical,
+            away_canonical=record.home_canonical,
+            bookmaker=record.bookmaker,
+            spread=-record.spread if record.spread is not None else None,
+            total=record.total,
+            h1_spread=-record.h1_spread if record.h1_spread is not None else None,
+            h1_total=record.h1_total,
+            timestamp=record.timestamp,
+        )
+
     def load_historical_odds(self, seasons: List[int] = None) -> int:
         """Load historical odds from CSV files."""
         loaded = 0
-        
-        for odds_file in self.odds_dir.glob("*.csv"):
+        unmatched = 0
+        files = self._get_odds_files()
+
+        for odds_file in files:
             try:
                 with open(odds_file, "r", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
                     for row in reader:
                         try:
+                            home_team = (row.get("home_team") or "").strip()
+                            away_team = (row.get("away_team") or "").strip()
+
+                            home_canonical = (row.get("home_team_canonical") or "").strip()
+                            away_canonical = (row.get("away_team_canonical") or "").strip()
+
+                            if not home_canonical:
+                                result = self.team_resolver.resolve(home_team)
+                                home_canonical = result.canonical_name if result.resolved else ""
+                            if not away_canonical:
+                                result = self.team_resolver.resolve(away_team)
+                                away_canonical = result.canonical_name if result.resolved else ""
+
+                            if not home_canonical or not away_canonical:
+                                unmatched += 1
+                                continue
+
+                            commence_time_raw = row.get("commence_time", "")
+                            commence_time = parse_date_to_cst(commence_time_raw) if commence_time_raw else None
+                            if commence_time is None:
+                                unmatched += 1
+                                continue
+
+                            game_date = row.get("game_date", "")
+                            if not game_date:
+                                game_date = self._normalize_game_date(commence_time_raw)
+                            else:
+                                game_date = self._normalize_game_date(game_date)
+
+                            if not game_date:
+                                unmatched += 1
+                                continue
+
+                            if seasons and get_season_for_game(game_date) not in seasons:
+                                continue
+
+                            bookmaker = (row.get("bookmaker") or "unknown").strip().lower()
+                            spread = float(row["spread"]) if row.get("spread") else None
+                            total = float(row["total"]) if row.get("total") else None
+                            h1_spread = float(row["h1_spread"]) if row.get("h1_spread") else None
+                            h1_total = float(row["h1_total"]) if row.get("h1_total") else None
+                            timestamp = self._parse_timestamp(row.get("timestamp", ""))
+
                             odds = OddsRecord(
                                 event_id=row.get("event_id", ""),
-                                commence_time=datetime.fromisoformat(
-                                    row["commence_time"].replace("Z", "+00:00")
-                                ),
-                                home_team=row["home_team"],
-                                away_team=row["away_team"],
-                                bookmaker=row.get("bookmaker", "unknown"),
-                                spread=float(row["spread"]) if row.get("spread") else None,
-                                total=float(row["total"]) if row.get("total") else None,
-                                h1_spread=float(row["h1_spread"]) if row.get("h1_spread") else None,
-                                h1_total=float(row["h1_total"]) if row.get("h1_total") else None,
+                                commence_time=commence_time,
+                                game_date=game_date,
+                                home_team=home_team,
+                                away_team=away_team,
+                                home_canonical=home_canonical,
+                                away_canonical=away_canonical,
+                                bookmaker=bookmaker,
+                                spread=spread,
+                                total=total,
+                                h1_spread=h1_spread,
+                                h1_total=h1_total,
+                                timestamp=timestamp,
                             )
-                            
-                            # Key by home_team + away_team + date
-                            date_str = odds.commence_time.strftime("%Y-%m-%d")
-                            key = f"{odds.home_team}|{odds.away_team}|{date_str}"
-                            self.odds_cache[key] = odds
-                            loaded += 1
-                        except (ValueError, KeyError) as e:
+
+                            key = self._make_matchup_key(home_canonical, away_canonical, game_date)
+                            book_map = self.odds_cache.setdefault(key, {})
+                            existing = book_map.get(bookmaker)
+
+                            if not existing:
+                                book_map[bookmaker] = odds
+                                loaded += 1
+                                continue
+
+                            if existing.timestamp and timestamp:
+                                if timestamp < existing.timestamp:
+                                    book_map[bookmaker] = odds
+                            elif timestamp and not existing.timestamp:
+                                book_map[bookmaker] = odds
+                        except (ValueError, KeyError):
                             continue
             except Exception as e:
                 print(f"Error loading {odds_file}: {e}")
-        
-        print(f"Loaded {loaded} odds records from {self.odds_dir}")
+
+        print(f"Loaded {loaded} odds records from {len(files)} file(s)")
+        if unmatched:
+            print(f"Skipped {unmatched} odds rows due to unresolved teams or dates")
         return loaded
-    
-    def find_odds(
-        self, 
-        home_team: str, 
-        away_team: str, 
-        game_date: str
+
+    def find_odds_for_market(
+        self,
+        home_canonical: str,
+        away_canonical: str,
+        game_date: str,
+        market: str,
     ) -> Optional[OddsRecord]:
-        """Find odds for a game by team names and date."""
-        # Try exact match first
-        key = f"{home_team}|{away_team}|{game_date}"
-        if key in self.odds_cache:
-            return self.odds_cache[key]
-        
-        # Try resolving team names
-        home_resolved = self.team_resolver.resolve(home_team)
-        away_resolved = self.team_resolver.resolve(away_team)
-        
-        if home_resolved and away_resolved:
-            key = f"{home_resolved}|{away_resolved}|{game_date}"
-            if key in self.odds_cache:
-                return self.odds_cache[key]
-        
-        # Search through odds for fuzzy match
-        for odds_key, odds in self.odds_cache.items():
-            if game_date in odds_key:
-                odds_home = self.team_resolver.resolve(odds.home_team)
-                odds_away = self.team_resolver.resolve(odds.away_team)
-                if odds_home == home_resolved and odds_away == away_resolved:
-                    return odds
-        
+        """Find odds for a matchup and market using canonical names."""
+        key = self._make_matchup_key(home_canonical, away_canonical, game_date)
+        record = self._select_best_record(self.odds_cache.get(key), market)
+        if record:
+            return record
+
+        swapped_key = self._make_matchup_key(away_canonical, home_canonical, game_date)
+        record = self._select_best_record(self.odds_cache.get(swapped_key), market)
+        if record:
+            return self._swap_record(record)
+
         return None
+
+    def _resolve_canonical(self, name: str) -> Optional[str]:
+        result = self.team_resolver.resolve(name)
+        return result.canonical_name if result.resolved else None
+
+    def _parse_int(self, value: str) -> Optional[int]:
+        if value is None or value == "":
+            return None
+        try:
+            return int(float(value))
+        except (ValueError, TypeError):
+            return None
+
+    def _load_full_games(self, season: int) -> List[Dict[str, Optional[str]]]:
+        games_file = self.games_dir / f"games_{season}.csv"
+        if not games_file.exists():
+            print(f"Games file not found: {games_file}")
+            return []
+
+        games = []
+        with open(games_file, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                game_date = row.get("date", row.get("game_date", "")) or ""
+                if not game_date:
+                    continue
+                if get_season_for_game(game_date) != season:
+                    continue
+
+                games.append({
+                    "game_id": row.get("game_id", ""),
+                    "date": game_date,
+                    "home_team": row.get("home_team", ""),
+                    "away_team": row.get("away_team", ""),
+                    "home_score": self._parse_int(row.get("home_score", "")),
+                    "away_score": self._parse_int(row.get("away_score", "")),
+                    "h1_home": self._parse_int(row.get("h1_home", "")),
+                    "h1_away": self._parse_int(row.get("h1_away", "")),
+                })
+
+        return games
+
+    def _load_h1_games(self, season: int) -> List[Dict[str, Optional[str]]]:
+        h1_file = self.data_dir / "h1_historical" / "h1_games_all.csv"
+        if not h1_file.exists():
+            return []
+
+        games = []
+        with open(h1_file, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                game_date = row.get("date", "") or ""
+                if not game_date:
+                    continue
+                if get_season_for_game(game_date) != season:
+                    continue
+
+                games.append({
+                    "game_id": row.get("game_id", ""),
+                    "date": game_date,
+                    "home_team": row.get("home_team", ""),
+                    "away_team": row.get("away_team", ""),
+                    "home_score": self._parse_int(row.get("home_fg", "")),
+                    "away_score": self._parse_int(row.get("away_fg", "")),
+                    "h1_home": self._parse_int(row.get("home_h1", "")),
+                    "h1_away": self._parse_int(row.get("away_h1", "")),
+                })
+
+        return games
     
     def calculate_edge(
         self,
@@ -306,132 +518,289 @@ class ROISimulator:
         if edge_thresholds is None:
             edge_thresholds = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0]
         
-        # Load games for this season
-        games_file = self.games_dir / f"games_{season}.csv"
-        if not games_file.exists():
-            print(f"Games file not found: {games_file}")
+        full_games = self._load_full_games(season)
+        h1_games = self._load_h1_games(season)
+
+        if not full_games and not h1_games:
+            print(f"No games found for season {season}")
             return {}
-        
+
         # Track bets by model and threshold
         bets_by_model: Dict[str, List[BetResult]] = {
             model: [] for model in self.models.keys()
         }
-        
-        games_processed = 0
-        games_with_odds = 0
-        
-        with open(games_file, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                games_processed += 1
-                
+
+        stats = {
+            "fg_games_seen": 0,
+            "fg_games_with_odds": 0,
+            "h1_games_seen": 0,
+            "h1_games_with_odds": 0,
+            "ratings_missing": 0,
+            "unresolved_teams": 0,
+        }
+
+        h1_by_game_id: Dict[str, Dict[str, Optional[str]]] = {}
+        h1_by_matchup: Dict[str, Dict[str, Optional[str]]] = {}
+        for row in h1_games:
+            game_id = row.get("game_id", "")
+            if game_id:
+                h1_by_game_id[game_id] = row
+
+            home_canonical = self._resolve_canonical(row.get("home_team", ""))
+            away_canonical = self._resolve_canonical(row.get("away_team", ""))
+            if not home_canonical or not away_canonical:
+                continue
+
+            game_date = self._normalize_game_date(row.get("date", ""))
+            if not game_date:
+                continue
+
+            key = self._make_matchup_key(home_canonical, away_canonical, game_date)
+            if key not in h1_by_matchup:
+                h1_by_matchup[key] = row
+
+        processed_h1_ids = set()
+        processed_h1_keys = set()
+
+        def run_models(
+            row: Dict[str, Optional[str]],
+            home_canonical: str,
+            away_canonical: str,
+            game_date: str,
+            actual_margin: Optional[int],
+            actual_total: Optional[int],
+            actual_h1_margin: Optional[int],
+            actual_h1_total: Optional[int],
+            run_full_game: bool,
+            run_h1: bool,
+        ) -> Tuple[bool, bool]:
+            home_result = self.ratings_loader.get_ratings_for_game(home_canonical, game_date)
+            away_result = self.ratings_loader.get_ratings_for_game(away_canonical, game_date)
+
+            if not home_result.found or not away_result.found:
+                stats["ratings_missing"] += 1
+                return False, False
+
+            home_ratings = home_result.ratings
+            away_ratings = away_result.ratings
+
+            home_prod = self._to_production_ratings(home_ratings)
+            away_prod = self._to_production_ratings(away_ratings)
+
+            if not home_prod or not away_prod:
+                return False, False
+
+            fg_odds_found = False
+            h1_odds_found = False
+
+            for model_name, model in self.models.items():
                 try:
-                    game_date = row.get("date", row.get("game_date", ""))
-                    home_team_raw = row.get("home_team", "")
-                    away_team_raw = row.get("away_team", "")
-                    home_score = int(row.get("home_score", 0))
-                    away_score = int(row.get("away_score", 0))
-                    
-                    # Get H1 scores if available
-                    h1_home = int(row["h1_home"]) if row.get("h1_home") else None
-                    h1_away = int(row["h1_away"]) if row.get("h1_away") else None
-                    
-                    # Resolve team names
-                    home_team = self.team_resolver.resolve(home_team_raw)
-                    away_team = self.team_resolver.resolve(away_team_raw)
-                    
-                    if not home_team or not away_team:
-                        continue
-                    
-                    # Find odds
-                    odds = self.find_odds(home_team_raw, away_team_raw, game_date)
-                    if not odds:
-                        continue
-                    
-                    games_with_odds += 1
-                    
-                    # Get ratings (anti-leakage via get_ratings_for_game)
-                    home_result = self.ratings_loader.get_ratings_for_game(home_team_raw, game_date)
-                    away_result = self.ratings_loader.get_ratings_for_game(away_team_raw, game_date)
-                    
-                    if not home_result.found or not away_result.found:
-                        continue
-                    
-                    home_ratings = home_result.ratings
-                    away_ratings = away_result.ratings
-                    
-                    # Convert to production model format
-                    home_prod = self._to_production_ratings(home_ratings)
-                    away_prod = self._to_production_ratings(away_ratings)
-                    
-                    if not home_prod or not away_prod:
-                        continue
-                    
-                    # Calculate actual results
-                    actual_margin = home_score - away_score
-                    actual_total = home_score + away_score
-                    actual_h1_margin = (h1_home - h1_away) if h1_home and h1_away else None
-                    actual_h1_total = (h1_home + h1_away) if h1_home and h1_away else None
-                    
-                    # Run each model
-                    for model_name, model in self.models.items():
-                        try:
-                            # Get market line
-                            if model_name == "FGSpread" and odds.spread is not None:
-                                market_line = odds.spread
-                                actual_result = actual_margin
-                            elif model_name == "FGTotal" and odds.total is not None:
-                                market_line = odds.total
-                                actual_result = actual_total
-                            elif model_name == "H1Spread" and odds.h1_spread is not None:
-                                market_line = odds.h1_spread
-                                actual_result = actual_h1_margin
-                            elif model_name == "H1Total" and odds.h1_total is not None:
-                                market_line = odds.h1_total
-                                actual_result = actual_h1_total
-                            else:
-                                continue
-                            
-                            if actual_result is None:
-                                continue
-                            
-                            # Get prediction
-                            result = model.predict(home_prod, away_prod)
-                            prediction = result.prediction
-                            
-                            # Calculate edge
-                            edge, pick = self.calculate_edge(
-                                prediction, market_line, model_name
-                            )
-                            
-                            # Evaluate bet
-                            won, units_won = self.evaluate_bet(
-                                pick, market_line, actual_result, model_name
-                            )
-                            
-                            bet = BetResult(
-                                game_id=row.get("game_id", ""),
-                                date=game_date,
-                                model=model_name,
-                                pick=pick,
-                                edge=edge,
-                                market_line=market_line,
-                                predicted_line=prediction,
-                                actual_result=actual_result,
-                                won=won if won is not None else False,
-                                units_wagered=1.0,
-                                units_won=units_won,
-                            )
-                            
-                            bets_by_model[model_name].append(bet)
-                            
-                        except Exception as e:
+                    if model_name == "FGSpread":
+                        if not run_full_game or actual_margin is None:
                             continue
-                
-                except Exception as e:
+                        market = "fg_spread"
+                        odds = self.find_odds_for_market(home_canonical, away_canonical, game_date, market)
+                        if not odds or odds.spread is None:
+                            continue
+                        market_line = odds.spread
+                        actual_result = actual_margin
+                        fg_odds_found = True
+                    elif model_name == "FGTotal":
+                        if not run_full_game or actual_total is None:
+                            continue
+                        market = "fg_total"
+                        odds = self.find_odds_for_market(home_canonical, away_canonical, game_date, market)
+                        if not odds or odds.total is None:
+                            continue
+                        market_line = odds.total
+                        actual_result = actual_total
+                        fg_odds_found = True
+                    elif model_name == "H1Spread":
+                        if not run_h1 or actual_h1_margin is None:
+                            continue
+                        market = "h1_spread"
+                        odds = self.find_odds_for_market(home_canonical, away_canonical, game_date, market)
+                        if not odds or odds.h1_spread is None:
+                            continue
+                        market_line = odds.h1_spread
+                        actual_result = actual_h1_margin
+                        h1_odds_found = True
+                    elif model_name == "H1Total":
+                        if not run_h1 or actual_h1_total is None:
+                            continue
+                        market = "h1_total"
+                        odds = self.find_odds_for_market(home_canonical, away_canonical, game_date, market)
+                        if not odds or odds.h1_total is None:
+                            continue
+                        market_line = odds.h1_total
+                        actual_result = actual_h1_total
+                        h1_odds_found = True
+                    else:
+                        continue
+
+                    result = model.predict(home_prod, away_prod)
+                    prediction = result.value
+
+                    edge, pick = self.calculate_edge(
+                        prediction, market_line, model_name
+                    )
+
+                    won, units_won = self.evaluate_bet(
+                        pick, market_line, actual_result, model_name
+                    )
+
+                    bet = BetResult(
+                        game_id=row.get("game_id", ""),
+                        date=game_date,
+                        model=model_name,
+                        pick=pick,
+                        edge=edge,
+                        market_line=market_line,
+                        predicted_line=prediction,
+                        actual_result=actual_result,
+                        won=won if won is not None else False,
+                        units_wagered=1.0,
+                        units_won=units_won,
+                    )
+
+                    bets_by_model[model_name].append(bet)
+
+                except Exception:
                     continue
-        
-        print(f"Processed {games_processed} games, {games_with_odds} with odds")
+
+            return fg_odds_found, h1_odds_found
+
+        for row in full_games:
+            game_date = self._normalize_game_date(row.get("date", ""))
+            if not game_date:
+                continue
+
+            home_team_raw = row.get("home_team", "")
+            away_team_raw = row.get("away_team", "")
+            home_score = row.get("home_score")
+            away_score = row.get("away_score")
+            if home_score is None or away_score is None:
+                continue
+
+            home_canonical = self._resolve_canonical(home_team_raw)
+            away_canonical = self._resolve_canonical(away_team_raw)
+            if not home_canonical or not away_canonical:
+                stats["unresolved_teams"] += 1
+                continue
+
+            h1_home = row.get("h1_home")
+            h1_away = row.get("h1_away")
+            matchup_key = self._make_matchup_key(home_canonical, away_canonical, game_date)
+
+            h1_source = None
+            if h1_home is None or h1_away is None:
+                if row.get("game_id") in h1_by_game_id:
+                    h1_source = h1_by_game_id.get(row.get("game_id"))
+                else:
+                    h1_source = h1_by_matchup.get(matchup_key)
+
+            if h1_source:
+                h1_home = h1_source.get("h1_home")
+                h1_away = h1_source.get("h1_away")
+                if h1_source.get("game_id"):
+                    processed_h1_ids.add(h1_source.get("game_id"))
+                processed_h1_keys.add(matchup_key)
+
+            actual_margin = home_score - away_score
+            actual_total = home_score + away_score
+            actual_h1_margin = None
+            actual_h1_total = None
+            if h1_home is not None and h1_away is not None:
+                actual_h1_margin = h1_home - h1_away
+                actual_h1_total = h1_home + h1_away
+                processed_h1_keys.add(matchup_key)
+                if row.get("game_id"):
+                    processed_h1_ids.add(row.get("game_id"))
+
+            stats["fg_games_seen"] += 1
+            if actual_h1_margin is not None:
+                stats["h1_games_seen"] += 1
+
+            fg_odds_found, h1_odds_found = run_models(
+                row=row,
+                home_canonical=home_canonical,
+                away_canonical=away_canonical,
+                game_date=game_date,
+                actual_margin=actual_margin,
+                actual_total=actual_total,
+                actual_h1_margin=actual_h1_margin,
+                actual_h1_total=actual_h1_total,
+                run_full_game=True,
+                run_h1=actual_h1_margin is not None,
+            )
+
+            if fg_odds_found:
+                stats["fg_games_with_odds"] += 1
+            if h1_odds_found:
+                stats["h1_games_with_odds"] += 1
+
+        for row in h1_games:
+            game_id = row.get("game_id", "")
+            if game_id and game_id in processed_h1_ids:
+                continue
+
+            game_date = self._normalize_game_date(row.get("date", ""))
+            if not game_date:
+                continue
+
+            home_team_raw = row.get("home_team", "")
+            away_team_raw = row.get("away_team", "")
+
+            home_canonical = self._resolve_canonical(home_team_raw)
+            away_canonical = self._resolve_canonical(away_team_raw)
+            if not home_canonical or not away_canonical:
+                stats["unresolved_teams"] += 1
+                continue
+
+            key = self._make_matchup_key(home_canonical, away_canonical, game_date)
+            if key in processed_h1_keys:
+                continue
+
+            h1_home = row.get("h1_home")
+            h1_away = row.get("h1_away")
+            if h1_home is None or h1_away is None:
+                continue
+
+            actual_h1_margin = h1_home - h1_away
+            actual_h1_total = h1_home + h1_away
+
+            stats["h1_games_seen"] += 1
+
+            _fg_odds_found, h1_odds_found = run_models(
+                row=row,
+                home_canonical=home_canonical,
+                away_canonical=away_canonical,
+                game_date=game_date,
+                actual_margin=None,
+                actual_total=None,
+                actual_h1_margin=actual_h1_margin,
+                actual_h1_total=actual_h1_total,
+                run_full_game=False,
+                run_h1=True,
+            )
+
+            if h1_odds_found:
+                stats["h1_games_with_odds"] += 1
+
+        print(
+            f"Full games: {stats['fg_games_seen']} rows, "
+            f"{stats['fg_games_with_odds']} with odds"
+        )
+        print(
+            f"H1 games: {stats['h1_games_seen']} rows, "
+            f"{stats['h1_games_with_odds']} with odds"
+        )
+        if stats["h1_games_seen"] and stats["h1_games_with_odds"] == 0:
+            print("Warning: No H1 odds matched for this season (pull H1 odds for coverage).")
+        if stats["ratings_missing"]:
+            print(f"Skipped {stats['ratings_missing']} games due to missing ratings")
+        if stats["unresolved_teams"]:
+            print(f"Skipped {stats['unresolved_teams']} games due to unresolved teams")
         
         # Calculate ROI by threshold
         results: Dict[str, List[ROIResults]] = {}

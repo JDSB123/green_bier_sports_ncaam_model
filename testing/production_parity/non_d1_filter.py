@@ -202,8 +202,7 @@ NON_D1_TEAMS: Set[str] = {
     "clarion golden eagles",
     "slippery rock",
     "slippery rock rock",
-    "mercyhurst",
-    "mercyhurst lakers",
+    # Note: Mercyhurst moved to D1 in 2023 - removed from blocklist
     "gannon",
     "gannon golden knights",
     "lock haven",
@@ -277,8 +276,7 @@ NON_D1_TEAMS: Set[str] = {
     "west florida argonauts",
     "montevallo",
     "montevallo falcons",
-    "west georgia",
-    "west georgia wolves",
+    # Note: West Georgia moved to D1 in 2024 - removed from blocklist
     "valdosta state",
     "valdosta state blazers",
     "albany state",
@@ -720,16 +718,16 @@ def is_non_d1_team(team_name: str) -> bool:
 
     lower = team_name.lower().strip()
 
-    # Check explicit blocklist
+    # Check explicit blocklist - EXACT MATCHES ONLY
+    # Partial matching is TOO RISKY and blocks valid D1 teams like:
+    # - "mercy" blocking "Detroit Mercy"
+    # - "lane" blocking "Tulane"
+    # - "rio grande" blocking "UT Rio Grande Valley"
+    # - "iup" blocking "IUPUI"
     if lower in NON_D1_TEAMS:
         return True
 
-    # Check for partial matches in blocklist
-    for blocked in NON_D1_TEAMS:
-        if blocked in lower or lower in blocked:
-            return True
-
-    # Note: We're NOT using pattern matching here because it's too risky
+    # Note: We're NOT using partial matching because it's too risky
     # to accidentally block D1 teams. Only use explicit blocklist.
 
     return False
