@@ -29,8 +29,8 @@
               <div id="status" class="rounded-lg border border-slate-800/60 bg-slate-900/30 px-4 py-2 text-sm">
                 <span class="text-slate-400">Loading...</span>
               </div>
-              <button onclick="refreshPicks()" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold transition-colors">
-                Refresh
+              <button id="generate-btn" onclick="generateFreshPicks()" class="rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                Generate Fresh Picks
               </button>
             </div>
           </div>
@@ -65,7 +65,7 @@
         <div id="error-state" class="hidden text-center py-12">
           <p class="text-red-400 text-lg">Failed to load picks</p>
           <p class="text-slate-500 mt-2">Please try again later.</p>
-          <button onclick="refreshPicks()" class="mt-4 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-sm font-semibold transition-colors">
+          <button onclick="generateFreshPicks()" class="mt-4 rounded-lg bg-slate-800 hover:bg-slate-700 px-4 py-2 text-sm font-semibold transition-colors">
             Retry
           </button>
         </div>
@@ -94,45 +94,94 @@
         const errorState = document.getElementById('error-state');
         const statusEl = document.getElementById('status');
         
-        container.innerHTML = '<div class="loading-pulse text-slate-400 text-center py-12">Loading weekly picks...</div>';
+        container.innerHTML = '<div class="loading-pulse text-slate-400 text-center py-12">Running model with fresh data...</div>';
         emptyState.classList.add('hidden');
         errorState.classList.add('hidden');
-        
+
+        const btn = document.getElementById('generate-btn');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Generating...';
+        }
+
         try {
-          const res = await fetch(`${API_BASE}/api/picks/weekly?days=7`, {
+          // Always run fresh model - POST triggers full pipeline (sync ratings, odds, predict)
+          const res = await fetch(`${API_BASE}/api/run/today`, {
+            method: 'POST',
             headers: { 'Accept': 'application/json' }
           });
-          
+
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          
+
           const data = await res.json();
-          
+
           if (data.error) {
             throw new Error(data.error);
           }
-          
-          // Update status
+
+          // Update status with generation timestamp
+          const generatedAt = data.generated_at ? new Date(data.generated_at).toLocaleTimeString() : 'now';
           statusEl.innerHTML = `
             <span class="text-emerald-400">●</span>
-            <span class="ml-2">${data.total_picks} picks</span>
+            <span class="ml-2">${data.total_picks} picks @ ${generatedAt}</span>
           `;
-          
+
           // Update model version
-          document.getElementById('model-version').textContent = data.model_version || '';
-          
-          if (!data.days || data.days.length === 0) {
+          document.getElementById('model-version').textContent = data.run?.model_version || '';
+
+          if (!data.picks || data.picks.length === 0) {
             container.innerHTML = '';
             emptyState.classList.remove('hidden');
             return;
           }
-          
-          container.innerHTML = data.days.map(day => renderDaySection(day)).join('');
-          
+
+          // Group picks by date for display
+          const picksByDate = groupPicksByDate(data.picks);
+          container.innerHTML = picksByDate.map(day => renderDaySection(day)).join('');
+
         } catch (e) {
-          console.error('Failed to load picks:', e);
+          console.error('Failed to generate picks:', e);
           container.innerHTML = '';
           errorState.classList.remove('hidden');
           statusEl.innerHTML = '<span class="text-red-400">● Error</span>';
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Generate Fresh Picks';
+          }
+        }
+      }
+
+      function groupPicksByDate(picks) {
+        const groups = {};
+        picks.forEach(pick => {
+          const date = pick.date_cst || pick.date || 'Today';
+          if (!groups[date]) {
+            groups[date] = { date, picks: [] };
+          }
+          groups[date].picks.push(pick);
+        });
+
+        return Object.values(groups).map(group => ({
+          day_name: formatDayName(group.date),
+          display_date: group.date,
+          total: group.picks.length,
+          picks: group.picks
+        }));
+      }
+
+      function formatDayName(dateStr) {
+        try {
+          const date = new Date(dateStr + 'T12:00:00');
+          const today = new Date();
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          if (date.toDateString() === today.toDateString()) return 'Today';
+          if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+          return date.toLocaleDateString('en-US', { weekday: 'long' });
+        } catch {
+          return dateStr;
         }
       }
       
@@ -202,16 +251,13 @@
           default: return 'fire-standard text-white';
         }
       }
-      
-      function refreshPicks() {
+
+      function generateFreshPicks() {
         loadPicks();
       }
-      
-      // Initial load
+
+      // Initial load - always generate fresh picks on page load
       loadPicks();
-      
-      // Auto-refresh every hour
-      setInterval(loadPicks, 3600000);
     </script>
   </body>
 </html>
