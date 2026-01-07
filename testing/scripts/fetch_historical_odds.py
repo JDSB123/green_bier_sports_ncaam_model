@@ -2,7 +2,8 @@
 """
 Fetch Historical Betting Lines from The Odds API
 
-This script fetches historical NCAAB betting lines for backtesting.
+This script fetches historical NCAAB betting lines for backtesting, covering both full-game and first-half markets.
+Outputs include an is_march_madness flag based on the game date (override with --tourney-start/--tourney-end).
 Data available from late 2020.
 
 API Documentation: https://the-odds-api.com/liveapi/guides/v4/
@@ -13,6 +14,9 @@ Usage:
 
     # Fetch odds for a date range
     python testing/scripts/fetch_historical_odds.py --start 2024-01-01 --end 2024-03-31
+
+    # Fetch a full season (2024-25)
+    python testing/scripts/fetch_historical_odds.py --season 2025
 
 Requirements:
     - The Odds API key (free tier: 500 requests/month)
@@ -26,7 +30,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import Any
 
@@ -68,18 +72,18 @@ def get_api_key() -> str:
     return key
 
 
-def fetch_with_retry(url: str, params: dict, max_retries: int = 3) -> requests.Response:
+def fetch_with_retry(url: str, params: dict, max_retries: int = 5) -> requests.Response:
     """Fetch URL with exponential backoff retry."""
     for attempt in range(max_retries):
         try:
-            resp = requests.get(url, params=params, timeout=60)
+            resp = requests.get(url, params=params, timeout=120)
             resp.raise_for_status()
             return resp
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout,
                 requests.exceptions.ChunkedEncodingError) as e:
             if attempt < max_retries - 1:
-                wait = 2 ** attempt * 2  # 2, 4, 8 seconds
+                wait = 2 ** attempt * 3  # 3, 6, 12, 24, 48 seconds
                 print(f"  [RETRY] Connection error, waiting {wait}s: {e}")
                 time.sleep(wait)
             else:
@@ -89,6 +93,13 @@ def fetch_with_retry(url: str, params: dict, max_retries: int = 3) -> requests.R
                 wait = 60
                 print(f"  [RATE LIMIT] Waiting {wait}s...")
                 time.sleep(wait)
+            elif e.response.status_code == 503:  # Service unavailable
+                if attempt < max_retries - 1:
+                    wait = 10 * (attempt + 1)  # 10, 20, 30, 40, 50 seconds
+                    print(f"  [503] Service unavailable, waiting {wait}s...")
+                    time.sleep(wait)
+                else:
+                    raise
             else:
                 raise
     raise RuntimeError("Max retries exceeded")
@@ -129,7 +140,7 @@ def fetch_historical_odds(
     api_key: str,
     event_id: str,
     date: str,
-    markets: str = "spreads,totals"
+    markets: str = "spreads,totals,spreads_h1,totals_h1"
 ) -> dict | None:
     """
     Fetch historical odds for a specific event.
@@ -161,7 +172,64 @@ def fetch_historical_odds(
         return None  # Skip event on persistent errors
 
 
-def parse_odds_data(event: dict, odds_data: dict) -> dict | None:
+def _to_float(value: Any) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _extract_spread_point(outcomes: list[dict], home_team: str | None) -> float | None:
+    if not home_team:
+        return None
+    for o in outcomes:
+        if o.get("name") == home_team:
+            return _to_float(o.get("point"))
+    return None
+
+
+def _extract_total_point(outcomes: list[dict]) -> float | None:
+    for o in outcomes:
+        name = o.get("name", "")
+        if isinstance(name, str) and name.lower() == "over":
+            return _to_float(o.get("point"))
+    if outcomes:
+        return _to_float(outcomes[0].get("point"))
+    return None
+
+
+def _parse_commence_date(commence_time: str | None) -> date | None:
+    if not commence_time:
+        return None
+    try:
+        return datetime.fromisoformat(commence_time.replace("Z", "+00:00")).date()
+    except ValueError:
+        return None
+
+
+def _default_march_madness_window(year: int) -> tuple[date, date]:
+    return date(year, 3, 15), date(year, 4, 8)
+
+
+def _is_march_madness(
+    commence_time: str | None,
+    tourney_window: tuple[date, date] | None,
+) -> bool:
+    game_date = _parse_commence_date(commence_time)
+    if not game_date:
+        return False
+    if tourney_window:
+        start, end = tourney_window
+    else:
+        start, end = _default_march_madness_window(game_date.year)
+    return start <= game_date <= end
+
+
+def parse_odds_data(
+    event: dict,
+    odds_data: dict,
+    tourney_window: tuple[date, date] | None = None,
+) -> dict | None:
     """Extract relevant fields from odds response."""
     try:
         data = odds_data.get("data", {})
@@ -185,33 +253,38 @@ def parse_odds_data(event: dict, odds_data: dict) -> dict | None:
         if not selected_book:
             selected_book = bookmakers[0]  # Fallback to first
 
-        # Parse markets
+        home_team = event.get("home_team")
         spread = None
         total = None
+        h1_spread = None
+        h1_total = None
 
         for market in selected_book.get("markets", []):
-            if market.get("key") == "spreads":
-                outcomes = market.get("outcomes", [])
-                for o in outcomes:
-                    if o.get("name") == event.get("home_team"):
-                        spread = o.get("point")
-                        break
+            key = market.get("key")
+            outcomes = market.get("outcomes", []) or []
 
-            if market.get("key") == "totals":
-                outcomes = market.get("outcomes", [])
-                for o in outcomes:
-                    if o.get("name") == "Over":
-                        total = o.get("point")
-                        break
+            if key == "spreads":
+                spread = _extract_spread_point(outcomes, home_team)
+            elif key == "spreads_h1":
+                h1_spread = _extract_spread_point(outcomes, home_team)
+            elif key == "totals":
+                total = _extract_total_point(outcomes)
+            elif key == "totals_h1":
+                h1_total = _extract_total_point(outcomes)
+
+        commence_time = event.get("commence_time")
 
         return {
             "event_id": event.get("id"),
-            "commence_time": event.get("commence_time"),
+            "commence_time": commence_time,
             "home_team": event.get("home_team"),
             "away_team": event.get("away_team"),
             "bookmaker": selected_book.get("key"),
             "spread": spread,
             "total": total,
+            "h1_spread": h1_spread,
+            "h1_total": h1_total,
+            "is_march_madness": _is_march_madness(commence_time, tourney_window),
             "timestamp": odds_data.get("timestamp"),
         }
 
@@ -225,6 +298,7 @@ def fetch_date_range(
     start_date: str,
     end_date: str,
     output_dir: Path,
+    tourney_window: tuple[date, date] | None = None,
     save_interval: int = 7,  # Save every 7 days
 ) -> list[dict]:
     """Fetch odds for all games in a date range with incremental saving."""
@@ -236,6 +310,7 @@ def fetch_date_range(
 
     current = start
     failed_dates = []
+    failed_events = 0
 
     while current <= end:
         date_str = current.strftime("%Y-%m-%d")
@@ -249,18 +324,26 @@ def fetch_date_range(
                 event_id = event.get("id")
                 commence = event.get("commence_time", "")
 
-                # Fetch odds at game time
-                odds = fetch_historical_odds(api_key, event_id, commence)
+                # Fetch odds at game time - skip on failure
+                try:
+                    odds = fetch_historical_odds(api_key, event_id, commence)
 
-                if odds:
-                    parsed = parse_odds_data(event, odds)
-                    if parsed:
-                        all_odds.append(parsed)
-                        print(f"    {parsed['away_team']} @ {parsed['home_team']}: "
-                              f"spread={parsed['spread']}, total={parsed['total']}")
+                    if odds:
+                        parsed = parse_odds_data(event, odds, tourney_window=tourney_window)
+                        if parsed:
+                            all_odds.append(parsed)
+                            print(
+                                f"    {parsed['away_team']} @ {parsed['home_team']}: "
+                                f"spread={parsed['spread']}, total={parsed['total']}, "
+                                f"h1_spread={parsed['h1_spread']}, h1_total={parsed['h1_total']}"
+                            )
+                except Exception as e:
+                    failed_events += 1
+                    print(f"    [SKIP] Failed to fetch event {event_id}: {e}")
+                    continue
 
                 # Lower throttle for faster backfills; still polite to API.
-                time.sleep(0.05)  # Was 0.3
+                time.sleep(0.1)  # Slightly slower to avoid 503s
 
             days_since_save += 1
 
@@ -303,6 +386,24 @@ def save_odds_csv(odds: list[dict], filepath: Path) -> None:
     print(f"[INFO] Saved {len(odds)} odds records to {filepath}")
 
 
+def _season_date_range(season: int) -> tuple[str, str]:
+    """
+    Map an NCAA season to its default date range.
+
+    Season is represented by the spring year (e.g., 2025 for the 2024-25 season).
+    """
+    start = date(season - 1, 11, 1)
+    end = date(season, 4, 30)
+    return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+
+
+def _parse_date_arg(value: str) -> date:
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError as exc:
+        raise ValueError(f"Invalid date format: {value} (expected YYYY-MM-DD)") from exc
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Fetch historical NCAAB betting odds"
@@ -310,41 +411,93 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--start",
         type=str,
-        required=True,
         help="Start date (YYYY-MM-DD)"
     )
     parser.add_argument(
         "--end",
         type=str,
-        required=True,
         help="End date (YYYY-MM-DD)"
+    )
+    parser.add_argument(
+        "--season",
+        type=int,
+        help="Season year (e.g., 2025 for the 2024-25 season); fills start/end automatically"
+    )
+    parser.add_argument(
+        "--tourney-start",
+        type=str,
+        help="Optional March Madness start date (YYYY-MM-DD)"
+    )
+    parser.add_argument(
+        "--tourney-end",
+        type=str,
+        help="Optional March Madness end date (YYYY-MM-DD)"
     )
     parser.add_argument(
         "--output",
         type=str,
-        help="Output CSV file (default: historical_odds/odds_YYYYMMDD_YYYYMMDD.csv)"
+        help="Output CSV file (default: historical_odds/odds_YYYYMMDD_YYYYMMDD.csv or odds_season_YYYY_YYYY.csv)"
     )
 
     args = parser.parse_args(argv)
 
+    season_range = None
+    if args.season:
+        season_range = _season_date_range(args.season)
+
+    start_date = args.start or (season_range[0] if season_range else None)
+    end_date = args.end or (season_range[1] if season_range else None)
+
+    if not start_date or not end_date:
+        parser.error("Please provide both --start and --end, or use --season to auto-populate them.")
+
+    tourney_window = None
+    if args.tourney_start or args.tourney_end:
+        if not args.tourney_start or not args.tourney_end:
+            parser.error("Please provide both --tourney-start and --tourney-end.")
+        try:
+            tourney_window = (
+                _parse_date_arg(args.tourney_start),
+                _parse_date_arg(args.tourney_end),
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
+    elif args.season:
+        tourney_window = _default_march_madness_window(args.season)
+
     print("=" * 72)
     print(" Historical NCAAB Odds Fetcher")
     print("=" * 72)
-    print(f" Date Range: {args.start} to {args.end}")
+    if args.season:
+        print(f" Season: {args.season} ({start_date} to {end_date})")
+    else:
+        print(f" Date Range: {start_date} to {end_date}")
+    if tourney_window:
+        print(f" March Madness window: {tourney_window[0]} to {tourney_window[1]}")
     print(" Source: The Odds API (https://the-odds-api.com)")
     print("=" * 72)
 
     api_key = get_api_key()
 
-    odds = fetch_date_range(api_key, args.start, args.end, DATA_DIR)
+    odds = fetch_date_range(
+        api_key,
+        start_date,
+        end_date,
+        DATA_DIR,
+        tourney_window=tourney_window,
+    )
 
     # Save results
     if args.output:
         output_path = Path(args.output)
     else:
-        start_clean = args.start.replace("-", "")
-        end_clean = args.end.replace("-", "")
-        output_path = DATA_DIR / f"odds_{start_clean}_{end_clean}.csv"
+        start_clean = start_date.replace("-", "")
+        end_clean = end_date.replace("-", "")
+        if args.season:
+            season_label = f"season_{args.season}"
+            output_path = DATA_DIR / f"odds_{season_label}_{start_clean}_{end_clean}.csv"
+        else:
+            output_path = DATA_DIR / f"odds_{start_clean}_{end_clean}.csv"
 
     save_odds_csv(odds, output_path)
 
