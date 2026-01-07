@@ -85,7 +85,11 @@ param(
     [int]$KeepAcrTags = 1,
 
     [Parameter(Mandatory=$false)]
-    [string]$ImageTag
+    [string]$ImageTag,
+
+    # Azure Storage connection string for pick history (external account: metricstrackersgbsv)
+    [Parameter(Mandatory=$false)]
+    [string]$StorageConnectionString
 )
 
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -255,6 +259,24 @@ if ([string]::IsNullOrEmpty($OddsApiKey)) {
     }
 }
 
+# Auto-fetch storage connection string from external account if not provided
+if ([string]::IsNullOrEmpty($StorageConnectionString)) {
+    Write-Host "  Fetching storage connection string from metricstrackersgbsv..." -ForegroundColor Gray
+    try {
+        $StorageConnectionString = az storage account show-connection-string `
+            --name metricstrackersgbsv `
+            --resource-group dashboard-gbsv-main-rg `
+            --query connectionString -o tsv
+        if ($StorageConnectionString) {
+            Write-Host "  [OK] Storage connection string retrieved" -ForegroundColor Gray
+        }
+    } catch {
+        Write-Warning "  ! Could not fetch storage connection string: $_"
+        Write-Warning "  ! Blob uploads will be disabled"
+        $StorageConnectionString = ''
+    }
+}
+
 # ─────────────────────────────────────────────────────────────────────────────────
 # PREREQUISITES CHECK
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -379,6 +401,7 @@ if (-not $SkipInfra) {
             actionNetworkPassword=$ActionNetworkPassword `
             imageTag=$ImageTag `
             resourceNameSuffix='-gbsv' `
+            storageConnectionString=$StorageConnectionString `
         --output json | ConvertFrom-Json
 
     if ($LASTEXITCODE -ne 0) {

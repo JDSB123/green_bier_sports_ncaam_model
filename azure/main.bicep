@@ -2,7 +2,6 @@
 // NCAAM - Azure Container Apps Deployment v33.14.0
 // ═══════════════════════════════════════════════════════════════════════════════
 // Deploys:
-// - Azure Storage Account (pick history snapshots) - NEW in v33.14.0
 // - Azure Key Vault (secrets storage) - v33.10.0
 // - Azure Container Registry (ACR)
 // - Azure Database for PostgreSQL Flexible Server
@@ -11,8 +10,8 @@
 // - NCAAM Prediction Service Container App
 //
 // v33.14.0 Changes:
-// - Added Azure Storage Account for pick history blob snapshots
-// - Picks are archived to blob storage after each model run for audit/tracking
+// - Pick history blob storage uses external account (metricstrackersgbsv)
+// - Pass storageConnectionString param to enable blob uploads
 //
 // v33.10.0 Changes:
 // - Added Azure Key Vault for secure secrets management
@@ -67,6 +66,10 @@ param imageTag string = 'v0.0.0'
 
 @description('Suffix for resource names (e.g. -gbe for enterprise resources)')
 param resourceNameSuffix string = ''
+
+@description('Azure Storage connection string for pick history (external storage account)')
+@secure()
+param storageConnectionString string = ''
 
 // ─────────────────────────────────────────────────────────────────────────────────
 // VARIABLES
@@ -204,41 +207,6 @@ resource redis 'Microsoft.Cache/redis@2023-08-01' = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
-// AZURE STORAGE ACCOUNT - Pick history snapshots (v33.14.0)
-// ─────────────────────────────────────────────────────────────────────────────────
-
-var storageAccountName = replace('${resourcePrefix}${replace(resourceNameSuffix, '-', '')}sa', '-', '')
-
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
-  name: storageAccountName
-  location: location
-  tags: commonTags
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-  properties: {
-    accessTier: 'Hot'
-    minimumTlsVersion: 'TLS1_2'
-    supportsHttpsTrafficOnly: true
-    allowBlobPublicAccess: false
-  }
-}
-
-resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
-  parent: storageAccount
-  name: 'default'
-}
-
-resource picksContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
-  parent: blobService
-  name: 'picks-history'
-  properties: {
-    publicAccess: 'None'
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────────
 // AZURE KEY VAULT - Secure secrets storage (v33.10.0)
 // ─────────────────────────────────────────────────────────────────────────────────
 
@@ -346,11 +314,11 @@ resource kvSecretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
-resource kvSecretStorageConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+resource kvSecretStorageConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (storageConnectionString != '') {
   parent: keyVault
   name: 'storage-connection-string'
   properties: {
-    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+    value: storageConnectionString
     contentType: 'text/plain'
   }
 }
@@ -429,11 +397,13 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
             name: 'odds-api-key'
             value: oddsApiKey
           }
+        ],
+        (storageConnectionString != '') ? [
           {
             name: 'storage-connection-string'
-            value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+            value: storageConnectionString
           }
-        ],
+        ] : [],
         (basketballApiKey != '') ? [
           {
             name: 'basketball-api-key'
@@ -947,5 +917,4 @@ output containerEnvName string = containerEnv.name
 output actionGroupId string = actionGroup.id
 output keyVaultName string = keyVault.name
 output keyVaultUri string = keyVault.properties.vaultUri
-output storageAccountName string = storageAccount.name
-output storageContainerName string = picksContainer.name
+// Storage account is external (metricstrackersgbsv in dashboard-gbsv-main-rg)
