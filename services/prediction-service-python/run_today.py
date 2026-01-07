@@ -43,6 +43,13 @@ from validate_team_matching import TeamMatchingValidator
 import csv
 from pathlib import Path
 
+# Azure Blob Storage for pick history snapshots (v33.14)
+try:
+    from azure.storage.blob import BlobServiceClient
+    BLOB_STORAGE_AVAILABLE = True
+except ImportError:
+    BLOB_STORAGE_AVAILABLE = False
+
 logger = get_logger(__name__)
 
 
@@ -325,6 +332,10 @@ if not REDIS_URL:
 
 # Output directory for picks/reports
 PICKS_OUTPUT_DIR = os.getenv("PICKS_OUTPUT_DIR", "/app/output")
+
+# Azure Blob Storage for pick history snapshots (v33.14)
+AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "")
+AZURE_STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER", "picks-history")
 
 # Teams Webhook Secret for validating outgoing webhook messages (OPTIONAL)
 # NOTE: Incoming webhooks (API → Teams) are deprecated. Only outgoing webhook (Teams → API) is supported.
@@ -1719,6 +1730,38 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
                     ]
                 )
         print(f"  [OK] CSV saved: {csv_path}")
+
+        # Upload to Azure Blob Storage for historical tracking (v33.14)
+        if BLOB_STORAGE_AVAILABLE and AZURE_STORAGE_CONNECTION_STRING:
+            try:
+                blob_service = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+                container_client = blob_service.get_container_client(AZURE_STORAGE_CONTAINER)
+
+                # Blob path: picks/{date}/{timestamp}.csv
+                blob_name = f"picks/{target_date}/{ts}.csv"
+                with csv_path.open("rb") as data:
+                    container_client.upload_blob(name=blob_name, data=data, overwrite=True)
+                print(f"  [OK] Blob uploaded: {AZURE_STORAGE_CONTAINER}/{blob_name}")
+
+                # Also upload JSON snapshot for easier programmatic access
+                json_blob_name = f"picks/{target_date}/{ts}.json"
+                json_snapshot = {
+                    "date": str(target_date),
+                    "generated_at": datetime.now(CST).isoformat(),
+                    "model_version": getattr(prediction_engine, "VERSION", "unknown"),
+                    "total_picks": len(sorted_picks),
+                    "picks": sorted_picks,
+                }
+                container_client.upload_blob(
+                    name=json_blob_name,
+                    data=json.dumps(json_snapshot, indent=2, default=str),
+                    overwrite=True
+                )
+                print(f"  [OK] JSON snapshot uploaded: {AZURE_STORAGE_CONTAINER}/{json_blob_name}")
+            except Exception as blob_err:
+                print(f"  [WARN] Blob upload failed: {type(blob_err).__name__}: {blob_err}")
+        elif AZURE_STORAGE_CONNECTION_STRING:
+            print("  [WARN] azure-storage-blob not installed, skipping blob upload")
     except Exception as e:
         print(f"  [WARN]  Failed to write CSV: {type(e).__name__}: {e}")
 
@@ -1849,12 +1892,11 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
         with html_path.open("w", encoding="utf-8") as f:
             f.write(html_content)
             
-        # URL where this file will be served
-        # We need the base URL of the container app. We can get it from env or just relative.
-        # Since we send this to Teams, we need absolute URL.
-        # We'll rely on the API to serve /output/latest_picks.html
-        # Hardcoding the base URL for now based on your deployment
-        base_url = "https://ncaam-prod-prediction.bluecoast-4efaeaba.centralus.azurecontainerapps.io"
+        # URL where this file will be served - use env var or default to current Azure deployment
+        base_url = os.getenv(
+            "PREDICTION_API_BASE_URL",
+            "https://ncaam-stable-prediction.wonderfulforest-c2d7d49a.centralus.azurecontainerapps.io"
+        )
         html_url = f"{base_url}/picks/html"
         print(f"  [OK] HTML saved: {html_path}")
         

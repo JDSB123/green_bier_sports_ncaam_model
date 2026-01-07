@@ -81,10 +81,10 @@
     </div>
 
     <script>
-      // Configuration - Update this to your API endpoint
-      const API_BASE = window.location.hostname === 'localhost' 
-        ? 'http://localhost:8082' 
-        : 'https://ncaam-prediction.azurecontainerapps.io';
+      // Configuration - API endpoint (auto-detected from deployment-info or fallback)
+      const API_BASE = window.location.hostname === 'localhost'
+        ? 'http://localhost:8082'
+        : 'https://ncaam-stable-prediction.wonderfulforest-c2d7d49a.centralus.azurecontainerapps.io';
       
       document.getElementById('year').textContent = new Date().getFullYear();
 

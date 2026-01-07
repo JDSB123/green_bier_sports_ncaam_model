@@ -1,13 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NCAAM - Azure Container Apps Deployment v33.11.0
+// NCAAM - Azure Container Apps Deployment v33.14.0
 // ═══════════════════════════════════════════════════════════════════════════════
 // Deploys:
-// - Azure Key Vault (secrets storage) - NEW in v33.10.0
+// - Azure Storage Account (pick history snapshots) - NEW in v33.14.0
+// - Azure Key Vault (secrets storage) - v33.10.0
 // - Azure Container Registry (ACR)
 // - Azure Database for PostgreSQL Flexible Server
 // - Azure Cache for Redis
 // - Azure Container Apps Environment
 // - NCAAM Prediction Service Container App
+//
+// v33.14.0 Changes:
+// - Added Azure Storage Account for pick history blob snapshots
+// - Picks are archived to blob storage after each model run for audit/tracking
 //
 // v33.10.0 Changes:
 // - Added Azure Key Vault for secure secrets management
@@ -199,6 +204,41 @@ resource redis 'Microsoft.Cache/redis@2023-08-01' = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
+// AZURE STORAGE ACCOUNT - Pick history snapshots (v33.14.0)
+// ─────────────────────────────────────────────────────────────────────────────────
+
+var storageAccountName = replace('${resourcePrefix}${replace(resourceNameSuffix, '-', '')}sa', '-', '')
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+  name: storageAccountName
+  location: location
+  tags: commonTags
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+  properties: {
+    accessTier: 'Hot'
+    minimumTlsVersion: 'TLS1_2'
+    supportsHttpsTrafficOnly: true
+    allowBlobPublicAccess: false
+  }
+}
+
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
+  parent: storageAccount
+  name: 'default'
+}
+
+resource picksContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+  parent: blobService
+  name: 'picks-history'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
 // AZURE KEY VAULT - Secure secrets storage (v33.10.0)
 // ─────────────────────────────────────────────────────────────────────────────────
 
@@ -306,6 +346,15 @@ resource kvSecretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
+resource kvSecretStorageConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'storage-connection-string'
+  properties: {
+    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+    contentType: 'text/plain'
+  }
+}
+
 resource kvSecretRedisUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
   name: 'redis-url'
@@ -379,6 +428,10 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
           {
             name: 'odds-api-key'
             value: oddsApiKey
+          }
+          {
+            name: 'storage-connection-string'
+            value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
           }
         ],
         (basketballApiKey != '') ? [
@@ -492,6 +545,15 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
               {
                 name: 'MAX_UNRESOLVED_TEAM_VARIANTS'
                 value: '1'
+              }
+              // Azure Blob Storage for pick history snapshots (v33.14.0)
+              {
+                name: 'AZURE_STORAGE_CONNECTION_STRING'
+                secretRef: 'storage-connection-string'
+              }
+              {
+                name: 'AZURE_STORAGE_CONTAINER'
+                value: 'picks-history'
               }
             ]
           )
@@ -885,3 +947,5 @@ output containerEnvName string = containerEnv.name
 output actionGroupId string = actionGroup.id
 output keyVaultName string = keyVault.name
 output keyVaultUri string = keyVault.properties.vaultUri
+output storageAccountName string = storageAccount.name
+output storageContainerName string = picksContainer.name

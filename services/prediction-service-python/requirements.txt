@@ -38,3 +38,6 @@ slowapi==0.1.9
 # ML for predictions (v33.10)
 scikit-learn==1.4.0
 xgboost==2.0.3
+
+# Azure Blob Storage for pick history (v33.14)
+azure-storage-blob==12.19.0
