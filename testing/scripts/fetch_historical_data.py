@@ -26,7 +26,15 @@ except ImportError:
     sys.exit(1)
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT_DIR / "testing" / "data" / "historical"
+HISTORICAL_ROOT = Path(
+    os.environ.get("HISTORICAL_DATA_ROOT", ROOT_DIR / "ncaam_historical_data_local")
+).resolve()
+SCORES_FG_DIR = Path(
+    os.environ.get("HISTORICAL_SCORES_FG_DIR", HISTORICAL_ROOT / "scores" / "fg")
+).resolve()
+RATINGS_DIR = Path(
+    os.environ.get("HISTORICAL_RATINGS_DIR", HISTORICAL_ROOT / "ratings" / "barttorvik")
+).resolve()
 
 ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball"
 BARTTORVIK_BASE = "https://barttorvik.com"
@@ -192,8 +200,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default=str(DATA_DIR),
-        help="Output directory"
+        default=str(SCORES_FG_DIR),
+        help="Output directory for full-game scores"
+    )
+    parser.add_argument(
+        "--ratings-dir",
+        type=str,
+        default=str(RATINGS_DIR),
+        help="Output directory for Barttorvik ratings"
     )
 
     args = parser.parse_args(argv)
@@ -206,12 +220,14 @@ def main(argv: list[str] | None = None) -> int:
         seasons = [int(args.seasons)]
 
     output_dir = Path(args.output_dir)
+    ratings_dir = Path(args.ratings_dir)
 
     print("=" * 72)
     print(" Historical NCAAM Data Fetcher")
     print("=" * 72)
     print(f" Seasons: {seasons}")
-    print(f" Output: {output_dir}")
+    print(f" Scores output: {output_dir}")
+    print(f" Ratings output: {ratings_dir}")
     print("=" * 72)
     print()
 
@@ -230,7 +246,8 @@ def main(argv: list[str] | None = None) -> int:
         # Fetch Barttorvik ratings
         ratings = fetch_barttorvik_ratings(season)
         if ratings:
-            ratings_path = output_dir / f"barttorvik_{season}.json"
+            ratings_dir.mkdir(parents=True, exist_ok=True)
+            ratings_path = ratings_dir / f"barttorvik_{season}.json"
             with ratings_path.open("w", encoding="utf-8") as f:
                 json.dump(ratings, f, indent=2)
             print(f"[INFO] Saved Barttorvik ratings to {ratings_path}")

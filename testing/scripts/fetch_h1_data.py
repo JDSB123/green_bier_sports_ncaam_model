@@ -11,6 +11,7 @@ Data Flow:
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import os
@@ -27,8 +28,15 @@ except ImportError:
     sys.exit(1)
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT_DIR / "testing" / "data" / "historical"
-H1_DATA_DIR = ROOT_DIR / "testing" / "data" / "h1_historical"
+HISTORICAL_ROOT = Path(
+    os.environ.get("HISTORICAL_DATA_ROOT", ROOT_DIR / "ncaam_historical_data_local")
+).resolve()
+SCORES_FG_DIR = Path(
+    os.environ.get("HISTORICAL_SCORES_FG_DIR", HISTORICAL_ROOT / "scores" / "fg")
+).resolve()
+SCORES_H1_DIR = Path(
+    os.environ.get("HISTORICAL_SCORES_H1_DIR", HISTORICAL_ROOT / "scores" / "h1")
+).resolve()
 
 ESPN_SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary"
 
@@ -184,12 +192,32 @@ def save_h1_data(h1_games: list[dict], filepath: Path) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Fetch historical 1H (First Half) scores from ESPN."
+    )
+    parser.add_argument(
+        "--input",
+        type=str,
+        help="Input games CSV (default: scores/fg/games_all.csv)"
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="Output H1 CSV (default: scores/h1/h1_games_all.csv)"
+    )
+    parser.add_argument(
+        "--output-json",
+        type=str,
+        help="Optional JSON output path (default: output CSV name with .json)"
+    )
+    args = parser.parse_args()
+
     print("=" * 72)
     print(" 1H Historical Data Fetcher (ESPN)")
     print("=" * 72)
 
     # Load existing game IDs
-    games_file = DATA_DIR / "games_all.csv"
+    games_file = Path(args.input).resolve() if args.input else (SCORES_FG_DIR / "games_all.csv")
     if not games_file.exists():
         print(f"[ERROR] Games file not found: {games_file}")
         print("        Run fetch_historical_data.py first!")
@@ -199,7 +227,7 @@ def main() -> int:
     print(f"[INFO] Loaded {len(games)} games from {games_file}")
 
     # Check for existing progress
-    output_file = H1_DATA_DIR / "h1_games_all.csv"
+    output_file = Path(args.output).resolve() if args.output else (SCORES_H1_DIR / "h1_games_all.csv")
     existing_ids = set()
     if output_file.exists():
         with output_file.open("r", encoding="utf-8") as f:
@@ -250,7 +278,7 @@ def main() -> int:
     save_h1_data(h1_games, output_file)
 
     # Also save as JSON
-    json_file = H1_DATA_DIR / "h1_games_all.json"
+    json_file = Path(args.output_json).resolve() if args.output_json else output_file.with_suffix(".json")
     with json_file.open("w", encoding="utf-8") as f:
         json.dump(h1_games, f, indent=2)
     print(f"[INFO] Saved JSON to {json_file}")

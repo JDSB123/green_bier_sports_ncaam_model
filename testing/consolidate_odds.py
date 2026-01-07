@@ -157,13 +157,24 @@ def main():
     seen_keys: Set[str] = set()
     all_rows = []
     
-    # Process all CSV files
+    # Process all CSV files - prioritize files with H1 data
     csv_files = sorted(data_dir.glob("*.csv"))
     
-    # Skip the output file if it exists
-    csv_files = [f for f in csv_files if f.name != "odds_consolidated_canonical.csv"]
+    # Skip output files and intermediates
+    skip_files = {
+        "odds_consolidated_canonical.csv",
+        "odds_canonical_matchups.csv", 
+        "odds_team_rows_canonical.csv",
+    }
+    csv_files = [f for f in csv_files if f.name not in skip_files]
     
-    print(f"\nProcessing {len(csv_files)} files...")
+    # Prioritize files with H1 data by putting them FIRST
+    # This ensures when we dedupe, we keep the version with H1 data
+    h1_files = [f for f in csv_files if "h1" in f.name.lower() or "with_h1" in f.name.lower()]
+    other_files = [f for f in csv_files if f not in h1_files]
+    csv_files = h1_files + other_files
+    
+    print(f"\nProcessing {len(csv_files)} files ({len(h1_files)} with H1 priority)...")
     
     for csv_file in csv_files:
         stats["files_processed"] += 1
@@ -195,7 +206,20 @@ def main():
                     # Create dedup key: canonical_home|canonical_away|date|bookmaker
                     dedup_key = f"{normalized['home_team_canonical']}|{normalized['away_team_canonical']}|{normalized['game_date']}|{normalized['bookmaker']}"
                     
+                    # Check if this is a duplicate
                     if dedup_key in seen_keys:
+                        # If new row has H1 data but existing doesn't, replace it
+                        new_has_h1 = normalized.get('h1_spread') not in (None, '', 'None')
+                        if new_has_h1:
+                            # Find and update existing row with H1 data
+                            for i, existing in enumerate(all_rows):
+                                existing_key = f"{existing['home_team_canonical']}|{existing['away_team_canonical']}|{existing['game_date']}|{existing['bookmaker']}"
+                                if existing_key == dedup_key:
+                                    existing_has_h1 = existing.get('h1_spread') not in (None, '', 'None')
+                                    if not existing_has_h1:
+                                        all_rows[i] = normalized
+                                        stats["h1_upgrades"] = stats.get("h1_upgrades", 0) + 1
+                                    break
                         stats["duplicates_removed"] += 1
                         continue
                     
@@ -242,6 +266,7 @@ def main():
     print(f"Rows resolved:       {rows_with_resolution:,} ({match_rate:.1f}%)")
     print(f"Unique games output: {len(all_rows):,}")
     print(f"Duplicates removed:  {stats['duplicates_removed']:,}")
+    print(f"H1 data upgrades:    {stats.get('h1_upgrades', 0):,}")
     print(f"Unmatched teams:     {unique_unmatched_count}")
     
     print("\nBy Season:")

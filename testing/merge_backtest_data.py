@@ -16,14 +16,16 @@ from production_parity.team_resolver import ProductionTeamResolver
 
 def load_odds():
     """Load consolidated odds data."""
-    with open('data/historical_odds/odds_consolidated_canonical.csv', 'r') as f:
+    path = Path(__file__).parent / 'data/historical_odds/odds_consolidated_canonical.csv'
+    with open(path, 'r') as f:
         return list(csv.DictReader(f))
 
 
 def load_scores(resolver):
     """Load all game scores and canonicalize team names."""
     scores = []
-    for f in sorted(Path('data/historical').glob('games_20*.csv')):
+    base_dir = Path(__file__).parent / 'data/historical'
+    for f in sorted(base_dir.glob('games_20*.csv')):
         with open(f, 'r') as file:
             for row in csv.DictReader(file):
                 # Canonicalize team names
@@ -167,7 +169,7 @@ def main():
         calculate_backtest_fields(row)
     
     # Write output
-    output_file = Path('data/backtest_ready.csv')
+    output_file = Path(__file__).parent / 'data/backtest_ready.csv'
     
     fieldnames = [
         'game_date', 'season', 'home_team', 'away_team', 'bookmaker',

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
@@ -18,7 +19,15 @@ from typing import Dict, Iterable, List, Optional, Tuple
 import sys
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT_DIR / "testing" / "data" / "historical_odds"
+HISTORICAL_ROOT = Path(
+    os.environ.get("HISTORICAL_DATA_ROOT", ROOT_DIR / "ncaam_historical_data_local")
+).resolve()
+ODDS_RAW_DIR = Path(
+    os.environ.get("HISTORICAL_ODDS_RAW_DIR", HISTORICAL_ROOT / "odds" / "raw")
+).resolve()
+ODDS_NORMALIZED_DIR = Path(
+    os.environ.get("HISTORICAL_ODDS_NORMALIZED_DIR", HISTORICAL_ROOT / "odds" / "normalized")
+).resolve()
 
 sys.path.insert(0, str(ROOT_DIR / "testing"))
 
@@ -32,10 +41,24 @@ MATCHUP_COLUMNS = [
     "home_team_canonical",
     "away_team_canonical",
     "bookmaker",
+    "bookmaker_title",
+    "bookmaker_last_update",
     "spread",
+    "spread_price",
+    "spread_home_price",
+    "spread_away_price",
     "total",
+    "total_over_price",
+    "total_under_price",
+    "moneyline_home_price",
+    "moneyline_away_price",
     "h1_spread",
+    "h1_spread_price",
+    "h1_spread_home_price",
+    "h1_spread_away_price",
     "h1_total",
+    "h1_total_over_price",
+    "h1_total_under_price",
     "is_march_madness",
     "timestamp",
     "game_date",
@@ -48,6 +71,8 @@ TEAM_COLUMNS = [
     "game_date",
     "season",
     "bookmaker",
+    "bookmaker_title",
+    "bookmaker_last_update",
     "team",
     "team_canonical",
     "opponent",
@@ -55,15 +80,51 @@ TEAM_COLUMNS = [
     "is_home",
     "spread",
     "team_spread",
+    "team_spread_price",
+    "spread_home_price",
+    "spread_away_price",
     "total",
+    "total_over_price",
+    "total_under_price",
+    "moneyline_home_price",
+    "moneyline_away_price",
+    "team_moneyline_price",
     "h1_spread",
     "team_h1_spread",
+    "team_h1_spread_price",
+    "h1_spread_home_price",
+    "h1_spread_away_price",
     "h1_total",
+    "h1_total_over_price",
+    "h1_total_under_price",
     "is_march_madness",
     "timestamp",
 ]
 
-MARKET_FIELDS = ("spread", "total", "h1_spread", "h1_total")
+MARKET_FIELDS = (
+    "spread",
+    "spread_price",
+    "spread_home_price",
+    "spread_away_price",
+    "total",
+    "total_over_price",
+    "total_under_price",
+    "moneyline_home_price",
+    "moneyline_away_price",
+    "h1_spread",
+    "h1_spread_price",
+    "h1_spread_home_price",
+    "h1_spread_away_price",
+    "h1_total",
+    "h1_total_over_price",
+    "h1_total_under_price",
+)
+
+METADATA_FIELDS = (
+    "bookmaker",
+    "bookmaker_title",
+    "bookmaker_last_update",
+)
 
 
 def _parse_datetime(value: str) -> Optional[datetime]:
@@ -98,7 +159,7 @@ def _season_from_commence(commence_time: str) -> int:
     dt = _parse_datetime(commence_time)
     if not dt:
         return 0
-    return dt.year + 1 if dt.month >= 7 else dt.year
+    return dt.year + 1 if dt.month >= 11 else dt.year
 
 
 def _default_march_madness_window(year: int) -> Tuple[date, date]:
@@ -139,13 +200,15 @@ def _merge_rows(
 ) -> Dict[str, str]:
     merged = dict(existing)
 
+    all_fields = MARKET_FIELDS + METADATA_FIELDS
+
     if prefer_incoming:
-        for field in MARKET_FIELDS:
+        for field in all_fields:
             if _has_value(incoming.get(field)):
                 merged[field] = incoming.get(field, "")
         merged["timestamp"] = incoming.get("timestamp", merged.get("timestamp", ""))
     else:
-        for field in MARKET_FIELDS:
+        for field in all_fields:
             if not _has_value(merged.get(field)) and _has_value(incoming.get(field)):
                 merged[field] = incoming.get(field, "")
 
@@ -219,10 +282,24 @@ def _normalize_matchup_row(
         "home_team_canonical": home_result.canonical_name or "",
         "away_team_canonical": away_result.canonical_name or "",
         "bookmaker": row.get("bookmaker", ""),
+        "bookmaker_title": row.get("bookmaker_title", ""),
+        "bookmaker_last_update": row.get("bookmaker_last_update", ""),
         "spread": row.get("spread", ""),
+        "spread_price": row.get("spread_price", ""),
+        "spread_home_price": row.get("spread_home_price", row.get("spread_price", "")),
+        "spread_away_price": row.get("spread_away_price", ""),
         "total": row.get("total", ""),
+        "total_over_price": row.get("total_over_price", ""),
+        "total_under_price": row.get("total_under_price", ""),
+        "moneyline_home_price": row.get("moneyline_home_price", ""),
+        "moneyline_away_price": row.get("moneyline_away_price", ""),
         "h1_spread": row.get("h1_spread", ""),
+        "h1_spread_price": row.get("h1_spread_price", ""),
+        "h1_spread_home_price": row.get("h1_spread_home_price", row.get("h1_spread_price", "")),
+        "h1_spread_away_price": row.get("h1_spread_away_price", ""),
         "h1_total": row.get("h1_total", ""),
+        "h1_total_over_price": row.get("h1_total_over_price", ""),
+        "h1_total_under_price": row.get("h1_total_under_price", ""),
         "is_march_madness": str(bool(is_mm_value)),
         "timestamp": row.get("timestamp", ""),
         "game_date": game_date,
@@ -235,6 +312,12 @@ def _normalize_matchup_row(
 def _matchup_to_team_rows(matchup: Dict[str, str]) -> List[Dict[str, str]]:
     spread = _to_float(matchup.get("spread"))
     h1_spread = _to_float(matchup.get("h1_spread"))
+    spread_home_price = _to_float(matchup.get("spread_home_price") or matchup.get("spread_price"))
+    spread_away_price = _to_float(matchup.get("spread_away_price"))
+    h1_spread_home_price = _to_float(matchup.get("h1_spread_home_price") or matchup.get("h1_spread_price"))
+    h1_spread_away_price = _to_float(matchup.get("h1_spread_away_price"))
+    moneyline_home_price = _to_float(matchup.get("moneyline_home_price"))
+    moneyline_away_price = _to_float(matchup.get("moneyline_away_price"))
 
     home_row = {
         "event_id": matchup.get("event_id", ""),
@@ -242,17 +325,32 @@ def _matchup_to_team_rows(matchup: Dict[str, str]) -> List[Dict[str, str]]:
         "game_date": matchup.get("game_date", ""),
         "season": matchup.get("season", ""),
         "bookmaker": matchup.get("bookmaker", ""),
+        "bookmaker_title": matchup.get("bookmaker_title", ""),
+        "bookmaker_last_update": matchup.get("bookmaker_last_update", ""),
         "team": matchup.get("home_team", ""),
         "team_canonical": matchup.get("home_team_canonical", ""),
         "opponent": matchup.get("away_team", ""),
         "opponent_canonical": matchup.get("away_team_canonical", ""),
         "is_home": "1",
         "spread": matchup.get("spread", ""),
-        "team_spread": _format_float(spread),
+        "team_spread": _format_float(spread) if spread is not None else "",
+        "team_spread_price": _format_float(spread_home_price) if spread_home_price is not None else "",
+        "spread_home_price": _format_float(spread_home_price) if spread_home_price is not None else "",
+        "spread_away_price": _format_float(spread_away_price) if spread_away_price is not None else "",
         "total": matchup.get("total", ""),
+        "total_over_price": matchup.get("total_over_price", ""),
+        "total_under_price": matchup.get("total_under_price", ""),
+        "moneyline_home_price": _format_float(moneyline_home_price) if moneyline_home_price is not None else "",
+        "moneyline_away_price": _format_float(moneyline_away_price) if moneyline_away_price is not None else "",
+        "team_moneyline_price": _format_float(moneyline_home_price) if moneyline_home_price is not None else "",
         "h1_spread": matchup.get("h1_spread", ""),
-        "team_h1_spread": _format_float(h1_spread),
+        "team_h1_spread": _format_float(h1_spread) if h1_spread is not None else "",
+        "team_h1_spread_price": _format_float(h1_spread_home_price) if h1_spread_home_price is not None else "",
+        "h1_spread_home_price": _format_float(h1_spread_home_price) if h1_spread_home_price is not None else "",
+        "h1_spread_away_price": _format_float(h1_spread_away_price) if h1_spread_away_price is not None else "",
         "h1_total": matchup.get("h1_total", ""),
+        "h1_total_over_price": matchup.get("h1_total_over_price", ""),
+        "h1_total_under_price": matchup.get("h1_total_under_price", ""),
         "is_march_madness": matchup.get("is_march_madness", ""),
         "timestamp": matchup.get("timestamp", ""),
     }
@@ -263,6 +361,8 @@ def _matchup_to_team_rows(matchup: Dict[str, str]) -> List[Dict[str, str]]:
         "game_date": matchup.get("game_date", ""),
         "season": matchup.get("season", ""),
         "bookmaker": matchup.get("bookmaker", ""),
+        "bookmaker_title": matchup.get("bookmaker_title", ""),
+        "bookmaker_last_update": matchup.get("bookmaker_last_update", ""),
         "team": matchup.get("away_team", ""),
         "team_canonical": matchup.get("away_team_canonical", ""),
         "opponent": matchup.get("home_team", ""),
@@ -270,10 +370,23 @@ def _matchup_to_team_rows(matchup: Dict[str, str]) -> List[Dict[str, str]]:
         "is_home": "0",
         "spread": matchup.get("spread", ""),
         "team_spread": _format_float(-spread) if spread is not None else "",
+        "team_spread_price": _format_float(spread_away_price) if spread_away_price is not None else "",
+        "spread_home_price": _format_float(spread_home_price) if spread_home_price is not None else "",
+        "spread_away_price": _format_float(spread_away_price) if spread_away_price is not None else "",
         "total": matchup.get("total", ""),
+        "total_over_price": matchup.get("total_over_price", ""),
+        "total_under_price": matchup.get("total_under_price", ""),
+        "moneyline_home_price": _format_float(moneyline_home_price) if moneyline_home_price is not None else "",
+        "moneyline_away_price": _format_float(moneyline_away_price) if moneyline_away_price is not None else "",
+        "team_moneyline_price": _format_float(moneyline_away_price) if moneyline_away_price is not None else "",
         "h1_spread": matchup.get("h1_spread", ""),
         "team_h1_spread": _format_float(-h1_spread) if h1_spread is not None else "",
+        "team_h1_spread_price": _format_float(h1_spread_away_price) if h1_spread_away_price is not None else "",
+        "h1_spread_home_price": _format_float(h1_spread_home_price) if h1_spread_home_price is not None else "",
+        "h1_spread_away_price": _format_float(h1_spread_away_price) if h1_spread_away_price is not None else "",
         "h1_total": matchup.get("h1_total", ""),
+        "h1_total_over_price": matchup.get("h1_total_over_price", ""),
+        "h1_total_under_price": matchup.get("h1_total_under_price", ""),
         "is_march_madness": matchup.get("is_march_madness", ""),
         "timestamp": matchup.get("timestamp", ""),
     }
@@ -296,24 +409,24 @@ def main() -> int:
     parser.add_argument(
         "--input",
         type=str,
-        help="Optional single CSV input file. Defaults to all CSVs in historical_odds.",
+        help="Optional single CSV input file. Defaults to all CSVs in odds/raw.",
     )
     parser.add_argument(
         "--input-dir",
         type=str,
-        default=str(DATA_DIR),
-        help="Directory containing odds CSV files (default: testing/data/historical_odds).",
+        default=str(ODDS_RAW_DIR),
+        help="Directory containing odds CSV files (default: odds/raw).",
     )
     parser.add_argument(
         "--output-matchups",
         type=str,
-        default=str(DATA_DIR / "odds_canonical_matchups.csv"),
+        default=str(ODDS_NORMALIZED_DIR / "odds_canonical_matchups.csv"),
         help="Output file for canonicalized matchup rows.",
     )
     parser.add_argument(
         "--output-teams",
         type=str,
-        default=str(DATA_DIR / "odds_team_rows_canonical.csv"),
+        default=str(ODDS_NORMALIZED_DIR / "odds_team_rows_canonical.csv"),
         help="Output file for team-level rows (two rows per matchup).",
     )
     parser.add_argument(
@@ -330,6 +443,17 @@ def main() -> int:
         "--unmatched-output",
         type=str,
         help="Optional CSV to write unresolved team names and counts.",
+    )
+    parser.add_argument(
+        "--prefer",
+        type=str,
+        choices=["earliest", "latest"],
+        default="earliest",
+        help=(
+            "When duplicate event/book rows are found with different timestamps,"
+            " prefer the 'earliest' (opening) or 'latest' (closing) snapshot."
+            " Default: earliest"
+        ),
     )
 
     args = parser.parse_args()
@@ -403,8 +527,12 @@ def main() -> int:
                     existing_ts, existing_row = existing
                     prefer_incoming = False
                     if ts and existing_ts:
-                        prefer_incoming = ts < existing_ts
+                        if args.prefer == "earliest":
+                            prefer_incoming = ts < existing_ts
+                        else:  # latest
+                            prefer_incoming = ts > existing_ts
                     elif ts and not existing_ts:
+                        # If existing has no timestamp, take the incoming regardless of preference
                         prefer_incoming = True
 
                     merged_row = _merge_rows(existing_row, normalized, prefer_incoming)
