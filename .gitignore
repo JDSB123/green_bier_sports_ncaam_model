@@ -124,6 +124,10 @@ testing/data/historical/
 testing/data/historical_odds/
 testing/data/validation_results/
 testing/data/market_validation/
+!testing/data/historical_odds/
+testing/data/historical_odds/*
+!testing/data/historical_odds/README.md
+!testing/data/historical_odds/odds_all_normalized_*.csv
 
 # NCAAM v33 secrets (do not commit)
 ncaam_v33_model_db_password
