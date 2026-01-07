@@ -124,6 +124,7 @@ testing/data/historical/
 testing/data/historical_odds/
 testing/data/validation_results/
 testing/data/market_validation/
+ncaam_historical_data_local/
 !testing/data/historical_odds/
 testing/data/historical_odds/*
 !testing/data/historical_odds/README.md
@@ -137,3 +138,13 @@ ncaam_v33_model_odds_api_key
 # Local run helpers (not source-controlled)
 services/prediction-service-python/run_prediction.py
 services/prediction-service-python/training_data/
+services/prediction-service-python/app/ml/trained_models/
+
+# Historical data archives (too large, use ncaam_historical_data_local/)
+NCAAM_historical_data/
+
+# Personal reference files
+telegram_history/
+
+# Backtest output
+backtest_output.txt
