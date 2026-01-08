@@ -1,6 +1,28 @@
 <!-- Purpose: document current historical coverage, season rules, gaps, and how to fetch missing data. -->
 # Historical Data Coverage, Season Rules, and Gaps
 
+## Data Source of Truth
+
+**All historical data lives in:** `ncaam_historical_data_local/`  
+**Git repo:** https://github.com/JDSB123/ncaam-historical-data
+
+```
+ncaam_historical_data_local/
+├── scores/
+│   ├── fg/           # Full-game scores: games_YYYY.csv, games_all.csv
+│   └── h1/           # First-half scores: h1_games_all.csv
+├── odds/
+│   ├── *.csv         # Raw odds files
+│   └── normalized/   # Consolidated: odds_consolidated_canonical.csv
+├── ratings/
+│   └── barttorvik/   # barttorvik_YYYY.json
+├── backtest_datasets/  # Pre-built training data
+├── schemas/          # Field definitions
+└── ncaahoopR_data-master/  # Play-by-play (~7GB, not in git)
+```
+
+Use `from testing.data_paths import DATA_PATHS` in Python scripts.
+
 ## Season Definitions (canonicalized)
 - ESPN game dates: season = `year` if `month >= 11` else `year + 1` (Nov–Apr window).
 - Odds API (`commence_time` UTC): apply the same rule after converting to date; beware late-night UTC rolling to next day.

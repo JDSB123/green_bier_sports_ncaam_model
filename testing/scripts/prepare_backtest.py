@@ -4,12 +4,17 @@ import uuid
 import requests
 import json
 import os
+import sys
 from pathlib import Path
 
-# Paths
-SOURCE_FILE = Path("testing/data/backtest_ready.csv")
-TARGET_DIR = Path("testing/data/historical_odds")
-TARGET_GAMES_FILE = TARGET_DIR / "games_all.csv"
+# Add project root for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from testing.data_paths import DATA_PATHS
+
+# Paths - use ncaam_historical_data_local as source of truth
+SOURCE_FILE = DATA_PATHS.backtest_datasets / "training_data_with_odds.csv"
+TARGET_DIR = DATA_PATHS.odds_normalized
+TARGET_GAMES_FILE = DATA_PATHS.scores_fg / "games_all.csv"
 TARGET_DIR.mkdir(parents=True, exist_ok=True)
 
 def prepare_games_file():

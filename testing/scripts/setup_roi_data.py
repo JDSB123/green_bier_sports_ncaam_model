@@ -6,13 +6,15 @@ from pathlib import Path
 from collections import defaultdict
 
 # Add project root to path
-sys.path.insert(0, os.getcwd())
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from testing.production_parity.timezone_utils import get_season_for_game
+from testing.data_paths import DATA_PATHS
 
 def main():
-    source_file = Path("testing/data/historical_odds/games_all.csv")
-    output_dir = Path("testing/data/historical")
+    # Use ncaam_historical_data_local as source of truth
+    source_file = DATA_PATHS.scores_fg / "games_all.csv"
+    output_dir = DATA_PATHS.scores_fg  # Output to same location
     output_dir.mkdir(parents=True, exist_ok=True)
     
     if not source_file.exists():
