@@ -4,11 +4,22 @@ Central configuration for historical data paths.
 All backtest and historical data lives in ncaam_historical_data_local/
 which is a separate git repo (https://github.com/JDSB123/ncaam-historical-data).
 
+Data Flow:
+    RAW → CANONICAL (after team name QA/QC)
+    
+    odds/raw/archive/       - Original API pulls (pre-canonicalization)
+    odds/canonical/         - Post-QA with resolved team names
+    ratings/raw/            - Original ratings (pre-canonicalization)
+    ratings/canonical/      - Post-QA with resolved team names
+
 Usage:
     from testing.data_paths import DATA_PATHS
     
-    scores_file = DATA_PATHS.scores_fg / "games_all.csv"
-    odds_file = DATA_PATHS.odds_normalized / "odds_consolidated_canonical.csv"
+    # For backtesting (use canonical data)
+    spreads = DATA_PATHS.odds_canonical_spreads_fg / "spreads_fg_all.csv"
+    
+    # For raw data processing
+    raw_files = DATA_PATHS.odds_raw_archive
 """
 
 from pathlib import Path
@@ -25,7 +36,10 @@ class DataPaths:
     
     def __init__(self, root: Path = HISTORICAL_DATA_ROOT):
         self.root = root
-        
+    
+    # ─────────────────────────────────────────────────────────────
+    # SCORES
+    # ─────────────────────────────────────────────────────────────
     @property
     def scores_fg(self) -> Path:
         """Full-game scores: games_YYYY.csv, games_all.csv"""
@@ -36,21 +50,83 @@ class DataPaths:
         """First-half scores: h1_games_all.csv"""
         return self.root / "scores" / "h1"
     
+    # ─────────────────────────────────────────────────────────────
+    # ODDS - RAW (pre-canonicalization)
+    # ─────────────────────────────────────────────────────────────
     @property
-    def odds_raw(self) -> Path:
-        """Raw odds files from The Odds API"""
-        return self.root / "odds"
+    def odds_raw_archive(self) -> Path:
+        """Original API pulls (210+ files, pre-canonicalization)"""
+        return self.root / "odds" / "raw" / "archive"
+    
+    @property
+    def odds_raw_spreads_fg(self) -> Path:
+        """Raw full-game spreads (pre-canonicalization)"""
+        return self.root / "odds" / "raw" / "spreads" / "fg"
+    
+    @property
+    def odds_raw_spreads_h1(self) -> Path:
+        """Raw first-half spreads (pre-canonicalization)"""
+        return self.root / "odds" / "raw" / "spreads" / "h1"
+    
+    @property
+    def odds_raw_totals_fg(self) -> Path:
+        """Raw full-game totals (pre-canonicalization)"""
+        return self.root / "odds" / "raw" / "totals" / "fg"
+    
+    @property
+    def odds_raw_totals_h1(self) -> Path:
+        """Raw first-half totals (pre-canonicalization)"""
+        return self.root / "odds" / "raw" / "totals" / "h1"
+    
+    # ─────────────────────────────────────────────────────────────
+    # ODDS - CANONICAL (post-QA, team names resolved)
+    # ─────────────────────────────────────────────────────────────
+    @property
+    def odds_canonical_spreads_fg(self) -> Path:
+        """Canonical full-game spreads (post-QA)"""
+        return self.root / "odds" / "canonical" / "spreads" / "fg"
+    
+    @property
+    def odds_canonical_spreads_h1(self) -> Path:
+        """Canonical first-half spreads (post-QA)"""
+        return self.root / "odds" / "canonical" / "spreads" / "h1"
+    
+    @property
+    def odds_canonical_totals_fg(self) -> Path:
+        """Canonical full-game totals (post-QA)"""
+        return self.root / "odds" / "canonical" / "totals" / "fg"
+    
+    @property
+    def odds_canonical_totals_h1(self) -> Path:
+        """Canonical first-half totals (post-QA)"""
+        return self.root / "odds" / "canonical" / "totals" / "h1"
     
     @property
     def odds_normalized(self) -> Path:
-        """Normalized/consolidated odds files"""
+        """Legacy: Normalized/consolidated odds files (deprecated)"""
         return self.root / "odds" / "normalized"
+    
+    # ─────────────────────────────────────────────────────────────
+    # RATINGS
+    # ─────────────────────────────────────────────────────────────
+    @property
+    def ratings_raw_barttorvik(self) -> Path:
+        """Raw Barttorvik ratings: barttorvik_YYYY.json"""
+        return self.root / "ratings" / "raw" / "barttorvik"
+    
+    @property
+    def ratings_canonical(self) -> Path:
+        """Canonical ratings (post-QA, team names resolved)"""
+        return self.root / "ratings" / "canonical"
     
     @property
     def ratings(self) -> Path:
-        """Barttorvik ratings: barttorvik_YYYY.json"""
-        return self.root / "ratings" / "barttorvik"
+        """Alias for ratings_raw_barttorvik (backward compat)"""
+        return self.ratings_raw_barttorvik
     
+    # ─────────────────────────────────────────────────────────────
+    # OTHER
+    # ─────────────────────────────────────────────────────────────
     @property
     def backtest_datasets(self) -> Path:
         """Pre-built backtest datasets"""
