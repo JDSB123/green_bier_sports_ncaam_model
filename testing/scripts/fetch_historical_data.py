@@ -7,6 +7,11 @@ Data Sources:
 
 This script downloads historical data needed to properly validate
 the prediction model against real outcomes.
+
+Team Canonicalization:
+- All team names are canonicalized at ingestion using team_utils.resolve_team_name()
+- If >10% of a day's games have unresolved teams, the script aborts
+- Unresolved teams are logged and skipped (< 10% threshold)
 """
 from __future__ import annotations
 
@@ -23,6 +28,14 @@ try:
     import requests
 except ImportError:
     print("[ERROR] requests library required: pip install requests")
+    sys.exit(1)
+
+# Import team canonicalization from single source of truth
+# team_utils.py is in the same directory (testing/scripts/)
+try:
+    from team_utils import resolve_team_name
+except ImportError:
+    print("[ERROR] team_utils module required - must be in testing/scripts/")
     sys.exit(1)
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -54,7 +67,11 @@ def fetch_espn_scoreboard(date: str) -> list[dict]:
 
 
 def parse_espn_game(event: dict) -> dict | None:
-    """Extract relevant fields from ESPN event."""
+    """Extract relevant fields from ESPN event.
+    
+    Team names are canonicalized at parse time using the central team resolver.
+    Returns None if either team cannot be resolved (game is skipped).
+    """
     try:
         comp = event.get("competitions", [{}])[0]
         competitors = comp.get("competitors", [])
@@ -62,7 +79,7 @@ def parse_espn_game(event: dict) -> dict | None:
         if len(competitors) != 2:
             return None
 
-        home_team = away_team = None
+        home_team_raw = away_team_raw = None
         home_score = away_score = 0
 
         for c in competitors:
@@ -72,21 +89,47 @@ def parse_espn_game(event: dict) -> dict | None:
             score = int(c.get("score", 0) or 0)
 
             if c.get("homeAway") == "home":
-                home_team = team_name
+                home_team_raw = team_name
                 home_abbr = team_abbr
                 home_score = score
             else:
-                away_team = team_name
+                away_team_raw = team_name
                 away_abbr = team_abbr
                 away_score = score
 
-        if not home_team or not away_team:
+        if not home_team_raw or not away_team_raw:
             return None
 
         # Only include completed games
         status = event.get("status", {}).get("type", {}).get("name", "")
         if status != "STATUS_FINAL":
             return None
+
+        # Canonicalize team names using central resolver
+        home_team = resolve_team_name(home_team_raw)
+        away_team = resolve_team_name(away_team_raw)
+        
+        # Track resolution failures - return None with raw names preserved for logging
+        unresolved = []
+        if home_team == home_team_raw:
+            # Check if it's actually a canonical name (resolved to itself)
+            canonical_check = resolve_team_name(home_team_raw.lower())
+            if canonical_check == home_team_raw.lower():
+                unresolved.append(("home", home_team_raw))
+        if away_team == away_team_raw:
+            canonical_check = resolve_team_name(away_team_raw.lower())
+            if canonical_check == away_team_raw.lower():
+                unresolved.append(("away", away_team_raw))
+        
+        if unresolved:
+            # Return dict with _unresolved marker for threshold tracking
+            return {
+                "_unresolved": unresolved,
+                "game_id": event.get("id"),
+                "date": event.get("date", "")[:10],
+                "home_team_raw": home_team_raw,
+                "away_team_raw": away_team_raw,
+            }
 
         return {
             "game_id": event.get("id"),
@@ -106,9 +149,18 @@ def parse_espn_game(event: dict) -> dict | None:
         return None
 
 
+# Canonicalization threshold - fail if more than 10% of games have unresolved teams
+UNRESOLVED_THRESHOLD = 0.10
+
+
 def fetch_season_games(season: int, verbose: bool = True) -> list[dict]:
-    """Fetch all games for a season (e.g., 2024 = 2023-24 season)."""
+    """Fetch all games for a season (e.g., 2024 = 2023-24 season).
+    
+    Raises:
+        RuntimeError: If >10% of games on any day have unresolved team names
+    """
     games = []
+    all_unresolved = []  # Track all unresolved for summary
 
     # NCAA season runs Nov through early April
     start_date = datetime(season - 1, 11, 1)
@@ -125,10 +177,43 @@ def fetch_season_games(season: int, verbose: bool = True) -> list[dict]:
         date_str = current.strftime("%Y%m%d")
         events = fetch_espn_scoreboard(date_str)
 
+        day_games = []
+        day_unresolved = []
+        
         for event in events:
             game = parse_espn_game(event)
             if game:
-                games.append(game)
+                if "_unresolved" in game:
+                    # This game has unresolved team(s)
+                    day_unresolved.append(game)
+                    all_unresolved.append(game)
+                else:
+                    day_games.append(game)
+        
+        # Check threshold for this day
+        total_day = len(day_games) + len(day_unresolved)
+        if total_day > 0 and len(day_unresolved) > 0:
+            failure_rate = len(day_unresolved) / total_day
+            
+            if failure_rate > UNRESOLVED_THRESHOLD:
+                # More than 10% failed - abort
+                msg = (f"[ERROR] {current.strftime('%Y-%m-%d')}: "
+                       f"{len(day_unresolved)}/{total_day} games ({failure_rate:.1%}) have unresolved teams "
+                       f"(threshold: {UNRESOLVED_THRESHOLD:.0%})")
+                print(msg)
+                for g in day_unresolved:
+                    for side, name in g["_unresolved"]:
+                        print(f"  - UNRESOLVED {side}: '{name}'")
+                raise RuntimeError(msg)
+            else:
+                # Under threshold - log warning and skip
+                if verbose:
+                    print(f"  [WARN] {current.strftime('%Y-%m-%d')}: Skipping {len(day_unresolved)} games with unresolved teams")
+                    for g in day_unresolved:
+                        for side, name in g["_unresolved"]:
+                            print(f"    - UNRESOLVED {side}: '{name}'")
+        
+        games.extend(day_games)
 
         day_count += 1
         if verbose and day_count % 30 == 0:
@@ -139,6 +224,8 @@ def fetch_season_games(season: int, verbose: bool = True) -> list[dict]:
 
     if verbose:
         print(f"  [DONE] {len(games)} completed games for {season-1}-{str(season)[-2:]} season")
+        if all_unresolved:
+            print(f"  [WARN] Skipped {len(all_unresolved)} games total due to unresolved teams")
 
     return games
 

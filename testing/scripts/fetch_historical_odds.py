@@ -48,8 +48,19 @@ ODDS_RAW_DIR = Path(
     os.environ.get("HISTORICAL_ODDS_RAW_DIR", HISTORICAL_ROOT / "odds" / "raw")
 ).resolve()
 
+# Import team canonicalization from single source of truth
+# team_utils.py is in the same directory (testing/scripts/)
+try:
+    from team_utils import resolve_team_name
+except ImportError:
+    print("[ERROR] team_utils module required - must be in testing/scripts/")
+    sys.exit(1)
+
 BASE_URL = "https://api.the-odds-api.com/v4"
 SPORT_KEY = "basketball_ncaab"
+
+# Canonicalization threshold - fail if more than 10% of games have unresolved teams
+UNRESOLVED_THRESHOLD = 0.10
 
 
 def get_api_key() -> str:
@@ -305,8 +316,40 @@ def _parse_bookmaker_row(
     odds_data: dict,
     tourney_window: tuple[date, date] | None = None,
 ) -> dict | None:
-    home_team = event.get("home_team")
-    away_team = event.get("away_team")
+    """Parse a single bookmaker's odds for an event.
+    
+    Team names are canonicalized using the central resolver.
+    Returns dict with '_unresolved' key if teams cannot be resolved.
+    """
+    home_team_raw = event.get("home_team")
+    away_team_raw = event.get("away_team")
+    
+    # Canonicalize team names at ingestion
+    home_team = resolve_team_name(home_team_raw) if home_team_raw else None
+    away_team = resolve_team_name(away_team_raw) if away_team_raw else None
+    
+    # Check for unresolved teams (resolver returns input unchanged if not found)
+    unresolved = []
+    if home_team_raw and home_team == home_team_raw:
+        # Could be canonical already - check case-insensitive
+        check = resolve_team_name(home_team_raw.lower())
+        if check == home_team_raw.lower():
+            unresolved.append(("home", home_team_raw))
+    if away_team_raw and away_team == away_team_raw:
+        check = resolve_team_name(away_team_raw.lower())
+        if check == away_team_raw.lower():
+            unresolved.append(("away", away_team_raw))
+    
+    if unresolved:
+        # Return marker for threshold tracking
+        return {
+            "_unresolved": unresolved,
+            "event_id": event.get("id"),
+            "commence_time": event.get("commence_time"),
+            "home_team_raw": home_team_raw,
+            "away_team_raw": away_team_raw,
+        }
+    
     spread = None
     spread_home_price = None
     spread_away_price = None
@@ -322,16 +365,17 @@ def _parse_bookmaker_row(
     moneyline_home_price = None
     moneyline_away_price = None
 
+    # Use raw names for matching in outcomes (API returns raw names)
     for market in bookmaker.get("markets", []):
         key = market.get("key")
         outcomes = market.get("outcomes", []) or []
 
         if key == "spreads":
-            spread = _extract_spread_point(outcomes, home_team)
-            spread_home_price, spread_away_price = _extract_spread_prices(outcomes, home_team, away_team)
+            spread = _extract_spread_point(outcomes, home_team_raw)
+            spread_home_price, spread_away_price = _extract_spread_prices(outcomes, home_team_raw, away_team_raw)
         elif key == "spreads_h1":
-            h1_spread = _extract_spread_point(outcomes, home_team)
-            h1_spread_home_price, h1_spread_away_price = _extract_spread_prices(outcomes, home_team, away_team)
+            h1_spread = _extract_spread_point(outcomes, home_team_raw)
+            h1_spread_home_price, h1_spread_away_price = _extract_spread_prices(outcomes, home_team_raw, away_team_raw)
         elif key == "totals":
             total = _extract_total_point(outcomes)
             total_over_price, total_under_price = _extract_total_price(outcomes)
@@ -340,7 +384,7 @@ def _parse_bookmaker_row(
             h1_total_over_price, h1_total_under_price = _extract_total_price(outcomes)
         elif key == "h2h":
             moneyline_home_price, moneyline_away_price = _extract_moneyline_prices(
-                outcomes, home_team, away_team
+                outcomes, home_team_raw, away_team_raw
             )
 
     commence_time = event.get("commence_time")
@@ -411,8 +455,16 @@ def fetch_date_range(
     bookmakers_mode: str = "all",
     checkpoint_tag: str | None = None,
 ) -> list[dict]:
-    """Fetch odds for all games in a date range with incremental saving."""
+    """Fetch odds for all games in a date range with incremental saving.
+    
+    Team names are canonicalized at ingestion. If >10% of a day's games 
+    have unresolved teams, the script aborts.
+    
+    Raises:
+        RuntimeError: If >10% of games on any day have unresolved team names
+    """
     all_odds = []
+    all_unresolved = []  # Track all unresolved for summary
     days_since_save = 0
 
     start = datetime.strptime(start_date, "%Y-%m-%d")
@@ -425,6 +477,9 @@ def fetch_date_range(
     while current <= end:
         date_str = current.strftime("%Y-%m-%d")
         print(f"\n[INFO] Fetching {date_str}...")
+
+        day_resolved = []
+        day_unresolved = []
 
         try:
             events = fetch_historical_events(api_key, date_str)
@@ -446,13 +501,18 @@ def fetch_date_range(
                             bookmakers_mode=bookmakers_mode,
                         )
                         for parsed in parsed_rows:
-                            all_odds.append(parsed)
-                            print(
-                                f"    {parsed['away_team']} @ {parsed['home_team']} "
-                                f"({parsed.get('bookmaker')}): "
-                                f"spread={parsed['spread']}, total={parsed['total']}, "
-                                f"h1_spread={parsed['h1_spread']}, h1_total={parsed['h1_total']}"
-                            )
+                            if "_unresolved" in parsed:
+                                # Track unresolved for threshold checking
+                                day_unresolved.append(parsed)
+                                all_unresolved.append(parsed)
+                            else:
+                                day_resolved.append(parsed)
+                                print(
+                                    f"    {parsed['away_team']} @ {parsed['home_team']} "
+                                    f"({parsed.get('bookmaker')}): "
+                                    f"spread={parsed['spread']}, total={parsed['total']}, "
+                                    f"h1_spread={parsed['h1_spread']}, h1_total={parsed['h1_total']}"
+                                )
                 except Exception as e:
                     failed_events += 1
                     print(f"    [SKIP] Failed to fetch event {event_id}: {e}")
@@ -461,6 +521,35 @@ def fetch_date_range(
                 # Throttle lightly
                 time.sleep(0.05)
 
+            # Check threshold for this day
+            total_day = len(day_resolved) + len(day_unresolved)
+            if total_day > 0 and len(day_unresolved) > 0:
+                failure_rate = len(day_unresolved) / total_day
+                
+                if failure_rate > UNRESOLVED_THRESHOLD:
+                    # More than 10% failed - abort
+                    msg = (f"[ERROR] {date_str}: "
+                           f"{len(day_unresolved)}/{total_day} events ({failure_rate:.1%}) have unresolved teams "
+                           f"(threshold: {UNRESOLVED_THRESHOLD:.0%})")
+                    print(msg)
+                    seen = set()
+                    for g in day_unresolved:
+                        for side, name in g["_unresolved"]:
+                            if name not in seen:
+                                print(f"  - UNRESOLVED {side}: '{name}'")
+                                seen.add(name)
+                    raise RuntimeError(msg)
+                else:
+                    # Under threshold - log warning and skip
+                    print(f"  [WARN] Skipping {len(day_unresolved)} events with unresolved teams")
+                    seen = set()
+                    for g in day_unresolved:
+                        for side, name in g["_unresolved"]:
+                            if name not in seen:
+                                print(f"    - UNRESOLVED {side}: '{name}'")
+                                seen.add(name)
+
+            all_odds.extend(day_resolved)
             days_since_save += 1
 
             # Save incrementally
@@ -471,6 +560,8 @@ def fetch_date_range(
                 print(f"  [CHECKPOINT] Saved {len(all_odds)} records")
                 days_since_save = 0
 
+        except RuntimeError:
+            raise  # Re-raise threshold errors
         except Exception as e:
             print(f"  [ERROR] Failed to fetch {date_str}: {e}")
             failed_dates.append(date_str)
@@ -481,6 +572,9 @@ def fetch_date_range(
 
     if failed_dates:
         print(f"\n[WARN] Failed to fetch {len(failed_dates)} dates: {failed_dates[:10]}...")
+    
+    if all_unresolved:
+        print(f"\n[WARN] Skipped {len(all_unresolved)} events total due to unresolved teams")
 
     return all_odds
 
