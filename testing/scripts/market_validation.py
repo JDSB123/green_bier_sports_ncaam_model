@@ -33,12 +33,15 @@ try:
 except ImportError:
     HAS_SQLALCHEMY = False
 
-# Import improved team name mapper for local fallback
+# Import ProductionTeamResolver as local fallback (single source of truth)
 try:
-    from team_name_mapper import normalize_team_name as improved_normalize
-    HAS_IMPROVED_MAPPER = True
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "production_parity"))
+    from team_resolver import ProductionTeamResolver
+    _LOCAL_RESOLVER = ProductionTeamResolver()
+    HAS_LOCAL_RESOLVER = True
 except ImportError:
-    HAS_IMPROVED_MAPPER = False
+    _LOCAL_RESOLVER = None
+    HAS_LOCAL_RESOLVER = False
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 HISTORICAL_DIR = ROOT_DIR / "testing" / "data" / "historical"
@@ -236,16 +239,17 @@ def normalize_team_name_local(name: str) -> str:
     Local fallback for team name normalization.
     Used when database is unavailable.
 
-    Uses improved team_name_mapper module if available.
+    Uses ProductionTeamResolver (single source of truth) for consistent canonicalization.
     """
     if pd.isna(name):
         return ""
 
-    # Use improved mapper if available (handles St. vs State, Int'l, etc.)
-    if HAS_IMPROVED_MAPPER:
-        return improved_normalize(name)
+    # Use ProductionTeamResolver (single source of truth)
+    if HAS_LOCAL_RESOLVER and _LOCAL_RESOLVER:
+        result = _LOCAL_RESOLVER.resolve(name)
+        return result.canonical_name if result.canonical_name else str(name).strip()
 
-    # Basic fallback if mapper not available
+    # Basic fallback if resolver not available
     name = str(name).lower().strip()
 
     # Remove common suffixes (mascots)

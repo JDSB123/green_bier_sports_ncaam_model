@@ -33,6 +33,12 @@ from typing import Optional, Dict, List, Tuple
 
 import numpy as np
 
+# Add scripts to path for team_utils (single source of truth)
+ROOT_DIR = Path(__file__).resolve().parents[2]
+import sys
+sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
+from team_utils import resolve_team_name
+
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT_DIR / "testing" / "data"
 H1_DATA_DIR = DATA_DIR / "h1_historical"
@@ -169,39 +175,32 @@ def load_barttorvik_ratings(filepath: Path) -> Dict[str, TeamRatings]:
     return ratings
 
 
-def normalize_team_name(name: str) -> str:
-    """Normalize team name for matching."""
-    name = name.lower().strip()
-    # Remove common suffixes
-    suffixes = [
-        " wildcats", " tigers", " bears", " bulldogs", " eagles", " hawks",
-        " cardinals", " hurricanes", " gators", " terrapins", " crusaders",
-        " hornets", " jayhawks", " wolverines", " buckeyes", " spartans",
-        " hoosiers", " boilermakers", " fighting irish", " blue devils",
-        " tar heels", " cavaliers", " seminoles", " yellow jackets",
-    ]
-    for suffix in suffixes:
-        if name.endswith(suffix):
-            name = name[:-len(suffix)]
-    return name.strip()
-
-
 def find_team_rating(team_name: str, ratings: Dict[str, TeamRatings]) -> Optional[TeamRatings]:
-    """Find team rating with fuzzy matching."""
-    lower = team_name.lower().strip()
-
-    # Direct match
-    if lower in ratings:
-        return ratings[lower]
-
-    # Normalized match
-    normalized = normalize_team_name(team_name)
-    for key, rating in ratings.items():
-        if normalize_team_name(key) == normalized:
+    """Find team rating using canonical name from single source of truth.
+    
+    Uses ProductionTeamResolver via team_utils for EXACT matching only.
+    No fuzzy matching to prevent false positives like 'Tennessee' -> 'Tennessee St.'.
+    """
+    # Resolve to canonical name using single source of truth
+    canonical = resolve_team_name(team_name)
+    
+    # Direct match on canonical name
+    if canonical in ratings:
+        return ratings[canonical]
+    
+    # Try lowercase match (ratings may be keyed lowercase)
+    canonical_lower = canonical.lower()
+    if canonical_lower in ratings:
+        return ratings[canonical_lower]
+    
+    # Try matching resolved names in rating keys
+    for rating_name, rating in ratings.items():
+        if not isinstance(rating_name, str):
+            continue
+        rating_canonical = resolve_team_name(rating_name)
+        if rating_canonical == canonical:
             return rating
-        if normalized in key or key in normalized:
-            return rating
-
+    
     return None
 
 

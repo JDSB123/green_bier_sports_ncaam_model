@@ -19,6 +19,10 @@ import numpy as np
 ROOT_DIR = Path(__file__).resolve().parents[2]
 HIST_DATA_DIR = ROOT_DIR / "testing" / "data" / "historical"
 
+# Add scripts to path for team_utils
+sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
+from team_utils import resolve_team_name
+
 sys.path.insert(0, str(ROOT_DIR / "services" / "prediction-service-python"))
 
 from app.predictors.fg_spread import FGSpreadModel
@@ -110,32 +114,32 @@ def load_barttorvik_ratings(season: int) -> dict[str, TeamRatings]:
     return ratings
 
 
-def normalize_team_name(name: str) -> str:
-    """Normalize team name for matching."""
-    name = name.lower().strip()
-    suffixes = [" wildcats", " tigers", " bears", " bulldogs", " eagles",
-                " hawks", " cardinals", " hurricanes", " gators", " terrapins",
-                " crusaders", " hornets", " jayhawks", " wolverines", " buckeyes"]
-    for suffix in suffixes:
-        name = name.replace(suffix, "")
-    return name.strip()
-
-
 def find_team_rating(team_name: str, ratings: dict[str, TeamRatings]) -> TeamRatings | None:
-    """Find team rating with fuzzy matching."""
-    if team_name in ratings:
-        return ratings[team_name]
-
-    norm_name = normalize_team_name(team_name)
+    """Find team rating using canonical name from single source of truth.
+    
+    Uses ProductionTeamResolver via team_utils for EXACT matching only.
+    No fuzzy matching to prevent false positives like 'Tennessee' -> 'Tennessee St.'.
+    """
+    # Resolve to canonical name
+    canonical = resolve_team_name(team_name)
+    
+    # Direct match on canonical name
+    if canonical in ratings:
+        return ratings[canonical]
+    
+    # Try lowercase match (ratings may be keyed lowercase)
+    canonical_lower = canonical.lower()
+    if canonical_lower in ratings:
+        return ratings[canonical_lower]
+    
+    # Try matching resolved names in rating keys
     for rating_name, rating in ratings.items():
         if not isinstance(rating_name, str):
             continue
-        if normalize_team_name(rating_name) == norm_name:
+        rating_canonical = resolve_team_name(rating_name)
+        if rating_canonical == canonical:
             return rating
-        rating_norm = normalize_team_name(rating_name)
-        if norm_name in rating_norm or rating_norm in norm_name:
-            return rating
-
+    
     return None
 
 

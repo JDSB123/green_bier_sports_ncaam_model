@@ -33,6 +33,10 @@ HISTORICAL_DIR = ROOT_DIR / "testing" / "data" / "historical"
 KAGGLE_DIR = ROOT_DIR / "testing" / "data" / "kaggle"
 RESULTS_DIR = ROOT_DIR / "testing" / "data" / "validation_results"
 
+# Add scripts to path for team_utils (single source of truth)
+sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
+from team_utils import resolve_team_name
+
 
 # ==================== Model Constants ====================
 # These match the production model in predictor.py
@@ -164,77 +168,32 @@ def load_game_results(season: int) -> pd.DataFrame:
     return df
 
 
-def normalize_team_name(name: str) -> str:
-    """Normalize team name for matching."""
-    name = name.lower().strip()
-
-    # Common replacements
-    replacements = {
-        "uconn": "connecticut",
-        "uconn huskies": "connecticut",
-        "pitt": "pittsburgh",
-        "pitt panthers": "pittsburgh",
-        "ole miss": "mississippi",
-        "ole miss rebels": "mississippi",
-        "umass": "massachusetts",
-        "vcu": "virginia commonwealth",
-        "lsu": "louisiana state",
-        "lsu tigers": "louisiana state",
-        "ucf": "central florida",
-        "ucf knights": "central florida",
-        "usc": "southern california",
-        "usc trojans": "southern california",
-        "smu": "southern methodist",
-        "smu mustangs": "southern methodist",
-        "tcu": "texas christian",
-        "tcu horned frogs": "texas christian",
-        "byu": "brigham young",
-        "byu cougars": "brigham young",
-    }
-
-    for abbr, full in replacements.items():
-        if name == abbr or name.startswith(abbr + " "):
-            return full
-
-    # Remove common suffixes
-    suffixes = [
-        " wildcats", " tigers", " bulldogs", " bears", " eagles",
-        " huskies", " cavaliers", " blue devils", " tar heels",
-        " spartans", " wolverines", " buckeyes", " hoosiers",
-        " boilermakers", " hawkeyes", " badgers", " gophers",
-        " cornhuskers", " jayhawks", " sooners", " longhorns",
-        " aggies", " razorbacks", " volunteers", " crimson tide",
-        " rebels", " gamecocks", " hurricanes", " seminoles",
-        " yellow jackets", " red raiders", " horned frogs",
-        " cowboys", " cyclones", " mountaineers", " red storm",
-        " fighting irish", " panthers", " cardinals", " bearcats",
-        " musketeers", " billikens", " bluejays", " golden eagles",
-        " pirates", " colonials", " explorers", " hawks", " owls",
-        " gaels", " zags", " dons", " toreros", " broncos",
-        " cougars", " aztecs", " wolf pack", " runnin' rebels",
-    ]
-
-    for suffix in suffixes:
-        if name.endswith(suffix):
-            name = name[:-len(suffix)]
-            break
-
-    return name.strip()
-
-
 def find_team_rating(team_name: str, ratings: dict[str, TeamRatings]) -> Optional[TeamRatings]:
-    """Find team rating with fuzzy matching."""
-    normalized = normalize_team_name(team_name)
-
-    # Direct match
-    if normalized in ratings:
-        return ratings[normalized]
-
-    # Partial match
-    for key, rating in ratings.items():
-        if normalized in key or key in normalized:
+    """Find team rating using canonical name from single source of truth.
+    
+    Uses ProductionTeamResolver via team_utils for EXACT matching only.
+    No fuzzy matching to prevent false positives like 'Tennessee' -> 'Tennessee St.'.
+    """
+    # Resolve to canonical name using single source of truth
+    canonical = resolve_team_name(team_name)
+    
+    # Direct match on canonical name
+    if canonical in ratings:
+        return ratings[canonical]
+    
+    # Try lowercase match (ratings may be keyed lowercase)
+    canonical_lower = canonical.lower()
+    if canonical_lower in ratings:
+        return ratings[canonical_lower]
+    
+    # Try matching resolved names in rating keys
+    for rating_name, rating in ratings.items():
+        if not isinstance(rating_name, str):
+            continue
+        rating_canonical = resolve_team_name(rating_name)
+        if rating_canonical == canonical:
             return rating
-
+    
     return None
 
 
