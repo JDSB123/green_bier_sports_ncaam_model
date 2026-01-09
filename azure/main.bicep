@@ -43,12 +43,6 @@ param postgresPassword string
 @secure()
 param oddsApiKey string
 
-// DEPRECATED: Incoming webhook (API → Teams) removed
-// Teams integration now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
-@description('DEPRECATED: Microsoft Teams incoming webhook URL (no longer used)')
-@secure()
-param teamsWebhookUrl string = ''
-
 @description('Basketball API key (api-basketball.com)')
 @secure()
 param basketballApiKey string = ''
@@ -260,15 +254,6 @@ resource kvSecretRedis 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
-resource kvSecretTeamsWebhook 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (teamsWebhookUrl != '') {
-  parent: keyVault
-  name: 'teams-webhook-url'
-  properties: {
-    value: teamsWebhookUrl
-    contentType: 'text/plain'
-  }
-}
-
 resource kvSecretBasketballApi 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (basketballApiKey != '') {
   parent: keyVault
   name: 'basketball-api-key'
@@ -410,12 +395,6 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
             value: basketballApiKey
           }
         ] : [],
-        (teamsWebhookUrl != '') ? [
-          {
-            name: 'teams-webhook-url'
-            value: teamsWebhookUrl
-          }
-        ] : [],
         (actionNetworkUsername != '') ? [
           {
             name: 'action-network-username'
@@ -478,12 +457,6 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
               {
                 name: 'BASKETBALL_API_KEY'
                 secretRef: 'basketball-api-key'
-              }
-            ] : [],
-            (teamsWebhookUrl != '') ? [
-              {
-                name: 'TEAMS_WEBHOOK_URL'
-                secretRef: 'teams-webhook-url'
               }
             ] : [],
             (actionNetworkUsername != '') ? [

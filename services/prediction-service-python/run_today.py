@@ -338,7 +338,6 @@ AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "
 AZURE_STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER", "picks-history")
 
 # Teams Webhook Secret for validating outgoing webhook messages (OPTIONAL)
-# NOTE: Incoming webhooks (API → Teams) are deprecated. Only outgoing webhook (Teams → API) is supported.
 # - Azure: set env var TEAMS_WEBHOOK_SECRET
 # - Docker: mount secret file at /run/secrets/teams_webhook_secret or set TEAMS_WEBHOOK_SECRET
 _teams_webhook_secret_file = os.getenv("TEAMS_WEBHOOK_SECRET_FILE", "/run/secrets/teams_webhook_secret")
@@ -347,10 +346,6 @@ TEAMS_WEBHOOK_SECRET = (
     or _read_optional_secret_file(_teams_webhook_secret_file, "teams_webhook_secret")
     or ""
 )
-
-
-# DEPRECATED: Incoming webhook functionality removed
-# Teams now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
 
 
 # ==============================================================================

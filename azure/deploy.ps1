@@ -21,7 +21,6 @@
 #
 # Other Options:
 #   -OddsApiKey       The Odds API key (auto-fetched from existing app if omitted)
-#   -TeamsWebhookUrl  Microsoft Teams webhook for notifications
 #   -ImageTag         Container image tag (defaults to v<VERSION_FILE>)
 #   -PruneAcrImages   Remove old image tags from ACR after successful deploy
 #   -KeepAcrTags      How many tags to keep per repo (default: 1)
@@ -37,10 +36,6 @@ param(
 
     [Parameter(Mandatory=$false)]
     [string]$BasketballApiKey = '',
-
-    # DEPRECATED: Incoming webhook removed
-    [Parameter(Mandatory=$false)]
-    [string]$TeamsWebhookUrl = '',
 
     [Parameter(Mandatory=$false)]
     [string]$ActionNetworkUsername = '',
@@ -396,7 +391,6 @@ if (-not $SkipInfra) {
             postgresPassword=$postgresPassword `
             oddsApiKey=$OddsApiKey `
             basketballApiKey=$BasketballApiKey `
-            teamsWebhookUrl=$TeamsWebhookUrl `
             actionNetworkUsername=$ActionNetworkUsername `
             actionNetworkPassword=$ActionNetworkPassword `
             imageTag=$ImageTag `
