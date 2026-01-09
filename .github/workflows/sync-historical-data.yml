@@ -1,7 +1,13 @@
 name: Sync Historical Data
 
-# Run after major data ingestion or weekly
+# Run on file changes, weekly schedule, or manual trigger
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'ncaam_historical_data_local/**'
+      - 'testing/scripts/fetch_historical_*.py'
+      - 'testing/scripts/canonicalize_*.py'
   schedule:
     # Run every Sunday at 6 AM UTC (midnight CST)
     - cron: '0 6 * * 0'
