@@ -2,9 +2,14 @@
 """Debug script to test historical odds API response structure."""
 import requests
 import json
+import sys
 from pathlib import Path
 
-API_KEY = Path("secrets/odds_api_key.txt").read_text().strip()
+ROOT_DIR = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
+
+from secrets_manager import get_api_key
+API_KEY = get_api_key("odds")
 
 # Test a date we know had events - Dec 3, 2022
 print("=== Step 1: Fetch Events ===")

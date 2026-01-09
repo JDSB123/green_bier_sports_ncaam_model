@@ -53,28 +53,16 @@ SPORT_KEY = "basketball_ncaab"
 
 
 def get_api_key() -> str:
-    """Get API key from environment or secrets file."""
-    # Try environment first
-    key = os.environ.get("ODDS_API_KEY") or os.environ.get("THE_ODDS_API_KEY")
-
-    # Try secrets file (same pattern as production code)
-    if not key:
-        secrets_file = ROOT_DIR / "secrets" / "odds_api_key.txt"
-        if secrets_file.exists():
-            key = secrets_file.read_text().strip()
-
-    # Try Docker secret location
-    if not key:
-        docker_secret = Path("/run/secrets/odds_api_key")
-        if docker_secret.exists():
-            key = docker_secret.read_text().strip()
-
-    if not key:
-        print("[ERROR] No Odds API key found")
-        print("        Set ODDS_API_KEY env var or create secrets/odds_api_key.txt")
-        sys.exit(1)
-
-    return key
+    """Get Odds API key using unified secrets manager.
+    
+    Priority order (first found wins):
+    1. THE_ODDS_API_KEY environment variable
+    2. Docker secret at /run/secrets/odds_api_key
+    3. Local file at secrets/odds_api_key.txt
+    """
+    sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
+    from secrets_manager import get_api_key as get_secret_api_key
+    return get_secret_api_key("odds")
 
 
 def fetch_with_retry(url: str, params: dict, max_retries: int = 3) -> requests.Response:

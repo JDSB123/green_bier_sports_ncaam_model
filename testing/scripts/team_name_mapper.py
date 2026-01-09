@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
 """
-Team Name Mapping for ESPN <-> The Odds API
+DEPRECATED: Use ProductionTeamResolver from team_aliases.json instead.
+
+This module is kept for backwards compatibility only.
+The SINGLE SOURCE OF TRUTH for team name canonicalization is:
+    testing/production_parity/team_aliases.json
+
+For new code, use:
+    from production_parity.team_resolver import ProductionTeamResolver
+    resolver = ProductionTeamResolver()
+    canonical_name = resolver.resolve("team name").canonical_name
+
+---
+Legacy: Team Name Mapping for ESPN <-> The Odds API
 
 Handles differences like:
 - "Montana St" vs "Montana State"

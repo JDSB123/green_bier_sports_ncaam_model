@@ -69,15 +69,11 @@ def get_db_engine():
 
     # Try to connect to the NCAAM database
     try:
-        # Read password from secrets or env
-        db_password = os.environ.get("DB_PASSWORD", "")
-        if not db_password:
-            secrets_file = ROOT_DIR / "secrets" / "db_password.txt"
-            if secrets_file.exists():
-                db_password = secrets_file.read_text().strip()
-
-        if not db_password:
-            db_password = "ncaam_dev_password"  # Default for local dev
+        # Load database password using unified secrets manager
+        # Priority: env var > Docker secret > local file
+        sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
+        from secrets_manager import get_db_password
+        db_password = get_db_password()
 
         # Connect to Docker container (exposed on port 5450 per docker-compose.yml)
         db_port = os.environ.get("DB_PORT", "5450")
