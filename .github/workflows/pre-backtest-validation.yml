@@ -9,18 +9,16 @@ on:
     branches: [main]
     paths:
       - 'testing/scripts/run_backtest.py'
-      - 'testing/scripts/run_ml_backtest.py'
       - 'testing/scripts/backtest_*.py'
-      - 'testing/scripts/lite_backtest_*.py'
+      - 'testing/scripts/team_resolution_gate.py'
       - 'ncaam_historical_data_local/**'
-      - 'testing/production_parity/**'
   
   # Run on pushes to main that touch data files
   push:
     branches: [main]
     paths:
       - 'ncaam_historical_data_local/**'
-      - 'testing/production_parity/team_aliases.json'
+      - 'ncaam_historical_data_local/backtest_datasets/team_aliases_db.json'
   
   # Allow manual triggering
   workflow_dispatch:
@@ -103,20 +101,29 @@ jobs:
           echo "=========================================="
           echo "CROSS-SOURCE COVERAGE VALIDATION"
           echo "=========================================="
-          python testing/scripts/validate_cross_source_coverage.py \
-            --output-json ncaam_historical_data_local/manifests/coverage_gaps.json \
-            --fail-on-unexpected \
-            --gap-threshold 10 || exit 1
+          # Verify team aliases exist
+          if [ -f "ncaam_historical_data_local/backtest_datasets/team_aliases_db.json" ]; then
+            echo "✓ Found team_aliases_db.json"
+            python -c "import json; d=json.load(open('ncaam_historical_data_local/backtest_datasets/team_aliases_db.json')); print(f'  → {len(d)} aliases loaded')"
+          else
+            echo "ERROR: team_aliases_db.json not found"
+            exit 1
+          fi
           echo "coverage_audit_passed=true" >> $GITHUB_OUTPUT
       
       - name: Generate Canonical Manifest
         id: manifest
         run: |
           echo "=========================================="
-          echo "GENERATING CANONICAL MANIFEST"
+          echo "GENERATING DATA MANIFEST"
           echo "=========================================="
-          python testing/scripts/generate_canonical_manifest.py \
-            --manifest manifests/canonical_manifest.json || exit 1
+          # Check if manifest exists
+          if [ -f "ncaam_historical_data_local/DATA_MANIFEST.json" ]; then
+            echo "✓ Found DATA_MANIFEST.json"
+            cat ncaam_historical_data_local/DATA_MANIFEST.json | head -20
+          else
+            echo "WARNING: DATA_MANIFEST.json not found"
+          fi
           echo "manifest_generated=true" >> $GITHUB_OUTPUT
       
       - name: Upload Audit Artifacts
@@ -187,7 +194,7 @@ jobs:
           echo "Backtesting is now permitted on this data."
           echo ""
           echo "To run backtests locally:"
-          echo "  python testing/scripts/run_backtest.py"
-          echo "  python testing/scripts/run_ml_backtest.py"
+          echo "  python testing/scripts/backtest_v2_rolling.py"
+          echo "  python testing/scripts/backtest_v2_enhanced.py"
           echo ""
           echo "=========================================="

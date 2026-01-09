@@ -134,15 +134,15 @@ ncaam_historical_data_local/ratings/barttorvik/
 
 **SINGLE SOURCE OF TRUTH:**
 ```
-testing/production_parity/team_aliases.json
+ncaam_historical_data_local/backtest_datasets/team_aliases_db.json
 ```
 
-- 377 canonical team names
-- 1,314 aliases
-- Version: 2026.01.08.1
-- Used by: `ProductionTeamResolver` class
+- 362 canonical team names
+- 1,679 aliases
+- Version: 2026.01.09
+- Used by: `team_resolution_gate.py` for ingestion, PostgreSQL `resolve_team_name()` for production
 
-All scripts must use `ProductionTeamResolver` for team name resolution to ensure consistency across all data sources.
+All ingestion scripts must use `team_resolution_gate.py` for team name resolution to ensure consistency across all data sources.
 
 ---
 
