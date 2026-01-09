@@ -42,9 +42,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Checkout historical data repo
+        uses: actions/checkout@v4
         with:
-          # Need full history for ncaam_historical_data_local submodule
-          submodules: recursive
+          repository: JDSB123/ncaam-historical-data
+          path: ncaam_historical_data_local
+          token: ${{ secrets.HISTORICAL_DATA_PAT || github.token }}
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -62,7 +66,6 @@ jobs:
           echo "Checking historical data directory..."
           if [ ! -d "ncaam_historical_data_local" ]; then
             echo "ERROR: ncaam_historical_data_local directory not found"
-            echo "This may be a submodule that needs to be initialized"
             exit 1
           fi
           
