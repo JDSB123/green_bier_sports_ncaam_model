@@ -199,7 +199,6 @@ The container receives these environment variables:
 | `DATABASE_URL` | Constructed | PostgreSQL connection string |
 | `REDIS_URL` | Constructed | Redis connection string |
 | `THE_ODDS_API_KEY` | Secret | Odds API key |
-| `TEAMS_WEBHOOK_URL` | Optional | Microsoft Teams Incoming Webhook URL |
 | `SPORT` | Config | Sport identifier (ncaam) |
 | `TZ` | Config | Timezone (America/Chicago) |
 
@@ -211,7 +210,6 @@ Secrets are stored in Key Vault (`ncaam-stablegbsvkv`); Container Apps also keep
 - `redis-password` - Redis access key (from Azure)
 - `odds-api-key` - The Odds API key (provided by you)
 - `acr-password` - ACR pull credential (auto-generated)
-- `teams-webhook-url` - (Optional) Teams webhook URL for posting picks
 
 ## Manual picks run (optional)
 

@@ -2,7 +2,7 @@ Write-Host "Setting up Docker secrets for NCAAM v33 Model" -ForegroundColor Cyan
 Write-Host ""
 
 # Remove old directories if they exist
-"db_password.txt", "redis_password.txt", "odds_api_key.txt", "teams_webhook_url.txt", "teams_webhook_secret.txt" | ForEach-Object {
+"db_password.txt", "redis_password.txt", "odds_api_key.txt", "teams_webhook_secret.txt" | ForEach-Object {
     $path = "secrets\$_"
     if (Test-Path $path) {
         if ((Get-Item $path).PSIsContainer) {
@@ -35,12 +35,7 @@ do {
 } while ([string]::IsNullOrWhiteSpace($odds_api_key))
 Set-Content -Path "secrets\odds_api_key.txt" -Value $odds_api_key -NoNewline -Encoding UTF8
 
-# Teams Webhook (optional)
-$teams_url = Read-Host "Teams Webhook URL (optional, press Enter to skip)"
-if ([string]::IsNullOrWhiteSpace($teams_url)) { $teams_url = "" }
-Set-Content -Path "secrets\teams_webhook_url.txt" -Value $teams_url -NoNewline -Encoding UTF8
-
-# Teams Webhook Secret (optional)
+# Teams Outgoing Webhook Secret (optional - for validating Teams → API requests)
 $teams_secret = Read-Host "Teams Webhook Secret (optional, press Enter to skip)"
 if ([string]::IsNullOrWhiteSpace($teams_secret)) { $teams_secret = "" }
 Set-Content -Path "secrets\teams_webhook_secret.txt" -Value $teams_secret -NoNewline -Encoding UTF8

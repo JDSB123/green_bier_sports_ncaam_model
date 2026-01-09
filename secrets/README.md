@@ -31,13 +31,10 @@ echo -n "YOUR_ACTUAL_KEY" > odds_api_key.txt
 # runtime pipeline does not require it unless you add/enable an ingestion component that uses it.
 echo -n "YOUR_BASKETBALL_API_KEY" > basketball_api_key.txt
 
-# Microsoft Teams Incoming Webhook URL (OPTIONAL - only needed for --teams)
-# Code reads from: /run/secrets/teams_webhook_url (Docker) or env var TEAMS_WEBHOOK_URL (Azure)
-echo -n "YOUR_TEAMS_WEBHOOK_URL" > teams_webhook_url.txt
-
-# Microsoft Teams Outgoing Webhook Secret (OPTIONAL - only needed for /teams-webhook endpoint)
+# Microsoft Teams Outgoing Webhook Secret (OPTIONAL - for /teams-webhook endpoint)
 # Code reads from: /run/secrets/teams_webhook_secret (Docker) or env var TEAMS_WEBHOOK_SECRET (Azure)
-# This should match the secret configured in your Teams outgoing webhook
+# This validates requests from Teams outgoing webhook (Teams → API)
+# NOTE: Incoming webhooks (API → Teams) are deprecated by Microsoft
 echo -n "YOUR_TEAMS_WEBHOOK_SECRET" > teams_webhook_secret.txt
 
 # Action Network credentials (OPTIONAL - for premium betting splits data)

@@ -36,7 +36,7 @@ if (!(Test-Path "secrets")) {
 }
 
 # Remove old directories if they exist
-"db_password.txt", "redis_password.txt", "odds_api_key.txt", "teams_webhook_url.txt", "teams_webhook_secret.txt" | ForEach-Object {
+"db_password.txt", "redis_password.txt", "odds_api_key.txt", "teams_webhook_secret.txt" | ForEach-Object {
     $path = "secrets\$_"
     if (Test-Path $path) {
         if ((Get-Item $path).PSIsContainer) {
@@ -50,14 +50,12 @@ if (!(Test-Path "secrets")) {
 $db_password = Get-SecretValue "DB_PASSWORD" -DefaultValue "ncaam_secure_$(Get-Random)" -Required $false
 $redis_password = Get-SecretValue "REDIS_PASSWORD" -DefaultValue "redis_secure_$(Get-Random)" -Required $false
 $odds_api_key = Get-SecretValue "ODDS_API_KEY" -Required $true
-$teams_url = Get-SecretValue "TEAMS_WEBHOOK_URL" -DefaultValue "" -Required $false
 $teams_secret = Get-SecretValue "TEAMS_WEBHOOK_SECRET" -DefaultValue "" -Required $false
 
 # Write secrets to files
 Set-Content -Path "secrets\db_password.txt" -Value $db_password -NoNewline -Encoding UTF8
 Set-Content -Path "secrets\redis_password.txt" -Value $redis_password -NoNewline -Encoding UTF8
 Set-Content -Path "secrets\odds_api_key.txt" -Value $odds_api_key -NoNewline -Encoding UTF8
-Set-Content -Path "secrets\teams_webhook_url.txt" -Value $teams_url -NoNewline -Encoding UTF8
 Set-Content -Path "secrets\teams_webhook_secret.txt" -Value $teams_secret -NoNewline -Encoding UTF8
 
 Write-Host ""
