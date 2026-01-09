@@ -1,0 +1,189 @@
+name: Pre-Backtest Validation Gate
+
+# This workflow runs all data quality audits before allowing backtest execution.
+# If any audit fails, the backtest is blocked and the workflow fails.
+
+on:
+  # Run on PRs that touch backtest-related files
+  pull_request:
+    branches: [main]
+    paths:
+      - 'testing/scripts/run_backtest.py'
+      - 'testing/scripts/run_ml_backtest.py'
+      - 'testing/scripts/backtest_*.py'
+      - 'testing/scripts/lite_backtest_*.py'
+      - 'ncaam_historical_data_local/**'
+      - 'testing/production_parity/**'
+  
+  # Run on pushes to main that touch data files
+  push:
+    branches: [main]
+    paths:
+      - 'ncaam_historical_data_local/**'
+      - 'testing/production_parity/team_aliases.json'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      run_full_audit:
+        description: 'Run full audit including coverage validation'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  data-quality-audit:
+    name: Data Quality Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Need full history for ncaam_historical_data_local submodule
+          submodules: recursive
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt 2>/dev/null || pip install pandas requests
+      
+      - name: Verify historical data exists
+        run: |
+          echo "Checking historical data directory..."
+          if [ ! -d "ncaam_historical_data_local" ]; then
+            echo "ERROR: ncaam_historical_data_local directory not found"
+            echo "This may be a submodule that needs to be initialized"
+            exit 1
+          fi
+          
+          # Check key directories
+          for dir in scores/fg scores/h1 odds/canonical ratings/raw/barttorvik; do
+            if [ ! -d "ncaam_historical_data_local/$dir" ]; then
+              echo "WARNING: Directory not found: ncaam_historical_data_local/$dir"
+            else
+              echo "✓ Found: ncaam_historical_data_local/$dir"
+            fi
+          done
+      
+      - name: Run Score Integrity Audit
+        id: score_audit
+        run: |
+          echo "=========================================="
+          echo "SCORE INTEGRITY AUDIT"
+          echo "=========================================="
+          python testing/scripts/score_integrity_audit.py --verbose || exit 1
+          echo "score_audit_passed=true" >> $GITHUB_OUTPUT
+      
+      - name: Run Dual Canonicalization Audit
+        id: canon_audit
+        run: |
+          echo "=========================================="
+          echo "DUAL CANONICALIZATION AUDIT"
+          echo "=========================================="
+          python testing/scripts/dual_canonicalization_audit.py --verbose || exit 1
+          echo "canon_audit_passed=true" >> $GITHUB_OUTPUT
+      
+      - name: Run Cross-Source Coverage Validation
+        id: coverage_audit
+        if: ${{ github.event.inputs.run_full_audit != 'false' }}
+        run: |
+          echo "=========================================="
+          echo "CROSS-SOURCE COVERAGE VALIDATION"
+          echo "=========================================="
+          python testing/scripts/validate_cross_source_coverage.py \
+            --output-json ncaam_historical_data_local/manifests/coverage_gaps.json \
+            --fail-on-unexpected || exit 1
+          echo "coverage_audit_passed=true" >> $GITHUB_OUTPUT
+      
+      - name: Generate Canonical Manifest
+        id: manifest
+        run: |
+          echo "=========================================="
+          echo "GENERATING CANONICAL MANIFEST"
+          echo "=========================================="
+          python testing/scripts/generate_canonical_manifest.py \
+            --manifest manifests/canonical_manifest.json || exit 1
+          echo "manifest_generated=true" >> $GITHUB_OUTPUT
+      
+      - name: Upload Audit Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-reports
+          path: |
+            ncaam_historical_data_local/manifests/coverage_gaps.json
+            ncaam_historical_data_local/manifests/canonical_manifest.json
+            ncaam_historical_data_local/canonicalization_audit/*.json
+          retention-days: 30
+      
+      - name: Audit Summary
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "AUDIT SUMMARY"
+          echo "=========================================="
+          echo ""
+          
+          # Score Audit
+          if [ "${{ steps.score_audit.outputs.score_audit_passed }}" == "true" ]; then
+            echo "✅ Score Integrity Audit: PASSED"
+          else
+            echo "❌ Score Integrity Audit: FAILED"
+          fi
+          
+          # Canonicalization Audit
+          if [ "${{ steps.canon_audit.outputs.canon_audit_passed }}" == "true" ]; then
+            echo "✅ Dual Canonicalization Audit: PASSED"
+          else
+            echo "❌ Dual Canonicalization Audit: FAILED"
+          fi
+          
+          # Coverage Audit
+          if [ "${{ steps.coverage_audit.outputs.coverage_audit_passed }}" == "true" ]; then
+            echo "✅ Cross-Source Coverage: PASSED"
+          elif [ "${{ github.event.inputs.run_full_audit }}" == "false" ]; then
+            echo "⏭️  Cross-Source Coverage: SKIPPED"
+          else
+            echo "❌ Cross-Source Coverage: FAILED"
+          fi
+          
+          # Manifest
+          if [ "${{ steps.manifest.outputs.manifest_generated }}" == "true" ]; then
+            echo "✅ Canonical Manifest: GENERATED"
+          else
+            echo "❌ Canonical Manifest: FAILED"
+          fi
+          
+          echo ""
+          echo "=========================================="
+
+  # Gate job - only runs if all audits pass
+  backtest-gate:
+    name: Backtest Gate
+    needs: data-quality-audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Backtest Approved
+        run: |
+          echo "=========================================="
+          echo "✅ ALL DATA QUALITY AUDITS PASSED"
+          echo "=========================================="
+          echo ""
+          echo "Backtesting is now permitted on this data."
+          echo ""
+          echo "To run backtests locally:"
+          echo "  python testing/scripts/run_backtest.py"
+          echo "  python testing/scripts/run_ml_backtest.py"
+          echo ""
+          echo "=========================================="
