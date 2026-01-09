@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NCAAM - Azure Container Apps Deployment v33.14.0
+// NCAAM - Azure Container Apps Deployment v33.15.0
 // ═══════════════════════════════════════════════════════════════════════════════
 // Deploys:
 // - Azure Key Vault (secrets storage) - v33.10.0
