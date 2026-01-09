@@ -134,7 +134,7 @@ services:
     # For local/dev execution without ACR auth, you can still run locally by building:
     #   docker compose build prediction-service
     # This will build the image locally with the same tag and run it from your machine.
-    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v33.15.0
+    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v34.0.0
     build:
       context: .
       dockerfile: services/prediction-service-python/Dockerfile
