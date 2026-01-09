@@ -142,6 +142,8 @@ def fetch_historical_odds(
 ) -> dict | None:
     """
     Fetch historical odds for a specific event.
+    
+    Automatically falls back to non-H1 markets if H1 data unavailable.
 
     Args:
         api_key: The Odds API key
@@ -163,7 +165,20 @@ def fetch_historical_odds(
         resp = fetch_with_retry(url, params)
         return resp.json()
     except requests.exceptions.HTTPError as e:
-        if e.response.status_code in (404, 422):
+        if e.response.status_code == 422:
+            # Check if it's a markets unavailable error - try without H1 markets
+            try:
+                error_data = e.response.json()
+                if "HISTORICAL_MARKETS_UNAVAILABLE" in error_data.get("error_code", ""):
+                    # Retry without H1 markets
+                    fallback_markets = "spreads,totals,h2h"
+                    params["markets"] = fallback_markets
+                    resp = fetch_with_retry(url, params)
+                    return resp.json()
+            except Exception:
+                pass
+            return None
+        if e.response.status_code == 404:
             return None
         raise
     except Exception:
