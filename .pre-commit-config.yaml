@@ -1,0 +1,28 @@
+# Pre-commit hooks for NCAAM model repository
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+
+  # Local hooks for team alias consistency
+  - repo: local
+    hooks:
+      - id: validate-team-aliases
+        name: Validate Team Aliases Consistency
+        entry: python scripts/validate_team_aliases.py
+        language: python
+        files: ^services/prediction-service-python/app/odds_sync\.py$
+        pass_filenames: false
+        additional_dependencies: []
+        # Note: Full validation requires DATABASE_URL env var and psycopg2
+        # If unavailable, validates hardcoded dict syntax only

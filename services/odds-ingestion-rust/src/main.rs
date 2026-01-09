@@ -1232,10 +1232,17 @@ impl OddsIngestionService {
         Ok(final_team_id)
     }
 
-    /// Normalize team name to canonical format
-    /// This ensures consistent naming before creating new teams
+    /// Normalize team name to canonical format.
+    ///
+    /// IMPORTANT: As of migration 023, normalization rules are centralized in the
+    /// database function normalize_team_name_input(). This local function is now
+    /// a FALLBACK ONLY, used when resolve_team_name() doesn't find a match.
+    ///
+    /// If you add new normalization rules, add them to:
+    ///   database/migrations/023_centralized_normalization.sql
+    /// NOT here. This ensures all services use consistent normalization.
     fn normalize_team_name(&self, name: &str) -> String {
-        // IMPORTANT: keep canonicalization conservative to avoid creating duplicates
+        // Keep canonicalization conservative to avoid creating duplicates
         // that don't match Barttorvik canonical names (which breaks ratings joins).
         self.normalize_lookup_name(name)
     }

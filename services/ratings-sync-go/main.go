@@ -643,9 +643,15 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, tx pgx.Tx, team Barttorkvi
 	return teamID, nil
 }
 
-// normalizeTeamName converts Barttorvik team name to canonical format
-// CRITICAL: This ensures consistent naming BEFORE creating new teams
-// Only used as fallback if resolve_team_name() doesn't find a match
+// normalizeTeamName converts Barttorvik team name to canonical format.
+//
+// IMPORTANT: As of migration 023, these normalization rules are centralized
+// in the database function normalize_team_name_input(). This local function
+// is now a FALLBACK ONLY, used when resolve_team_name() doesn't find a match.
+//
+// If you add new normalization rules, add them to:
+//   database/migrations/023_centralized_normalization.sql
+// NOT here. This ensures all services use consistent normalization.
 func normalizeTeamName(name string) string {
 	name = strings.TrimSpace(name)
 

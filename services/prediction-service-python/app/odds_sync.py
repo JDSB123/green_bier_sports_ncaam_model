@@ -21,9 +21,17 @@ from .odds_api_client import OddsApiClient, OddsApiError
 # Register UUID type adapter for psycopg2
 register_uuid()
 
-# Default team name mappings for common mismatches
-# These are applied BEFORE database lookup as a fast path
-# The database resolve_team_name() function handles 950+ aliases
+# Default team name mappings for common mismatches.
+# These are applied BEFORE database lookup as a fast path optimization.
+#
+# IMPORTANT: As of migration 023, normalization rules are centralized in
+# the database function normalize_team_name_input(). This dict should be
+# kept in sync with the team_aliases table.
+#
+# To validate consistency: python scripts/validate_team_aliases.py
+# To sync to database:     python scripts/validate_team_aliases.py --sync
+#
+# The database resolve_team_name() function handles 950+ aliases.
 TEAM_NAME_ALIASES = {
     # Connecticut variants
     "UConn": "Connecticut",
