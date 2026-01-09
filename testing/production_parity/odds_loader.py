@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 from .timezone_utils import parse_date_to_cst, format_cst
+from .team_resolver import ProductionTeamResolver, resolve_team_name
 
 
 @dataclass
@@ -53,18 +54,20 @@ class HistoricalOddsLoader:
     Uses training_data_with_odds.csv as primary source.
     """
 
-    def __init__(self, data_dir: Optional[Path] = None):
+    def __init__(self, data_dir: Optional[Path] = None, team_resolver: Optional[ProductionTeamResolver] = None):
         """
         Initialize the odds loader.
 
         Args:
             data_dir: Directory containing odds files
+            team_resolver: Optional resolver (uses default if not provided)
         """
         if data_dir is None:
             # Default to prediction-service-python/training_data
             data_dir = Path(__file__).parents[2] / "services" / "prediction-service-python" / "training_data"
 
         self.data_dir = Path(data_dir)
+        self.resolver = team_resolver or ProductionTeamResolver()
 
         # Cache: game_id -> GameOdds
         self._odds_cache: Dict[str, GameOdds] = {}
@@ -116,8 +119,15 @@ class HistoricalOddsLoader:
                 try:
                     game_id = row.get("game_id", "")
                     game_date = row.get("game_date", "")
-                    home_team = row.get("home_team", "")
-                    away_team = row.get("away_team", "")
+                    home_team_raw = row.get("home_team", "")
+                    away_team_raw = row.get("away_team", "")
+                    
+                    # Canonicalize team names at load time
+                    home_result = self.resolver.resolve(home_team_raw)
+                    away_result = self.resolver.resolve(away_team_raw)
+                    
+                    home_team = home_result.canonical_name if home_result.resolved else home_team_raw
+                    away_team = away_result.canonical_name if away_result.resolved else away_team_raw
 
                     # Parse spread (may be empty)
                     spread_str = row.get("spread_open", "")
@@ -169,9 +179,21 @@ class HistoricalOddsLoader:
         home_team: str,
         away_team: str,
     ) -> Optional[GameOdds]:
-        """Get odds by matchup details."""
+        """Get odds by matchup details.
+        
+        Team names are canonicalized before lookup to handle different 
+        name variants between data sources.
+        """
         self.stats["lookups"] += 1
-        key = self._make_matchup_key(game_date, home_team, away_team)
+        
+        # Canonicalize input team names for lookup
+        home_result = self.resolver.resolve(home_team)
+        away_result = self.resolver.resolve(away_team)
+        
+        home_canonical = home_result.canonical_name if home_result.resolved else home_team
+        away_canonical = away_result.canonical_name if away_result.resolved else away_team
+        
+        key = self._make_matchup_key(game_date, home_canonical, away_canonical)
         odds = self._odds_by_matchup.get(key)
         if odds:
             self.stats["found"] += 1

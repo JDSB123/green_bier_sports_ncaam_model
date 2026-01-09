@@ -27,6 +27,16 @@ except ImportError:
     print("[ERROR] requests library required: pip install requests")
     sys.exit(1)
 
+# Import team canonicalization from single source of truth
+try:
+    from team_utils import resolve_team_name
+except ImportError:
+    print("[ERROR] team_utils module required - must be in testing/scripts/")
+    sys.exit(1)
+
+# Canonicalization threshold - fail if more than 10% of games have unresolved teams
+UNRESOLVED_THRESHOLD = 0.10
+
 ROOT_DIR = Path(__file__).resolve().parents[2]
 HISTORICAL_ROOT = Path(
     os.environ.get("HISTORICAL_DATA_ROOT", ROOT_DIR / "ncaam_historical_data_local")
@@ -139,10 +149,34 @@ def parse_h1_scores(summary: dict, game_id: str) -> dict | None:
         if home_h1 is None or away_h1 is None:
             return None
 
+        # Canonicalize team names using central resolver
+        home_team_canonical = resolve_team_name(home_team) if home_team else home_team
+        away_team_canonical = resolve_team_name(away_team) if away_team else away_team
+        
+        # Check for unresolved teams
+        unresolved = []
+        if home_team and home_team_canonical == home_team:
+            # Could be canonical already - check case-insensitive
+            check = resolve_team_name(home_team.lower())
+            if check == home_team.lower():
+                unresolved.append(("home", home_team))
+        if away_team and away_team_canonical == away_team:
+            check = resolve_team_name(away_team.lower())
+            if check == away_team.lower():
+                unresolved.append(("away", away_team))
+        
+        if unresolved:
+            return {
+                "_unresolved": unresolved,
+                "game_id": game_id,
+                "home_team_raw": home_team,
+                "away_team_raw": away_team,
+            }
+
         return {
             "game_id": game_id,
-            "home_team": home_team,
-            "away_team": away_team,
+            "home_team": home_team_canonical,
+            "away_team": away_team_canonical,
             "home_h1": home_h1,
             "away_h1": away_h1,
             "h1_total": home_h1 + away_h1,
@@ -251,6 +285,8 @@ def main() -> int:
     print(f"[INFO] Need to fetch {len(games_to_fetch)} new games")
     print()
 
+    unresolved_games = []  # Track unresolved for summary
+    
     for i, game in enumerate(games_to_fetch):
         game_id = game["game_id"]
 
@@ -266,6 +302,13 @@ def main() -> int:
 
         h1_data = parse_h1_scores(summary, game_id)
         if h1_data:
+            # Check for unresolved teams
+            if "_unresolved" in h1_data:
+                unresolved_games.append(h1_data)
+                for side, name in h1_data["_unresolved"]:
+                    print(f"  [WARN] UNRESOLVED {side}: '{name}' (game {game_id})")
+                continue
+            
             h1_data["date"] = game["date"]
             h1_games.append(h1_data)
         else:
@@ -283,10 +326,29 @@ def main() -> int:
         json.dump(h1_games, f, indent=2)
     print(f"[INFO] Saved JSON to {json_file}")
 
+    # Check threshold for unresolved teams
+    total_processed = len(h1_games) + len(unresolved_games)
+    if total_processed > 0 and len(unresolved_games) > 0:
+        failure_rate = len(unresolved_games) / total_processed
+        print()
+        print(f"[WARN] {len(unresolved_games)}/{total_processed} games ({failure_rate:.1%}) have unresolved teams")
+        
+        if failure_rate > UNRESOLVED_THRESHOLD:
+            print(f"[ERROR] Unresolved rate exceeds {UNRESOLVED_THRESHOLD:.0%} threshold!")
+            seen = set()
+            for g in unresolved_games:
+                for side, name in g["_unresolved"]:
+                    if name not in seen:
+                        print(f"  - UNRESOLVED {side}: '{name}'")
+                        seen.add(name)
+            return 1
+
     print()
     print("=" * 72)
     print(f" DONE: {len(h1_games)} games with 1H data")
     print(f" Failed: {failed_count} games (no 1H data available)")
+    if unresolved_games:
+        print(f" Skipped: {len(unresolved_games)} games (unresolved teams)")
     print("=" * 72)
 
     # Summary statistics
