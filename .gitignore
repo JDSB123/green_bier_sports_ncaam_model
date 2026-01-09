@@ -126,6 +126,7 @@ ncaam_historical_data_local/
 # Testing data - derived/generated (regenerate from ncaam_historical_data_local)
 testing/data/validation_results/
 testing/data/market_validation/
+testing/results/
 
 # NCAAM v33 secrets (do not commit)
 ncaam_v33_model_db_password
