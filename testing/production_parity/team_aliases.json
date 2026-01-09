@@ -1,8 +1,8 @@
 {
-  "version": "2026.01.09.1",
+  "version": "2026.01.09.2",
   "source": "database/migrations/011_comprehensive_team_aliases.sql + Barttorvik data",
-  "notes": "SINGLE SOURCE OF TRUTH. All D1 teams and aliases. Added: st peters, iu indianapolis, wisc green bay, wisc milwaukee aliases.",
-  "alias_count": 1318,
+  "notes": "SINGLE SOURCE OF TRUTH. Added: mt st marys, n kentucky aliases.",
+  "alias_count": 1320,
   "canonical_count": 377,
   "aliases": {
     "49ers": "Charlotte",
@@ -677,6 +677,7 @@
     "msu": "Michigan St.",
     "msu bulldogs": "Mississippi St.",
     "mt st mary's mountaineers": "Mount St. Mary's",
+    "mt st marys": "Mount St. Mary's",
     "mt. st. mary's mountaineers": "Mount St. Mary's",
     "mtsu": "Middle Tennessee",
     "murray st racers": "Murray St.",
@@ -687,6 +688,7 @@
     "mustangs": "SMU",
     "mvsu": "Mississippi Valley St.",
     "n colorado bears": "Northern Colorado",
+    "n kentucky": "Northern Kentucky",
     "n.c. st.": "NC State",
     "n.c. state": "NC State",
     "navy": "Navy",
