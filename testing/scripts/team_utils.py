@@ -76,19 +76,9 @@ def resolve_team_name(name: str) -> str:
     return result.canonical_name if result.canonical_name else name
 
 
-def normalize_team_name(name: str) -> str:
-    """
-    Alias for resolve_team_name for backwards compatibility.
-    
-    DEPRECATED: Prefer using resolve_team_name() for clarity.
-    """
-    return resolve_team_name(name)
-
-
 # Export resolver components
 __all__ = [
     "resolve_team_name",
-    "normalize_team_name", 
     "get_resolver",
     "ProductionTeamResolver",
     "ResolutionResult",
