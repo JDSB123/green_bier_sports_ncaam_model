@@ -105,7 +105,8 @@ jobs:
           echo "=========================================="
           python testing/scripts/validate_cross_source_coverage.py \
             --output-json ncaam_historical_data_local/manifests/coverage_gaps.json \
-            --fail-on-unexpected || exit 1
+            --fail-on-unexpected \
+            --gap-threshold 10 || exit 1
           echo "coverage_audit_passed=true" >> $GITHUB_OUTPUT
       
       - name: Generate Canonical Manifest
