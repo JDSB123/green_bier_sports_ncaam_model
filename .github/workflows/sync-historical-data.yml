@@ -61,7 +61,8 @@ jobs:
       - name: Checkout main repo with historical data
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.HISTORICAL_DATA_PAT }}
+          # Use HISTORICAL_DATA_PAT if available, otherwise use default GITHUB_TOKEN
+          token: ${{ secrets.HISTORICAL_DATA_PAT || github.token }}
           fetch-depth: 0
 
       - name: Configure Git
@@ -70,6 +71,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Push historical data changes
+        env:
+          HAS_PAT: ${{ secrets.HISTORICAL_DATA_PAT != '' }}
         run: |
           if [ -d "ncaam_historical_data_local/.git" ]; then
             cd ncaam_historical_data_local
@@ -78,11 +81,20 @@ jobs:
             if [ -n "$(git status --porcelain)" ]; then
               git add -A
               git commit -m "chore: auto-sync from main repo [skip ci]" || true
-              git push origin master
-              echo "✅ Historical data pushed to ncaam-historical-data repo"
+              
+              if [ "$HAS_PAT" = "true" ]; then
+                git push origin master
+                echo "✅ Historical data pushed to ncaam-historical-data repo"
+              else
+                echo "⚠️ HISTORICAL_DATA_PAT not configured - cannot push to external repo"
+                echo "To enable: Add a GitHub PAT with repo access to JDSB123/ncaam-historical-data as HISTORICAL_DATA_PAT secret"
+              fi
             else
               echo "No changes to push"
             fi
+          else
+            echo "⚠️ ncaam_historical_data_local/.git not found - this is expected in CI"
+            echo "Historical data is synced locally, not as a submodule"
           fi
 
   sync-raw-to-azure:
