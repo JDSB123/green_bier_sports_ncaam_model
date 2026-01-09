@@ -137,7 +137,7 @@ def fetch_historical_odds(
     api_key: str,
     event_id: str,
     date: str,
-    markets: str = "spreads,totals,spreads_h1,totals_h1,h2h"
+    markets: str = "spreads,totals,spreads_h1,totals_h1,h2h,h2h_h1"
 ) -> dict | None:
     """
     Fetch historical odds for a specific event.
@@ -364,6 +364,8 @@ def _parse_bookmaker_row(
     h1_total_under_price = None
     moneyline_home_price = None
     moneyline_away_price = None
+    h1_moneyline_home_price = None
+    h1_moneyline_away_price = None
 
     # Use raw names for matching in outcomes (API returns raw names)
     for market in bookmaker.get("markets", []):
@@ -384,6 +386,10 @@ def _parse_bookmaker_row(
             h1_total_over_price, h1_total_under_price = _extract_total_price(outcomes)
         elif key == "h2h":
             moneyline_home_price, moneyline_away_price = _extract_moneyline_prices(
+                outcomes, home_team_raw, away_team_raw
+            )
+        elif key == "h2h_h1":
+            h1_moneyline_home_price, h1_moneyline_away_price = _extract_moneyline_prices(
                 outcomes, home_team_raw, away_team_raw
             )
 
@@ -413,6 +419,8 @@ def _parse_bookmaker_row(
         "h1_total": h1_total,
         "h1_total_over_price": h1_total_over_price,
         "h1_total_under_price": h1_total_under_price,
+        "h1_moneyline_home_price": h1_moneyline_home_price,
+        "h1_moneyline_away_price": h1_moneyline_away_price,
         "is_march_madness": _is_march_madness(commence_time, tourney_window),
         "timestamp": odds_data.get("timestamp"),
     }
@@ -603,6 +611,8 @@ PREFERRED_HEADERS = [
     "h1_total",
     "h1_total_over_price",
     "h1_total_under_price",
+    "h1_moneyline_home_price",
+    "h1_moneyline_away_price",
     "is_march_madness",
     "timestamp",
 ]
@@ -698,8 +708,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--markets",
         type=str,
-        default=os.environ.get("HISTORICAL_ODDS_MARKETS", "spreads,totals,spreads_h1,totals_h1,h2h"),
-        help="Comma-separated markets (default: spreads,totals,spreads_h1,totals_h1,h2h)"
+        default=os.environ.get("HISTORICAL_ODDS_MARKETS", "spreads,totals,spreads_h1,totals_h1,h2h,h2h_h1"),
+        help="Comma-separated markets (default: spreads,totals,spreads_h1,totals_h1,h2h,h2h_h1)"
     )
     parser.add_argument(
         "--output",

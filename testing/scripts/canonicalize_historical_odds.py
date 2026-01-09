@@ -59,6 +59,8 @@ MATCHUP_COLUMNS = [
     "h1_total",
     "h1_total_over_price",
     "h1_total_under_price",
+    "h1_moneyline_home_price",
+    "h1_moneyline_away_price",
     "is_march_madness",
     "timestamp",
     "game_date",
@@ -97,6 +99,9 @@ TEAM_COLUMNS = [
     "h1_total",
     "h1_total_over_price",
     "h1_total_under_price",
+    "h1_moneyline_home_price",
+    "h1_moneyline_away_price",
+    "team_h1_moneyline_price",
     "is_march_madness",
     "timestamp",
 ]
@@ -118,6 +123,8 @@ MARKET_FIELDS = (
     "h1_total",
     "h1_total_over_price",
     "h1_total_under_price",
+    "h1_moneyline_home_price",
+    "h1_moneyline_away_price",
 )
 
 METADATA_FIELDS = (
@@ -318,6 +325,8 @@ def _matchup_to_team_rows(matchup: Dict[str, str]) -> List[Dict[str, str]]:
     h1_spread_away_price = _to_float(matchup.get("h1_spread_away_price"))
     moneyline_home_price = _to_float(matchup.get("moneyline_home_price"))
     moneyline_away_price = _to_float(matchup.get("moneyline_away_price"))
+    h1_moneyline_home_price = _to_float(matchup.get("h1_moneyline_home_price"))
+    h1_moneyline_away_price = _to_float(matchup.get("h1_moneyline_away_price"))
 
     home_row = {
         "event_id": matchup.get("event_id", ""),
@@ -351,6 +360,9 @@ def _matchup_to_team_rows(matchup: Dict[str, str]) -> List[Dict[str, str]]:
         "h1_total": matchup.get("h1_total", ""),
         "h1_total_over_price": matchup.get("h1_total_over_price", ""),
         "h1_total_under_price": matchup.get("h1_total_under_price", ""),
+        "h1_moneyline_home_price": _format_float(h1_moneyline_home_price) if h1_moneyline_home_price is not None else "",
+        "h1_moneyline_away_price": _format_float(h1_moneyline_away_price) if h1_moneyline_away_price is not None else "",
+        "team_h1_moneyline_price": _format_float(h1_moneyline_home_price) if h1_moneyline_home_price is not None else "",
         "is_march_madness": matchup.get("is_march_madness", ""),
         "timestamp": matchup.get("timestamp", ""),
     }
@@ -387,6 +399,9 @@ def _matchup_to_team_rows(matchup: Dict[str, str]) -> List[Dict[str, str]]:
         "h1_total": matchup.get("h1_total", ""),
         "h1_total_over_price": matchup.get("h1_total_over_price", ""),
         "h1_total_under_price": matchup.get("h1_total_under_price", ""),
+        "h1_moneyline_home_price": _format_float(h1_moneyline_home_price) if h1_moneyline_home_price is not None else "",
+        "h1_moneyline_away_price": _format_float(h1_moneyline_away_price) if h1_moneyline_away_price is not None else "",
+        "team_h1_moneyline_price": _format_float(h1_moneyline_away_price) if h1_moneyline_away_price is not None else "",
         "is_march_madness": matchup.get("is_march_madness", ""),
         "timestamp": matchup.get("timestamp", ""),
     }

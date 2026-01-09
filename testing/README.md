@@ -9,17 +9,12 @@ service tree.
    ```bash
    pip install -r testing/requirements.txt
    ```
-2. Configure Kaggle credentials (see docs/KAGGLE_SETUP.md).
-3. Download the historical CSVs:
+2. Ensure canonical historical data exists under `ncaam_historical_data_local/`.
+3. Run the backtest suite:
    ```bash
-   python testing/scripts/download_kaggle_data.py
+   python testing/run_backtest_suite.py calibration --seasons 2022 2023 2024 2025
+   python testing/run_backtest_suite.py roi --seasons 2021
    ```
-4. Verify ingest:
-   ```bash
-   python -m testing.sources.kaggle_scores --season 2025 --sample 5
-   ```
-
-All output CSVs land under `testing/data/kaggle/` and are ignored by git.
 
 ## ESPN schedule reference (optional)
 

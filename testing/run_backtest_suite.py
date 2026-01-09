@@ -106,7 +106,7 @@ def run_roi_simulation(seasons: list, thresholds: list = None) -> dict:
     
     if odds_count == 0:
         print("❌ No historical odds found. Cannot run ROI simulation.")
-        print("   Place odds CSV files in testing/data/historical_odds/")
+        print("   Expected canonical odds under ncaam_historical_data_local/odds/normalized/")
         return {}
     
     all_results = {}
