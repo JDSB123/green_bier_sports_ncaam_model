@@ -1,2 +1,0 @@
-# Audit logs are generated during backtest runs - don't commit
-audit_logs/

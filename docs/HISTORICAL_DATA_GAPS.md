@@ -21,7 +21,9 @@ ncaam_historical_data_local/
 └── ncaahoopR_data-master/  # Play-by-play (~7GB, not in git)
 ```
 
-Use `from testing.data_paths import DATA_PATHS` in Python scripts.
+Prefer scripts that read from `HISTORICAL_DATA_ROOT` (defaults to `ncaam_historical_data_local/`).
+
+NOTE: `testing/data/*` and Kaggle-based datasets are deprecated; use `ncaam_historical_data_local/` only.
 
 ## Season Definitions (canonicalized)
 - ESPN game dates: season = `year` if `month >= 11` else `year + 1` (Nov–Apr window).
@@ -45,21 +47,21 @@ Use `from testing.data_paths import DATA_PATHS` in Python scripts.
 
 ## Ingestion Steps (existing scripts)
 1) **Full-game scores (ESPN)**
-   - `python testing/scripts/fetch_historical_data.py --seasons 2019-2026 --format both --output-dir testing/data/historical`
-   - Produces `games_YYYY.csv/json` and `barttorvik_YYYY.json`.
+   - `python testing/scripts/fetch_historical_data.py --seasons 2019-2026 --format both`
+   - By default writes under `ncaam_historical_data_local/scores/fg/` and `ncaam_historical_data_local/ratings/raw/barttorvik/`.
 
 2) **1H scores (ESPN boxscores)**
    - After FG fetch, run `python testing/scripts/fetch_h1_data.py`
-   - Uses `testing/data/historical/games_all.csv` → outputs `testing/data/h1_historical/h1_games_all.csv` and JSON.
+   - Uses `ncaam_historical_data_local/scores/fg/games_all.csv` → outputs under `ncaam_historical_data_local/scores/h1/`.
 
 3) **Odds (The Odds API)**
    - Requires `ODDS_API_KEY`. Fetch in chunks to respect quota/rate limits, e.g.:
      - `python testing/scripts/fetch_historical_odds.py --start 2019-11-01 --end 2020-04-15`
-     - Repeat per season through 2025-04-15; outputs to `testing/data/historical_odds/odds_*.csv`.
+       - Repeat per season through 2025-04-15; outputs under `ncaam_historical_data_local/odds/`.
    - Note: API may not expose 1H markets historically; document any missing markets after fetch.
 
 4) **Barttorvik ratings (public JSON)**
-   - For each season 2019–2023, download `https://barttorvik.com/{YEAR}_team_results.json` to `testing/data/historical/barttorvik_{YEAR}.json`.
+   - For each season 2019–2023, download `https://barttorvik.com/{YEAR}_team_results.json` to `ncaam_historical_data_local/ratings/raw/barttorvik/barttorvik_{YEAR}.json`.
    - Optionally convert/append to `services/prediction-service-python/training_data/barttorvik_ratings.csv` for model use.
 
 5) **Aliases & Standardization**
@@ -74,5 +76,5 @@ Use `from testing.data_paths import DATA_PATHS` in Python scripts.
 ## Quick Commands Summary
 - FG scores: `python testing/scripts/fetch_historical_data.py --seasons 2019-2026 --format both`
 - 1H scores: `python testing/scripts/fetch_h1_data.py`
-- Odds: `python testing/scripts/fetch_historical_odds.py --start <YYYY-MM-DD> --end <YYYY-MM-DD> --output testing/data/historical_odds/odds_<range>.csv`
+- Odds: `python testing/scripts/fetch_historical_odds.py --start <YYYY-MM-DD> --end <YYYY-MM-DD>`
 - Barttorvik: download `{YEAR}_team_results.json` for 2019–2023

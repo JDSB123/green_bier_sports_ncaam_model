@@ -111,12 +111,12 @@ Before bumping from vX.Y.Z to vX.Y.(Z+1):
 ## Data Requirements
 
 ### Historical Ratings
-Located in: `testing/data/historical/barttorvik_YYYY.json`
+Located in: `ncaam_historical_data_local/ratings/raw/barttorvik/barttorvik_YYYY.json`
 
 Required seasons: 2019-2025 (for testing 2020-2026)
 
 ### Historical Games
-Located in: `testing/data/historical/games_YYYY.csv`
+Located in: `ncaam_historical_data_local/canonicalized/scores/fg/games_all_canonical.csv`
 
 Columns needed:
 - `date`, `home_team`, `away_team`
@@ -124,7 +124,7 @@ Columns needed:
 - Optional: `h1_home`, `h1_away` (for H1 models)
 
 ### Historical Odds
-Located in: `testing/data/historical_odds/odds_YYYY_YYYY.csv`
+Located in: `ncaam_historical_data_local/odds/normalized/odds_consolidated_canonical.csv`
 
 Columns needed:
 - `commence_time`, `home_team`, `away_team`
@@ -149,10 +149,10 @@ audit_logs/
 ## Troubleshooting
 
 ### "No historical odds found"
-→ Place odds CSV in `testing/data/historical_odds/`
+→ Ensure canonical odds exist under `ncaam_historical_data_local/odds/normalized/`
 
 ### "Games file not found"
-→ Check `testing/data/historical/games_YYYY.csv` exists
+→ Check `ncaam_historical_data_local/canonicalized/scores/fg/games_all_canonical.csv` exists
 
 ### High bias after calibration
 → Calibration may need adjustment, iterate in backtest

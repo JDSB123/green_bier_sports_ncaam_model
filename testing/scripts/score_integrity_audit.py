@@ -9,9 +9,8 @@ Sources validated:
 1. ESPN Canonical Scores (games_all_canonical.csv)
 2. ESPN H1 Canonical Scores (h1_games_all_canonical.csv)
 3. ncaahoopR Schedule Data (team schedules with scores)
-4. Backtest Ready Dataset (testing/data/backtest_ready.csv)
-5. Backtest Complete Dataset (testing/data/backtest_complete.csv)
-6. Games 2023-2025 (backtest_datasets/games_2023_2025.csv)
+4. Games 2023-2025 (backtest_datasets/games_2023_2025.csv)
+5. Training Data With Odds (backtest_datasets/training_data_with_odds.csv)
 
 Checks performed:
 - Cross-source score consistency (same game = same scores)
@@ -35,14 +34,14 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # Add project root
 ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT_DIR))
 sys.path.insert(0, str(ROOT_DIR / "testing"))
 
-from testing.data_paths import DATA_PATHS
+from testing.data_paths import DATA_PATHS  # noqa: E402
 
 
 @dataclass
@@ -122,7 +121,13 @@ def load_espn_canonical_fg(data_paths) -> ScoreSource:
     """Load ESPN canonical full-game scores."""
     source = ScoreSource(
         name="espn_canonical_fg",
-        path=data_paths.root / "canonicalized" / "scores" / "fg" / "games_all_canonical.csv"
+        path=(
+            data_paths.root
+            / "canonicalized"
+            / "scores"
+            / "fg"
+            / "games_all_canonical.csv"
+        ),
     )
 
     if not source.path.exists():
@@ -133,8 +138,14 @@ def load_espn_canonical_fg(data_paths) -> ScoreSource:
         for row in reader:
             game = GameScore(
                 date=row.get("date", ""),
-                home_team=row.get("home_canonical") or row.get("home_team", ""),
-                away_team=row.get("away_canonical") or row.get("away_team", ""),
+                home_team=(
+                    row.get("home_canonical")
+                    or row.get("home_team", "")
+                ),
+                away_team=(
+                    row.get("away_canonical")
+                    or row.get("away_team", "")
+                ),
                 home_score=safe_int(row.get("home_score")),
                 away_score=safe_int(row.get("away_score")),
                 source=source.name,
@@ -157,7 +168,13 @@ def load_espn_canonical_h1(data_paths) -> ScoreSource:
     """Load ESPN canonical H1 scores."""
     source = ScoreSource(
         name="espn_canonical_h1",
-        path=data_paths.root / "canonicalized" / "scores" / "h1" / "h1_games_all_canonical.csv"
+        path=(
+            data_paths.root
+            / "canonicalized"
+            / "scores"
+            / "h1"
+            / "h1_games_all_canonical.csv"
+        ),
     )
 
     if not source.path.exists():
@@ -168,89 +185,20 @@ def load_espn_canonical_h1(data_paths) -> ScoreSource:
         for row in reader:
             game = GameScore(
                 date=row.get("date", ""),
-                home_team=row.get("home_canonical") or row.get("home_team", ""),
-                away_team=row.get("away_canonical") or row.get("away_team", ""),
+                home_team=(
+                    row.get("home_canonical")
+                    or row.get("home_team", "")
+                ),
+                away_team=(
+                    row.get("away_canonical")
+                    or row.get("away_team", "")
+                ),
                 home_score=safe_int(row.get("home_fg")),
                 away_score=safe_int(row.get("away_fg")),
                 home_h1=safe_int(row.get("home_h1")),
                 away_h1=safe_int(row.get("away_h1")),
                 source=source.name,
                 game_id=row.get("game_id", ""),
-            )
-            if game.date and game.home_team and game.away_team:
-                source.games.append(game)
-
-    for game in source.games:
-        key = game.game_key()
-        if key not in source.games_by_key:
-            source.games_by_key[key] = []
-        source.games_by_key[key].append(game)
-
-    return source
-
-
-def load_backtest_ready(data_paths) -> ScoreSource:
-    """Load backtest_ready.csv from testing/data/."""
-    source = ScoreSource(
-        name="backtest_ready",
-        path=ROOT_DIR / "testing" / "data" / "backtest_ready.csv"
-    )
-
-    if not source.path.exists():
-        # Try root level
-        alt_path = ROOT_DIR / "backtest_ready.csv"
-        if alt_path.exists():
-            source.path = alt_path
-        else:
-            return source
-
-    with open(source.path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            game = GameScore(
-                date=row.get("game_date", ""),
-                home_team=row.get("home_team", ""),
-                away_team=row.get("away_team", ""),
-                home_score=safe_int(row.get("home_score")),
-                away_score=safe_int(row.get("away_score")),
-                home_h1=safe_int(row.get("h1_home_score")),
-                away_h1=safe_int(row.get("h1_away_score")),
-                source=source.name,
-            )
-            if game.date and game.home_team and game.away_team:
-                source.games.append(game)
-
-    for game in source.games:
-        key = game.game_key()
-        if key not in source.games_by_key:
-            source.games_by_key[key] = []
-        source.games_by_key[key].append(game)
-
-    return source
-
-
-def load_backtest_complete(data_paths) -> ScoreSource:
-    """Load backtest_complete.csv from testing/data/."""
-    source = ScoreSource(
-        name="backtest_complete",
-        path=ROOT_DIR / "testing" / "data" / "backtest_complete.csv"
-    )
-
-    if not source.path.exists():
-        return source
-
-    with open(source.path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            game = GameScore(
-                date=row.get("game_date", ""),
-                home_team=row.get("home_team", ""),
-                away_team=row.get("away_team", ""),
-                home_score=safe_int(row.get("home_score")),
-                away_score=safe_int(row.get("away_score")),
-                home_h1=safe_int(row.get("h1_home_score")),
-                away_h1=safe_int(row.get("h1_away_score")),
-                source=source.name,
             )
             if game.date and game.home_team and game.away_team:
                 source.games.append(game)
@@ -348,21 +296,26 @@ def check_score_sanity(sources: List[ScoreSource]) -> List[IntegrityIssue]:
         for game in source.games:
             problems = []
 
-            if game.home_score is not None:
-                if game.home_score < MIN_SCORE or game.home_score > MAX_SCORE:
-                    problems.append(f"home_score={game.home_score}")
-            if game.away_score is not None:
-                if game.away_score < MIN_SCORE or game.away_score > MAX_SCORE:
-                    problems.append(f"away_score={game.away_score}")
-            if game.total is not None:
-                if game.total < MIN_TOTAL or game.total > MAX_TOTAL:
-                    problems.append(f"total={game.total}")
-            if game.home_h1 is not None:
-                if game.home_h1 < MIN_H1 or game.home_h1 > MAX_H1:
-                    problems.append(f"home_h1={game.home_h1}")
-            if game.away_h1 is not None:
-                if game.away_h1 < MIN_H1 or game.away_h1 > MAX_H1:
-                    problems.append(f"away_h1={game.away_h1}")
+            if game.home_score is not None and (
+                game.home_score < MIN_SCORE or game.home_score > MAX_SCORE
+            ):
+                problems.append(f"home_score={game.home_score}")
+            if game.away_score is not None and (
+                game.away_score < MIN_SCORE or game.away_score > MAX_SCORE
+            ):
+                problems.append(f"away_score={game.away_score}")
+            if game.total is not None and (
+                game.total < MIN_TOTAL or game.total > MAX_TOTAL
+            ):
+                problems.append(f"total={game.total}")
+            if game.home_h1 is not None and (
+                game.home_h1 < MIN_H1 or game.home_h1 > MAX_H1
+            ):
+                problems.append(f"home_h1={game.home_h1}")
+            if game.away_h1 is not None and (
+                game.away_h1 < MIN_H1 or game.away_h1 > MAX_H1
+            ):
+                problems.append(f"away_h1={game.away_h1}")
 
             if problems:
                 insane_scores.append({
@@ -372,50 +325,73 @@ def check_score_sanity(sources: List[ScoreSource]) -> List[IntegrityIssue]:
                 })
 
         if insane_scores:
+            description = (
+                f"{source.name}: {len(insane_scores)} games with unusual "
+                "scores"
+            )
             issues.append(IntegrityIssue(
                 severity="WARNING",
                 category="score_sanity",
-                description=f"{source.name}: {len(insane_scores)} games with unusual scores",
+                description=description,
                 details={"samples": insane_scores[:10]},
             ))
 
     return issues
 
 
-def check_h1_fg_consistency(sources: List[ScoreSource]) -> List[IntegrityIssue]:
+def check_h1_fg_consistency(
+    sources: List[ScoreSource],
+) -> List[IntegrityIssue]:
     """Check that H1 scores are less than or equal to FG scores."""
     issues = []
 
     for source in sources:
         inconsistent = []
         for game in source.games:
-            if game.home_h1 is not None and game.home_score is not None:
-                if game.home_h1 > game.home_score:
-                    inconsistent.append({
-                        "date": game.date,
-                        "matchup": f"{game.away_team} @ {game.home_team}",
-                        "issue": f"home_h1={game.home_h1} > home_fg={game.home_score}",
-                    })
-            if game.away_h1 is not None and game.away_score is not None:
-                if game.away_h1 > game.away_score:
-                    inconsistent.append({
-                        "date": game.date,
-                        "matchup": f"{game.away_team} @ {game.home_team}",
-                        "issue": f"away_h1={game.away_h1} > away_fg={game.away_score}",
-                    })
+            if (
+                game.home_h1 is not None
+                and game.home_score is not None
+                and game.home_h1 > game.home_score
+            ):
+                inconsistent.append({
+                    "date": game.date,
+                    "matchup": f"{game.away_team} @ {game.home_team}",
+                    "issue": (
+                        f"home_h1={game.home_h1} > "
+                        f"home_fg={game.home_score}"
+                    ),
+                })
+            if (
+                game.away_h1 is not None
+                and game.away_score is not None
+                and game.away_h1 > game.away_score
+            ):
+                inconsistent.append({
+                    "date": game.date,
+                    "matchup": f"{game.away_team} @ {game.home_team}",
+                    "issue": (
+                        f"away_h1={game.away_h1} > "
+                        f"away_fg={game.away_score}"
+                    ),
+                })
 
         if inconsistent:
+            description = (
+                f"{source.name}: {len(inconsistent)} games where H1 > FG"
+            )
             issues.append(IntegrityIssue(
                 severity="CRITICAL",
                 category="h1_fg_consistency",
-                description=f"{source.name}: {len(inconsistent)} games where H1 > FG",
+                description=description,
                 details={"samples": inconsistent[:10]},
             ))
 
     return issues
 
 
-def check_duplicates_within_source(sources: List[ScoreSource]) -> List[IntegrityIssue]:
+def check_duplicates_within_source(
+    sources: List[ScoreSource],
+) -> List[IntegrityIssue]:
     """Check for duplicate games within each source."""
     issues = []
 
@@ -424,9 +400,7 @@ def check_duplicates_within_source(sources: List[ScoreSource]) -> List[Integrity
         for key, games in source.games_by_key.items():
             if len(games) > 1:
                 # Check if scores match
-                scores = set()
-                for g in games:
-                    scores.add((g.home_score, g.away_score))
+                scores = {(g.home_score, g.away_score) for g in games}
 
                 if len(scores) > 1:
                     duplicates.append({
@@ -443,21 +417,34 @@ def check_duplicates_within_source(sources: List[ScoreSource]) -> List[Integrity
                     })
 
         if duplicates:
-            conflicting = [d for d in duplicates if d.get("issue") == "CONFLICTING scores"]
-            exact = [d for d in duplicates if d.get("issue") == "exact duplicate"]
+            conflicting = [
+                d for d in duplicates
+                if d.get("issue") == "CONFLICTING scores"
+            ]
+            exact = [
+                d for d in duplicates
+                if d.get("issue") == "exact duplicate"
+            ]
 
             if conflicting:
+                description = (
+                    f"{source.name}: {len(conflicting)} games with "
+                    "CONFLICTING duplicate scores"
+                )
                 issues.append(IntegrityIssue(
                     severity="CRITICAL",
                     category="duplicates",
-                    description=f"{source.name}: {len(conflicting)} games with CONFLICTING duplicate scores",
+                    description=description,
                     details={"samples": conflicting[:10]},
                 ))
             if exact:
+                description = (
+                    f"{source.name}: {len(exact)} exact duplicate games"
+                )
                 issues.append(IntegrityIssue(
                     severity="INFO",
                     category="duplicates",
-                    description=f"{source.name}: {len(exact)} exact duplicate games",
+                    description=description,
                     details={"count": len(exact)},
                 ))
 
@@ -470,15 +457,13 @@ def check_cross_source_consistency(
 ) -> Tuple[List[IntegrityIssue], Dict]:
     """Cross-validate scores between sources."""
     issues = []
-    metrics = {
-        "cross_validations": 0,
-        "matches": 0,
-        "mismatches": 0,
-        "source_pairs_checked": [],
-    }
+    cross_validations = 0
+    matches = 0
+    mismatch_count = 0
 
     # Build master index of all games
-    all_games_by_key: Dict[str, List[Tuple[str, GameScore]]] = defaultdict(list)
+    all_games_by_key: Dict[str, List[Tuple[str, GameScore]]]
+    all_games_by_key = defaultdict(list)
     for source in sources:
         for game in source.games:
             key = game.game_key()
@@ -487,15 +472,14 @@ def check_cross_source_consistency(
     # Find games that appear in multiple sources
     multi_source_games = {
         k: v for k, v in all_games_by_key.items()
-        if len(set(src for src, _ in v)) > 1
+        if len({src for src, _ in v}) > 1
     }
-
-    metrics["games_in_multiple_sources"] = len(multi_source_games)
+    games_in_multiple_sources = len(multi_source_games)
 
     # Check each multi-source game for consistency
-    mismatches = []
+    mismatch_details: List[Dict[str, str]] = []
     for key, entries in multi_source_games.items():
-        metrics["cross_validations"] += 1
+        cross_validations += 1
 
         # Group by source
         by_source = defaultdict(list)
@@ -510,45 +494,56 @@ def check_cross_source_consistency(
                 game2 = by_source[src2][0]
 
                 # Compare FG scores
-                if (game1.home_score is not None and game2.home_score is not None
-                        and game1.away_score is not None and game2.away_score is not None):
+                if (
+                    game1.home_score is not None
+                    and game2.home_score is not None
+                    and game1.away_score is not None
+                    and game2.away_score is not None
+                ):
 
                     # Check if scores match (allowing for home/away swap)
                     scores1 = (game1.home_score, game1.away_score)
                     scores2 = (game2.home_score, game2.away_score)
                     scores2_swapped = (game2.away_score, game2.home_score)
 
-                    if scores1 == scores2:
-                        metrics["matches"] += 1
-                    elif scores1 == scores2_swapped:
-                        # Home/away swapped but scores consistent
-                        metrics["matches"] += 1
+                    if scores1 in (scores2, scores2_swapped):
+                        matches += 1
                     else:
-                        metrics["mismatches"] += 1
-                        mismatches.append({
+                        mismatch_count += 1
+                        score1_str = f"{game1.home_score}-{game1.away_score}"
+                        score2_str = f"{game2.home_score}-{game2.away_score}"
+                        mismatch_details.append({
                             "date": game1.date,
                             "teams": key,
                             "source1": src1,
-                            "scores1": f"{game1.home_score}-{game1.away_score}",
+                            "scores1": score1_str,
                             "source2": src2,
-                            "scores2": f"{game2.home_score}-{game2.away_score}",
+                            "scores2": score2_str,
                         })
 
-    if mismatches:
+    if mismatch_details:
+        description = (
+            f"{len(mismatch_details)} games have DIFFERENT scores "
+            "across sources"
+        )
         issues.append(IntegrityIssue(
             severity="CRITICAL",
             category="cross_source_mismatch",
-            description=f"{len(mismatches)} games have DIFFERENT scores across sources",
-            details={"samples": mismatches[:20]},
+            description=description,
+            details={"samples": mismatch_details[:20]},
         ))
 
     # Calculate match rate
-    total_comparisons = metrics["matches"] + metrics["mismatches"]
-    if total_comparisons > 0:
-        metrics["match_rate"] = metrics["matches"] / total_comparisons
-    else:
-        metrics["match_rate"] = 1.0
+    total_comparisons = matches + mismatch_count
+    match_rate = matches / total_comparisons if total_comparisons else 1.0
 
+    metrics: Dict[str, object] = {
+        "cross_validations": cross_validations,
+        "matches": matches,
+        "mismatches": mismatch_count,
+        "games_in_multiple_sources": games_in_multiple_sources,
+        "match_rate": match_rate,
+    }
     return issues, metrics
 
 
@@ -567,26 +562,38 @@ def check_missing_scores(sources: List[ScoreSource]) -> List[IntegrityIssue]:
                 missing_h1 += 1
 
         if missing_fg > 0:
+            description = (
+                f"{source.name}: {missing_fg} games missing FG scores"
+            )
             issues.append(IntegrityIssue(
                 severity="WARNING",
                 category="missing_scores",
-                description=f"{source.name}: {missing_fg} games missing FG scores",
-                details={"missing_fg_count": missing_fg, "total": len(source.games)},
+                description=description,
+                details={
+                    "missing_fg_count": missing_fg,
+                    "total": len(source.games),
+                },
             ))
 
         # Only warn about H1 if source should have H1 data
         if "h1" in source.name.lower() and missing_h1 > 0:
+            description = (
+                f"{source.name}: {missing_h1} games missing H1 scores"
+            )
             issues.append(IntegrityIssue(
                 severity="WARNING",
                 category="missing_scores",
-                description=f"{source.name}: {missing_h1} games missing H1 scores",
-                details={"missing_h1_count": missing_h1, "total": len(source.games)},
+                description=description,
+                details={
+                    "missing_h1_count": missing_h1,
+                    "total": len(source.games),
+                },
             ))
 
     return issues
 
 
-def run_score_integrity_audit(
+def run_score_integrity_audit(  # sourcery skip: extract-duplicate-method
     output_dir: Optional[Path] = None,
     verbose: bool = False,
 ) -> AuditResult:
@@ -605,8 +612,6 @@ def run_score_integrity_audit(
     sources = [
         load_espn_canonical_fg(DATA_PATHS),
         load_espn_canonical_h1(DATA_PATHS),
-        load_backtest_ready(DATA_PATHS),
-        load_backtest_complete(DATA_PATHS),
         load_games_2023_2025(DATA_PATHS),
         load_training_data_with_odds(DATA_PATHS),
     ]
@@ -670,11 +675,15 @@ def run_score_integrity_audit(
     print("-" * 72)
     print("CHECK 4: Cross-Source Score Consistency")
     print("-" * 72)
-    cross_issues, cross_metrics = check_cross_source_consistency(sources, verbose)
+    cross_issues, cross_metrics = check_cross_source_consistency(
+        sources,
+        verbose,
+    )
     all_issues.extend(cross_issues)
     result.metrics.update(cross_metrics)
 
-    print(f"  Games in multiple sources: {cross_metrics['games_in_multiple_sources']:,}")
+    games_in_multi = cross_metrics["games_in_multiple_sources"]
+    print(f"  Games in multiple sources: {games_in_multi:,}")
     print(f"  Cross-validations: {cross_metrics['cross_validations']:,}")
     print(f"  Matches: {cross_metrics['matches']:,}")
     print(f"  Mismatches: {cross_metrics['mismatches']:,}")
@@ -685,7 +694,14 @@ def run_score_integrity_audit(
             print(f"  [{issue.severity}] {issue.description}")
             if verbose and issue.details.get("samples"):
                 for s in issue.details["samples"][:5]:
-                    print(f"    - {s['date']}: {s['source1']}={s['scores1']} vs {s['source2']}={s['scores2']}")
+                    date = s["date"]
+                    src1 = s["source1"]
+                    src2 = s["source2"]
+                    scores1 = s["scores1"]
+                    scores2 = s["scores2"]
+                    print(
+                        f"    - {date}: {src1}={scores1} vs {src2}={scores2}"
+                    )
 
     # Check 5: Missing scores
     print()
@@ -702,8 +718,8 @@ def run_score_integrity_audit(
 
     # Calculate final score
     result.issues = all_issues
-    critical_count = sum(1 for i in all_issues if i.severity == "CRITICAL")
-    warning_count = sum(1 for i in all_issues if i.severity == "WARNING")
+    critical_count = sum(i.severity == "CRITICAL" for i in all_issues)
+    warning_count = sum(i.severity == "WARNING" for i in all_issues)
 
     result.metrics["critical_issues"] = critical_count
     result.metrics["warning_issues"] = warning_count
