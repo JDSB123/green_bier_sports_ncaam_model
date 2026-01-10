@@ -1,13 +1,19 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NCAAM - Azure Container Apps Deployment v33.15.0
+// NCAAM - Azure Container Apps Deployment v34.1.0
 // ═══════════════════════════════════════════════════════════════════════════════
 // Deploys:
 // - Azure Key Vault (secrets storage) - v33.10.0
 // - Azure Container Registry (ACR)
 // - Azure Database for PostgreSQL Flexible Server
 // - Azure Cache for Redis
+// - Azure Storage Account (pick history blob storage) - v34.1.0
 // - Azure Container Apps Environment
 // - NCAAM Prediction Service Container App
+//
+// v34.1.0 Changes:
+// - Added Azure Storage Account for pick history (consolidated into NCAAM RG)
+// - Enhanced resource tagging (CostCenter, Owner, Project, Version)
+// - Improved resource organization documentation
 //
 // v33.14.0 Changes:
 // - Pick history blob storage uses external account (metricstrackersgbsv)
@@ -61,7 +67,7 @@ param imageTag string = 'v0.0.0'
 @description('Suffix for resource names (e.g. -gbe for enterprise resources)')
 param resourceNameSuffix string = ''
 
-@description('Azure Storage connection string for pick history (external storage account)')
+@description('Azure Storage connection string for pick history (optional - if provided, uses external storage; otherwise creates internal storage account)')
 @secure()
 param storageConnectionString string = ''
 
@@ -77,14 +83,20 @@ var containerEnvName = '${resourcePrefix}-env'
 var containerAppName = '${resourcePrefix}-prediction'
 var webAppName = '${resourcePrefix}-web'
 var logAnalyticsName = '${resourcePrefix}-logs'
+var storageAccountName = replace('${resourcePrefix}${replace(resourceNameSuffix, '-', '')}sa', '-', '')
 // REMOVED: ratingsJobName and oddsJobName - jobs consolidated into prediction service (v33.11.0)
 
 // Common tags for resource organization (especially for enterprise resource group)
+// Enhanced tagging for better cost allocation and resource management (v34.1.0)
 var commonTags = {
   Model: baseName
   Environment: environment
   ManagedBy: 'Bicep'
   Application: 'NCAAM-Prediction-Model'
+  CostCenter: 'GBSV-Sports'
+  Owner: 'green-bier-ventures'
+  Project: 'NCAAM-Prediction'
+  Version: 'v34.1.0'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -201,6 +213,49 @@ resource redis 'Microsoft.Cache/redis@2023-08-01' = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
+// AZURE STORAGE ACCOUNT - Pick history blob storage (v34.1.0)
+// ─────────────────────────────────────────────────────────────────────────────────
+// Creates internal storage account if storageConnectionString param is not provided
+// If storageConnectionString is provided, uses external storage (for migration period)
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = if (storageConnectionString == '') {
+  name: storageAccountName
+  location: location
+  tags: commonTags
+  kind: 'StorageV2'
+  sku: {
+    name: 'Standard_LRS'
+  }
+  properties: {
+    supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    networkAcls: {
+      defaultAction: 'Allow'
+    }
+    accessTier: 'Hot'
+  }
+}
+
+// Storage Account Blob Service (implicit child resource)
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = if (storageConnectionString == '') {
+  parent: storageAccount
+  name: 'default'
+}
+
+// Storage Account Container for pick history
+resource storageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = if (storageConnectionString == '') {
+  parent: blobService
+  name: 'picks-history'
+  properties: {
+    publicAccess: 'None'
+    metadata: {
+      purpose: 'pick-history-snapshots'
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
 // AZURE KEY VAULT - Secure secrets storage (v33.10.0)
 // ─────────────────────────────────────────────────────────────────────────────────
 
@@ -299,11 +354,21 @@ resource kvSecretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
-resource kvSecretStorageConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (storageConnectionString != '') {
+// Storage connection string: use provided external string, or generate from internal storage account
+resource kvSecretStorageConnectionExternal 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (storageConnectionString != '') {
   parent: keyVault
   name: 'storage-connection-string'
   properties: {
     value: storageConnectionString
+    contentType: 'text/plain'
+  }
+}
+
+resource kvSecretStorageConnectionInternal 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (storageConnectionString == '') {
+  parent: keyVault
+  name: 'storage-connection-string'
+  properties: {
+    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
     contentType: 'text/plain'
   }
 }
@@ -388,7 +453,12 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
             name: 'storage-connection-string'
             value: storageConnectionString
           }
-        ] : [],
+        ] : [
+          {
+            name: 'storage-connection-string'
+            value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+          }
+        ],
         (basketballApiKey != '') ? [
           {
             name: 'basketball-api-key'
@@ -890,4 +960,7 @@ output containerEnvName string = containerEnv.name
 output actionGroupId string = actionGroup.id
 output keyVaultName string = keyVault.name
 output keyVaultUri string = keyVault.properties.vaultUri
-// Storage account is external (metricstrackersgbsv in dashboard-gbsv-main-rg)
+output storageAccountName string = (storageConnectionString != '') ? 'external-provided' : storageAccount.name
+output storageAccountId string = (storageConnectionString != '') ? '' : storageAccount.id
+output usingInternalStorage bool = (storageConnectionString == '')
+// Storage account: created internally if storageConnectionString param is empty, otherwise uses external account

@@ -36,11 +36,12 @@ NCAAM-GBSV-MODEL-RG/
 ├── ncaamstablegbsvacr           # Container Registry
 ├── ncaam-stable-gbsv-postgres    # PostgreSQL Flexible Server
 ├── ncaam-stable-gbsv-redis       # Azure Cache for Redis
-├── ncaam-stable-env         # Container Apps Environment
-├── ncaam-stable-prediction  # Container App
-├── ncaam-stable-web         # Container App (web)
-├── ncaam-stablegbsvkv        # Key Vault
-└── ncaam-stable-logs        # Log Analytics Workspace
+├── ncaamstablegbsvsa             # Storage Account (pick history) - v34.1.0
+├── ncaam-stable-env              # Container Apps Environment
+├── ncaam-stable-prediction       # Container App
+├── ncaam-stable-web              # Container App (web)
+├── ncaam-stablegbsvkv            # Key Vault
+└── ncaam-stable-logs             # Log Analytics Workspace
 ```
 
 ---

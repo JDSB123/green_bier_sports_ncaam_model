@@ -184,11 +184,14 @@ az containerapp update `
 | Container Registry | Basic | ~$5 |
 | PostgreSQL Flexible | B1ms | ~$15 |
 | Redis Cache | Basic C0 | ~$16 |
+| Storage Account | Standard LRS | ~$0.02/GB/month |
 | Key Vault | Standard | ~$1 |
 | Container Apps | Consumption | ~$0-10 (pay per use) |
 | Log Analytics | Per GB | ~$2-5 |
 
-**Total Estimated Cost: ~$41-51/month**
+**Total Estimated Cost: ~$41-51/month** (Storage cost depends on blob data volume, typically minimal)
+
+**Note:** Storage account is created internally in `NCAAM-GBSV-MODEL-RG` by default (v34.1.0). You can override this by providing `-StorageConnectionString` to use an external storage account.
 
 ## Environment Variables
 
@@ -210,6 +213,7 @@ Secrets are stored in Key Vault (`ncaam-stablegbsvkv`); Container Apps also keep
 - `redis-password` - Redis access key (from Azure)
 - `odds-api-key` - The Odds API key (provided by you)
 - `acr-password` - ACR pull credential (auto-generated)
+- `storage-connection-string` - Storage account connection string (auto-generated from internal storage, or provided if using external)
 
 ## Manual picks run (optional)
 

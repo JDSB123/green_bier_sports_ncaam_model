@@ -107,9 +107,15 @@
 ### Log Analytics
 - **Name:** `ncaam-stable-logs`
 
+### Storage Account (v34.1.0)
+- **Name:** `ncaamstablegbsvsa` (no hyphens - Azure requirement)
+- **Container:** `picks-history`
+- **Purpose:** Pick history blob storage snapshots
+- **Note:** Created internally in `NCAAM-GBSV-MODEL-RG` by default. Can be overridden with external storage via `-StorageConnectionString` parameter.
+
 ### Container Image
 - **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:{tag}`
-- **Example:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v<VERSION>` (e.g., `v33.10.0`)
+- **Example:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v<VERSION>` (e.g., `v34.1.0`)
 
 ---
 
@@ -150,7 +156,9 @@ This repository does not include a GitHub Actions workflow; deployments are perf
 - [ ] Verify all resources created in `NCAAM-GBSV-MODEL-RG`
 - [ ] Check container app can connect to database
 - [ ] Confirm Redis connection works
+- [ ] Verify storage account created (if using internal storage, v34.1.0+)
 - [ ] Test container app health endpoint
+- [ ] Verify resource tags are applied (CostCenter, Owner, Project, Version)
 
 ---
 
@@ -175,6 +183,7 @@ NCAAM-GBSV-MODEL-RG
 ncaamstablegbsvacr (ACR)
 ncaam-stable-gbsv-postgres (PostgreSQL)
 ncaam-stable-gbsv-redis (Redis)
+ncaamstablegbsvsa (Storage Account - v34.1.0)
 ncaam-stablegbsvkv (Key Vault)
 ncaam-stable-env (Container Apps Environment)
 ncaam-stable-prediction (Container App)
