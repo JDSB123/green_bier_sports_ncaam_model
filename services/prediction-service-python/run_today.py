@@ -1653,29 +1653,27 @@ def format_team_display(team: str, record: Optional[str] = None, rank: Optional[
     return " ".join(parts)
 
 
-# ==============================================================================
-# DEPRECATED: Incoming webhook (API → Teams) functionality removed
-# Teams integration now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
-# This function is kept for reference but is no longer called
 def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> bool:
     """
-    Send picks to Microsoft Teams via webhook.
-    
+    Save picks to CSV and upload to Azure Blob Storage.
+
+    Note: Teams webhook sending is disabled. Use outgoing webhook endpoint instead.
+    This function still saves CSV files and uploads to Azure Blob for record-keeping.
+
     Args:
         all_picks: List of pick dictionaries
         target_date: Date of the picks
-        webhook_url: Teams webhook URL
-        
+        webhook_url: Unused (webhook retired)
+
     Returns:
-        True if successful, False otherwise
+        True if CSV saved successfully, False otherwise
     """
     if not all_picks:
-        print("  [WARN]  No picks to send to Teams")
+        print("  [WARN]  No picks to save")
         return False
 
-    # DEPRECATED: Incoming webhook disabled
+    # Webhook sending disabled - function now just saves CSV and uploads to Blob
     send_enabled = False
-    print("  [INFO]  Incoming webhook (API → Teams) deprecated. Use outgoing webhook (Teams → API) via /teams-webhook endpoint.")
     
     # Sort picks by game time ascending (earliest games first)
     sorted_picks = sorted(all_picks, key=lambda p: p['time_cst'])
@@ -1971,13 +1969,8 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
         ]
     }
     
-    # DEPRECATED: Webhook sending disabled (incoming webhook retired)
-    # CSV and HTML files are still generated for manual access
-    if not send_enabled:
-        return False
-    
-    # Webhook sending code removed - use outgoing webhook (Teams → API) instead
-    return False
+    # CSV and HTML files generated above - webhook sending disabled
+    return bool(csv_path and csv_path.exists())
 
 
 # ==============================================================================
@@ -2086,28 +2079,9 @@ def send_health_summary_to_teams(
     summary: Dict[str, object],
     webhook_url: str = "",
 ) -> bool:
-    # DEPRECATED: Incoming webhook removed
-    print("  - Health summary (incoming webhook deprecated, use outgoing webhook)")
+    """Log health summary. Webhook sending disabled (use outgoing webhook endpoint)."""
+    # Incoming webhook retired - just log summary locally
     return False
-
-    payload = {"text": _format_health_summary(summary)}
-    try:
-        response = requests.post(
-            webhook_url,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=30,
-        )
-        if response.status_code in (200, 202):
-            return True
-        print(f"  - Health summary webhook returned {response.status_code}: {response.text[:200]}")
-        return False
-    except requests.exceptions.Timeout:
-        print("  - Health summary webhook timed out")
-        return False
-    except requests.exceptions.RequestException as e:
-        print(f"  - Health summary webhook error: {e}")
-        return False
 
 
 def main():
@@ -2190,8 +2164,6 @@ def main():
         default=int(os.getenv("MAX_ODDS_AGE_MINUTES_1H", "60")),
         help="Max allowed age for 1H odds snapshots in minutes (default: 60)"
     )
-    # DEPRECATED: --teams and --teams-only flags removed (incoming webhooks retired)
-    # Use outgoing webhook endpoint /teams-webhook instead (Teams → API)
     parser.add_argument(
         "--no-settle",
         action="store_true",
@@ -2822,10 +2794,6 @@ def main():
     
     # Print executive summary table
     print_executive_table(all_picks, target_date)
-    
-    # DEPRECATED: Incoming webhook (API → Teams) removed
-    # Teams integration now uses outgoing webhook (Teams → API) via /teams-webhook endpoint
-
 
     max_picks = sum(
         1

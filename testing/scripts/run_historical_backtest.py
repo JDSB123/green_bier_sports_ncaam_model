@@ -55,8 +55,9 @@ class BacktestConfig:
     max_kelly: float = 0.10  # Max Kelly fraction
     sigma_spread: float = 11.0  # Std dev for spreads
     sigma_total: float = 8.0  # Std dev for totals
-    hca_spread: float = 3.0  # Home court advantage for spread
+    hca_spread: float = 5.8  # Home court advantage for spread (backtested optimal)
     hca_total: float = 0.0  # HCA for total (zero-sum)
+    hca_h1_spread: float = 3.6  # H1 HCA (independent, not FG/2)
 
 
 @dataclass
