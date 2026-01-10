@@ -316,7 +316,50 @@ def load_consolidated_odds() -> pd.DataFrame:
     return df
 
 
-def get_consensus_odds_with_prices(odds_df: pd.DataFrame) -> pd.DataFrame:
+def load_h1_archive_prices() -> pd.DataFrame:
+    """
+    Load H1 prices from the archive file.
+    
+    The consolidated file has 0 H1 prices, but the archive file
+    odds_h1_archive_matchups.csv has 82,657+ rows with H1 prices!
+    Date range: 2023-11-06 to 2025-04-08 (seasons 2024-2025)
+    """
+    archive_file = DATA / "odds" / "normalized" / "odds_h1_archive_matchups.csv"
+    
+    if not archive_file.exists():
+        print(f"   [INFO] H1 archive not found: {archive_file}")
+        return pd.DataFrame()
+    
+    df = pd.read_csv(archive_file)
+    df["game_date"] = pd.to_datetime(df["game_date"])
+    
+    # Filter to rows that have H1 prices
+    h1_price_cols = ["h1_spread_home_price", "h1_spread_away_price", 
+                     "h1_total_over_price", "h1_total_under_price"]
+    
+    # At least one H1 price must be present
+    has_h1_price = df[h1_price_cols].notna().any(axis=1)
+    df = df[has_h1_price]
+    
+    if df.empty:
+        print(f"   [INFO] No H1 prices in archive file")
+        return pd.DataFrame()
+    
+    # Resolve team names for matching
+    if "home_team_canonical" in df.columns:
+        df["home_team_canonical"] = df["home_team_canonical"].apply(resolve_team_name)
+        df["away_team_canonical"] = df["away_team_canonical"].apply(resolve_team_name)
+    else:
+        df["home_team_canonical"] = df["home_team"].apply(resolve_team_name)
+        df["away_team_canonical"] = df["away_team"].apply(resolve_team_name)
+    
+    print(f"[OK] Loaded {len(df):,} H1 archive rows with ACTUAL PRICES")
+    print(f"   Date range: {df['game_date'].min().date()} to {df['game_date'].max().date()}")
+    
+    return df
+
+
+def get_consensus_odds_with_prices(odds_df: pd.DataFrame, h1_archive_df: pd.DataFrame = None) -> pd.DataFrame:
     """
     Get consensus odds for all markets WITH ACTUAL PRICES.
     
@@ -325,13 +368,17 @@ def get_consensus_odds_with_prices(odds_df: pd.DataFrame) -> pd.DataFrame:
     - fg_total, fg_total_over_price, fg_total_under_price
     - h1_spread, h1_spread_home_price, h1_spread_away_price
     - h1_total, h1_total_over_price, h1_total_under_price
+    
+    Args:
+        odds_df: Main consolidated odds (has FG prices, but 0 H1 prices)
+        h1_archive_df: H1 archive with actual H1 prices (optional, merged if provided)
     """
     if odds_df.empty:
         return pd.DataFrame()
     
     group_cols = ["game_date", "home_team_canonical", "away_team_canonical"]
     
-    # Define all columns to aggregate
+    # Define all columns to aggregate for FG odds
     agg_dict = {
         "bookmaker": "count",
         # FG Spread
@@ -342,14 +389,9 @@ def get_consensus_odds_with_prices(odds_df: pd.DataFrame) -> pd.DataFrame:
         "total": "median",
         "total_over_price": "median",
         "total_under_price": "median",
-        # H1 Spread
+        # H1 lines from consolidated (may not have prices)
         "h1_spread": "median",
-        "h1_spread_home_price": "median",
-        "h1_spread_away_price": "median",
-        # H1 Total
         "h1_total": "median",
-        "h1_total_over_price": "median",
-        "h1_total_under_price": "median",
     }
     
     # Only include columns that exist
@@ -371,6 +413,47 @@ def get_consensus_odds_with_prices(odds_df: pd.DataFrame) -> pd.DataFrame:
     # Only rename columns that exist
     rename_map = {k: v for k, v in rename_map.items() if k in consensus.columns}
     consensus = consensus.rename(columns=rename_map)
+    
+    # MERGE H1 PRICES from archive file if provided
+    if h1_archive_df is not None and not h1_archive_df.empty:
+        print(f"   Merging H1 prices from archive ({len(h1_archive_df):,} rows)...")
+        
+        # Aggregate H1 archive to consensus
+        h1_agg_dict = {
+            "h1_spread": "median",
+            "h1_spread_home_price": "median",
+            "h1_spread_away_price": "median",
+            "h1_total": "median",
+            "h1_total_over_price": "median",
+            "h1_total_under_price": "median",
+        }
+        h1_agg_dict = {k: v for k, v in h1_agg_dict.items() if k in h1_archive_df.columns}
+        
+        h1_consensus = h1_archive_df.groupby(group_cols).agg(h1_agg_dict).reset_index()
+        
+        # Merge H1 prices into main consensus
+        # Use suffix to avoid conflicts, then prefer archive values
+        consensus = consensus.merge(
+            h1_consensus,
+            on=group_cols,
+            how="left",
+            suffixes=("", "_archive")
+        )
+        
+        # Prefer archive H1 prices over consolidated (which are all null)
+        for col in ["h1_spread", "h1_spread_home_price", "h1_spread_away_price",
+                    "h1_total", "h1_total_over_price", "h1_total_under_price"]:
+            archive_col = f"{col}_archive"
+            if archive_col in consensus.columns:
+                # Use archive value if main is null
+                if col in consensus.columns:
+                    consensus[col] = consensus[col].fillna(consensus[archive_col])
+                else:
+                    consensus[col] = consensus[archive_col]
+                consensus = consensus.drop(columns=[archive_col])
+        
+        h1_with_price = consensus["h1_spread_home_price"].notna().sum() if "h1_spread_home_price" in consensus.columns else 0
+        print(f"   [OK] Merged H1 prices: {h1_with_price:,} games with H1 spread prices")
     
     # Debug: Show what we have
     price_cols = [c for c in consensus.columns if 'price' in c.lower()]
@@ -567,9 +650,12 @@ def build_dataset(args) -> pd.DataFrame:
     
     consolidated_odds = load_consolidated_odds()
     
+    # ALSO load H1 archive prices (separate file with 82,657+ H1 prices!)
+    h1_archive = load_h1_archive_prices()
+    
     if not consolidated_odds.empty:
-        # Get consensus odds with actual prices
-        consensus = get_consensus_odds_with_prices(consolidated_odds)
+        # Get consensus odds with actual prices, including H1 from archive
+        consensus = get_consensus_odds_with_prices(consolidated_odds, h1_archive)
         
         # Merge with games
         games = games.merge(
