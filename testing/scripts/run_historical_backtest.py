@@ -100,12 +100,52 @@ class BacktestSummary:
 
 class NCAAMPredictor:
     """
-    Generates predictions using Barttorvik ratings.
-    Replicates v6.1 prediction formulas.
+    Generates predictions using Barttorvik ratings + Four Factors.
+    Enhanced v34.1 prediction formulas with style matchup adjustments.
     """
 
     def __init__(self, config: BacktestConfig):
         self.config = config
+
+    def _calculate_four_factors_adjustment(
+        self,
+        home_efg: float, home_efgd: float, home_tor: float, home_orb: float, home_drb: float, home_ftr: float,
+        away_efg: float, away_efgd: float, away_tor: float, away_orb: float, away_drb: float, away_ftr: float
+    ) -> float:
+        """
+        Calculate Four Factors style matchup adjustment.
+
+        Returns adjustment in points to add to spread prediction.
+        Positive = favors home team.
+        """
+        if any(pd.isna(x) for x in [home_efg, home_tor, home_orb, home_ftr, away_efg, away_tor, away_orb, away_ftr]):
+            return 0.0
+
+        # Matchup advantages (home offense vs away defense, away offense vs home defense)
+        # EFG matchup: home shooting vs away defense
+        efg_matchup = (home_efg - away_efgd) - (away_efg - home_efgd)
+
+        # Turnover matchup: lower is better for offense
+        # If home has low TOR and away has high TOR, that favors home
+        tor_matchup = (away_tor - home_tor) * 0.5  # Scale down
+
+        # Rebounding matchup: home ORB vs away DRB
+        orb_matchup = (home_orb - away_drb) - (away_orb - home_drb)
+
+        # Free throw rate matchup
+        ftr_matchup = (home_ftr - away_ftr) * 0.3  # FTR has smaller impact
+
+        # Weighted combination (empirically derived weights)
+        # EFG is the most predictive Four Factor
+        adjustment = (
+            efg_matchup * 2.5 +    # EFG: ~2.5 pts per 0.1 difference
+            tor_matchup * 1.5 +    # TOR: ~1.5 pts per 0.1 difference
+            orb_matchup * 1.0 +    # ORB: ~1.0 pts per 0.1 difference
+            ftr_matchup * 0.5      # FTR: ~0.5 pts per 0.1 difference
+        )
+
+        # Cap adjustment to prevent extreme values
+        return max(-5.0, min(5.0, adjustment))
 
     def predict_spread(
         self,
@@ -113,15 +153,27 @@ class NCAAMPredictor:
         home_adj_d: float,
         away_adj_o: float,
         away_adj_d: float,
-        is_neutral: bool = False
+        is_neutral: bool = False,
+        # Four Factors (optional, for enhanced prediction)
+        home_efg: float = None, home_efgd: float = None, home_tor: float = None,
+        home_orb: float = None, home_drb: float = None, home_ftr: float = None,
+        away_efg: float = None, away_efgd: float = None, away_tor: float = None,
+        away_orb: float = None, away_drb: float = None, away_ftr: float = None
     ) -> float:
         """Predict spread (home perspective, negative = home favored)."""
         home_net = home_adj_o - home_adj_d
         away_net = away_adj_o - away_adj_d
         raw_margin = (home_net - away_net) / 2.0
-        
+
         hca = 0.0 if is_neutral else self.config.hca_spread
-        return -(raw_margin + hca)  # Negative = home favored
+
+        # Four Factors adjustment (if available)
+        ff_adj = self._calculate_four_factors_adjustment(
+            home_efg, home_efgd, home_tor, home_orb, home_drb, home_ftr,
+            away_efg, away_efgd, away_tor, away_orb, away_drb, away_ftr
+        )
+
+        return -(raw_margin + hca + ff_adj)  # Negative = home favored
 
     def predict_total(
         self,
@@ -131,15 +183,28 @@ class NCAAMPredictor:
         away_adj_o: float,
         away_adj_d: float,
         away_tempo: float,
-        is_neutral: bool = False
+        is_neutral: bool = False,
+        # Shooting tendencies (optional)
+        home_three_pt_rate: float = None,
+        away_three_pt_rate: float = None
     ) -> float:
         """Predict total points."""
         avg_tempo = (home_tempo + away_tempo) / 2.0
         home_score = home_adj_o * avg_tempo / 100.0
         away_score = away_adj_o * avg_tempo / 100.0
-        
+
         hca = 0.0 if is_neutral else self.config.hca_total
-        return home_score + away_score + hca
+
+        # 3PT rate adjustment (high 3PT games tend to have higher variance)
+        # Teams with high 3PT rate may score more or less depending on shooting
+        three_pt_adj = 0.0
+        if home_three_pt_rate is not None and away_three_pt_rate is not None:
+            avg_3pt_rate = (home_three_pt_rate + away_three_pt_rate) / 2.0
+            # If both teams shoot a lot of 3s, slightly increase total prediction
+            if avg_3pt_rate > 1.0:  # Above average 3PT rate
+                three_pt_adj = (avg_3pt_rate - 1.0) * 2.0  # Small adjustment
+
+        return home_score + away_score + hca + three_pt_adj
 
     def predict_h1_spread(
         self,
@@ -147,11 +212,12 @@ class NCAAMPredictor:
         home_adj_d: float,
         away_adj_o: float,
         away_adj_d: float,
-        is_neutral: bool = False
+        is_neutral: bool = False,
+        **kwargs  # Accept Four Factors for consistency
     ) -> float:
         """Predict 1H spread (50% of FG)."""
         fg_spread = self.predict_spread(
-            home_adj_o, home_adj_d, away_adj_o, away_adj_d, is_neutral
+            home_adj_o, home_adj_d, away_adj_o, away_adj_d, is_neutral, **kwargs
         )
         # H1 is approximately 50% of FG spread
         return fg_spread * 0.5
@@ -164,12 +230,13 @@ class NCAAMPredictor:
         away_adj_o: float,
         away_adj_d: float,
         away_tempo: float,
-        is_neutral: bool = False
+        is_neutral: bool = False,
+        **kwargs  # Accept shooting tendencies for consistency
     ) -> float:
         """Predict 1H total (48% of FG)."""
         fg_total = self.predict_total(
             home_adj_o, home_adj_d, home_tempo,
-            away_adj_o, away_adj_d, away_tempo, is_neutral
+            away_adj_o, away_adj_d, away_tempo, is_neutral, **kwargs
         )
         return fg_total * 0.48
 
@@ -301,21 +368,46 @@ def run_backtest(config: BacktestConfig) -> BacktestSummary:
     results: List[BetResult] = []
     
     for _, row in df_valid.iterrows():
-        # Generate prediction
+        # Extract Four Factors (if available)
+        four_factors = {
+            "home_efg": row.get("home_efg"),
+            "home_efgd": row.get("home_efgd"),
+            "home_tor": row.get("home_tor"),
+            "home_orb": row.get("home_orb"),
+            "home_drb": row.get("home_drb"),
+            "home_ftr": row.get("home_ftr"),
+            "away_efg": row.get("away_efg"),
+            "away_efgd": row.get("away_efgd"),
+            "away_tor": row.get("away_tor"),
+            "away_orb": row.get("away_orb"),
+            "away_drb": row.get("away_drb"),
+            "away_ftr": row.get("away_ftr"),
+        }
+
+        # Shooting tendencies
+        shooting = {
+            "home_three_pt_rate": row.get("home_three_pt_rate"),
+            "away_three_pt_rate": row.get("away_three_pt_rate"),
+        }
+
+        # Generate prediction with Four Factors
         if config.market == MarketType.FG_SPREAD:
             predicted = predictor.predict_spread(
                 row["home_adj_o"], row["home_adj_d"],
-                row["away_adj_o"], row["away_adj_d"]
+                row["away_adj_o"], row["away_adj_d"],
+                **four_factors
             )
         elif config.market == MarketType.FG_TOTAL:
             predicted = predictor.predict_total(
                 row["home_adj_o"], row["home_adj_d"], row.get("home_tempo", 68),
-                row["away_adj_o"], row["away_adj_d"], row.get("away_tempo", 68)
+                row["away_adj_o"], row["away_adj_d"], row.get("away_tempo", 68),
+                **shooting
             )
         elif config.market == MarketType.H1_SPREAD:
             predicted = predictor.predict_h1_spread(
                 row["home_adj_o"], row["home_adj_d"],
-                row["away_adj_o"], row["away_adj_d"]
+                row["away_adj_o"], row["away_adj_d"],
+                **four_factors
             )
         else:  # H1_TOTAL
             predicted = predictor.predict_h1_total(

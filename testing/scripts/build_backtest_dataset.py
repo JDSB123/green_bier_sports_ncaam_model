@@ -300,22 +300,45 @@ def fetch_barttorvik_ratings(seasons: list, force_refresh: bool = False) -> Dict
                 continue
         
         # Parse Barttorvik format: list of arrays
-        # Index positions (from inspection):
-        # 0: rank, 1: team, 2: conf, 3: record, 4: adj_o, 5: adj_o_rank, 6: adj_d, 7: adj_d_rank,
-        # 8: barthag, 9: barthag_rank, 10: wins, 11: losses, ...
+        # Index positions (from 2025 data inspection):
+        # 0: rank, 1: team, 2: conf, 3: record
+        # 4: adj_o, 5: adj_o_rank, 6: adj_d, 7: adj_d_rank
+        # 8: barthag, 9: barthag_rank, 10: wins, 11: losses
+        # 15: efg (eff FG%), 16: efgd (opp eff FG%), 17: tor (TO rate)
+        # 18-20: duplicate of 15-17 for some reason
+        # 21: orb (off reb %), 22: drb (def reb %)
+        # 23: ftr (FT rate), 24: ftrd (opp FT rate)
+        # 27-30: raw offensive/defensive metrics
+        # 37: 2pt% rate, 38: 3pt% rate
+        # 41: WAB (wins above bubble)
+        # 44: tempo (adj tempo)
         rows = []
         for entry in data:
-            if isinstance(entry, list) and len(entry) > 11:
+            if isinstance(entry, list) and len(entry) > 44:
                 try:
                     rows.append({
                         "team": entry[1],  # Team name
                         "season": season,
+                        "conf": entry[2],  # Conference
                         "adj_o": float(entry[4]) if entry[4] else None,
                         "adj_d": float(entry[6]) if entry[6] else None,
                         "barthag": float(entry[8]) if entry[8] else None,
-                        "adj_t": float(entry[44]) if len(entry) > 44 and entry[44] else None,  # Tempo
                         "wins": int(entry[10]) if entry[10] else 0,
                         "losses": int(entry[11]) if entry[11] else 0,
+                        # Four Factors - NEWLY ADDED
+                        "efg": float(entry[15]) if entry[15] else None,  # Effective FG%
+                        "efgd": float(entry[16]) if entry[16] else None,  # Opp Effective FG%
+                        "tor": float(entry[17]) if entry[17] else None,  # Turnover Rate
+                        "orb": float(entry[21]) if entry[21] else None,  # Offensive Reb %
+                        "drb": float(entry[22]) if entry[22] else None,  # Defensive Reb %
+                        "ftr": float(entry[23]) if entry[23] else None,  # Free Throw Rate
+                        "ftrd": float(entry[24]) if entry[24] else None,  # Opp Free Throw Rate
+                        # Shooting Tendencies - NEWLY ADDED
+                        "two_pt_rate": float(entry[37]) if len(entry) > 37 and entry[37] else None,
+                        "three_pt_rate": float(entry[38]) if len(entry) > 38 and entry[38] else None,
+                        # Quality Metrics - NEWLY ADDED
+                        "wab": float(entry[41]) if len(entry) > 41 and entry[41] else None,  # Wins Above Bubble
+                        "adj_t": float(entry[44]) if len(entry) > 44 and entry[44] else None,  # Tempo
                     })
                 except (ValueError, TypeError, IndexError):
                     continue
@@ -333,52 +356,73 @@ def merge_ratings(games: pd.DataFrame, ratings: Dict[int, pd.DataFrame]) -> pd.D
     if not ratings:
         print("[WARN] No ratings available, skipping ratings merge")
         return games
-    
+
     all_ratings = pd.concat(ratings.values(), ignore_index=True)
-    
+
     # Resolve team names in ratings to canonical form
     all_ratings["team_canonical"] = all_ratings["team"].apply(resolve_team_name)
-    
+
     # For each game, we need PRIOR season ratings (to avoid data leakage)
     # Game in season 2024 uses ratings from season 2023
     games["ratings_season"] = games["season"] - 1
-    
+
+    # Define all rating columns to merge (core + four factors + shooting)
+    rating_cols = [
+        "adj_o", "adj_d", "adj_t", "barthag", "conf",
+        # Four Factors
+        "efg", "efgd", "tor", "orb", "drb", "ftr", "ftrd",
+        # Shooting Tendencies
+        "two_pt_rate", "three_pt_rate",
+        # Quality
+        "wab"
+    ]
+
     # Merge home team ratings
-    home_ratings = all_ratings.rename(columns={
-        "team_canonical": "home_team_canonical",
-        "adj_o": "home_adj_o",
-        "adj_d": "home_adj_d", 
-        "adj_t": "home_tempo",
-        "barthag": "home_barthag",
-    })
-    home_ratings = home_ratings.rename(columns={"season": "ratings_season"})
-    
+    home_rename = {"team_canonical": "home_team_canonical", "season": "ratings_season"}
+    for col in rating_cols:
+        if col in all_ratings.columns:
+            home_rename[col] = f"home_{col}"
+
+    home_ratings = all_ratings.rename(columns=home_rename)
+    home_cols = ["home_team_canonical", "ratings_season"] + [f"home_{c}" for c in rating_cols if c in all_ratings.columns]
+
     games = games.merge(
-        home_ratings[["home_team_canonical", "ratings_season", "home_adj_o", "home_adj_d", "home_tempo", "home_barthag"]],
+        home_ratings[home_cols],
         on=["home_team_canonical", "ratings_season"],
         how="left"
     )
-    
+
     # Merge away team ratings
-    away_ratings = all_ratings.rename(columns={
-        "team_canonical": "away_team_canonical",
-        "adj_o": "away_adj_o",
-        "adj_d": "away_adj_d",
-        "adj_t": "away_tempo",
-        "barthag": "away_barthag",
-    })
-    away_ratings = away_ratings.rename(columns={"season": "ratings_season"})
-    
+    away_rename = {"team_canonical": "away_team_canonical", "season": "ratings_season"}
+    for col in rating_cols:
+        if col in all_ratings.columns:
+            away_rename[col] = f"away_{col}"
+
+    away_ratings = all_ratings.rename(columns=away_rename)
+    away_cols = ["away_team_canonical", "ratings_season"] + [f"away_{c}" for c in rating_cols if c in all_ratings.columns]
+
     games = games.merge(
-        away_ratings[["away_team_canonical", "ratings_season", "away_adj_o", "away_adj_d", "away_tempo", "away_barthag"]],
+        away_ratings[away_cols],
         on=["away_team_canonical", "ratings_season"],
         how="left"
     )
-    
+
+    # Rename tempo column for backward compatibility
+    if "home_adj_t" in games.columns:
+        games = games.rename(columns={"home_adj_t": "home_tempo", "away_adj_t": "away_tempo"})
+
     # Count ratings coverage
     has_ratings = games["home_adj_o"].notna() & games["away_adj_o"].notna()
     print(f"[INFO] Ratings coverage: {has_ratings.sum():,}/{len(games):,} ({has_ratings.mean()*100:.1f}%)")
-    
+
+    # Show new fields coverage
+    new_fields = ["efg", "tor", "orb", "ftr", "wab"]
+    for field in new_fields:
+        home_col = f"home_{field}"
+        if home_col in games.columns:
+            coverage = games[home_col].notna().sum()
+            print(f"   {field}: {coverage:,} games")
+
     return games
 
 
@@ -536,6 +580,12 @@ def build_dataset(args) -> pd.DataFrame:
             "h1_total": int(games["h1_total"].notna().sum()) if "h1_total" in games.columns else 0,
             "h1_scores": int(games["home_h1"].notna().sum()) if "home_h1" in games.columns else 0,
             "ratings": int((games["home_adj_o"].notna() & games["away_adj_o"].notna()).sum()) if "home_adj_o" in games.columns else 0,
+            # New Four Factors coverage
+            "four_factors_efg": int(games["home_efg"].notna().sum()) if "home_efg" in games.columns else 0,
+            "four_factors_tor": int(games["home_tor"].notna().sum()) if "home_tor" in games.columns else 0,
+            "four_factors_orb": int(games["home_orb"].notna().sum()) if "home_orb" in games.columns else 0,
+            "shooting_3pt_rate": int(games["home_three_pt_rate"].notna().sum()) if "home_three_pt_rate" in games.columns else 0,
+            "wab": int(games["home_wab"].notna().sum()) if "home_wab" in games.columns else 0,
         },
         "columns": list(games.columns),
     }
