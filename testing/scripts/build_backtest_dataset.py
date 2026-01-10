@@ -82,46 +82,49 @@ def get_season(date_val) -> int:
 
 
 def load_games() -> pd.DataFrame:
-    """Load games/scores data - prefer games_all.csv for comprehensive coverage."""
+    """Load ALL games/scores data from individual year files for complete coverage.
+    
+    IMPORTANT: We load from individual year files (2019-2026) because:
+    - games_all.csv only has 2024+ games
+    - But we have price data for 2020-2023 seasons
+    - This ensures we have games that match the price data period
+    """
     scores_dir = DATA / "scores" / "fg"
 
     if not scores_dir.exists():
         print(f"[ERROR] Scores directory not found: {scores_dir}")
         sys.exit(1)
 
-    # PRIMARY: Use games_all.csv for comprehensive coverage
-    games_all_file = scores_dir / "games_all.csv"
+    # Load from ALL individual season files to get complete historical coverage
+    # This includes 2020-2023 which have price data available
+    print(f"   Loading from individual season files for complete coverage...")
+    all_games = []
 
-    if games_all_file.exists():
-        print(f"   Loading from {games_all_file.name} (primary source)...")
-        games = pd.read_csv(games_all_file)
+    for year in range(2019, 2027):
+        season_file = scores_dir / f"games_{year}.csv"
+        if season_file.exists():
+            df = pd.read_csv(season_file)
+            if "date" in df.columns:
+                df = df.rename(columns={"date": "game_date"})
+            if "game_date" not in df.columns:
+                print(f"[WARN] No date column in {season_file.name}, skipping")
+                continue
+            all_games.append(df)
+            print(f"   Loaded {len(df):,} games from {season_file.name}")
 
-        # Standardize column names
-        if "date" in games.columns:
-            games = games.rename(columns={"date": "game_date"})
-
-        print(f"   Loaded {len(games):,} games from games_all.csv")
-    else:
-        # FALLBACK: Load from individual season files
-        print(f"   [WARN] games_all.csv not found, loading from season files...")
-        all_games = []
-
-        for year in range(2019, 2027):
-            season_file = scores_dir / f"games_{year}.csv"
-            if season_file.exists():
-                df = pd.read_csv(season_file)
-                if "date" in df.columns:
-                    df = df.rename(columns={"date": "game_date"})
-                if "game_date" not in df.columns:
-                    print(f"[WARN] No date column in {season_file.name}, skipping")
-                    continue
-                all_games.append(df)
-                print(f"   Loaded {len(df):,} games from {season_file.name}")
-
-        if not all_games:
+    if not all_games:
+        # FALLBACK: Try games_all.csv
+        games_all_file = scores_dir / "games_all.csv"
+        if games_all_file.exists():
+            print(f"   [FALLBACK] Loading from {games_all_file.name}...")
+            games = pd.read_csv(games_all_file)
+            if "date" in games.columns:
+                games = games.rename(columns={"date": "game_date"})
+            print(f"   Loaded {len(games):,} games from games_all.csv")
+        else:
             print(f"[ERROR] No game files found")
             sys.exit(1)
-
+    else:
         games = pd.concat(all_games, ignore_index=True)
 
     # Keep only essential columns
@@ -243,11 +246,17 @@ def load_odds(market: str, period: str) -> pd.DataFrame:
     return df
 
 
-def get_consensus_line(odds_df: pd.DataFrame, line_col: str) -> pd.DataFrame:
+def get_consensus_line(odds_df: pd.DataFrame, line_col: str, price_cols: list = None) -> pd.DataFrame:
     """
-    Get consensus (median) line for each game.
+    Get consensus (median) line for each game WITH ACTUAL PRICES.
     
     Aggregates across bookmakers to get a single line per game.
+    CRITICAL: Includes actual odds prices (not hardcoded -110).
+    
+    Args:
+        odds_df: DataFrame with odds data
+        line_col: Column name for the line (e.g., "spread", "total")
+        price_cols: Optional list of price columns to include (e.g., ["spread_home_price", "spread_away_price"])
     """
     if odds_df.empty:
         return pd.DataFrame()
@@ -255,16 +264,124 @@ def get_consensus_line(odds_df: pd.DataFrame, line_col: str) -> pd.DataFrame:
     # Group by game (date + teams) and get median line
     group_cols = ["game_date", "home_team_canonical", "away_team_canonical"]
     
-    consensus = odds_df.groupby(group_cols).agg({
+    # Build aggregation dict
+    agg_dict = {
         line_col: "median",
         "bookmaker": "count"  # Number of books
-    }).reset_index()
+    }
+    
+    # Include price columns if available
+    if price_cols:
+        for col in price_cols:
+            if col in odds_df.columns:
+                agg_dict[col] = "median"  # Median price across books
+    
+    consensus = odds_df.groupby(group_cols).agg(agg_dict).reset_index()
     
     consensus = consensus.rename(columns={
         "home_team_canonical": "home_team",
         "away_team_canonical": "away_team",
         "bookmaker": f"{line_col}_books"
     })
+    
+    return consensus
+
+
+def load_consolidated_odds() -> pd.DataFrame:
+    """
+    Load the consolidated odds file with ACTUAL PRICES.
+    
+    This is the SINGLE SOURCE OF TRUTH for odds data with real prices.
+    Contains: spread, spread_home_price, spread_away_price, total, total_over_price, etc.
+    """
+    odds_file = DATA / "odds" / "normalized" / "odds_consolidated_canonical.csv"
+    
+    if not odds_file.exists():
+        print(f"[WARN] Consolidated odds not found: {odds_file}")
+        return pd.DataFrame()
+    
+    df = pd.read_csv(odds_file)
+    df["game_date"] = pd.to_datetime(df["game_date"])
+    
+    # Resolve team names for matching
+    df["home_team_canonical"] = df["home_team"].apply(resolve_team_name)
+    df["away_team_canonical"] = df["away_team"].apply(resolve_team_name)
+    
+    print(f"[OK] Loaded {len(df):,} odds rows with ACTUAL PRICES")
+    
+    # Check for price columns
+    price_cols = [c for c in df.columns if "price" in c.lower()]
+    print(f"   Price columns available: {price_cols}")
+    
+    return df
+
+
+def get_consensus_odds_with_prices(odds_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get consensus odds for all markets WITH ACTUAL PRICES.
+    
+    Returns one row per game with:
+    - fg_spread, fg_spread_home_price, fg_spread_away_price
+    - fg_total, fg_total_over_price, fg_total_under_price
+    - h1_spread, h1_spread_home_price, h1_spread_away_price
+    - h1_total, h1_total_over_price, h1_total_under_price
+    """
+    if odds_df.empty:
+        return pd.DataFrame()
+    
+    group_cols = ["game_date", "home_team_canonical", "away_team_canonical"]
+    
+    # Define all columns to aggregate
+    agg_dict = {
+        "bookmaker": "count",
+        # FG Spread
+        "spread": "median",
+        "spread_home_price": "median",
+        "spread_away_price": "median",
+        # FG Total
+        "total": "median",
+        "total_over_price": "median",
+        "total_under_price": "median",
+        # H1 Spread
+        "h1_spread": "median",
+        "h1_spread_home_price": "median",
+        "h1_spread_away_price": "median",
+        # H1 Total
+        "h1_total": "median",
+        "h1_total_over_price": "median",
+        "h1_total_under_price": "median",
+    }
+    
+    # Only include columns that exist
+    agg_dict = {k: v for k, v in agg_dict.items() if k in odds_df.columns}
+    
+    consensus = odds_df.groupby(group_cols).agg(agg_dict).reset_index()
+    
+    # Rename spread/total to fg_spread/fg_total for clarity
+    rename_map = {
+        "spread": "fg_spread",
+        "spread_home_price": "fg_spread_home_price",
+        "spread_away_price": "fg_spread_away_price",
+        "total": "fg_total",
+        "total_over_price": "fg_total_over_price",
+        "total_under_price": "fg_total_under_price",
+        "bookmaker": "num_books",
+    }
+    
+    # Only rename columns that exist
+    rename_map = {k: v for k, v in rename_map.items() if k in consensus.columns}
+    consensus = consensus.rename(columns=rename_map)
+    
+    # Debug: Show what we have
+    price_cols = [c for c in consensus.columns if 'price' in c.lower()]
+    print(f"[OK] Created consensus odds for {len(consensus):,} games")
+    print(f"   Price columns in consensus: {price_cols}")
+    
+    # Check for actual non-null prices
+    for col in price_cols:
+        if col in consensus.columns:
+            nonnull = consensus[col].notna().sum()
+            print(f"   {col}: {nonnull:,} non-null")
     
     return consensus
 
@@ -442,61 +559,95 @@ def build_dataset(args) -> pd.DataFrame:
     games = load_games()
     print()
     
-    # Step 2: Load and merge FG odds
-    print("--- Step 2: Load Full-Game Odds ---")
-    fg_spreads = load_odds("spreads", "fg")
-    fg_totals = load_odds("totals", "fg")
-    
-    if not fg_spreads.empty:
-        spread_consensus = get_consensus_line(fg_spreads, "spread")
-        # Rename for merge on canonical names
-        spread_consensus = spread_consensus.rename(columns={"home_team": "home_team_canonical", "away_team": "away_team_canonical"})
-        games = games.merge(
-            spread_consensus[["game_date", "home_team_canonical", "away_team_canonical", "spread", "spread_books"]],
-            on=["game_date", "home_team_canonical", "away_team_canonical"],
-            how="left"
-        )
-        games = games.rename(columns={"spread": "fg_spread", "spread_books": "fg_spread_books"})
-        print(f"   FG spread coverage: {games['fg_spread'].notna().sum():,}/{len(games):,}")
-    
-    if not fg_totals.empty:
-        total_consensus = get_consensus_line(fg_totals, "total")
-        total_consensus = total_consensus.rename(columns={"home_team": "home_team_canonical", "away_team": "away_team_canonical"})
-        games = games.merge(
-            total_consensus[["game_date", "home_team_canonical", "away_team_canonical", "total", "total_books"]],
-            on=["game_date", "home_team_canonical", "away_team_canonical"],
-            how="left"
-        )
-        games = games.rename(columns={"total": "fg_total", "total_books": "fg_total_books"})
-        print(f"   FG total coverage: {games['fg_total'].notna().sum():,}/{len(games):,}")
+    # Step 2: Load and merge ALL odds with ACTUAL PRICES
+    print("--- Step 2: Load Odds with ACTUAL PRICES ---")
+    print("   CRITICAL: Using odds_consolidated_canonical.csv for real prices")
+    print("   (No hardcoded -110 assumptions)")
     print()
     
-    # Step 3: Load and merge H1 odds
-    print("--- Step 3: Load First-Half Odds ---")
-    h1_spreads = load_odds("spreads", "h1")
-    h1_totals = load_odds("totals", "h1")
+    consolidated_odds = load_consolidated_odds()
     
-    if not h1_spreads.empty:
-        h1_spread_consensus = get_consensus_line(h1_spreads, "spread")
-        h1_spread_consensus = h1_spread_consensus.rename(columns={"home_team": "home_team_canonical", "away_team": "away_team_canonical"})
+    if not consolidated_odds.empty:
+        # Get consensus odds with actual prices
+        consensus = get_consensus_odds_with_prices(consolidated_odds)
+        
+        # Merge with games
         games = games.merge(
-            h1_spread_consensus[["game_date", "home_team_canonical", "away_team_canonical", "spread", "spread_books"]],
+            consensus,
             on=["game_date", "home_team_canonical", "away_team_canonical"],
             how="left"
         )
-        games = games.rename(columns={"spread": "h1_spread", "spread_books": "h1_spread_books"})
-        print(f"   H1 spread coverage: {games['h1_spread'].notna().sum():,}/{len(games):,}")
+        
+        # Report coverage
+        print()
+        print("   Coverage by market (with ACTUAL PRICES):")
+        for col, name in [
+            ("fg_spread", "FG Spread"),
+            ("fg_spread_home_price", "  -> Home Price"),
+            ("fg_spread_away_price", "  -> Away Price"),
+            ("fg_total", "FG Total"),
+            ("fg_total_over_price", "  -> Over Price"),
+            ("fg_total_under_price", "  -> Under Price"),
+            ("h1_spread", "H1 Spread"),
+            ("h1_spread_home_price", "  -> Home Price"),
+            ("h1_spread_away_price", "  -> Away Price"),
+            ("h1_total", "H1 Total"),
+            ("h1_total_over_price", "  -> Over Price"),
+            ("h1_total_under_price", "  -> Under Price"),
+        ]:
+            if col in games.columns:
+                count = games[col].notna().sum()
+                print(f"   {name}: {count:,}/{len(games):,} ({count/len(games)*100:.1f}%)")
+    else:
+        # Fallback to separate files (without prices)
+        print("[WARN] Consolidated odds not found, falling back to separate files (NO PRICES)")
+        fg_spreads = load_odds("spreads", "fg")
+        fg_totals = load_odds("totals", "fg")
+        
+        if not fg_spreads.empty:
+            spread_consensus = get_consensus_line(fg_spreads, "spread")
+            spread_consensus = spread_consensus.rename(columns={"home_team": "home_team_canonical", "away_team": "away_team_canonical"})
+            games = games.merge(
+                spread_consensus[["game_date", "home_team_canonical", "away_team_canonical", "spread", "spread_books"]],
+                on=["game_date", "home_team_canonical", "away_team_canonical"],
+                how="left"
+            )
+            games = games.rename(columns={"spread": "fg_spread", "spread_books": "fg_spread_books"})
+        
+        if not fg_totals.empty:
+            total_consensus = get_consensus_line(fg_totals, "total")
+            total_consensus = total_consensus.rename(columns={"home_team": "home_team_canonical", "away_team": "away_team_canonical"})
+            games = games.merge(
+                total_consensus[["game_date", "home_team_canonical", "away_team_canonical", "total", "total_books"]],
+                on=["game_date", "home_team_canonical", "away_team_canonical"],
+                how="left"
+            )
+            games = games.rename(columns={"total": "fg_total", "total_books": "fg_total_books"})
+        
+        # H1 odds
+        h1_spreads = load_odds("spreads", "h1")
+        h1_totals = load_odds("totals", "h1")
+        
+        if not h1_spreads.empty:
+            h1_spread_consensus = get_consensus_line(h1_spreads, "spread")
+            h1_spread_consensus = h1_spread_consensus.rename(columns={"home_team": "home_team_canonical", "away_team": "away_team_canonical"})
+            games = games.merge(
+                h1_spread_consensus[["game_date", "home_team_canonical", "away_team_canonical", "spread", "spread_books"]],
+                on=["game_date", "home_team_canonical", "away_team_canonical"],
+                how="left"
+            )
+            games = games.rename(columns={"spread": "h1_spread", "spread_books": "h1_spread_books"})
+        
+        if not h1_totals.empty:
+            h1_total_consensus = get_consensus_line(h1_totals, "total")
+            h1_total_consensus = h1_total_consensus.rename(columns={"home_team": "home_team_canonical", "away_team": "away_team_canonical"})
+            games = games.merge(
+                h1_total_consensus[["game_date", "home_team_canonical", "away_team_canonical", "total", "total_books"]],
+                on=["game_date", "home_team_canonical", "away_team_canonical"],
+                how="left"
+            )
+            games = games.rename(columns={"total": "h1_total", "total_books": "h1_total_books"})
     
-    if not h1_totals.empty:
-        h1_total_consensus = get_consensus_line(h1_totals, "total")
-        h1_total_consensus = h1_total_consensus.rename(columns={"home_team": "home_team_canonical", "away_team": "away_team_canonical"})
-        games = games.merge(
-            h1_total_consensus[["game_date", "home_team_canonical", "away_team_canonical", "total", "total_books"]],
-            on=["game_date", "home_team_canonical", "away_team_canonical"],
-            how="left"
-        )
-        games = games.rename(columns={"total": "h1_total", "total_books": "h1_total_books"})
-        print(f"   H1 total coverage: {games['h1_total'].notna().sum():,}/{len(games):,}")
     print()
 
     # Step 3b: Load and merge H1 scores (for backtest validation)
