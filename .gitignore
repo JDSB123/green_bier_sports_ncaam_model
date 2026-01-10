@@ -143,3 +143,6 @@ telegram_history/
 
 # Backtest output
 backtest_output.txt
+
+# Azure data cache (local cache of Azure blob data)
+.azure_cache/

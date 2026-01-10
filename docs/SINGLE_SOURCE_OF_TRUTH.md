@@ -1,8 +1,49 @@
 # SINGLE SOURCE OF TRUTH - NCAAM Data & Configuration
 
 **Last Updated:** January 10, 2026
-**Document Version:** 1.1
+**Document Version:** 2.0
 **Application Version:** v34.1.0
+
+---
+
+## 🎯 SINGLE SOURCE OF TRUTH: Azure Blob Storage
+
+**ALL historical data lives in Azure Blob Storage.**
+
+| Container | Purpose | Size |
+|-----------|---------|------|
+| `ncaam-historical-data` | **Primary** - Canonical data for backtesting | ~500 MB |
+| `ncaam-historical-raw` | Raw data backup (ncaahoopR, API responses) | ~7 GB |
+
+**Storage Account:** `metricstrackersgbsv`
+**Resource Group:** `dashboard-gbsv-main-rg`
+
+### Reading Data from Azure (No Download Required)
+
+```python
+from testing.azure_data_reader import read_backtest_master, AzureDataReader
+
+# Quick access to backtest data
+df = read_backtest_master(enhanced=True)
+
+# Full reader for any file
+reader = AzureDataReader()
+ratings = reader.read_json("ratings/barttorvik/ratings_2025.json")
+aliases = reader.read_json("backtest_datasets/team_aliases_db.json")
+```
+
+### Syncing Local Data to Azure
+
+```powershell
+# Sync canonical data (scores, odds, ratings, backtest datasets)
+python scripts/sync_raw_data_to_azure.py --canonical
+
+# Sync everything including ncaahoopR (7GB)
+python scripts/sync_raw_data_to_azure.py --all --include-ncaahoopR
+
+# Preview what would sync
+python scripts/sync_raw_data_to_azure.py --all --dry-run
+```
 
 ---
 
@@ -21,6 +62,7 @@
 - ncaahoopR box score features (23,891 game-level)
 - Conference strength analysis
 - Enhanced backtest_master_enhanced.csv (83 columns)
+- **Azure Blob Storage as single source of truth**
 
 ### Versioning Strategy
 
@@ -69,48 +111,64 @@ This document establishes the **canonical sources** for all NCAAM data, ensuring
 ## Data Architecture Overview
 
 ```
-                    SINGLE SOURCE OF TRUTH
-                           |
-           +---------------+---------------+
-           |                               |
-    [LOCAL/GIT]                      [AZURE BACKUP]
-           |                               |
-    ncaam_historical_data_local/     Azure Blob Storage
-    (git submodule)                  metricstrackersgbsv
-           |                               |
-           v                               v
-    backtest_master.csv              ncaam-historical-raw
-    (DERIVED - rebuild on demand)    (raw data archive)
+                    ┌──────────────────────────────────────┐
+                    │     AZURE BLOB STORAGE               │
+                    │     SINGLE SOURCE OF TRUTH           │
+                    └──────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+            ┌───────▼───────┐             ┌────────▼───────┐
+            │ ncaam-        │             │ ncaam-         │
+            │ historical-   │             │ historical-    │
+            │ data          │             │ raw            │
+            │ (canonical)   │             │ (7GB backup)   │
+            └───────────────┘             └────────────────┘
+                    │                               │
+                    ├── backtest_datasets/          ├── ncaahoopR_data-master/
+                    ├── scores/fg/, h1/             ├── odds/raw/archive/
+                    ├── ratings/barttorvik/         │
+                    ├── odds/canonical/             │
+                    └── canonicalized/              │
+                                                    │
+            ┌───────────────────────────────────────┘
+            │
+            ▼
+    [LOCAL CACHE - OPTIONAL]
+    ncaam_historical_data_local/
+    (for offline development)
 ```
+
+**Key Principles:**
+1. Azure is the PRIMARY source - local files are optional cache
+2. Backtesting reads directly from Azure (no download required)
+3. Large files (ncaahoopR 7GB) stay in Azure only
+4. Changes are synced TO Azure, not from Azure
 
 ---
 
-## Canonical Data Sources
+## Canonical Data in Azure
 
-### 1. Historical Data Repository (LOCAL + GIT)
+### Container: `ncaam-historical-data` (PRIMARY)
 
-**Location:** `ncaam_historical_data_local/`
-**Git Remote:** `https://github.com/JDSB123/ncaam-historical-data`
-**Type:** Git submodule (separate version control)
-
-This directory contains ALL canonical historical data for the project:
-
-| Path | Contents | Source |
-|------|----------|--------|
-| `scores/fg/games_all.csv` | **PRIMARY** Full-game scores (11,763 games) | ESPN |
+| Blob Path | Contents | Source |
+|-----------|----------|--------|
+| `scores/fg/games_all.csv` | Full-game scores (11,763 games) | ESPN |
 | `scores/h1/h1_games_all.csv` | First-half scores (10,261 games) | ESPN |
-| `odds/normalized/odds_consolidated_canonical.csv` | **PRIMARY** All odds data (217,151 rows) | The Odds API |
-| `ratings/raw/barttorvik/` | Team efficiency ratings by season | Barttorvik |
+| `odds/normalized/odds_consolidated_canonical.csv` | All odds data (217,151 rows) | The Odds API |
+| `ratings/barttorvik/` | Team efficiency ratings by season | Barttorvik |
 | `backtest_datasets/team_aliases_db.json` | Team name canonicalization (1,679 aliases) | Manual |
+| `backtest_datasets/backtest_master.csv` | Merged backtest dataset | Derived |
+| `backtest_datasets/backtest_master_enhanced.csv` | With advanced features | Derived |
 
-**CRITICAL:** Never create duplicate copies of this data. Always reference these paths.
+### Container: `ncaam-historical-raw` (LARGE FILES)
 
-### 2. Backtest Master Dataset (DERIVED)
+| Blob Path | Contents | Size |
+|-----------|----------|------|
+| `odds/raw/archive/` | Raw API CSV files | ~210 files |
+| `ncaahoopR_data-master/` | Play-by-play & box scores | 6.7 GB |
 
-**Location:** `backtest_datasets/backtest_master.csv`
-**Build Command:** `python testing/scripts/build_backtest_dataset.py`
-
-This is a **derived dataset** - regenerate it from the canonical sources above.
+### Backtest Master Dataset (DERIVED)
 
 | Metric | Coverage |
 |--------|----------|
@@ -121,23 +179,11 @@ This is a **derived dataset** - regenerate it from the canonical sources above.
 | H1 Total | 10,261 (87.2%) |
 | Ratings | 9,389 (79.8%) |
 
-### 3. Azure Blob Storage (BACKUP)
-
-**Storage Account:** `metricstrackersgbsv`
-**Resource Group:** `dashboard-gbsv-main-rg`
-**Container:** `ncaam-historical-raw`
-
-Azure Blob Storage is a **backup** for raw data too large for GitHub:
-
-| Blob Path | Contents | Size |
-|-----------|----------|------|
-| `odds/raw/archive/` | Raw API CSV files | ~210 files |
-| `ncaahoopR_data-master/` | Play-by-play data | 6.7 GB |
-
-**Sync Command:**
+**Build & Sync:**
 ```powershell
-python scripts/sync_raw_data_to_azure.py                    # Sync raw odds
-python scripts/sync_raw_data_to_azure.py --include-ncaahoopR  # Include 6.7GB PBP
+# Build locally, then sync to Azure
+python testing/scripts/build_backtest_dataset.py
+python scripts/sync_raw_data_to_azure.py --canonical
 ```
 
 ---
@@ -168,7 +214,7 @@ python scripts/sync_raw_data_to_azure.py --include-ncaahoopR  # Include 6.7GB PB
 
 ### Adding New Historical Data
 
-1. **Add raw data** to `ncaam_historical_data_local/odds/raw/archive/` or `scores/`
+1. **Add raw data** locally to `ncaam_historical_data_local/`
 2. **Rebuild canonical files** (if needed):
    ```powershell
    python testing/scripts/canonicalize_historical_odds.py
@@ -186,19 +232,9 @@ python scripts/sync_raw_data_to_azure.py --include-ncaahoopR  # Include 6.7GB PB
    ```powershell
    python testing/scripts/run_historical_backtest.py --market fg_spread
    ```
-6. **Sync to Azure** (backup):
+6. **Sync to Azure** (SINGLE SOURCE OF TRUTH):
    ```powershell
-   python scripts/sync_raw_data_to_azure.py
-   ```
-7. **Commit to Git**:
-   ```powershell
-   cd ncaam_historical_data_local
-   git add -A && git commit -m "Add historical data for [description]"
-   git push origin main
-   cd ..
-   git add ncaam_historical_data_local
-   git commit -m "Update historical data submodule"
-   git push origin main
+   python scripts/sync_raw_data_to_azure.py --canonical
    ```
 
 ### Updating Team Resolution
@@ -208,7 +244,7 @@ python scripts/sync_raw_data_to_azure.py --include-ncaahoopR  # Include 6.7GB PB
    ```powershell
    python testing/scripts/team_resolution_gate.py --verify
    ```
-3. **Rebuild backtest master** and validate
+3. **Rebuild backtest master** and sync to Azure
 
 ---
 
@@ -223,16 +259,14 @@ python scripts/sync_raw_data_to_azure.py --include-ncaahoopR  # Include 6.7GB PB
 | `DB_PASSWORD` | PostgreSQL access | Docker secret |
 | `REDIS_PASSWORD` | Redis access | Docker secret |
 
-### Required Git Configuration
+### Azure CLI Setup
 
 ```powershell
-# Initialize historical data submodule (first-time setup)
-git submodule update --init --recursive
+# Login to Azure (required for data access)
+az login
 
-# Update historical data to latest
-cd ncaam_historical_data_local
-git pull origin main
-cd ..
+# Verify access to storage account
+az storage container list --account-name metricstrackersgbsv --output table
 ```
 
 ---

@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """
-Sync raw historical data to Azure Blob Storage.
+Sync ALL historical data to Azure Blob Storage - SINGLE SOURCE OF TRUTH.
 
-This script uploads raw odds data (and other large files) to Azure Blob Storage
-for archival/backup. Raw data is gitignored but must be preserved in Azure.
+This script uploads ALL NCAAM data to Azure Blob Storage:
+- Canonical data (odds, scores, ratings, backtest datasets)
+- Raw data (API responses, ncaahoopR 7GB)
+- Derived data (enhanced backtest datasets)
+
+Azure serves as the SINGLE SOURCE OF TRUTH for all historical data.
+Local files are optional - backtesting can read directly from Azure.
 
 Storage Account: metricstrackersgbsv (dashboard-gbsv-main-rg)
-Container: ncaam-historical-raw
+Containers:
+- ncaam-historical-data: Canonical data (primary, for backtesting)
+- ncaam-historical-raw: Raw data backup (large files, archives)
 
 Usage:
-    python scripts/sync_raw_data_to_azure.py
-    python scripts/sync_raw_data_to_azure.py --dry-run
-    python scripts/sync_raw_data_to_azure.py --container ncaam-historical-raw
+    python scripts/sync_raw_data_to_azure.py --all           # Sync everything
+    python scripts/sync_raw_data_to_azure.py --canonical     # Sync canonical only
+    python scripts/sync_raw_data_to_azure.py --dry-run       # Preview what would sync
+    python scripts/sync_raw_data_to_azure.py --include-ncaahoopR  # Include 7GB PBP data
 """
 
 import os
@@ -36,8 +44,23 @@ HISTORICAL_DATA_ROOT = Path(__file__).parent.parent / "ncaam_historical_data_loc
 RAW_ODDS_PATH = HISTORICAL_DATA_ROOT / "odds" / "raw" / "archive"
 NCAAHOOPR_PATH = HISTORICAL_DATA_ROOT / "ncaahoopR_data-master"
 
+# Canonical data paths (primary data for backtesting)
+CANONICAL_PATHS = {
+    "backtest_datasets": HISTORICAL_DATA_ROOT / "backtest_datasets",
+    "scores_fg": HISTORICAL_DATA_ROOT / "scores" / "fg",
+    "scores_h1": HISTORICAL_DATA_ROOT / "scores" / "h1",
+    "ratings": HISTORICAL_DATA_ROOT / "ratings",
+    "odds_canonical": HISTORICAL_DATA_ROOT / "odds" / "canonical",
+    "odds_normalized": HISTORICAL_DATA_ROOT / "odds" / "normalized",
+    "canonicalized": HISTORICAL_DATA_ROOT / "canonicalized",
+    "schemas": HISTORICAL_DATA_ROOT / "schemas",
+    "manifests": HISTORICAL_DATA_ROOT / "manifests",
+}
+
 # Azure config
-DEFAULT_CONTAINER = "ncaam-historical-raw"
+CANONICAL_CONTAINER = "ncaam-historical-data"  # Primary container for backtesting
+RAW_CONTAINER = "ncaam-historical-raw"  # Raw data backup
+DEFAULT_CONTAINER = CANONICAL_CONTAINER
 STORAGE_ACCOUNT = "metricstrackersgbsv"
 RESOURCE_GROUP = "dashboard-gbsv-main-rg"
 
@@ -187,12 +210,90 @@ def upload_directory(
     return uploaded, skipped, total_bytes
 
 
+def sync_canonical_data(
+    blob_service: BlobServiceClient,
+    container_name: str,
+    dry_run: bool = False
+) -> tuple[int, int, int]:
+    """
+    Sync all canonical data to Azure.
+    
+    This includes:
+    - backtest_datasets/ (backtest_master.csv, team_aliases, etc.)
+    - scores/fg/ and scores/h1/
+    - ratings/barttorvik/
+    - odds/canonical/ and odds/normalized/
+    - canonicalized/ data
+    - schemas/ and manifests/
+    """
+    total_uploaded = 0
+    total_skipped = 0
+    total_bytes = 0
+    
+    for name, path in CANONICAL_PATHS.items():
+        if not path.exists():
+            print(f"\n[SKIP] {name}: Directory not found")
+            continue
+        
+        print(f"\n" + "-" * 40)
+        print(f"UPLOADING: {name}")
+        print("-" * 40)
+        
+        # Determine blob prefix from path relative to data root
+        try:
+            relative = path.relative_to(HISTORICAL_DATA_ROOT)
+            blob_prefix = str(relative).replace("\\", "/")
+        except ValueError:
+            blob_prefix = name
+        
+        uploaded, skipped, bytes_up = upload_directory(
+            blob_service,
+            container_name,
+            path,
+            blob_prefix,
+            extensions=[".csv", ".json"],
+            dry_run=dry_run
+        )
+        total_uploaded += uploaded
+        total_skipped += skipped
+        total_bytes += bytes_up
+    
+    return total_uploaded, total_skipped, total_bytes
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Sync raw historical data to Azure Blob Storage")
-    parser.add_argument("--dry-run", action="store_true", help="Print what would be uploaded without uploading")
-    parser.add_argument("--container", default=DEFAULT_CONTAINER, help=f"Target container (default: {DEFAULT_CONTAINER})")
-    parser.add_argument("--include-ncaahoopR", action="store_true", help="Also upload ncaahoopR data (6.7 GB)")
+    parser = argparse.ArgumentParser(
+        description="Sync ALL historical data to Azure Blob Storage (SINGLE SOURCE OF TRUTH)"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Print what would be uploaded without uploading"
+    )
+    parser.add_argument(
+        "--all", action="store_true",
+        help="Sync ALL data (canonical + raw + ncaahoopR)"
+    )
+    parser.add_argument(
+        "--canonical", action="store_true",
+        help="Sync canonical data only (backtest_datasets, scores, ratings, odds)"
+    )
+    parser.add_argument(
+        "--raw", action="store_true",
+        help="Sync raw data archive only"
+    )
+    parser.add_argument(
+        "--include-ncaahoopR", action="store_true",
+        help="Also upload ncaahoopR data (6.7 GB) - use with --all or --raw"
+    )
+    parser.add_argument(
+        "--container", default=None,
+        help=f"Override target container (default: auto-select based on data type)"
+    )
     args = parser.parse_args()
+    
+    # Default to canonical if nothing specified
+    if not (args.all or args.canonical or args.raw):
+        args.canonical = True
     
     if not AZURE_AVAILABLE:
         print("ERROR: azure-storage-blob package required")
@@ -204,49 +305,82 @@ def main():
     if not conn_str:
         sys.exit(1)
     
-    print("=" * 60)
-    print("NCAAM Historical Data -> Azure Blob Storage Sync")
-    print("=" * 60)
+    print("=" * 70)
+    print("NCAAM Historical Data -> Azure Blob Storage")
+    print("SINGLE SOURCE OF TRUTH SYNC")
+    print("=" * 70)
     print(f"Storage Account: {STORAGE_ACCOUNT}")
-    print(f"Container: {args.container}")
     print(f"Mode: {'DRY RUN' if args.dry_run else 'LIVE UPLOAD'}")
     print(f"Timestamp: {datetime.now().isoformat()}")
+    print()
+    print("Data to sync:")
+    print(f"  Canonical data: {'YES' if args.canonical or args.all else 'NO'}")
+    print(f"  Raw data archive: {'YES' if args.raw or args.all else 'NO'}")
+    print(f"  ncaahoopR (7GB): {'YES' if args.include_ncaahoopR else 'NO'}")
     
     # Connect to Azure
     blob_service = BlobServiceClient.from_connection_string(conn_str)
-    
-    # Ensure container exists
-    if not args.dry_run:
-        ensure_container_exists(blob_service, args.container)
     
     total_uploaded = 0
     total_skipped = 0
     total_bytes = 0
     
-    # Upload raw odds archive
-    print("\n" + "-" * 40)
-    print("UPLOADING: Raw Odds Archive")
-    print("-" * 40)
-    uploaded, skipped, bytes_up = upload_directory(
-        blob_service,
-        args.container,
-        RAW_ODDS_PATH,
-        "odds/raw/archive",
-        extensions=[".csv"],
-        dry_run=args.dry_run
-    )
-    total_uploaded += uploaded
-    total_skipped += skipped
-    total_bytes += bytes_up
+    # Sync canonical data
+    if args.canonical or args.all:
+        container = args.container or CANONICAL_CONTAINER
+        print(f"\n{'='*70}")
+        print(f"CANONICAL DATA -> {container}")
+        print("=" * 70)
+        
+        if not args.dry_run:
+            ensure_container_exists(blob_service, container)
+        
+        uploaded, skipped, bytes_up = sync_canonical_data(
+            blob_service, container, dry_run=args.dry_run
+        )
+        total_uploaded += uploaded
+        total_skipped += skipped
+        total_bytes += bytes_up
     
-    # Optionally upload ncaahoopR data
-    if args.include_ncaahoopR:
+    # Sync raw data
+    if args.raw or args.all:
+        container = args.container or RAW_CONTAINER
+        print(f"\n{'='*70}")
+        print(f"RAW DATA -> {container}")
+        print("=" * 70)
+        
+        if not args.dry_run:
+            ensure_container_exists(blob_service, container)
+        
+        # Raw odds archive
         print("\n" + "-" * 40)
-        print("UPLOADING: ncaahoopR Play-by-Play Data")
+        print("UPLOADING: Raw Odds Archive")
         print("-" * 40)
         uploaded, skipped, bytes_up = upload_directory(
             blob_service,
-            args.container,
+            container,
+            RAW_ODDS_PATH,
+            "odds/raw/archive",
+            extensions=[".csv"],
+            dry_run=args.dry_run
+        )
+        total_uploaded += uploaded
+        total_skipped += skipped
+        total_bytes += bytes_up
+    
+    # Sync ncaahoopR data
+    if args.include_ncaahoopR:
+        container = args.container or RAW_CONTAINER
+        print(f"\n{'='*70}")
+        print(f"ncaahoopR DATA (7GB) -> {container}")
+        print("=" * 70)
+        
+        if not args.dry_run:
+            ensure_container_exists(blob_service, container)
+        
+        uploaded, skipped, bytes_up = upload_directory(
+            blob_service,
+            container,
             NCAAHOOPR_PATH,
             "ncaahoopR_data-master",
             dry_run=args.dry_run
@@ -256,16 +390,21 @@ def main():
         total_bytes += bytes_up
     
     # Summary
-    print("\n" + "=" * 60)
-    print("SUMMARY")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    print("SYNC SUMMARY")
+    print("=" * 70)
     print(f"Uploaded: {total_uploaded} files")
     print(f"Skipped (already exists): {total_skipped} files")
-    print(f"Total bytes: {total_bytes:,}")
+    print(f"Total bytes: {total_bytes:,} ({total_bytes / 1024 / 1024:.2f} MB)")
     
     if args.dry_run:
         print("\n[WARNING]  DRY RUN - No files were actually uploaded")
         print("Run without --dry-run to perform the upload")
+    else:
+        print("\n[OK] Azure is now the SINGLE SOURCE OF TRUTH")
+        print("Backtesting can read directly from Azure using:")
+        print("  from testing.azure_data_reader import read_backtest_master")
+        print("  df = read_backtest_master()")
 
 
 if __name__ == "__main__":

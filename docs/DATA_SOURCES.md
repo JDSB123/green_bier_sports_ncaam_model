@@ -1,36 +1,46 @@
 # NCAAM Data Sources - Single Source of Truth
 
 **Last Updated:** January 10, 2026
-**Version:** 2.0
+**Version:** 3.0
 
 ---
 
-## Overview
+## 🎯 SINGLE SOURCE OF TRUTH: Azure Blob Storage
 
-This document establishes the **canonical data sources** for all NCAAM prediction and backtesting work.
+**ALL historical data lives in Azure Blob Storage.** No local downloads required.
 
-**CRITICAL:** Always use the designated single source of truth to avoid data inconsistencies.
-
----
-
-## Azure Blob Storage - Raw Data Archive
+| Container | Purpose | Size |
+|-----------|---------|------|
+| `ncaam-historical-data` | **Primary** - Canonical data for backtesting | ~500 MB |
+| `ncaam-historical-raw` | Raw data backup (ncaahoopR, API responses) | ~7 GB |
 
 **Storage Account:** `metricstrackersgbsv`
-**Container:** `ncaam-historical-raw`
 **Resource Group:** `dashboard-gbsv-main-rg`
-
-Azure Blob Storage serves as the **permanent archive** for all raw historical data. This includes:
-- Raw odds API responses
-- ncaahoopR play-by-play data
-- Original Barttorvik scrapes
-
-**Sync Script:** `scripts/sync_raw_data_to_azure.py`
 
 ---
 
-## Canonical Data Files (Git Repository)
+## Reading Data from Azure
 
-The following files in the Git repository are the **processed, canonical versions** of the data used for backtesting and production.
+```python
+from testing.azure_data_reader import read_backtest_master, AzureDataReader
+
+# Quick access to backtest data
+df = read_backtest_master(enhanced=True)
+
+# Read any file
+reader = AzureDataReader()
+ratings = reader.read_json("ratings/barttorvik/ratings_2025.json")
+aliases = reader.read_json("backtest_datasets/team_aliases_db.json")
+
+# Stream large ncaahoopR files
+reader_raw = AzureDataReader(container_name="ncaam-historical-raw")
+for chunk in reader_raw.read_csv_chunks("ncaahoopR_data-master/box_scores/2025.csv"):
+    process(chunk)
+```
+
+---
+
+## Canonical Data Files (in Azure)
 
 ### Master Odds File (SINGLE SOURCE OF TRUTH)
 
@@ -164,14 +174,30 @@ For a complete inventory of available data, see:
 ## Data Workflow
 
 ```
-1. Raw Data (scores, odds) in ncaam_historical_data_local/
+1. Raw Data ingested/updated locally
                 |
                 v
-2. build_backtest_dataset.py merges into backtest_master.csv
+2. sync_raw_data_to_azure.py uploads to Azure (SINGLE SOURCE OF TRUTH)
                 |
                 v
-3. run_historical_backtest.py runs backtests against outcomes
+3. build_backtest_dataset.py creates backtest_master.csv
                 |
                 v
-4. CI/CD validates ROI > -5%, Win Rate > 48%
+4. run_historical_backtest.py reads from Azure, runs backtests
+                |
+                v
+5. CI/CD validates ROI > -5%, Win Rate > 48%
+```
+
+## Sync Local to Azure
+
+```powershell
+# Sync canonical data (scores, odds, ratings, backtest datasets)
+python scripts/sync_raw_data_to_azure.py --canonical
+
+# Sync everything including ncaahoopR (7GB)
+python scripts/sync_raw_data_to_azure.py --all --include-ncaahoopR
+
+# Preview what would sync
+python scripts/sync_raw_data_to_azure.py --all --dry-run
 ```
