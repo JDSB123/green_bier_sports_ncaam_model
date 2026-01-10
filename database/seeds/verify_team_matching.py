@@ -16,12 +16,18 @@ sys.path.insert(0, '/app')
 from sqlalchemy import create_engine, text
 
 def get_db_password():
-    """Read password from Docker secret file."""
+    """Read password from Docker secret file or environment variable."""
     try:
         with open('/run/secrets/db_password', 'r') as f:
             return f.read().strip()
     except FileNotFoundError:
-        return os.getenv('DB_PASSWORD', 'ncaam_dev_password')
+        password = os.getenv('DB_PASSWORD')
+        if not password:
+            raise RuntimeError(
+                "DB_PASSWORD not found. Set DB_PASSWORD environment variable "
+                "or ensure /run/secrets/db_password exists."
+            )
+        return password
 
 DB_PASSWORD = get_db_password()
 DATABASE_URL = f"postgresql://ncaam:{DB_PASSWORD}@postgres:5432/ncaam"
