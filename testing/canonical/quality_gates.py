@@ -21,7 +21,7 @@ Usage:
 """
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field as dataclass_field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable, Union
@@ -45,9 +45,9 @@ class ValidationIssue:
     severity: ValidationSeverity
     message: str
     field: Optional[str] = None
-    row_indices: List[int] = field(default_factory=list)
+    row_indices: List[int] = dataclass_field(default_factory=list)
     suggested_fix: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = dataclass_field(default_factory=dict)
 
 
 @dataclass
@@ -55,10 +55,10 @@ class ValidationResult:
     """Result of data quality validation."""
     passed: bool
     total_records: int
-    issues: List[ValidationIssue] = field(default_factory=list)
+    issues: List[ValidationIssue] = dataclass_field(default_factory=list)
     blocked_records: int = 0
     warnings_count: int = 0
-    timestamp: datetime = field(default_factory=datetime.now)
+    timestamp: datetime = dataclass_field(default_factory=datetime.now)
 
     @property
     def has_critical_issues(self) -> bool:
@@ -86,7 +86,7 @@ class QualityRule:
     validator: Callable[[pd.DataFrame], List[ValidationIssue]]
     severity: ValidationSeverity = ValidationSeverity.ERROR
     enabled: bool = True
-    applies_to: List[str] = field(default_factory=lambda: ["all"])  # Data types this applies to
+    applies_to: List[str] = dataclass_field(default_factory=lambda: ["all"])  # Data types this applies to
 
 
 class DataQualityGate:

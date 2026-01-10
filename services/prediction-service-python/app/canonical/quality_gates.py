@@ -9,7 +9,7 @@ This is a production copy of testing/canonical/quality_gates.py
 """
 
 import pandas as pd
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field as dataclass_field
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from enum import Enum
@@ -30,9 +30,9 @@ class ValidationIssue:
     severity: ValidationSeverity
     message: str
     field: Optional[str] = None
-    row_indices: List[int] = field(default_factory=list)
+    row_indices: List[int] = dataclass_field(default_factory=list)
     suggested_fix: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = dataclass_field(default_factory=dict)
 
 
 @dataclass
@@ -40,10 +40,10 @@ class ValidationResult:
     """Result of data quality validation."""
     passed: bool
     total_records: int
-    issues: List[ValidationIssue] = field(default_factory=list)
+    issues: List[ValidationIssue] = dataclass_field(default_factory=list)
     blocked_records: int = 0
     warnings_count: int = 0
-    timestamp: datetime = field(default_factory=datetime.now)
+    timestamp: datetime = dataclass_field(default_factory=datetime.now)
 
     @property
     def has_critical_issues(self) -> bool:
