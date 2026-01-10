@@ -1,6 +1,25 @@
 #!/usr/bin/env python3
 """
-Build Backtest Dataset - Fresh Start
+⚠️  DEPRECATED: Build Backtest Dataset - Legacy Version
+
+This script has been replaced by the canonical ingestion pipeline.
+Use build_backtest_dataset_canonical.py instead.
+
+The new canonical version provides:
+- Automatic team name resolution
+- Preventive data quality validation
+- Schema evolution handling
+- Azure integration with canonicalization
+
+Usage:
+    python testing/scripts/build_backtest_dataset_canonical.py
+
+This legacy script will be removed in a future version.
+"""
+
+#!/usr/bin/env python3
+"""
+Build Backtest Dataset - Fresh Start (DEPRECATED)
 
 Merges:
 1. Games/Scores from scores/fg/games_all.csv

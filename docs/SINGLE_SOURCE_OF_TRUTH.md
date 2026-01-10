@@ -1,14 +1,42 @@
 # SINGLE SOURCE OF TRUTH - NCAAM Data & Configuration
 
 **Last Updated:** January 10, 2026
-**Document Version:** 2.0
+**Document Version:** 3.0 - CANONICAL INGESTION ARCHITECTURE
 **Application Version:** v34.1.0
 
 ---
 
-## 🎯 SINGLE SOURCE OF TRUTH: Azure Blob Storage
+## 🎯 SINGLE SOURCE OF TRUTH: Azure Blob Storage + Canonical Ingestion
 
-**ALL historical data lives in Azure Blob Storage.**
+**ALL historical data lives in Azure Blob Storage with canonical ingestion processing.**
+
+### Canonical Ingestion Architecture
+
+The new canonical ingestion framework ensures data quality and consistency:
+
+```python
+from testing.canonical.ingestion_pipeline import CanonicalIngestionPipeline
+from testing.canonical.team_resolution_service import get_team_resolver
+from testing.canonical.quality_gates import DataQualityGate
+
+# All data goes through canonical processing
+pipeline = CanonicalIngestionPipeline()
+result = pipeline.ingest_scores_data(df, source="ESPN")
+
+# Team names are automatically resolved
+resolver = get_team_resolver()
+canonical_name = resolver.resolve("cal state northridge")  # → "CSU Northridge"
+
+# Data quality is enforced preventively
+gate = DataQualityGate()
+clean_df = gate.validate_and_raise(df, "scores")
+```
+
+**Key Components:**
+- **Team Resolution Service**: Fuzzy matching + learning for team names
+- **Canonical Ingestion Pipeline**: Preventive validation & transformation
+- **Data Quality Gates**: Blocking validation before data enters system
+- **Schema Evolution**: Vintage-aware data quality standards
 
 | Container | Purpose | Size |
 |-----------|---------|------|
@@ -212,29 +240,28 @@ python scripts/sync_raw_data_to_azure.py --canonical
 
 ## Workflow: Making Data Changes
 
-### Adding New Historical Data
+### Adding New Historical Data (Canonical Process)
 
 1. **Add raw data** locally to `ncaam_historical_data_local/`
-2. **Rebuild canonical files** (if needed):
+2. **Run canonical data validator** (PREVENTIVE):
    ```powershell
-   python testing/scripts/canonicalize_historical_odds.py
+   python testing/scripts/canonical_data_validator.py --data-type scores --source local
    ```
-3. **Rebuild backtest master**:
+3. **Rebuild backtest master** (with canonical pipeline):
    ```powershell
-   python testing/scripts/build_backtest_dataset.py
+   python testing/scripts/build_backtest_dataset_canonical.py --enhanced
    ```
-4. **Validate data quality**:
+4. **Validate canonical data quality**:
    ```powershell
-   python testing/scripts/score_integrity_audit.py
-   python testing/scripts/dual_canonicalization_audit.py
+   python testing/scripts/canonical_data_validator.py --comprehensive
    ```
 5. **Run backtest to verify**:
    ```powershell
    python testing/scripts/run_historical_backtest.py --market fg_spread
    ```
-6. **Sync to Azure** (SINGLE SOURCE OF TRUTH):
+6. **Sync to Azure with canonicalization** (SINGLE SOURCE OF TRUTH):
    ```powershell
-   python scripts/sync_raw_data_to_azure.py --canonical
+   python scripts/sync_raw_data_to_azure.py --canonical --canonicalize
    ```
 
 ### Updating Team Resolution
@@ -289,36 +316,47 @@ See `.github/workflows/pre-backtest-validation.yml`
 ## Quick Reference Commands
 
 ```powershell
-# Rebuild everything from canonical sources
-python testing/scripts/build_backtest_dataset.py
+# CANONICAL INGESTION WORKFLOW
 
-# Validate data quality
-python testing/scripts/score_integrity_audit.py --verbose
-python testing/scripts/dual_canonicalization_audit.py --verbose
+# Validate data quality (preventive)
+python testing/scripts/canonical_data_validator.py --comprehensive
+
+# Rebuild backtest dataset (canonical pipeline)
+python testing/scripts/build_backtest_dataset_canonical.py --enhanced
 
 # Run backtest (all seasons)
 python testing/scripts/run_historical_backtest.py --market fg_spread
 
-# Sync to Azure backup
-python scripts/sync_raw_data_to_azure.py
+# Sync to Azure with canonicalization
+python scripts/sync_raw_data_to_azure.py --canonical --canonicalize
 
-# Check team resolution
-python testing/scripts/team_resolution_gate.py --verify
+# Test team resolution service
+python -c "from testing.canonical.team_resolution_service import get_team_resolver; r = get_team_resolver(); print(r.resolve('cal state northridge'))"
 
-# Full audit
-python testing/scripts/audit_data_sources.py
+# LEGACY COMMANDS (deprecated - use canonical versions above)
+# python testing/scripts/build_backtest_dataset.py  # Use build_backtest_dataset_canonical.py
+# python testing/scripts/score_integrity_audit.py   # Use canonical_data_validator.py
 ```
 
 ---
 
+## Canonical Architecture Benefits
+
+✅ **Preventive Quality**: Data issues caught at ingestion, not after backtesting
+✅ **Automatic Resolution**: Team names resolved via fuzzy matching + learning
+✅ **Schema Evolution**: Different quality standards for different data vintages
+✅ **Single Pipeline**: All data processed consistently through canonical pipeline
+✅ **Azure Integration**: Direct reading from canonical blob storage
+✅ **Audit Trail**: Complete history of data transformations and validations
+
 ## Common Mistakes to Avoid
 
-1. **Creating duplicate data files** - Always use canonical paths
-2. **Hardcoding -110 odds** - Use actual odds from `spread_home_price`, etc.
-3. **Using same-season ratings** - Use N-1 season ratings for season N games
-4. **Loading individual season files** - Use `games_all.csv` as primary
-5. **Skipping Azure sync** - Always backup raw data after ingestion
-6. **Not rebuilding backtest_master.csv** - Regenerate after data changes
+1. **Bypassing canonical pipeline** - Always use `CanonicalIngestionPipeline`
+2. **Manual team name fixes** - Use `TeamResolutionService` instead
+3. **Reactive validation** - Use preventive `DataQualityGate` validation
+4. **Ignoring schema evolution** - Check data vintage with `SchemaEvolutionManager`
+5. **Direct Azure access** - Use `AzureDataReader` with canonicalization enabled
+6. **Legacy scripts** - Use canonical versions: `python testing/scripts/cleanup_legacy_scripts.py`
 
 ---
 
@@ -330,6 +368,18 @@ python testing/scripts/audit_data_sources.py
 | [EARLY_SEASON_BETTING_GUIDANCE.md](EARLY_SEASON_BETTING_GUIDANCE.md) | 2024 anomaly analysis |
 | [HISTORICAL_DATA_AVAILABILITY.md](HISTORICAL_DATA_AVAILABILITY.md) | Coverage by season |
 | [CANONICAL_INGESTION_ARCHITECTURE.md](CANONICAL_INGESTION_ARCHITECTURE.md) | Ingestion pipeline |
+
+## Canonical Components Reference
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| TeamResolutionService | `testing/canonical/team_resolution_service.py` | Fuzzy team name matching + learning |
+| CanonicalIngestionPipeline | `testing/canonical/ingestion_pipeline.py` | Orchestrates data ingestion & transformation |
+| DataQualityGate | `testing/canonical/quality_gates.py` | Preventive validation gates |
+| SchemaEvolutionManager | `testing/canonical/schema_evolution.py` | Vintage-aware schema handling |
+| AzureDataReader | `testing/azure_data_reader.py` | Canonical Azure data access |
+| CanonicalDataValidator | `testing/scripts/canonical_data_validator.py` | Preventive data validation |
+| BuildBacktestCanonical | `testing/scripts/build_backtest_dataset_canonical.py` | Canonical dataset building |
 
 ---
 

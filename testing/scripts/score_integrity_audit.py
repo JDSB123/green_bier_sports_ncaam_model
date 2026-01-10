@@ -1,6 +1,25 @@
 #!/usr/bin/env python3
 """
-SCORE DATA INTEGRITY AUDIT
+⚠️  DEPRECATED: Score Data Integrity Audit
+
+This script has been replaced by the canonical data validator.
+Use canonical_data_validator.py instead.
+
+The new canonical validator provides:
+- Preventive validation (catches issues before ingestion)
+- Comprehensive data quality gates
+- Schema evolution awareness
+- Better error reporting and recommendations
+
+Usage:
+    python testing/scripts/canonical_data_validator.py --data-type scores
+
+This legacy script will be removed in a future version.
+"""
+
+#!/usr/bin/env python3
+"""
+SCORE DATA INTEGRITY AUDIT (DEPRECATED)
 
 Cross-validates game scores across ALL historical data sources to ensure
 data integrity and consistency. This is critical for backtesting validity.

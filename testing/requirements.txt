@@ -4,3 +4,5 @@ python-dotenv>=1.0.1
 rich>=13.9.3
 requests>=2.32.3
 azure-storage-blob>=12.19.0
+fuzzywuzzy>=0.18.0
+python-levenshtein>=0.25.1

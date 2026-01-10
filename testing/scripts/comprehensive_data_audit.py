@@ -1,6 +1,25 @@
 #!/usr/bin/env python3
 """
-COMPREHENSIVE DATA AUDIT - Run BEFORE any backtesting
+⚠️  DEPRECATED: Comprehensive Data Audit
+
+This script has been replaced by the canonical data validator.
+Use canonical_data_validator.py instead.
+
+The new canonical validator provides:
+- Preventive validation with blocking quality gates
+- Automatic team name resolution validation
+- Schema-aware validation by data vintage
+- Comprehensive cross-source consistency checks
+
+Usage:
+    python testing/scripts/canonical_data_validator.py --comprehensive
+
+This legacy script will be removed in a future version.
+"""
+
+#!/usr/bin/env python3
+"""
+COMPREHENSIVE DATA AUDIT - Run BEFORE any backtesting (DEPRECATED)
 
 This script validates:
 1. ALL raw data sources are present and properly formatted

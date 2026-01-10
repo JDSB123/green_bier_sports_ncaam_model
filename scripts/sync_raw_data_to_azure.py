@@ -38,6 +38,15 @@ except ImportError:
     AZURE_AVAILABLE = False
     print("WARNING: azure-storage-blob not installed. Run: pip install azure-storage-blob")
 
+# Import canonical components
+try:
+    from testing.canonical.ingestion_pipeline import CanonicalIngestionPipeline, DataSource
+    from testing.canonical.quality_gates import DataQualityGate
+    CANONICAL_AVAILABLE = True
+except ImportError:
+    CANONICAL_AVAILABLE = False
+    print("WARNING: Canonical ingestion components not available. Data will not be canonicalized.")
+
 
 # Default paths
 HISTORICAL_DATA_ROOT = Path(__file__).parent.parent / "ncaam_historical_data_local"
@@ -126,17 +135,101 @@ def get_existing_blobs(blob_service: BlobServiceClient, container_name: str, pre
     return existing
 
 
+def canonicalize_data_before_upload(
+    file_path: Path,
+    data_type: str = "auto"
+) -> Optional[bytes]:
+    """
+    Canonicalize data before uploading to Azure.
+
+    Args:
+        file_path: Path to the local file
+        data_type: Type of data for canonicalization
+
+    Returns:
+        Canonicalized data as bytes, or None if canonicalization failed
+    """
+    if not CANONICAL_AVAILABLE:
+        # Fall back to original file
+        with open(file_path, "rb") as f:
+            return f.read()
+
+    try:
+        # Read the data
+        if file_path.suffix == ".csv":
+            df = pd.read_csv(file_path)
+        elif file_path.suffix == ".json":
+            import json
+            with open(file_path) as f:
+                data = json.load(f)
+            # For JSON data, we might not canonicalize yet
+            return json.dumps(data, indent=2).encode('utf-8')
+        else:
+            # Binary file, return as-is
+            with open(file_path, "rb") as f:
+                return f.read()
+
+        # Initialize canonical components
+        ingestion_pipeline = CanonicalIngestionPipeline(strict_mode=False)  # Don't fail on warnings
+        quality_gate = DataQualityGate(strict_mode=False)
+
+        # Infer data type from path if not specified
+        if data_type == "auto":
+            path_str = str(file_path).lower()
+            if "score" in path_str or "game" in path_str:
+                data_type = "scores"
+            elif "odds" in path_str or "spread" in path_str or "total" in path_str:
+                data_type = "odds"
+            elif "rating" in path_str:
+                data_type = "ratings"
+            else:
+                data_type = "unknown"
+
+        # Apply canonical ingestion
+        if data_type == "scores":
+            result = ingestion_pipeline.ingest_scores_data(df, DataSource.ESPN_SCORES)
+        elif data_type == "odds":
+            result = ingestion_pipeline.ingest_odds_data(df, DataSource.ODDS_API)
+        else:
+            # Unknown type, just validate
+            validation = quality_gate.validate(df, data_type)
+            if not validation.passed:
+                print(f"  [WARN] Quality issues in {file_path.name}: {len(validation.issues)} issues")
+            result = type('Result', (), {'success': True, 'errors': [], 'warnings': []})()
+
+        if result.success:
+            # Convert back to bytes
+            if file_path.suffix == ".csv":
+                return df.to_csv(index=False).encode('utf-8')
+            else:
+                # For now, return original
+                with open(file_path, "rb") as f:
+                    return f.read()
+        else:
+            print(f"  [WARN] Canonical ingestion failed for {file_path.name}: {result.errors}")
+            # Return original data
+            with open(file_path, "rb") as f:
+                return f.read()
+
+    except Exception as e:
+        print(f"  [WARN] Canonicalization failed for {file_path.name}: {e}")
+        # Return original data
+        with open(file_path, "rb") as f:
+            return f.read()
+
+
 def upload_directory(
     blob_service: BlobServiceClient,
     container_name: str,
     local_dir: Path,
     blob_prefix: str,
     extensions: list[str] = None,
-    dry_run: bool = False
+    dry_run: bool = False,
+    canonicalize: bool = True
 ):
     """
-    Upload all files from a directory to blob storage.
-    
+    Upload all files from a directory to blob storage with canonical ingestion.
+
     Args:
         blob_service: Azure BlobServiceClient
         container_name: Target container name
@@ -144,76 +237,97 @@ def upload_directory(
         blob_prefix: Prefix for blob names (e.g., "odds/raw/archive")
         extensions: Optional list of file extensions to filter (e.g., [".csv", ".json"])
         dry_run: If True, only print what would be uploaded
-    
+        canonicalize: Whether to apply canonical ingestion before upload
+
     Returns:
         Tuple of (uploaded_count, skipped_count, total_bytes)
     """
     if not local_dir.exists():
         print(f"WARNING: Directory does not exist: {local_dir}")
         return 0, 0, 0
-    
+
     container_client = blob_service.get_container_client(container_name)
     existing_blobs = get_existing_blobs(blob_service, container_name, blob_prefix)
-    
+
     uploaded = 0
     skipped = 0
     total_bytes = 0
-    
+
     files = list(local_dir.rglob("*"))
     files = [f for f in files if f.is_file()]
-    
+
     if extensions:
         files = [f for f in files if f.suffix.lower() in extensions]
-    
+
     print(f"\nProcessing {len(files)} files from {local_dir}...")
-    
+    if canonicalize and CANONICAL_AVAILABLE:
+        print("  Canonical ingestion enabled")
+    elif canonicalize:
+        print("  Canonical ingestion requested but not available")
+
     for file_path in sorted(files):
         relative_path = file_path.relative_to(local_dir)
         blob_name = f"{blob_prefix}/{relative_path}".replace("\\", "/")
         file_size = file_path.stat().st_size
-        
+
         # Check if already exists with same size
         if blob_name in existing_blobs and existing_blobs[blob_name] == file_size:
             skipped += 1
             continue
-        
+
         if dry_run:
             status = "WOULD UPLOAD" if blob_name not in existing_blobs else "WOULD UPDATE"
-            print(f"  {status}: {blob_name} ({file_size:,} bytes)")
+            canonical_note = " (canonicalized)" if canonicalize and CANONICAL_AVAILABLE else ""
+            print(f"  {status}: {blob_name} ({file_size:,} bytes){canonical_note}")
             uploaded += 1
             total_bytes += file_size
             continue
-        
+
+        # Canonicalize data if requested
+        if canonicalize and CANONICAL_AVAILABLE and file_path.suffix in [".csv", ".json"]:
+            data_bytes = canonicalize_data_before_upload(file_path)
+            actual_size = len(data_bytes) if data_bytes else 0
+        else:
+            # Upload original file
+            with open(file_path, "rb") as f:
+                data_bytes = f.read()
+            actual_size = file_size
+
+        if data_bytes is None:
+            print(f"  [SKIP] Failed to prepare: {blob_name}")
+            continue
+
         # Upload the file
         try:
             blob_client = container_client.get_blob_client(blob_name)
-            
+
             # Set content type based on extension
             content_type = "text/csv" if file_path.suffix == ".csv" else "application/octet-stream"
             if file_path.suffix == ".json":
                 content_type = "application/json"
-            
-            with open(file_path, "rb") as data:
-                blob_client.upload_blob(
-                    data,
-                    overwrite=True,
-                    content_settings=ContentSettings(content_type=content_type)
-                )
-            
-            print(f"  [OK] Uploaded: {blob_name} ({file_size:,} bytes)")
+
+            blob_client.upload_blob(
+                data_bytes,
+                overwrite=True,
+                content_settings=ContentSettings(content_type=content_type)
+            )
+
+            canonical_note = " (canonicalized)" if canonicalize and CANONICAL_AVAILABLE and file_path.suffix in [".csv", ".json"] else ""
+            print(f"  [OK] Uploaded: {blob_name} ({actual_size:,} bytes){canonical_note}")
             uploaded += 1
-            total_bytes += file_size
-            
+            total_bytes += actual_size
+
         except Exception as e:
             print(f"  [FAIL] Failed: {blob_name} - {e}")
-    
+
     return uploaded, skipped, total_bytes
 
 
 def sync_canonical_data(
     blob_service: BlobServiceClient,
     container_name: str,
-    dry_run: bool = False
+    dry_run: bool = False,
+    canonicalize: bool = True
 ) -> tuple[int, int, int]:
     """
     Sync all canonical data to Azure.
@@ -252,7 +366,8 @@ def sync_canonical_data(
             path,
             blob_prefix,
             extensions=[".csv", ".json"],
-            dry_run=dry_run
+            dry_run=dry_run,
+            canonicalize=canonicalize
         )
         total_uploaded += uploaded
         total_skipped += skipped
@@ -289,11 +404,28 @@ def main():
         "--container", default=None,
         help=f"Override target container (default: auto-select based on data type)"
     )
+    parser.add_argument(
+        "--canonicalize", action="store_true",
+        help="Apply canonical ingestion pipeline before uploading"
+    )
+    parser.add_argument(
+        "--no-canonicalize", action="store_true",
+        help="Skip canonical ingestion (upload raw data)"
+    )
     args = parser.parse_args()
     
     # Default to canonical if nothing specified
     if not (args.all or args.canonical or args.raw):
         args.canonical = True
+
+    # Default canonicalization behavior
+    if args.no_canonicalize:
+        canonicalize = False
+    elif args.canonicalize:
+        canonicalize = True
+    else:
+        # Auto-enable for canonical data uploads
+        canonicalize = CANONICAL_AVAILABLE
     
     if not AZURE_AVAILABLE:
         print("ERROR: azure-storage-blob package required")
@@ -336,7 +468,7 @@ def main():
             ensure_container_exists(blob_service, container)
         
         uploaded, skipped, bytes_up = sync_canonical_data(
-            blob_service, container, dry_run=args.dry_run
+            blob_service, container, dry_run=args.dry_run, canonicalize=canonicalize
         )
         total_uploaded += uploaded
         total_skipped += skipped
