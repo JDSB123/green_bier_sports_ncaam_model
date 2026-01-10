@@ -280,8 +280,17 @@ class SchemaEvolutionManager:
             Quality standards dictionary
         """
         if isinstance(vintage, str):
-            # Try to find schema by version
-            if vintage in self._schemas:
+            # Check if it's a vintage name
+            vintage_map = {
+                'legacy': DataVintage.LEGACY,
+                'transitional': DataVintage.TRANSITIONAL,
+                'modern': DataVintage.MODERN,
+                'canonical': DataVintage.CANONICAL
+            }
+            if vintage in vintage_map:
+                vintage = vintage_map[vintage]
+            elif vintage in self._schemas:
+                # It's a schema version
                 return self._schemas[vintage].quality_standards
             else:
                 # Try to infer vintage from version
