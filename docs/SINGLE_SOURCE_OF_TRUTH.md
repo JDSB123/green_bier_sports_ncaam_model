@@ -1,7 +1,54 @@
 # SINGLE SOURCE OF TRUTH - NCAAM Data & Configuration
 
 **Last Updated:** January 10, 2026
-**Version:** 1.0
+**Document Version:** 1.0
+**Application Version:** v34.0.0
+
+---
+
+## Version Control
+
+### Current Release: v34.0.0
+
+| Component | Version | Location |
+|-----------|---------|----------|
+| Application | 34.0.0 | `VERSION` file (root) |
+| Docker Image | v34.0.0 | `ghcr.io/jdsb123/ncaam-prediction-service:v34.0.0` |
+| Git Tag | v34.0.0 | `git checkout v34.0.0` |
+
+### Versioning Strategy
+
+- **Semantic Versioning:** `MAJOR.MINOR.PATCH`
+  - MAJOR: Breaking changes to prediction logic or data schema
+  - MINOR: New features, model improvements
+  - PATCH: Bug fixes, documentation updates
+- **Single Source:** `VERSION` file at repo root
+- **Auto-propagation:** App reads from VERSION file at runtime
+
+### Creating a New Release
+
+```powershell
+# 1. Update VERSION file
+echo "34.1.0" > VERSION
+
+# 2. Commit the change
+git add VERSION
+git commit -m "chore: bump version to 34.1.0"
+
+# 3. Create annotated tag
+git tag -a v34.1.0 -m "v34.1.0 - Description of changes"
+
+# 4. Push commit and tag
+git push origin main
+git push origin v34.1.0
+```
+
+### Tag History
+
+View all releases:
+```powershell
+git tag -l --sort=-v:refname
+```
 
 ---
 
