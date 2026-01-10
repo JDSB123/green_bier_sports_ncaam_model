@@ -1,20 +1,26 @@
 # SINGLE SOURCE OF TRUTH - NCAAM Data & Configuration
 
 **Last Updated:** January 10, 2026
-**Document Version:** 1.0
-**Application Version:** v34.0.0
+**Document Version:** 1.1
+**Application Version:** v34.1.0
 
 ---
 
 ## Version Control
 
-### Current Release: v34.0.0
+### Current Release: v34.1.0
 
 | Component | Version | Location |
 |-----------|---------|----------|
-| Application | 34.0.0 | `VERSION` file (root) |
-| Docker Image | v34.0.0 | `ghcr.io/jdsb123/ncaam-prediction-service:v34.0.0` |
-| Git Tag | v34.0.0 | `git checkout v34.0.0` |
+| Application | 34.1.0 | `VERSION` file (root) |
+| Docker Image | v34.1.0 | `ghcr.io/jdsb123/ncaam-prediction-service:v34.1.0` |
+| Git Tag | v34.1.0 | `git checkout v34.1.0` |
+
+### v34.1.0 Features
+- All Barttorvik endpoints integrated (22 fields)
+- ncaahoopR box score features (23,891 game-level)
+- Conference strength analysis
+- Enhanced backtest_master_enhanced.csv (83 columns)
 
 ### Versioning Strategy
 
