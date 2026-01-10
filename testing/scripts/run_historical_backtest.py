@@ -147,6 +147,45 @@ class NCAAMPredictor:
         # Cap adjustment to prevent extreme values
         return max(-5.0, min(5.0, adjustment))
 
+    def _calculate_advanced_adjustment(
+        self,
+        # Conference strength
+        conf_strength_diff: float = None,
+        # Box score rolling features
+        home_team_depth_rolling: float = None,
+        away_team_depth_rolling: float = None,
+        home_ast_to_ratio_rolling: float = None,
+        away_ast_to_ratio_rolling: float = None,
+    ) -> float:
+        """
+        Calculate advanced adjustment from conference strength and box score features.
+
+        Returns adjustment in points. Positive = favors home team.
+        """
+        adjustment = 0.0
+
+        # Conference strength adjustment
+        # Stronger conference teams tend to perform better
+        if conf_strength_diff is not None and not pd.isna(conf_strength_diff):
+            # Scale: 0.1 barthag diff ~ 1 point (conservative)
+            adjustment += conf_strength_diff * 10.0
+
+        # Team depth adjustment
+        # Deeper teams (more balanced scoring) tend to be more consistent
+        if (home_team_depth_rolling is not None and away_team_depth_rolling is not None and
+            not pd.isna(home_team_depth_rolling) and not pd.isna(away_team_depth_rolling)):
+            depth_diff = home_team_depth_rolling - away_team_depth_rolling
+            adjustment += depth_diff * 0.25  # ~0.25 pts per player
+
+        # Assist-to-turnover ratio (ball security)
+        if (home_ast_to_ratio_rolling is not None and away_ast_to_ratio_rolling is not None and
+            not pd.isna(home_ast_to_ratio_rolling) and not pd.isna(away_ast_to_ratio_rolling)):
+            ast_to_diff = home_ast_to_ratio_rolling - away_ast_to_ratio_rolling
+            adjustment += ast_to_diff * 0.4
+
+        # Cap adjustment
+        return max(-3.0, min(3.0, adjustment))
+
     def predict_spread(
         self,
         home_adj_o: float,
@@ -158,7 +197,13 @@ class NCAAMPredictor:
         home_efg: float = None, home_efgd: float = None, home_tor: float = None,
         home_orb: float = None, home_drb: float = None, home_ftr: float = None,
         away_efg: float = None, away_efgd: float = None, away_tor: float = None,
-        away_orb: float = None, away_drb: float = None, away_ftr: float = None
+        away_orb: float = None, away_drb: float = None, away_ftr: float = None,
+        # Advanced features (conference + box scores)
+        conf_strength_diff: float = None,
+        home_team_depth_rolling: float = None,
+        away_team_depth_rolling: float = None,
+        home_ast_to_ratio_rolling: float = None,
+        away_ast_to_ratio_rolling: float = None,
     ) -> float:
         """Predict spread (home perspective, negative = home favored)."""
         home_net = home_adj_o - home_adj_d
@@ -173,7 +218,14 @@ class NCAAMPredictor:
             away_efg, away_efgd, away_tor, away_orb, away_drb, away_ftr
         )
 
-        return -(raw_margin + hca + ff_adj)  # Negative = home favored
+        # Advanced adjustment (conference strength + box score features)
+        adv_adj = self._calculate_advanced_adjustment(
+            conf_strength_diff,
+            home_team_depth_rolling, away_team_depth_rolling,
+            home_ast_to_ratio_rolling, away_ast_to_ratio_rolling
+        )
+
+        return -(raw_margin + hca + ff_adj + adv_adj)  # Negative = home favored
 
     def predict_total(
         self,
@@ -262,15 +314,23 @@ class NCAAMPredictor:
 
 
 def load_backtest_data() -> pd.DataFrame:
-    """Load the master backtest dataset."""
-    path = DATA_DIR / "backtest_master.csv"
-    if not path.exists():
+    """Load the master backtest dataset (enhanced if available)."""
+    # Prefer enhanced dataset with advanced features
+    enhanced_path = DATA_DIR / "backtest_master_enhanced.csv"
+    base_path = DATA_DIR / "backtest_master.csv"
+
+    if enhanced_path.exists():
+        print(f"[INFO] Loading enhanced dataset with advanced features")
+        df = pd.read_csv(enhanced_path)
+    elif base_path.exists():
+        print(f"[INFO] Loading base dataset (run extract_advanced_features.py for enhanced)")
+        df = pd.read_csv(base_path)
+    else:
         raise FileNotFoundError(
-            f"Backtest data not found at {path}\n"
+            f"Backtest data not found at {base_path}\n"
             "Run: python testing/scripts/build_backtest_dataset.py"
         )
-    
-    df = pd.read_csv(path)
+
     df["game_date"] = pd.to_datetime(df["game_date"])
     return df
 
@@ -384,18 +444,27 @@ def run_backtest(config: BacktestConfig) -> BacktestSummary:
             "away_ftr": row.get("away_ftr"),
         }
 
+        # Advanced features (conference + box scores)
+        advanced = {
+            "conf_strength_diff": row.get("conf_strength_diff"),
+            "home_team_depth_rolling": row.get("home_team_depth_rolling"),
+            "away_team_depth_rolling": row.get("away_team_depth_rolling"),
+            "home_ast_to_ratio_rolling": row.get("home_ast_to_ratio_rolling"),
+            "away_ast_to_ratio_rolling": row.get("away_ast_to_ratio_rolling"),
+        }
+
         # Shooting tendencies
         shooting = {
             "home_three_pt_rate": row.get("home_three_pt_rate"),
             "away_three_pt_rate": row.get("away_three_pt_rate"),
         }
 
-        # Generate prediction with Four Factors
+        # Generate prediction with all features
         if config.market == MarketType.FG_SPREAD:
             predicted = predictor.predict_spread(
                 row["home_adj_o"], row["home_adj_d"],
                 row["away_adj_o"], row["away_adj_d"],
-                **four_factors
+                **four_factors, **advanced
             )
         elif config.market == MarketType.FG_TOTAL:
             predicted = predictor.predict_total(
@@ -407,7 +476,7 @@ def run_backtest(config: BacktestConfig) -> BacktestSummary:
             predicted = predictor.predict_h1_spread(
                 row["home_adj_o"], row["home_adj_d"],
                 row["away_adj_o"], row["away_adj_d"],
-                **four_factors
+                **four_factors, **advanced
             )
         else:  # H1_TOTAL
             predicted = predictor.predict_h1_total(
