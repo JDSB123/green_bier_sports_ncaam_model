@@ -368,7 +368,7 @@ resource kvSecretStorageConnectionInternal 'Microsoft.KeyVault/vaults/secrets@20
   parent: keyVault
   name: 'storage-connection-string'
   properties: {
-    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${az.environment().suffixes.storage}'
     contentType: 'text/plain'
   }
 }
@@ -456,7 +456,7 @@ resource predictionApp 'Microsoft.App/containerApps@2023-05-01' = {
         ] : [
           {
             name: 'storage-connection-string'
-            value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+            value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${az.environment().suffixes.storage}'
           }
         ],
         (basketballApiKey != '') ? [
