@@ -84,11 +84,11 @@ def ensure_container_exists(blob_service: BlobServiceClient, container_name: str
     container_client = blob_service.get_container_client(container_name)
     try:
         container_client.get_container_properties()
-        print(f"✓ Container '{container_name}' exists")
+        print(f"[OK] Container '{container_name}' exists")
     except Exception:
         print(f"Creating container '{container_name}'...")
         container_client.create_container()
-        print(f"✓ Container '{container_name}' created")
+        print(f"[OK] Container '{container_name}' created")
 
 
 def get_existing_blobs(blob_service: BlobServiceClient, container_name: str, prefix: str = ""):
@@ -177,12 +177,12 @@ def upload_directory(
                     content_settings=ContentSettings(content_type=content_type)
                 )
             
-            print(f"  ✓ Uploaded: {blob_name} ({file_size:,} bytes)")
+            print(f"  [OK] Uploaded: {blob_name} ({file_size:,} bytes)")
             uploaded += 1
             total_bytes += file_size
             
         except Exception as e:
-            print(f"  ✗ Failed: {blob_name} - {e}")
+            print(f"  [FAIL] Failed: {blob_name} - {e}")
     
     return uploaded, skipped, total_bytes
 
@@ -205,7 +205,7 @@ def main():
         sys.exit(1)
     
     print("=" * 60)
-    print("NCAAM Historical Data → Azure Blob Storage Sync")
+    print("NCAAM Historical Data -> Azure Blob Storage Sync")
     print("=" * 60)
     print(f"Storage Account: {STORAGE_ACCOUNT}")
     print(f"Container: {args.container}")
@@ -224,9 +224,9 @@ def main():
     total_bytes = 0
     
     # Upload raw odds archive
-    print("\n" + "─" * 40)
+    print("\n" + "-" * 40)
     print("UPLOADING: Raw Odds Archive")
-    print("─" * 40)
+    print("-" * 40)
     uploaded, skipped, bytes_up = upload_directory(
         blob_service,
         args.container,
@@ -241,9 +241,9 @@ def main():
     
     # Optionally upload ncaahoopR data
     if args.include_ncaahoopR:
-        print("\n" + "─" * 40)
+        print("\n" + "-" * 40)
         print("UPLOADING: ncaahoopR Play-by-Play Data")
-        print("─" * 40)
+        print("-" * 40)
         uploaded, skipped, bytes_up = upload_directory(
             blob_service,
             args.container,
@@ -264,7 +264,7 @@ def main():
     print(f"Total bytes: {total_bytes:,}")
     
     if args.dry_run:
-        print("\n⚠️  DRY RUN - No files were actually uploaded")
+        print("\n[WARNING]  DRY RUN - No files were actually uploaded")
         print("Run without --dry-run to perform the upload")
 
 

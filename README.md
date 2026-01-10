@@ -100,9 +100,14 @@ That's it. One command. Everything runs inside the container.
 
 ## Data Sources
 
+**IMPORTANT:** Before working with historical data, read [`docs/SINGLE_SOURCE_OF_TRUTH.md`](docs/SINGLE_SOURCE_OF_TRUTH.md) - this establishes canonical data sources and prevents data inconsistencies.
+
 - **Bart Torvik API:** Team efficiency ratings and Four Factors metrics
   - For complete field reference, see [`docs/BARTTORVIK_FIELDS.md`](docs/BARTTORVIK_FIELDS.md)
 - **The Odds API:** Live betting odds for edge calculation
+- **Historical Data:** `ncaam_historical_data_local/` (git submodule)
+  - Canonical scores, odds, and ratings for backtesting
+  - See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for details
 
 ## Container Status
 
