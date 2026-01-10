@@ -1,7 +1,7 @@
 # NCAAM Data Sources - Single Source of Truth
 
-**Last Updated:** January 9, 2026
-**Version:** 1.0
+**Last Updated:** January 10, 2026
+**Version:** 2.0
 
 ---
 
@@ -65,16 +65,32 @@ This is the **only file** you should use for odds data. It contains:
 
 | File | Games | Description |
 |------|------:|-------------|
-| `canonicalized/scores/fg/games_all_canonical.csv` | 7,197 | Full-game scores |
+| `scores/fg/games_all.csv` | 11,763 | Full-game scores (PRIMARY) |
+| `canonicalized/scores/fg/games_all_canonical.csv` | 7,197 | Full-game scores (legacy) |
 | `canonicalized/scores/h1/h1_games_all_canonical.csv` | 7,221 | First-half scores |
+
+### Backtest Master (SINGLE SOURCE FOR BACKTESTING)
+
+**File:** `backtest_datasets/backtest_master.csv`
+
+| Metric | Coverage | Note |
+|--------|---------|------|
+| Total Games | 11,763 | 2023-11-06 to 2025-04-08 |
+| FG Spread | 10,323 (87.8%) | With actual prices |
+| FG Total | 10,321 (87.7%) | With actual prices |
+| H1 Spread | 10,261 (87.2%) | With actual prices |
+| H1 Total | 10,261 (87.2%) | With actual prices |
+| Ratings | 9,389 (79.8%) | Barttorvik |
+
+**Build Command:** `python testing/scripts/build_backtest_dataset.py`
 
 ### Barttorvik Ratings
 
-**File:** `backtest_datasets/barttorvik_ratings.csv`
+**File:** `backtest_datasets/barttorvik_ratings.csv` (cached)
 
 | Seasons | Teams | Note |
 |---------|------:|------|
-| 2024, 2025 | 726 | **NEEDS EXPANSION** to 2021-2023 |
+| 2023, 2024, 2025 | ~1,089 | Auto-fetched during build |
 
 ---
 
@@ -139,7 +155,23 @@ For a complete inventory of available data, see:
 
 | Script | Purpose |
 |--------|---------|
-| `testing/scripts/backtest_all_markets.py` | **Master backtest** - All 6 markets with ACTUAL prices |
-| `testing/scripts/fetch_historical_odds.py` | Fetch odds from The Odds API |
-| `testing/scripts/canonicalize_historical_odds.py` | Process raw odds into canonical format |
+| `testing/scripts/build_backtest_dataset.py` | **Build master dataset** - Merges scores, odds, ratings |
+| `testing/scripts/run_historical_backtest.py` | **Run backtests** - Against actual outcomes |
+| `testing/scripts/backtest_all_markets.py` | Legacy backtest - All 6 markets with ACTUAL prices |
+| `testing/scripts/audit_data_sources.py` | Quick data availability audit |
 | `scripts/sync_raw_data_to_azure.py` | Sync local data to Azure |
+
+## Data Workflow
+
+```
+1. Raw Data (scores, odds) in ncaam_historical_data_local/
+                |
+                v
+2. build_backtest_dataset.py merges into backtest_master.csv
+                |
+                v
+3. run_historical_backtest.py runs backtests against outcomes
+                |
+                v
+4. CI/CD validates ROI > -5%, Win Rate > 48%
+```

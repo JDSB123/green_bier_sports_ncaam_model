@@ -82,40 +82,53 @@ def get_season(date_val) -> int:
 
 
 def load_games() -> pd.DataFrame:
-    """Load games/scores data from all available season files."""
+    """Load games/scores data - prefer games_all.csv for comprehensive coverage."""
     scores_dir = DATA / "scores" / "fg"
-    
+
     if not scores_dir.exists():
         print(f"[ERROR] Scores directory not found: {scores_dir}")
         sys.exit(1)
-    
-    # Load all season files (games_2019.csv through games_2026.csv)
-    all_games = []
-    
-    for year in range(2019, 2027):
-        season_file = scores_dir / f"games_{year}.csv"
-        if season_file.exists():
-            df = pd.read_csv(season_file)
-            # Standardize column names
-            if "date" in df.columns:
-                df = df.rename(columns={"date": "game_date"})
-            if "game_date" not in df.columns:
-                print(f"[WARN] No date column in {season_file.name}, skipping")
-                continue
-            
-            # Keep only essential columns
-            cols_to_keep = ["game_id", "game_date", "home_team", "away_team", "home_score", "away_score"]
-            cols_present = [c for c in cols_to_keep if c in df.columns]
-            df = df[cols_present].copy()
-            
-            all_games.append(df)
-            print(f"   Loaded {len(df):,} games from {season_file.name}")
-    
-    if not all_games:
-        print(f"[ERROR] No game files found")
-        sys.exit(1)
-    
-    games = pd.concat(all_games, ignore_index=True)
+
+    # PRIMARY: Use games_all.csv for comprehensive coverage
+    games_all_file = scores_dir / "games_all.csv"
+
+    if games_all_file.exists():
+        print(f"   Loading from {games_all_file.name} (primary source)...")
+        games = pd.read_csv(games_all_file)
+
+        # Standardize column names
+        if "date" in games.columns:
+            games = games.rename(columns={"date": "game_date"})
+
+        print(f"   Loaded {len(games):,} games from games_all.csv")
+    else:
+        # FALLBACK: Load from individual season files
+        print(f"   [WARN] games_all.csv not found, loading from season files...")
+        all_games = []
+
+        for year in range(2019, 2027):
+            season_file = scores_dir / f"games_{year}.csv"
+            if season_file.exists():
+                df = pd.read_csv(season_file)
+                if "date" in df.columns:
+                    df = df.rename(columns={"date": "game_date"})
+                if "game_date" not in df.columns:
+                    print(f"[WARN] No date column in {season_file.name}, skipping")
+                    continue
+                all_games.append(df)
+                print(f"   Loaded {len(df):,} games from {season_file.name}")
+
+        if not all_games:
+            print(f"[ERROR] No game files found")
+            sys.exit(1)
+
+        games = pd.concat(all_games, ignore_index=True)
+
+    # Keep only essential columns
+    cols_to_keep = ["game_id", "game_date", "home_team", "away_team", "home_score", "away_score"]
+    cols_present = [c for c in cols_to_keep if c in games.columns]
+    games = games[cols_present].copy()
+
     games["game_date"] = pd.to_datetime(games["game_date"])
     games["season"] = games["game_date"].apply(get_season)
     
@@ -156,6 +169,49 @@ def load_games() -> pd.DataFrame:
             games = games.drop(columns=[col])
     
     return games
+
+
+def load_h1_scores() -> pd.DataFrame:
+    """Load first-half scores for H1 backtest validation."""
+    h1_scores_file = DATA / "scores" / "h1" / "h1_games_all.csv"
+    h1_canonical_file = DATA / "canonicalized" / "scores" / "h1" / "h1_games_all_canonical.csv"
+
+    # Prefer canonical file if available
+    if h1_canonical_file.exists():
+        print(f"   Loading H1 scores from canonical file...")
+        h1 = pd.read_csv(h1_canonical_file)
+        # Use canonical team names if available
+        if "home_canonical" in h1.columns:
+            h1["home_team_canonical"] = h1["home_canonical"]
+            h1["away_team_canonical"] = h1["away_canonical"]
+        elif "home_team" in h1.columns:
+            h1["home_team_canonical"] = h1["home_team"].apply(resolve_team_name)
+            h1["away_team_canonical"] = h1["away_team"].apply(resolve_team_name)
+    elif h1_scores_file.exists():
+        print(f"   Loading H1 scores from raw file...")
+        h1 = pd.read_csv(h1_scores_file)
+        h1["home_team_canonical"] = h1["home_team"].apply(resolve_team_name)
+        h1["away_team_canonical"] = h1["away_team"].apply(resolve_team_name)
+    else:
+        print(f"   [WARN] No H1 scores file found")
+        return pd.DataFrame()
+
+    # Standardize date column
+    if "date" in h1.columns:
+        h1 = h1.rename(columns={"date": "game_date"})
+    h1["game_date"] = pd.to_datetime(h1["game_date"])
+
+    # Extract H1 score columns
+    h1_cols = ["game_date", "home_team_canonical", "away_team_canonical"]
+    if "home_h1" in h1.columns:
+        h1_cols.extend(["home_h1", "away_h1"])
+    elif "home_score_1h" in h1.columns:
+        h1 = h1.rename(columns={"home_score_1h": "home_h1", "away_score_1h": "away_h1"})
+        h1_cols.extend(["home_h1", "away_h1"])
+
+    h1 = h1[[c for c in h1_cols if c in h1.columns]].drop_duplicates()
+    print(f"[OK] Loaded {len(h1):,} H1 scores")
+    return h1
 
 
 def load_odds(market: str, period: str) -> pd.DataFrame:
@@ -398,7 +454,21 @@ def build_dataset(args) -> pd.DataFrame:
         games = games.rename(columns={"total": "h1_total", "total_books": "h1_total_books"})
         print(f"   H1 total coverage: {games['h1_total'].notna().sum():,}/{len(games):,}")
     print()
-    
+
+    # Step 3b: Load and merge H1 scores (for backtest validation)
+    print("--- Step 3b: Load First-Half Scores ---")
+    h1_scores = load_h1_scores()
+    if not h1_scores.empty and "home_h1" in h1_scores.columns:
+        games = games.merge(
+            h1_scores[["game_date", "home_team_canonical", "away_team_canonical", "home_h1", "away_h1"]],
+            on=["game_date", "home_team_canonical", "away_team_canonical"],
+            how="left"
+        )
+        print(f"   H1 scores coverage: {games['home_h1'].notna().sum():,}/{len(games):,}")
+    else:
+        print(f"   [WARN] No H1 scores available for merge")
+    print()
+
     # Step 4: Fetch and merge Barttorvik ratings
     print("--- Step 4: Fetch Barttorvik Ratings ---")
     seasons_needed = sorted(games["season"].unique())
@@ -425,8 +495,21 @@ def build_dataset(args) -> pd.DataFrame:
     if "fg_total" in games.columns:
         games["fg_total_diff"] = games["actual_total"] - games["fg_total"]
         games["fg_total_over"] = games["actual_total"] > games["fg_total"]
-    
-    print(f"   Added margin, total, and result columns")
+
+    # H1 results (if H1 scores available)
+    if "home_h1" in games.columns and "away_h1" in games.columns:
+        games["h1_actual_margin"] = games["home_h1"] - games["away_h1"]
+        games["h1_actual_total"] = games["home_h1"] + games["away_h1"]
+
+        if "h1_spread" in games.columns:
+            games["h1_spread_result"] = games["h1_actual_margin"] + games["h1_spread"]
+            games["h1_spread_covered"] = games["h1_spread_result"] > 0
+
+        if "h1_total" in games.columns:
+            games["h1_total_diff"] = games["h1_actual_total"] - games["h1_total"]
+            games["h1_total_over"] = games["h1_actual_total"] > games["h1_total"]
+
+    print(f"   Added margin, total, and result columns (FG + H1)")
     print()
     
     # Step 6: Save output
@@ -451,6 +534,7 @@ def build_dataset(args) -> pd.DataFrame:
             "fg_total": int(games["fg_total"].notna().sum()) if "fg_total" in games.columns else 0,
             "h1_spread": int(games["h1_spread"].notna().sum()) if "h1_spread" in games.columns else 0,
             "h1_total": int(games["h1_total"].notna().sum()) if "h1_total" in games.columns else 0,
+            "h1_scores": int(games["home_h1"].notna().sum()) if "home_h1" in games.columns else 0,
             "ratings": int((games["home_adj_o"].notna() & games["away_adj_o"].notna()).sum()) if "home_adj_o" in games.columns else 0,
         },
         "columns": list(games.columns),
