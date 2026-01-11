@@ -56,7 +56,7 @@ This document describes all validation gates in the prediction pipeline that ens
 ### Alias Sources
 | Source | Location | Aliases Count |
 |--------|----------|---------------|
-| Primary JSON | `ncaam_historical_data_local/backtest_datasets/team_aliases_db.json` | 1,706 |
+| Primary JSON | Azure Blob `backtest_datasets/team_aliases_db.json` | 1,706 |
 | PostgreSQL | `team_aliases` table + `resolve_team_name()` function | 950+ |
 | Legacy dict | `odds_sync.py` → `TEAM_NAME_ALIASES` | ~90 (redundant) |
 
@@ -252,4 +252,4 @@ if not result.is_valid:
 | `services/prediction-service-python/app/validation_gate.py` | Pre-prediction validation |
 | `services/prediction-service-python/validate_team_matching.py` | Full team matching validator |
 | `testing/scripts/ingestion_gate.py` | Batch data validation |
-| `ncaam_historical_data_local/backtest_datasets/team_aliases_db.json` | Alias database |
+| Azure Blob `backtest_datasets/team_aliases_db.json` | Alias database |

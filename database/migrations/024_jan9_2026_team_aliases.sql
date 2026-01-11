@@ -14,44 +14,40 @@
 -- Wisconsin - Green Bay aliases
 INSERT INTO team_aliases (team_id, alias, source, confidence)
 SELECT t.id, 'wisc green bay', 'the_odds_api', 1.0
-FROM teams t WHERE t.name = 'Green Bay'
+FROM teams t WHERE t.canonical_name = 'Green Bay'
 ON CONFLICT (alias, source) DO NOTHING;
 
 INSERT INTO team_aliases (team_id, alias, source, confidence)
 SELECT t.id, 'wisconsin green bay', 'the_odds_api', 1.0
-FROM teams t WHERE t.name = 'Green Bay'
+FROM teams t WHERE t.canonical_name = 'Green Bay'
 ON CONFLICT (alias, source) DO NOTHING;
 
 -- Wisconsin - Milwaukee aliases
 INSERT INTO team_aliases (team_id, alias, source, confidence)
 SELECT t.id, 'wisc milwaukee', 'the_odds_api', 1.0
-FROM teams t WHERE t.name = 'Milwaukee'
+FROM teams t WHERE t.canonical_name = 'Milwaukee'
 ON CONFLICT (alias, source) DO NOTHING;
 
 INSERT INTO team_aliases (team_id, alias, source, confidence)
 SELECT t.id, 'wisconsin milwaukee', 'the_odds_api', 1.0
-FROM teams t WHERE t.name = 'Milwaukee'
+FROM teams t WHERE t.canonical_name = 'Milwaukee'
 ON CONFLICT (alias, source) DO NOTHING;
 
 -- Cleveland State alias
 INSERT INTO team_aliases (team_id, alias, source, confidence)
 SELECT t.id, 'cleveland st', 'the_odds_api', 1.0
-FROM teams t WHERE t.name = 'Cleveland St.'
+FROM teams t WHERE t.canonical_name = 'Cleveland St.'
 ON CONFLICT (alias, source) DO NOTHING;
 
 -- Wright State alias
 INSERT INTO team_aliases (team_id, alias, source, confidence)
 SELECT t.id, 'wright st', 'the_odds_api', 1.0
-FROM teams t WHERE t.name = 'Wright St.'
+FROM teams t WHERE t.canonical_name = 'Wright St.'
 ON CONFLICT (alias, source) DO NOTHING;
 
 -- Colorado State alias  
 INSERT INTO team_aliases (team_id, alias, source, confidence)
 SELECT t.id, 'colorado st', 'the_odds_api', 1.0
-FROM teams t WHERE t.name = 'Colorado St.'
+FROM teams t WHERE t.canonical_name = 'Colorado St.'
 ON CONFLICT (alias, source) DO NOTHING;
 
--- Record migration
-INSERT INTO schema_migrations (version, description, applied_at)
-VALUES ('024', 'Add missing team aliases from Jan 9 2026 slate', NOW())
-ON CONFLICT (version) DO NOTHING;

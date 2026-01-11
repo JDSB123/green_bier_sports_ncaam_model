@@ -27,12 +27,9 @@ Usage:
 """
 
 import os
-import sys
 import io
 import json
-from pathlib import Path
-from typing import Optional, Iterator, Dict, List, Any, Union
-from functools import lru_cache
+from typing import Optional, Iterator, Dict, List, Any
 import warnings
 
 try:
@@ -77,17 +74,14 @@ class AzureDataReader:
     - Automatic canonicalization and quality validation
     - Schema evolution handling
     - Streaming support for large datasets
-    - Automatic caching for frequently accessed files
     """
 
     def __init__(
         self,
         container_name: str = DEFAULT_CONTAINER,
         connection_string: Optional[str] = None,
-        use_cache: bool = True,
-        cache_dir: Optional[Path] = None,
         enable_canonicalization: bool = True,
-        strict_mode: bool = False,
+        strict_mode: bool = True,
     ):
         """
         Initialize Azure data reader.
@@ -95,8 +89,6 @@ class AzureDataReader:
         Args:
             container_name: Azure blob container name
             connection_string: Optional connection string (auto-detected if not provided)
-            use_cache: Whether to cache small files locally
-            cache_dir: Directory for local cache (default: .azure_cache/)
             enable_canonicalization: Whether to apply canonical ingestion pipeline
             strict_mode: Whether to fail on canonicalization errors
         """
@@ -107,8 +99,6 @@ class AzureDataReader:
             )
 
         self.container_name = container_name
-        self.use_cache = use_cache
-        self.cache_dir = cache_dir or Path(__file__).parent.parent / ".azure_cache"
         self.enable_canonicalization = enable_canonicalization and CANONICAL_AVAILABLE
         self.strict_mode = strict_mode
 
@@ -134,11 +124,11 @@ class AzureDataReader:
     
     def _get_connection_string(self) -> str:
         """Get Azure connection string from environment or Azure CLI."""
-        # Try environment variable first
-        conn_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+        # Try canonical connection string first (historical data)
+        conn_str = os.getenv("AZURE_CANONICAL_CONNECTION_STRING")
         if conn_str:
             return conn_str
-        
+
         # Try Azure CLI
         import subprocess
         import shutil
@@ -147,7 +137,7 @@ class AzureDataReader:
         if not az_cmd:
             raise RuntimeError(
                 "Azure CLI not found. Either:\n"
-                "1. Set AZURE_STORAGE_CONNECTION_STRING environment variable\n"
+                "1. Set AZURE_CANONICAL_CONNECTION_STRING\n"
                 "2. Install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
             )
         
@@ -169,7 +159,7 @@ class AzureDataReader:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
                 f"Failed to get connection string via Azure CLI: {e}\n"
-                "Run 'az login' first or set AZURE_STORAGE_CONNECTION_STRING"
+                "Run 'az login' first or set AZURE_CANONICAL_CONNECTION_STRING"
             )
     
     @property
@@ -281,14 +271,11 @@ class AzureDataReader:
         if not PANDAS_AVAILABLE:
             raise ImportError("pandas required. Install with: pip install pandas")
 
-        # Check local cache first (for canonicalized data)
-        should_canonicalize = (apply_canonicalization if apply_canonicalization is not None
-                              else self.enable_canonicalization)
-
-        if self.use_cache and should_canonicalize:
-            cache_path = self._get_cache_path(f"canonical_{blob_path}")
-            if cache_path.exists():
-                return pd.read_csv(cache_path, **pandas_kwargs)
+        should_canonicalize = (
+            apply_canonicalization
+            if apply_canonicalization is not None
+            else self.enable_canonicalization
+        )
 
         # Read raw data from Azure
         content = self.read_bytes(blob_path)
@@ -297,14 +284,6 @@ class AzureDataReader:
         # Apply canonical ingestion pipeline if enabled
         if should_canonicalize and self._ingestion_pipeline:
             df = self._apply_canonical_ingestion(df, blob_path, data_type)
-
-        # Cache canonicalized data locally
-        if self.use_cache and should_canonicalize and len(content) < 50_000_000:  # < 50MB
-            canonical_cache_path = self._get_cache_path(f"canonical_{blob_path}")
-            df.to_csv(canonical_cache_path, index=False)
-        elif self.use_cache and not should_canonicalize and len(content) < 50_000_000:
-            # Cache raw data
-            self._cache_file(blob_path, content)
 
         return df
 
@@ -402,179 +381,129 @@ class AzureDataReader:
             chunksize=chunksize,
             **pandas_kwargs
         )
-    
-    def _get_cache_path(self, blob_path: str) -> Path:
-        """Get local cache path for a blob."""
-        return self.cache_dir / blob_path.replace("/", os.sep)
-    
-    def _cache_file(self, blob_path: str, content: bytes):
-        """Cache a file locally."""
-        cache_path = self._get_cache_path(blob_path)
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
-        cache_path.write_bytes(content)
-    
-    def clear_cache(self):
-        """Clear the local cache."""
-        if self.cache_dir.exists():
-            import shutil
-            shutil.rmtree(self.cache_dir)
-            print(f"Cleared cache: {self.cache_dir}")
 
+    def _normalize_tags(self, tags: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+        if not tags:
+            return None
+        normalized = {}
+        for key, value in tags.items():
+            if value is None:
+                continue
+            normalized[str(key)] = str(value)
+        return normalized or None
 
-class HybridDataReader:
-    """
-    Hybrid reader that tries local first, then falls back to Azure with canonical ingestion.
+    def set_blob_tags(self, blob_path: str, tags: Optional[Dict[str, str]]) -> None:
+        """Set Azure Blob Storage tags for an existing blob."""
+        normalized = self._normalize_tags(tags)
+        if not normalized:
+            return
+        blob_client = self.container.get_blob_client(blob_path)
+        blob_client.set_blob_tags(normalized)
 
-    This allows gradual migration to Azure while maintaining local compatibility.
-    All data goes through canonical ingestion pipeline for consistency.
-    """
-
-    def __init__(
+    def upload_bytes(
         self,
-        local_root: Optional[Path] = None,
-        azure_container: str = DEFAULT_CONTAINER,
-        prefer_azure: bool = False,
-        enable_canonicalization: bool = True
-    ):
-        """
-        Initialize hybrid reader.
+        blob_path: str,
+        content: bytes,
+        content_type: Optional[str] = None,
+        overwrite: bool = True,
+        tags: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Upload raw bytes to Azure Blob Storage."""
+        blob_client = self.container.get_blob_client(blob_path)
+        if content_type:
+            from azure.storage.blob import ContentSettings
+            blob_client.upload_blob(
+                content,
+                overwrite=overwrite,
+                content_settings=ContentSettings(content_type=content_type),
+            )
+        else:
+            blob_client.upload_blob(content, overwrite=overwrite)
+        self.set_blob_tags(blob_path, tags)
 
-        Args:
-            local_root: Local data directory (default: ncaam_historical_data_local/)
-            azure_container: Azure container name
-            prefer_azure: If True, try Azure first even if local exists
-            enable_canonicalization: Whether to apply canonical ingestion
-        """
-        self.local_root = local_root or (
-            Path(__file__).parent.parent / "ncaam_historical_data_local"
+    def upload_text(
+        self,
+        blob_path: str,
+        text: str,
+        encoding: str = "utf-8",
+        content_type: Optional[str] = None,
+        overwrite: bool = True,
+        tags: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Upload text content to Azure Blob Storage."""
+        data = text.encode(encoding)
+        self.upload_bytes(
+            blob_path,
+            data,
+            content_type=content_type,
+            overwrite=overwrite,
+            tags=tags,
         )
-        self.prefer_azure = prefer_azure
-        self.enable_canonicalization = enable_canonicalization
-        self._azure_reader: Optional[AzureDataReader] = None
-    
-    @property
-    def azure(self) -> AzureDataReader:
-        """Lazy-initialize Azure reader."""
-        if self._azure_reader is None:
-            self._azure_reader = AzureDataReader()
-        return self._azure_reader
-    
-    def read_csv(self, path: str, data_type: str = "auto", **kwargs) -> "pd.DataFrame":
-        """
-        Read CSV from local or Azure with canonical ingestion.
 
-        Args:
-            path: Relative path within data directory
-            data_type: Type of data for canonicalization
-            **kwargs: Additional pandas arguments
+    def write_json(
+        self,
+        blob_path: str,
+        payload: Any,
+        indent: int = 2,
+        sort_keys: bool = False,
+        overwrite: bool = True,
+        tags: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Serialize and upload JSON to Azure Blob Storage."""
+        text = json.dumps(payload, indent=indent, sort_keys=sort_keys)
+        self.upload_text(
+            blob_path,
+            text,
+            content_type="application/json",
+            overwrite=overwrite,
+            tags=tags,
+        )
 
-        Returns:
-            pandas DataFrame
-        """
-        local_path = self.local_root / path
-
-        if self.prefer_azure:
-            # Try Azure first
-            try:
-                return self.azure.read_csv(path, data_type=data_type,
-                                         apply_canonicalization=self.enable_canonicalization, **kwargs)
-            except Exception:
-                if local_path.exists():
-                    df = pd.read_csv(local_path, **kwargs)
-                    if self.enable_canonicalization:
-                        df = self._apply_local_canonicalization(df, path, data_type)
-                    return df
-                raise
-        else:
-            # Try local first
-            if local_path.exists():
-                df = pd.read_csv(local_path, **kwargs)
-                if self.enable_canonicalization:
-                    df = self._apply_local_canonicalization(df, path, data_type)
-                return df
-            return self.azure.read_csv(path, data_type=data_type,
-                                     apply_canonicalization=self.enable_canonicalization, **kwargs)
-
-    def _apply_local_canonicalization(self, df: "pd.DataFrame", path: str, data_type: str) -> "pd.DataFrame":
-        """Apply canonical ingestion to locally read data."""
-        if not CANONICAL_AVAILABLE:
-            return df
-
-        try:
-            # Import canonical components
-            from .canonical.ingestion_pipeline import CanonicalIngestionPipeline, DataSource
-            from .canonical.schema_evolution import SchemaEvolutionManager
-
-            # Apply schema evolution
-            schema_manager = SchemaEvolutionManager()
-            df = schema_manager.upgrade_schema(df, data_type=data_type)
-
-            # Apply basic canonical ingestion
-            pipeline = CanonicalIngestionPipeline(strict_mode=False)
-            if data_type in ["scores", "games"]:
-                result = pipeline.ingest_scores_data(df, DataSource.ESPN_SCORES)
-            elif data_type in ["odds"]:
-                result = pipeline.ingest_odds_data(df, DataSource.ODDS_API)
-            else:
-                return df  # No specific pipeline for this data type
-
-            return df  # Pipeline modifies in-place
-
-        except Exception as e:
-            print(f"Warning: Local canonical ingestion failed for {path}: {e}")
-            return df
-    
-    def read_json(self, path: str) -> Any:
-        """Read JSON from local or Azure."""
-        local_path = self.local_root / path
-        
-        if self.prefer_azure:
-            try:
-                return self.azure.read_json(path)
-            except Exception:
-                if local_path.exists():
-                    return json.loads(local_path.read_text())
-                raise
-        else:
-            if local_path.exists():
-                return json.loads(local_path.read_text())
-            return self.azure.read_json(path)
-
-
-# Singleton instances
-_azure_reader: Optional[AzureDataReader] = None
-_hybrid_reader: Optional[HybridDataReader] = None
-
-
-def get_azure_reader() -> AzureDataReader:
-    """Get the singleton Azure data reader."""
-    global _azure_reader
-    if _azure_reader is None:
-        _azure_reader = AzureDataReader()
-    return _azure_reader
-
-
-def get_hybrid_reader(prefer_azure: bool = False) -> HybridDataReader:
-    """Get the singleton hybrid data reader."""
-    global _hybrid_reader
-    if _hybrid_reader is None or _hybrid_reader.prefer_azure != prefer_azure:
-        _hybrid_reader = HybridDataReader(prefer_azure=prefer_azure)
-    return _hybrid_reader
-
-
+    def write_csv(
+        self,
+        blob_path: str,
+        df: "pd.DataFrame",
+        overwrite: bool = True,
+        tags: Optional[Dict[str, str]] = None,
+        **pandas_kwargs,
+    ) -> None:
+        """Serialize and upload a DataFrame as CSV to Azure Blob Storage."""
+        if not PANDAS_AVAILABLE:
+            raise ImportError("pandas required. Install with: pip install pandas")
+        output = io.StringIO()
+        if "index" not in pandas_kwargs:
+            pandas_kwargs["index"] = False
+        df.to_csv(output, **pandas_kwargs)
+        self.upload_text(
+            blob_path,
+            output.getvalue(),
+            content_type="text/csv",
+            overwrite=overwrite,
+            tags=tags,
+        )
     def read_canonical_scores(self, season: Optional[int] = None) -> "pd.DataFrame":
         """Read canonical scores data from Azure."""
         if season:
             return self.read_csv(f"scores/fg/games_{season}.csv", data_type="scores")
-        else:
-            return self.read_csv("scores/fg/games_all.csv", data_type="scores")
+        return self.read_csv("scores/fg/games_all.csv", data_type="scores")
 
     def read_canonical_odds(self, market: str = "fg_spread", season: Optional[int] = None) -> "pd.DataFrame":
         """Read canonical odds data from Azure."""
         if season:
-            return self.read_csv(f"odds/canonical/spreads/fg/spreads_fg_{season}.csv", data_type="odds")
-        else:
-            return self.read_csv("odds/normalized/odds_consolidated_canonical.csv", data_type="odds")
+            try:
+                df = self.read_csv(
+                    f"odds/canonical/spreads/fg/spreads_fg_{season}.csv",
+                    data_type="odds",
+                )
+            except FileNotFoundError:
+                df = self.read_csv(
+                    "odds/canonical/spreads/fg/spreads_fg_all.csv",
+                    data_type="odds",
+                )
+            if "season" in df.columns:
+                return df[df["season"] == season].copy()
+            return df
+        return self.read_csv("odds/normalized/odds_consolidated_canonical.csv", data_type="odds")
 
     def read_canonical_ratings(self, season: int) -> Dict:
         """Read canonical ratings data from Azure."""
@@ -595,8 +524,21 @@ def get_hybrid_reader(prefer_azure: bool = False) -> HybridDataReader:
                 return self.read_csv("backtest_datasets/backtest_master_enhanced.csv", data_type="backtest")
             except FileNotFoundError:
                 pass
-
         return self.read_csv("backtest_datasets/backtest_master.csv", data_type="backtest")
+
+
+# Singleton instances
+_azure_reader: Optional[AzureDataReader] = None
+
+
+def get_azure_reader() -> AzureDataReader:
+    """Get the singleton Azure data reader."""
+    global _azure_reader
+    if _azure_reader is None:
+        _azure_reader = AzureDataReader()
+    return _azure_reader
+
+
 
 
 # Convenience functions
@@ -628,13 +570,13 @@ def read_canonical_odds(market: str = "fg_spread", season: Optional[int] = None)
 
 def read_barttorvik_ratings(season: int) -> Dict:
     """Read Barttorvik ratings for a season from Azure."""
-    reader = get_hybrid_reader(prefer_azure=True)
+    reader = get_azure_reader()
     return reader.read_json(f"ratings/barttorvik/ratings_{season}.json")
 
 
 def read_team_aliases() -> Dict[str, str]:
     """Read team aliases database from Azure."""
-    reader = get_hybrid_reader(prefer_azure=True)
+    reader = get_azure_reader()
     return reader.read_json("backtest_datasets/team_aliases_db.json")
 
 
@@ -666,4 +608,4 @@ if __name__ == "__main__":
         print(f"\n[ERROR] {e}")
         print("\nMake sure to:")
         print("1. Run 'az login' to authenticate")
-        print("2. Or set AZURE_STORAGE_CONNECTION_STRING environment variable")
+        print("2. Or set AZURE_CANONICAL_CONNECTION_STRING")

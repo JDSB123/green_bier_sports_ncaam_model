@@ -2,7 +2,7 @@
 """
 Centralized team name canonicalization utility.
 
-SINGLE SOURCE OF TRUTH: ncaam_historical_data_local/backtest_datasets/team_aliases_db.json
+SINGLE SOURCE OF TRUTH: Azure Blob backtest_datasets/team_aliases_db.json
 
 All scripts should use this module for team name resolution to ensure
 consistent canonicalization across all ingestion, backtesting, and

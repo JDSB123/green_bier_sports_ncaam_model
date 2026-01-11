@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
@@ -58,6 +59,12 @@ type Config struct {
 	RunOnce      bool
 	BackfillFrom int // Optional: starting season year for backfill
 	BackfillTo   int // Optional: ending season year for backfill
+	// If true, unresolved teams are skipped (no auto-creation).
+	// Default: true (production-safe, matches Rust service behavior).
+	StrictTeamMatching bool
+	// If true, allow creating new teams when resolution fails.
+	// Default: false (prevents unrated/duplicate teams from name drift).
+	AllowTeamCreation bool
 }
 
 // RatingsSync handles fetching and storing ratings
@@ -565,26 +572,46 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, tx pgx.Tx, team Barttorkvi
 		return teamID, nil
 	}
 
-	// STEP 1: Try to resolve using database function (99.99% accuracy)
-	var resolvedCanonical string
+	// STEP 1: Deterministic DB-first resolution + audit
+	// Prefer log_team_resolution() when available (records attempts in team_resolution_audit).
+	var resolvedCanonical pgtype.Text
 	err = tx.QueryRow(ctx, `
-		SELECT resolve_team_name($1)
-	`, team.Team).Scan(&resolvedCanonical)
+		SELECT log_team_resolution($1, $2, $3)
+	`, team.Team, "barttorvik", "ratings_sync").Scan(&resolvedCanonical)
 
-	if err == nil && resolvedCanonical != "" {
-		// Found existing canonical name via alias resolution
+	// Fallback for older schemas without log_team_resolution()
+	if err != nil {
+		var rc pgtype.Text
+		if err2 := tx.QueryRow(ctx, `SELECT resolve_team_name($1)`, team.Team).Scan(&rc); err2 == nil && rc.Valid && rc.String != "" {
+			resolvedCanonical = rc
+		}
+		// Best-effort audit row (ignore errors if table/cols missing).
+		var resolvedForAudit any = nil
+		if resolvedCanonical.Valid && resolvedCanonical.String != "" {
+			resolvedForAudit = resolvedCanonical.String
+		}
+		_, _ = tx.Exec(ctx, `
+			INSERT INTO team_resolution_audit (input_name, resolved_name, source, context)
+			VALUES ($1, $2, 'barttorvik', 'ratings_sync')
+		`, team.Team, resolvedForAudit)
+	}
+
+	if resolvedCanonical.Valid && resolvedCanonical.String != "" {
+		// Found existing canonical name via resolver
 		err = tx.QueryRow(ctx, `
 			SELECT id FROM teams WHERE canonical_name = $1
-		`, resolvedCanonical).Scan(&teamID)
+		`, resolvedCanonical.String).Scan(&teamID)
 
 		if err == nil {
 			// Update barttorvik_name if not set
-			tx.Exec(ctx, `
-				UPDATE teams SET barttorvik_name = $1 WHERE id = $2 AND barttorvik_name IS NULL
+			_, _ = tx.Exec(ctx, `
+				UPDATE teams
+				SET barttorvik_name = $1
+				WHERE id = $2 AND barttorvik_name IS NULL
 			`, team.Team, teamID)
 
 			// Ensure alias exists
-			tx.Exec(ctx, `
+			_, _ = tx.Exec(ctx, `
 				INSERT INTO team_aliases (team_id, alias, source)
 				VALUES ($1, $2, 'barttorvik')
 				ON CONFLICT (alias, source) DO NOTHING
@@ -594,37 +621,28 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, tx pgx.Tx, team Barttorkvi
 		}
 	}
 
-	// STEP 2: Try canonical name (normalized) - fallback if resolve_team_name didn't work
-	// FIX: Log when falling back to local normalization (indicates missing alias in DB)
-	canonicalName := normalizeTeamName(team.Team)
-	r.logger.Warn("FALLBACK: resolve_team_name() missed, using local normalization",
-		zap.String("barttorvik_name", team.Team),
-		zap.String("normalized_to", canonicalName),
-	)
-	err = tx.QueryRow(ctx, `
-		SELECT id FROM teams WHERE canonical_name = $1
-	`, canonicalName).Scan(&teamID)
-
-	if err == nil {
-		// Update barttorvik_name if not set
-		tx.Exec(ctx, `
-			UPDATE teams SET barttorvik_name = $1 WHERE id = $2 AND barttorvik_name IS NULL
-		`, team.Team, teamID)
-
-		// Ensure alias exists
-		tx.Exec(ctx, `
-			INSERT INTO team_aliases (team_id, alias, source)
-			VALUES ($1, $2, 'barttorvik')
-			ON CONFLICT (alias, source) DO NOTHING
-		`, teamID, team.Team)
-
-		return teamID, nil
+	// Unresolved: quarantine unless creation is explicitly enabled.
+	if r.config.StrictTeamMatching || !r.config.AllowTeamCreation {
+		return "", fmt.Errorf("unresolved team (auto-create disabled): %s", team.Team)
 	}
 
-	// STEP 3: Team doesn't exist - create with normalized canonical name
+	// STEP 2 (opt-in): create new team using DB-normalized canonical name
+	canonicalName := ""
+	if err := tx.QueryRow(ctx, `SELECT normalize_team_name_input($1)`, team.Team).Scan(&canonicalName); err != nil {
+		// Fallback only if normalization function isn't present (older schema)
+		canonicalName = normalizeTeamName(team.Team)
+		r.logger.Warn("FALLBACK: normalize_team_name_input() unavailable, using local normalization",
+			zap.String("barttorvik_name", team.Team),
+			zap.String("normalized_to", canonicalName),
+		)
+	}
+
 	err = tx.QueryRow(ctx, `
 		INSERT INTO teams (canonical_name, barttorvik_name, conference)
 		VALUES ($1, $2, $3)
+		ON CONFLICT (canonical_name) DO UPDATE SET
+			barttorvik_name = COALESCE(teams.barttorvik_name, EXCLUDED.barttorvik_name),
+			conference = COALESCE(teams.conference, EXCLUDED.conference)
 		RETURNING id
 	`, canonicalName, team.Team, team.Conf).Scan(&teamID)
 
@@ -633,13 +651,13 @@ func (r *RatingsSync) ensureTeam(ctx context.Context, tx pgx.Tx, team Barttorkvi
 	}
 
 	// Also add barttorvik alias
-	tx.Exec(ctx, `
+	_, _ = tx.Exec(ctx, `
 		INSERT INTO team_aliases (team_id, alias, source)
 		VALUES ($1, $2, 'barttorvik')
 		ON CONFLICT (alias, source) DO NOTHING
 	`, teamID, team.Team)
 
-	r.logger.Info("Created new team", zap.String("team", team.Team), zap.String("id", teamID))
+	r.logger.Info("Created new team (opt-in)", zap.String("team", team.Team), zap.String("id", teamID))
 	return teamID, nil
 }
 
@@ -781,9 +799,12 @@ func main() {
 		// MANUAL-ONLY: Default to run once and exit (no cron automation)
 		// User triggers via run_today.py when they want fresh picks
 		// Case-insensitive check to match Rust service behavior
-		RunOnce:      strings.ToLower(os.Getenv("RUN_ONCE")) != "false", // Default true, only false if explicitly set
+		RunOnce: strings.ToLower(os.Getenv("RUN_ONCE")) != "false", // Default true
 		BackfillFrom: 0,
 		BackfillTo:   0,
+		// Team matching guardrails (aligned with Rust odds-ingestion service)
+		StrictTeamMatching: strings.ToLower(os.Getenv("STRICT_TEAM_MATCHING")) != "false", // Default true
+		AllowTeamCreation:  strings.ToLower(os.Getenv("ALLOW_TEAM_CREATION")) == "true",  // Default false
 	}
 
 	if config.DatabaseURL == "" {
@@ -799,7 +820,10 @@ func main() {
 
 	logger.Info("Starting Ratings Sync Service",
 		zap.Int("season", config.Season),
-		zap.Bool("run_once", config.RunOnce))
+		zap.Bool("run_once", config.RunOnce),
+		zap.Bool("strict_team_matching", config.StrictTeamMatching),
+		zap.Bool("allow_team_creation", config.AllowTeamCreation),
+	)
 
 	// Connect to database
 	ctx := context.Background()

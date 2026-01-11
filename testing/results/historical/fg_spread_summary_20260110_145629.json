@@ -1,0 +1,29 @@
+{
+  "market": "fg_spread",
+  "seasons": [
+    2023
+  ],
+  "total_games": 0,
+  "games_with_odds": 0,
+  "games_with_ratings": 0,
+  "total_bets": 0,
+  "wins": 0,
+  "losses": 0,
+  "pushes": 0,
+  "total_wagered": 0.0,
+  "total_profit": 0.0,
+  "roi": 0.0,
+  "win_rate": 0.0,
+  "avg_edge": 0.0,
+  "by_season": {
+    "2023": {
+      "bets": 0,
+      "wins": 0,
+      "losses": 0,
+      "profit": 0,
+      "roi": 0,
+      "win_rate": 0
+    }
+  },
+  "timestamp": "20260110_145629"
+}

@@ -380,9 +380,19 @@ class DataQualityGate:
 
         # Define key columns for duplicate detection
         key_columns = []
-        if "home_team" in df.columns and "away_team" in df.columns:
+        if "event_id" in df.columns:
+            key_columns = ["event_id"]
+            if "bookmaker" in df.columns:
+                key_columns.append("bookmaker")
+            if "market" in df.columns:
+                key_columns.append("market")
+            if "timestamp" in df.columns:
+                key_columns.append("timestamp")
+        elif "home_team" in df.columns and "away_team" in df.columns:
             key_columns = ["home_team", "away_team"]
-            if "date" in df.columns:
+            if "game_date" in df.columns:
+                key_columns.append("game_date")
+            elif "date" in df.columns:
                 key_columns.append("date")
 
         if key_columns:

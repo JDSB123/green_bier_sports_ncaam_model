@@ -28,6 +28,7 @@ Usage:
 
 import re
 import json
+import os
 from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
@@ -39,31 +40,35 @@ import logging
 CST = ZoneInfo("America/Chicago")
 UTC = timezone.utc
 
-# Load team aliases from the single source of truth
-# Try multiple locations depending on where we're running from
-def _find_aliases_file() -> Path:
-    """Find the team aliases file from various possible locations."""
-    possible_paths = [
-        # Running from repo root
-        Path("ncaam_historical_data_local/backtest_datasets/team_aliases_db.json"),
-        # Running from services/prediction-service-python
-        Path("../../ncaam_historical_data_local/backtest_datasets/team_aliases_db.json"),
-        # Absolute path based on this file's location
-        Path(__file__).resolve().parents[3] / "ncaam_historical_data_local" / "backtest_datasets" / "team_aliases_db.json",
-        # Another possible location (within service)
-        Path(__file__).resolve().parent.parent / "training_data" / "team_aliases_db.json",
-    ]
-    
-    for p in possible_paths:
-        resolved = p.resolve() if not p.is_absolute() else p
-        if resolved.exists():
-            return resolved
-            
-    # Default to the most likely location
-    return Path(__file__).resolve().parents[3] / "ncaam_historical_data_local" / "backtest_datasets" / "team_aliases_db.json"
+try:
+    from azure.storage.blob import BlobServiceClient
+    AZURE_AVAILABLE = True
+except ImportError:
+    AZURE_AVAILABLE = False
 
 ROOT_DIR = Path(__file__).resolve().parents[3]
-ALIASES_FILE = _find_aliases_file()
+
+
+def _load_aliases_from_azure() -> Dict[str, str]:
+    if not AZURE_AVAILABLE:
+        raise ImportError("azure-storage-blob is required to load aliases from Azure.")
+
+    conn_str = os.getenv("AZURE_CANONICAL_CONNECTION_STRING")
+    if not conn_str:
+        raise RuntimeError(
+            "AZURE_CANONICAL_CONNECTION_STRING is required to load team aliases from Azure."
+        )
+
+    container = os.getenv("AZURE_CANONICAL_CONTAINER", "ncaam-historical-data")
+    blob_path = os.getenv(
+        "TEAM_ALIASES_BLOB", "backtest_datasets/team_aliases_db.json"
+    )
+
+    service = BlobServiceClient.from_connection_string(conn_str)
+    container_client = service.get_container_client(container)
+    blob_client = container_client.get_blob_client(blob_path)
+    payload = blob_client.download_blob().readall()
+    return json.loads(payload.decode("utf-8"))
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -112,19 +117,28 @@ class ValidationResult:
 class TeamResolver:
     """Resolve team names using the master alias database."""
     
-    def __init__(self, aliases_file: Path = ALIASES_FILE):
+    def __init__(
+        self,
+        aliases: Optional[Dict[str, str]] = None,
+        aliases_file: Optional[Path] = None,
+    ):
         self.aliases: Dict[str, str] = {}
         self.canonical_names: set = set()
-        self._load_aliases(aliases_file)
+        if aliases is not None:
+            self._load_aliases_dict(aliases)
+        else:
+            self._load_aliases(aliases_file)
         
-    def _load_aliases(self, aliases_file: Path):
-        """Load aliases from JSON file."""
-        if not aliases_file.exists():
-            logger.warning(f"Aliases file not found: {aliases_file}")
-            return
-            
-        with open(aliases_file, 'r') as f:
-            self.aliases = json.load(f)
+    def _load_aliases(self, aliases_file: Optional[Path]):
+        """Load aliases from Azure blob storage."""
+        if aliases_file is not None:
+            raise RuntimeError(
+                "Local alias files are disabled. Use the Azure blob via TEAM_ALIASES_BLOB."
+            )
+        try:
+            self.aliases = _load_aliases_from_azure()
+        except Exception as exc:
+            raise RuntimeError(f"Aliases load failed: {exc}") from exc
             
         # Build set of canonical names
         self.canonical_names = set(self.aliases.values())
@@ -136,6 +150,13 @@ class TeamResolver:
                 
         logger.info(f"Loaded {len(self.aliases)} aliases → {len(self.canonical_names)} canonical teams")
         
+    def _load_aliases_dict(self, aliases: Dict[str, str]):
+        self.aliases = dict(aliases)
+        self.canonical_names = set(self.aliases.values())
+        for canonical in self.canonical_names:
+            if canonical.lower() not in self.aliases:
+                self.aliases[canonical.lower()] = canonical
+
     def resolve(self, name: str) -> Tuple[Optional[str], str]:
         """
         Resolve a team name to its canonical form.
@@ -185,8 +206,8 @@ class PrePredictionGate:
     5. Barttorvik ratings are fresh
     """
     
-    def __init__(self, db_connection=None, aliases_file: Path = ALIASES_FILE):
-        self.team_resolver = TeamResolver(aliases_file)
+    def __init__(self, db_connection=None, aliases_file: Optional[Path] = None):
+        self.team_resolver = TeamResolver(aliases_file=aliases_file)
         self.db = db_connection
         
     def validate_game(self, game: Dict[str, Any]) -> ValidationResult:

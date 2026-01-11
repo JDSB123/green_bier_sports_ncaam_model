@@ -134,7 +134,7 @@ services:
     # For local/dev execution without ACR auth, you can still run locally by building:
     #   docker compose build prediction-service
     # This will build the image locally with the same tag and run it from your machine.
-    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v34.1.0
+    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v34.0.0
     build:
       context: .
       dockerfile: services/prediction-service-python/Dockerfile
@@ -168,6 +168,12 @@ services:
       TEAM_MATCHING_LOOKBACK_DAYS: "7"
       MIN_TEAM_RESOLUTION_RATE: "0.95"
       MAX_UNRESOLVED_TEAM_VARIANTS: "1"
+      # Azure Blob Storage (canonical historical data - required)
+      AZURE_CANONICAL_CONNECTION_STRING: ${AZURE_CANONICAL_CONNECTION_STRING:-}
+      AZURE_CANONICAL_CONTAINER: ${AZURE_CANONICAL_CONTAINER:-ncaam-historical-data}
+      # Optional: Azure Blob Storage for pick history snapshots
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}
+      AZURE_STORAGE_CONTAINER: ${AZURE_STORAGE_CONTAINER:-picks-history}
     networks:
       - ncaam_v33_backend
       - ncaam_v33_data

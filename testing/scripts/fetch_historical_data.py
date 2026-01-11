@@ -16,12 +16,9 @@ Team Canonicalization:
 from __future__ import annotations
 
 import argparse
-import json
-import os
 import sys
 import time
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any
 
 try:
@@ -38,16 +35,10 @@ except ImportError:
     print("[ERROR] team_utils module required - must be in testing/scripts/")
     sys.exit(1)
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-HISTORICAL_ROOT = Path(
-    os.environ.get("HISTORICAL_DATA_ROOT", ROOT_DIR / "ncaam_historical_data_local")
-).resolve()
-SCORES_FG_DIR = Path(
-    os.environ.get("HISTORICAL_SCORES_FG_DIR", HISTORICAL_ROOT / "scores" / "fg")
-).resolve()
-RATINGS_DIR = Path(
-    os.environ.get("HISTORICAL_RATINGS_DIR", HISTORICAL_ROOT / "ratings" / "barttorvik")
-).resolve()
+from testing.azure_io import upload_text, write_json
+
+SCORES_FG_PREFIX = "scores/fg"
+RATINGS_PREFIX = "ratings/barttorvik"
 
 ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball"
 BARTTORVIK_BASE = "https://barttorvik.com"
@@ -242,30 +233,25 @@ def fetch_barttorvik_ratings(season: int) -> dict | None:
         return None
 
 
-def save_games_csv(games: list[dict], filepath: Path) -> None:
+def save_games_csv(games: list[dict], blob_path: str) -> None:
     """Save games to CSV format."""
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-
     headers = [
         "game_id", "date", "home_team", "home_abbr", "away_team", "away_abbr",
         "home_score", "away_score", "total", "spread_result", "venue", "neutral"
     ]
 
-    with filepath.open("w", encoding="utf-8") as f:
-        f.write(",".join(headers) + "\n")
-        for g in games:
-            row = [str(g.get(h, "")).replace(",", ";") for h in headers]
-            f.write(",".join(row) + "\n")
+    lines = [",".join(headers)]
+    for g in games:
+        row = [str(g.get(h, "")).replace(",", ";") for h in headers]
+        lines.append(",".join(row))
+    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv")
+    print(f"[INFO] Saved {len(games)} games to {blob_path}")
 
-    print(f"[INFO] Saved {len(games)} games to {filepath}")
 
-
-def save_games_json(games: list[dict], filepath: Path) -> None:
+def save_games_json(games: list[dict], blob_path: str) -> None:
     """Save games to JSON format."""
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    with filepath.open("w", encoding="utf-8") as f:
-        json.dump(games, f, indent=2)
-    print(f"[INFO] Saved {len(games)} games to {filepath}")
+    write_json(blob_path, games, indent=2)
+    print(f"[INFO] Saved {len(games)} games to {blob_path}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -285,16 +271,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format"
     )
     parser.add_argument(
-        "--output-dir",
+        "--scores-prefix",
         type=str,
-        default=str(SCORES_FG_DIR),
-        help="Output directory for full-game scores"
+        default=SCORES_FG_PREFIX,
+        help="Azure blob prefix for full-game scores"
     )
     parser.add_argument(
-        "--ratings-dir",
+        "--ratings-prefix",
         type=str,
-        default=str(RATINGS_DIR),
-        help="Output directory for Barttorvik ratings"
+        default=RATINGS_PREFIX,
+        help="Azure blob prefix for Barttorvik ratings"
     )
 
     args = parser.parse_args(argv)
@@ -306,15 +292,12 @@ def main(argv: list[str] | None = None) -> int:
     else:
         seasons = [int(args.seasons)]
 
-    output_dir = Path(args.output_dir)
-    ratings_dir = Path(args.ratings_dir)
-
     print("=" * 72)
     print(" Historical NCAAM Data Fetcher")
     print("=" * 72)
     print(f" Seasons: {seasons}")
-    print(f" Scores output: {output_dir}")
-    print(f" Ratings output: {ratings_dir}")
+    print(f" Scores output: {args.scores_prefix}")
+    print(f" Ratings output: {args.ratings_prefix}")
     print("=" * 72)
     print()
 
@@ -326,17 +309,15 @@ def main(argv: list[str] | None = None) -> int:
 
         # Save per-season files
         if args.format in ("csv", "both"):
-            save_games_csv(games, output_dir / f"games_{season}.csv")
+            save_games_csv(games, f"{args.scores_prefix}/games_{season}.csv")
         if args.format in ("json", "both"):
-            save_games_json(games, output_dir / f"games_{season}.json")
+            save_games_json(games, f"{args.scores_prefix}/games_{season}.json")
 
         # Fetch Barttorvik ratings
         ratings = fetch_barttorvik_ratings(season)
         if ratings:
-            ratings_dir.mkdir(parents=True, exist_ok=True)
-            ratings_path = ratings_dir / f"barttorvik_{season}.json"
-            with ratings_path.open("w", encoding="utf-8") as f:
-                json.dump(ratings, f, indent=2)
+            ratings_path = f"{args.ratings_prefix}/barttorvik_{season}.json"
+            write_json(ratings_path, ratings, indent=2)
             print(f"[INFO] Saved Barttorvik ratings to {ratings_path}")
 
         print()
@@ -344,9 +325,9 @@ def main(argv: list[str] | None = None) -> int:
     # Save combined file if multiple seasons
     if len(seasons) > 1:
         if args.format in ("csv", "both"):
-            save_games_csv(all_games, output_dir / "games_all.csv")
+            save_games_csv(all_games, f"{args.scores_prefix}/games_all.csv")
         if args.format in ("json", "both"):
-            save_games_json(all_games, output_dir / "games_all.json")
+            save_games_json(all_games, f"{args.scores_prefix}/games_all.json")
 
     print("=" * 72)
     print(f" SUCCESS: Downloaded {len(all_games)} games across {len(seasons)} season(s)")

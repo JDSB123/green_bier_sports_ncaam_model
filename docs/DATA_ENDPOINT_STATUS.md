@@ -10,7 +10,7 @@
 | Category | Count | Status |
 |----------|-------|--------|
 | Actively Used | 17 | ✅ |
-| Fallback/Cache | 16 | ✅ |
+| Legacy (Unused) | 16 | ✅ |
 | Partially Used | 2 | ⚠️ |
 | **NOT USED (MAJOR GAP)** | **332,357** | 🚨 |
 
@@ -43,7 +43,7 @@
 
 ---
 
-## ✅ Fallback/Cache (Available if needed)
+## ✅ Legacy (Azure-only, not used)
 
 | File | Purpose |
 |------|---------|
@@ -67,7 +67,7 @@
 
 ### ncaahoopR Dataset (332,357 files!)
 
-**Location**: `ncaam_historical_data_local/ncaahoopR_data-master/`
+**Azure Blob**: `ncaahoopR_data-master/`
 
 **Contents**:
 - **Box Scores**: ~12,000 per season (player-level stats per game)

@@ -28,14 +28,14 @@ This document defines the **single source of truth** for all data paths in the N
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                       TEAM RESOLUTION GATE                                   │
 │            testing/scripts/team_resolution_gate.py                           │
-│            Uses: ncaam_historical_data_local/backtest_datasets/              │
+│            Uses: backtest_datasets/              │
 │                  team_aliases_db.json (1,679 aliases)                        │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    LOCAL DATA REPOSITORY (Git Submodule)                     │
-│                     ncaam_historical_data_local/                             │
+│                    AZURE BLOB STORAGE (Canonical)                            │
+│                    Container: ncaam-historical-data                          │
 │  ├── scores/fg/games_all.csv           # Full-game scores                    │
 │  ├── scores/h1/h1_games_all.csv        # First-half scores                   │
 │  ├── odds/normalized/                  # Consolidated odds                   │
@@ -45,7 +45,7 @@ This document defines the **single source of truth** for all data paths in the N
 │  └── ncaahoopR_data-master/            # Box scores, PBP, schedules          │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
-                                      ▼ (Azure Blob sync)
+                                      ▼ (Direct access)
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         AZURE BLOB STORAGE                                   │
 │              Container: ncaam-historical-raw                                 │
@@ -90,15 +90,15 @@ This document defines the **single source of truth** for all data paths in the N
 
 | Script | Purpose | Data Source | Output Location |
 |--------|---------|-------------|-----------------|
-| `testing/scripts/fetch_historical_data.py` | Fetch scores + Barttorvik ratings | ESPN API, Barttorvik | `ncaam_historical_data_local/scores/`, `ratings/` |
-| `testing/scripts/fetch_historical_odds.py` | Fetch historical odds | The Odds API | `ncaam_historical_data_local/odds/` |
-| `testing/scripts/fetch_h1_data.py` | Extract first-half scores | Local full-game data | `ncaam_historical_data_local/scores/h1/` |
+| `testing/scripts/fetch_historical_data.py` | Fetch scores + Barttorvik ratings | ESPN API, Barttorvik | `scores/`, `ratings/` |
+| `testing/scripts/fetch_historical_odds.py` | Fetch historical odds | The Odds API | `odds/` |
+| `testing/scripts/fetch_h1_data.py` | Extract first-half scores | Azure scores + ESPN summary | `scores/h1/` |
 
 ### Team Resolution
 
 | File | Purpose | Alias Count |
 |------|---------|-------------|
-| `ncaam_historical_data_local/backtest_datasets/team_aliases_db.json` | **MASTER** alias file for ingestion | 1,679 |
+| `backtest_datasets/team_aliases_db.json` | **MASTER** alias file for ingestion | 1,679 |
 | PostgreSQL `team_aliases` table | Production alias table | ~950+ (sync via migrations) |
 | `testing/scripts/team_resolution_gate.py` | Python gate for canonicalization | Uses JSON file |
 
@@ -106,8 +106,10 @@ This document defines the **single source of truth** for all data paths in the N
 
 | Script | Purpose | Uses |
 |--------|---------|------|
-| `testing/scripts/backtest_v2_rolling.py` | Rolling stats backtest (no leakage) | Local data files |
-| `testing/scripts/backtest_v2_enhanced.py` | Enhanced backtest with all features | Local data files |
+| `testing/scripts/run_historical_backtest.py` | Historical results backtest | Azure backtest_datasets |
+| `testing/scripts/run_clv_backtest.py` | CLV-enhanced backtest | Azure backtest_datasets |
+| `testing/scripts/build_backtest_dataset_canonical.py` | Build canonical backtest dataset | Azure scores/odds/ratings |
+| `testing/scripts/build_consolidated_master.py` | Merge box-score features | Azure backtest_datasets |
 
 ---
 
@@ -156,8 +158,8 @@ The following files were removed during the January 9, 2026 cleanup:
 When team names fail to resolve:
 
 1. **For ingestion (Python):**
-   - Add to `ncaam_historical_data_local/backtest_datasets/team_aliases_db.json`
-   - Push to data repo: `cd ncaam_historical_data_local && git commit -am "add aliases" && git push`
+   - Update aliases in Postgres (teams + team_aliases)
+   - Export to Azure: `python scripts/export_team_registry.py --write-aliases`
 
 2. **For production (PostgreSQL):**
    - Create migration in `database/migrations/0XX_*.sql`
@@ -169,26 +171,19 @@ When team names fail to resolve:
 
 ```
 NCAAM_main/
-├── ncaam_historical_data_local/     # Git submodule → ncaam-historical-data repo
-│   ├── backtest_datasets/
-│   │   └── team_aliases_db.json     # MASTER alias file
-│   ├── odds/normalized/             # Consolidated historical odds
-│   ├── ratings/                     # Barttorvik ratings by season
-│   ├── scores/fg/                   # Full-game scores
-│   └── scores/h1/                   # First-half scores
-│
-├── testing/scripts/                 # All ingestion & backtest scripts
-│   ├── fetch_historical_data.py    # ✓ Scores + ratings ingestion
-│   ├── fetch_historical_odds.py    # ✓ Odds ingestion
-│   ├── fetch_h1_data.py            # ✓ H1 extraction
-│   ├── team_resolution_gate.py     # ✓ Central canonicalization
-│   ├── team_utils.py               # ✓ Helper wrapper
-│   ├── backtest_v2_rolling.py      # ✓ Main backtest engine
-│   └── backtest_v2_enhanced.py     # ✓ Enhanced backtest
-│
+├── manifests/                       # Audit outputs & reports
+├── testing/scripts/                 # Ingestion + backtest scripts
+│   ├── fetch_historical_data.py     # Scores + ratings ingestion (Azure)
+│   ├── fetch_historical_odds.py     # Odds ingestion (Azure)
+│   ├── fetch_h1_data.py             # H1 extraction (Azure)
+│   ├── team_resolution_gate.py      # Central canonicalization
+│   ├── team_utils.py                # Helper wrapper
+│   ├── run_historical_backtest.py   # Historical backtest engine
+│   ├── run_clv_backtest.py          # CLV backtest engine
+│   ├── build_backtest_dataset_canonical.py
+│   └── build_consolidated_master.py
 ├── services/prediction-service-python/  # Production prediction service
-│   └── app/main.py                 # Uses PostgreSQL for team resolution
-│
+│   └── app/main.py                  # Uses PostgreSQL for team resolution
 └── database/migrations/             # PostgreSQL migrations
     └── 024_jan9_2026_team_aliases.sql  # Latest alias additions
 ```
@@ -199,9 +194,10 @@ NCAAM_main/
 
 | Question | Answer |
 |----------|--------|
-| Where do I add new team aliases for ingestion? | `ncaam_historical_data_local/backtest_datasets/team_aliases_db.json` |
+| Where do I add new team aliases for ingestion? | Update Postgres, then export to Azure (`scripts/export_team_registry.py --write-aliases`) |
 | Where do I add new team aliases for production? | Create a database migration in `database/migrations/` |
 | Which script fetches historical scores? | `testing/scripts/fetch_historical_data.py` |
 | Which script fetches historical odds? | `testing/scripts/fetch_historical_odds.py` |
-| Where is the master alias database? | `ncaam_historical_data_local/backtest_datasets/team_aliases_db.json` (1,679 aliases) |
-| Where is the backtest entry point? | `testing/scripts/backtest_v2_rolling.py` |
+| Where is the master alias database? | Azure Blob `backtest_datasets/team_aliases_db.json` |
+| Where is the backtest entry point? | `testing/scripts/run_historical_backtest.py` |
+

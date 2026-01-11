@@ -74,9 +74,6 @@ RUN chmod +x /app/bin/odds-ingestion
 # Copy repo-level metadata (version) for runtime access
 COPY --chown=ncaam:ncaam VERSION /app/VERSION
 
-# Copy team aliases for canonical ingestion (if available)
-COPY --chown=ncaam:ncaam ncaam_historical_data_local/backtest_datasets/team_aliases_db.json /app/team_aliases_db.json || echo "Team aliases not available in build context"
-
 # Copy application code with proper ownership
 COPY --chown=ncaam:ncaam services/prediction-service-python/app /app/app
 COPY --chown=ncaam:ncaam services/prediction-service-python/run_today.py /app/run_today.py

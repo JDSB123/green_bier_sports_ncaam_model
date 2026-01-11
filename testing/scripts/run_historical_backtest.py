@@ -24,9 +24,10 @@ import numpy as np
 import pandas as pd
 
 
+from testing.azure_data_reader import get_azure_reader
+
 # Paths
 ROOT_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT_DIR / "ncaam_historical_data_local" / "backtest_datasets"
 RESULTS_DIR = ROOT_DIR / "testing" / "results" / "historical"
 
 
@@ -413,20 +414,13 @@ class NCAAMPredictor:
 def load_backtest_data() -> pd.DataFrame:
     """Load the master backtest dataset (enhanced if available)."""
     # Prefer enhanced dataset with advanced features
-    enhanced_path = DATA_DIR / "backtest_master_enhanced.csv"
-    base_path = DATA_DIR / "backtest_master.csv"
-
-    if enhanced_path.exists():
-        print(f"[INFO] Loading enhanced dataset with advanced features")
-        df = pd.read_csv(enhanced_path)
-    elif base_path.exists():
-        print(f"[INFO] Loading base dataset (run extract_advanced_features.py for enhanced)")
-        df = pd.read_csv(base_path)
-    else:
-        raise FileNotFoundError(
-            f"Backtest data not found at {base_path}\n"
-            "Run: python testing/scripts/build_backtest_dataset.py"
-        )
+    reader = get_azure_reader()
+    try:
+        print("[INFO] Loading enhanced dataset with advanced features")
+        df = reader.read_csv("backtest_datasets/backtest_master_enhanced.csv")
+    except FileNotFoundError:
+        print("[INFO] Loading base dataset (run extract_advanced_features.py for enhanced)")
+        df = reader.read_csv("backtest_datasets/backtest_master.csv")
 
     df["game_date"] = pd.to_datetime(df["game_date"])
     return df

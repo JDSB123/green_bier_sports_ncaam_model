@@ -50,8 +50,13 @@ That's it. One command. Everything runs inside the container.
    ```
    (It will prompt for the API key if not found)
 
-3. Build the container: `docker compose build`
-4. Run: `.\predict.bat`
+3. **Set Azure historical data access:**
+   ```powershell
+   # Required for canonical historical data + team aliases
+   $env:AZURE_CANONICAL_CONNECTION_STRING = "YOUR_CANONICAL_CONNECTION_STRING"
+   ```
+4. Build the container: `docker compose build`
+5. Run: `.\predict.bat`
 
 **IMPORTANT:** All secrets MUST be in `secrets/` directory. Container will FAIL if secrets are missing - NO fallbacks to .env or localhost.
 
@@ -105,7 +110,7 @@ That's it. One command. Everything runs inside the container.
 - **Bart Torvik API:** Team efficiency ratings and Four Factors metrics
   - For complete field reference, see [`docs/BARTTORVIK_FIELDS.md`](docs/BARTTORVIK_FIELDS.md)
 - **The Odds API:** Live betting odds for edge calculation
-- **Historical Data:** `ncaam_historical_data_local/` (git submodule)
+- **Historical Data:** Azure Blob Storage (`metricstrackersgbsv/ncaam-historical-data`)
   - Canonical scores, odds, and ratings for backtesting
   - See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for details
 

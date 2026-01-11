@@ -1,0 +1,65 @@
+{
+  "market": "h1_spread",
+  "seasons": [
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "total_games": 5041,
+  "games_with_odds": 1670,
+  "games_with_ratings": 4303,
+  "total_bets": 1501,
+  "wins": 774,
+  "losses": 665,
+  "pushes": 62,
+  "total_wagered": 150100.0,
+  "total_profit": 3856.6,
+  "roi": 2.57,
+  "win_rate": 53.8,
+  "avg_edge": 32.23,
+  "by_season": {
+    "2021": {
+      "bets": 0,
+      "wins": 0,
+      "losses": 0,
+      "profit": 0,
+      "roi": 0,
+      "win_rate": 0
+    },
+    "2022": {
+      "bets": 0,
+      "wins": 0,
+      "losses": 0,
+      "profit": 0,
+      "roi": 0,
+      "win_rate": 0
+    },
+    "2023": {
+      "bets": 0,
+      "wins": 0,
+      "losses": 0,
+      "profit": 0,
+      "roi": 0,
+      "win_rate": 0
+    },
+    "2024": {
+      "bets": 745,
+      "wins": 370,
+      "losses": 344,
+      "profit": -767.0,
+      "roi": -1.03,
+      "win_rate": 51.8
+    },
+    "2025": {
+      "bets": 756,
+      "wins": 404,
+      "losses": 321,
+      "profit": 4623.6,
+      "roi": 6.12,
+      "win_rate": 55.7
+    }
+  },
+  "timestamp": "20260109_162552"
+}

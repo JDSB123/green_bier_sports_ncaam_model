@@ -1,0 +1,562 @@
+{
+  "counts": {
+    "box_team_games_resolved": 4587,
+    "box_team_games_total": 4587,
+    "odds_rows_total": 0,
+    "odds_unique_games_resolved": 0,
+    "ratings_teams_resolved": 364,
+    "ratings_teams_total": 364,
+    "scores_fg_games_resolved": 430,
+    "scores_fg_games_total": 441,
+    "scores_fg_games_with_unresolved_team": 11,
+    "scores_h1_games_resolved": 431,
+    "scores_h1_games_total": 442
+  },
+  "coverage": {
+    "odds_field_coverage_within_matched_games": {
+      "fg_spread_any": 0,
+      "fg_spread_prices_any": 0,
+      "fg_total_any": 0,
+      "fg_total_prices_any": 0,
+      "h1_spread_any": 0,
+      "h1_spread_prices_any": 0,
+      "h1_total_any": 0,
+      "h1_total_prices_any": 0,
+      "total_matched_games": 0
+    },
+    "scores_to_h1_scores_directional": {
+      "match_rate": 1.0,
+      "matched": 430,
+      "total_scores_resolved": 430
+    },
+    "scores_to_ncaahoopr_team_features": {
+      "away_team_has_features": 131,
+      "both_team_coverage_rate": 0.29534883720930233,
+      "both_teams_have_features": 127,
+      "home_team_has_features": 141,
+      "total_scores_resolved": 430
+    },
+    "scores_to_odds_directional": {
+      "match_rate": 0.0,
+      "matched": 0,
+      "total_scores_resolved": 430
+    },
+    "scores_to_odds_swap_tolerant": {
+      "match_rate": 0.0,
+      "matched": 0,
+      "total_scores_resolved": 430
+    },
+    "scores_to_ratings_season_minus_one": {
+      "both_teams_have_ratings": 331,
+      "coverage_rate": 0.7697674418604651,
+      "ratings_season": 2025,
+      "total_scores_resolved": 430
+    }
+  },
+  "examples": {
+    "sample_scores_games": [
+      {
+        "away_team_canonical": "Lehigh",
+        "away_team_raw": "Lehigh Mountain Hawks",
+        "game_date": "2025-11-04",
+        "game_id": 401824809,
+        "home_team_canonical": "Houston",
+        "home_team_raw": "Houston Cougars"
+      },
+      {
+        "away_team_canonical": "Florida",
+        "away_team_raw": "Florida Gators",
+        "game_date": "2025-11-04",
+        "game_id": 401826885,
+        "home_team_canonical": "Arizona",
+        "home_team_raw": "Arizona Wildcats"
+      },
+      {
+        "away_team_canonical": "New Haven",
+        "away_team_raw": "New Haven Chargers",
+        "game_date": "2025-11-04",
+        "game_id": 401812785,
+        "home_team_canonical": "UConn",
+        "home_team_raw": "UConn Huskies"
+      },
+      {
+        "away_team_canonical": "Quinnipiac",
+        "away_team_raw": "Quinnipiac Bobcats",
+        "game_date": "2025-11-03",
+        "game_id": 401820577,
+        "home_team_canonical": "St. John's (N.Y.)",
+        "home_team_raw": "St. John's Red Storm"
+      },
+      {
+        "away_team_canonical": "Oakland",
+        "away_team_raw": "Oakland Golden Grizzlies",
+        "game_date": "2025-11-04",
+        "game_id": 401826083,
+        "home_team_canonical": "Michigan",
+        "home_team_raw": "Michigan Wolverines"
+      },
+      {
+        "away_team_canonical": "Villanova",
+        "away_team_raw": "Villanova Wildcats",
+        "game_date": "2025-11-04",
+        "game_id": 401819834,
+        "home_team_canonical": "BYU",
+        "home_team_raw": "BYU Cougars"
+      },
+      {
+        "away_team_canonical": "South Carolina State",
+        "away_team_raw": "South Carolina State Bulldogs",
+        "game_date": "2025-11-04",
+        "game_id": 401817239,
+        "home_team_canonical": "Louisville",
+        "home_team_raw": "Louisville Cardinals"
+      },
+      {
+        "away_team_canonical": "East. Washington",
+        "away_team_raw": "Eastern Washington Eagles",
+        "game_date": "2025-11-04",
+        "game_id": 401813756,
+        "home_team_canonical": "UCLA",
+        "home_team_raw": "UCLA Bruins"
+      },
+      {
+        "away_team_canonical": "Southern",
+        "away_team_raw": "Southern Jaguars",
+        "game_date": "2025-11-04",
+        "game_id": 401826784,
+        "home_team_canonical": "Arkansas",
+        "home_team_raw": "Arkansas Razorbacks"
+      },
+      {
+        "away_team_canonical": "North Dakota",
+        "away_team_raw": "North Dakota Fighting Hawks",
+        "game_date": "2025-11-04",
+        "game_id": 401812260,
+        "home_team_canonical": "Alabama",
+        "home_team_raw": "Alabama Crimson Tide"
+      },
+      {
+        "away_team_canonical": "Fairleigh Dickinson",
+        "away_team_raw": "Fairleigh Dickinson Knights",
+        "game_date": "2025-11-04",
+        "game_id": 401812282,
+        "home_team_canonical": "Iowa St.",
+        "home_team_raw": "Iowa State Cyclones"
+      },
+      {
+        "away_team_canonical": "Jackson State",
+        "away_team_raw": "Jackson State Tigers",
+        "game_date": "2025-11-04",
+        "game_id": 401827170,
+        "home_team_canonical": "Illinois",
+        "home_team_raw": "Illinois Fighting Illini"
+      },
+      {
+        "away_team_canonical": "Mercer",
+        "away_team_raw": "Mercer Bears",
+        "game_date": "2025-11-04",
+        "game_id": 401823483,
+        "home_team_canonical": "Tennessee",
+        "home_team_raw": "Tennessee Volunteers"
+      },
+      {
+        "away_team_canonical": "Wisc. Green Bay",
+        "away_team_raw": "Green Bay Phoenix",
+        "game_date": "2025-11-04",
+        "game_id": 401819882,
+        "home_team_canonical": "Kansas",
+        "home_team_raw": "Kansas Jayhawks"
+      },
+      {
+        "away_team_canonical": "Bethune-Cookman",
+        "away_team_raw": "Bethune-Cookman Wildcats",
+        "game_date": "2025-11-04",
+        "game_id": 401823474,
+        "home_team_canonical": "Auburn",
+        "home_team_raw": "Auburn Tigers"
+      },
+      {
+        "away_team_canonical": "Texas Southern",
+        "away_team_raw": "Texas Southern Tigers",
+        "game_date": "2025-11-04",
+        "game_id": 401824031,
+        "home_team_canonical": "Gonzaga",
+        "home_team_raw": "Gonzaga Bulldogs"
+      },
+      {
+        "away_team_canonical": "Colgate",
+        "away_team_raw": "Colgate Raiders",
+        "game_date": "2025-11-04",
+        "game_id": 401827219,
+        "home_team_canonical": "Michigan St.",
+        "home_team_raw": "Michigan State Spartans"
+      },
+      {
+        "away_team_canonical": "Campbell",
+        "away_team_raw": "Campbell Fighting Camels",
+        "game_date": "2025-11-04",
+        "game_id": 401826911,
+        "home_team_canonical": "Wisconsin",
+        "home_team_raw": "Wisconsin Badgers"
+      },
+      {
+        "away_team_canonical": "Central Arkansas",
+        "away_team_raw": "Central Arkansas Bears",
+        "game_date": "2025-11-04",
+        "game_id": 401817262,
+        "home_team_canonical": "North Carolina",
+        "home_team_raw": "North Carolina Tar Heels"
+      },
+      {
+        "away_team_canonical": "Evansville",
+        "away_team_raw": "Evansville Purple Aces",
+        "game_date": "2025-11-04",
+        "game_id": 401828553,
+        "home_team_canonical": "Purdue",
+        "home_team_raw": "Purdue Boilermakers"
+      },
+      {
+        "away_team_canonical": "Texas",
+        "away_team_raw": "Texas Longhorns",
+        "game_date": "2025-11-05",
+        "game_id": 401817228,
+        "home_team_canonical": "Duke",
+        "home_team_raw": "Duke Blue Devils"
+      },
+      {
+        "away_team_canonical": "Nicholls",
+        "away_team_raw": "Nicholls Colonels",
+        "game_date": "2025-11-05",
+        "game_id": 401826746,
+        "home_team_canonical": "Kentucky",
+        "home_team_raw": "Kentucky Wildcats"
+      },
+      {
+        "away_team_canonical": "Lindenwood",
+        "away_team_raw": "Lindenwood Lions",
+        "game_date": "2025-11-05",
+        "game_id": 401819898,
+        "home_team_canonical": "Texas Tech",
+        "home_team_raw": "Texas Tech Red Raiders"
+      },
+      {
+        "away_team_canonical": "South Dakota",
+        "away_team_raw": "South Dakota Coyotes",
+        "game_date": "2025-11-06",
+        "game_id": 401811102,
+        "home_team_canonical": "Creighton",
+        "home_team_raw": "Creighton Bluejays"
+      },
+      {
+        "away_team_canonical": "North Florida",
+        "away_team_raw": "North Florida Ospreys",
+        "game_date": "2025-11-07",
+        "game_id": 401823441,
+        "home_team_canonical": "Florida",
+        "home_team_raw": "Florida Gators"
+      }
+    ],
+    "sample_scores_games_with_unresolved_team": [
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Dominican (IL) Dominican",
+        "game_date": "2025-11-09",
+        "game_id": 401823393,
+        "home_team_canonical": "IPFW",
+        "home_team_raw": "Purdue Fort Wayne Mastodons"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Ozark Christian Ambassadors",
+        "game_date": "2025-11-09",
+        "game_id": 401811103,
+        "home_team_canonical": "South Dakota",
+        "home_team_raw": "South Dakota Coyotes"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Lyon Scots",
+        "game_date": "2025-11-09",
+        "game_id": 401826896,
+        "home_team_canonical": "Louisiana Tech",
+        "home_team_raw": "Louisiana Tech Bulldogs"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "St. Xavier  (IL) Cougars",
+        "game_date": "2025-12-01",
+        "game_id": 401837346,
+        "home_team_canonical": "Chicago State",
+        "home_team_raw": "Chicago State Cougars"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Central State (OH) Marauders",
+        "game_date": "2025-12-01",
+        "game_id": 401823470,
+        "home_team_canonical": "Toledo",
+        "home_team_raw": "Toledo Rockets"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Apprentice School Builders",
+        "game_date": "2025-12-02",
+        "game_id": 401827523,
+        "home_team_canonical": "Hampton",
+        "home_team_raw": "Hampton Pirates"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Coe Kohawks",
+        "game_date": "2025-12-02",
+        "game_id": 401820546,
+        "home_team_canonical": "Northern Iowa",
+        "home_team_raw": "Northern Iowa Panthers"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Manor College Blue Jays",
+        "game_date": "2025-12-04",
+        "game_id": 401812290,
+        "home_team_canonical": "Fairleigh Dickinson",
+        "home_team_raw": "Fairleigh Dickinson Knights"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Ecclesia Royals",
+        "game_date": "2025-12-16",
+        "game_id": 401827134,
+        "home_team_canonical": "Arkansas-Pine Bluff",
+        "home_team_raw": "Arkansas-Pine Bluff Golden Lions"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Columbia College (SC) Fighting Koalas",
+        "game_date": "2025-12-27",
+        "game_id": 401823596,
+        "home_team_canonical": "NC Wilmington",
+        "home_team_raw": "UNC Wilmington Seahawks"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Elms College Blazers",
+        "game_date": "2026-01-01",
+        "game_id": 401831278,
+        "home_team_canonical": "Dartmouth",
+        "home_team_raw": "Dartmouth Big Green"
+      }
+    ],
+    "sample_unmatched_scores_vs_odds": [
+      {
+        "away_team_canonical": "Lehigh",
+        "away_team_raw": "Lehigh Mountain Hawks",
+        "game_date": "2025-11-04",
+        "game_id": 401824809,
+        "home_team_canonical": "Houston",
+        "home_team_raw": "Houston Cougars"
+      },
+      {
+        "away_team_canonical": "Florida",
+        "away_team_raw": "Florida Gators",
+        "game_date": "2025-11-04",
+        "game_id": 401826885,
+        "home_team_canonical": "Arizona",
+        "home_team_raw": "Arizona Wildcats"
+      },
+      {
+        "away_team_canonical": "New Haven",
+        "away_team_raw": "New Haven Chargers",
+        "game_date": "2025-11-04",
+        "game_id": 401812785,
+        "home_team_canonical": "UConn",
+        "home_team_raw": "UConn Huskies"
+      },
+      {
+        "away_team_canonical": "Quinnipiac",
+        "away_team_raw": "Quinnipiac Bobcats",
+        "game_date": "2025-11-03",
+        "game_id": 401820577,
+        "home_team_canonical": "St. John's (N.Y.)",
+        "home_team_raw": "St. John's Red Storm"
+      },
+      {
+        "away_team_canonical": "Oakland",
+        "away_team_raw": "Oakland Golden Grizzlies",
+        "game_date": "2025-11-04",
+        "game_id": 401826083,
+        "home_team_canonical": "Michigan",
+        "home_team_raw": "Michigan Wolverines"
+      },
+      {
+        "away_team_canonical": "Villanova",
+        "away_team_raw": "Villanova Wildcats",
+        "game_date": "2025-11-04",
+        "game_id": 401819834,
+        "home_team_canonical": "BYU",
+        "home_team_raw": "BYU Cougars"
+      },
+      {
+        "away_team_canonical": "South Carolina State",
+        "away_team_raw": "South Carolina State Bulldogs",
+        "game_date": "2025-11-04",
+        "game_id": 401817239,
+        "home_team_canonical": "Louisville",
+        "home_team_raw": "Louisville Cardinals"
+      },
+      {
+        "away_team_canonical": "East. Washington",
+        "away_team_raw": "Eastern Washington Eagles",
+        "game_date": "2025-11-04",
+        "game_id": 401813756,
+        "home_team_canonical": "UCLA",
+        "home_team_raw": "UCLA Bruins"
+      },
+      {
+        "away_team_canonical": "Southern",
+        "away_team_raw": "Southern Jaguars",
+        "game_date": "2025-11-04",
+        "game_id": 401826784,
+        "home_team_canonical": "Arkansas",
+        "home_team_raw": "Arkansas Razorbacks"
+      },
+      {
+        "away_team_canonical": "North Dakota",
+        "away_team_raw": "North Dakota Fighting Hawks",
+        "game_date": "2025-11-04",
+        "game_id": 401812260,
+        "home_team_canonical": "Alabama",
+        "home_team_raw": "Alabama Crimson Tide"
+      },
+      {
+        "away_team_canonical": "Fairleigh Dickinson",
+        "away_team_raw": "Fairleigh Dickinson Knights",
+        "game_date": "2025-11-04",
+        "game_id": 401812282,
+        "home_team_canonical": "Iowa St.",
+        "home_team_raw": "Iowa State Cyclones"
+      },
+      {
+        "away_team_canonical": "Jackson State",
+        "away_team_raw": "Jackson State Tigers",
+        "game_date": "2025-11-04",
+        "game_id": 401827170,
+        "home_team_canonical": "Illinois",
+        "home_team_raw": "Illinois Fighting Illini"
+      },
+      {
+        "away_team_canonical": "Mercer",
+        "away_team_raw": "Mercer Bears",
+        "game_date": "2025-11-04",
+        "game_id": 401823483,
+        "home_team_canonical": "Tennessee",
+        "home_team_raw": "Tennessee Volunteers"
+      },
+      {
+        "away_team_canonical": "Wisc. Green Bay",
+        "away_team_raw": "Green Bay Phoenix",
+        "game_date": "2025-11-04",
+        "game_id": 401819882,
+        "home_team_canonical": "Kansas",
+        "home_team_raw": "Kansas Jayhawks"
+      },
+      {
+        "away_team_canonical": "Bethune-Cookman",
+        "away_team_raw": "Bethune-Cookman Wildcats",
+        "game_date": "2025-11-04",
+        "game_id": 401823474,
+        "home_team_canonical": "Auburn",
+        "home_team_raw": "Auburn Tigers"
+      },
+      {
+        "away_team_canonical": "Texas Southern",
+        "away_team_raw": "Texas Southern Tigers",
+        "game_date": "2025-11-04",
+        "game_id": 401824031,
+        "home_team_canonical": "Gonzaga",
+        "home_team_raw": "Gonzaga Bulldogs"
+      },
+      {
+        "away_team_canonical": "Colgate",
+        "away_team_raw": "Colgate Raiders",
+        "game_date": "2025-11-04",
+        "game_id": 401827219,
+        "home_team_canonical": "Michigan St.",
+        "home_team_raw": "Michigan State Spartans"
+      },
+      {
+        "away_team_canonical": "Campbell",
+        "away_team_raw": "Campbell Fighting Camels",
+        "game_date": "2025-11-04",
+        "game_id": 401826911,
+        "home_team_canonical": "Wisconsin",
+        "home_team_raw": "Wisconsin Badgers"
+      },
+      {
+        "away_team_canonical": "Central Arkansas",
+        "away_team_raw": "Central Arkansas Bears",
+        "game_date": "2025-11-04",
+        "game_id": 401817262,
+        "home_team_canonical": "North Carolina",
+        "home_team_raw": "North Carolina Tar Heels"
+      },
+      {
+        "away_team_canonical": "Evansville",
+        "away_team_raw": "Evansville Purple Aces",
+        "game_date": "2025-11-04",
+        "game_id": 401828553,
+        "home_team_canonical": "Purdue",
+        "home_team_raw": "Purdue Boilermakers"
+      },
+      {
+        "away_team_canonical": "Texas",
+        "away_team_raw": "Texas Longhorns",
+        "game_date": "2025-11-05",
+        "game_id": 401817228,
+        "home_team_canonical": "Duke",
+        "home_team_raw": "Duke Blue Devils"
+      },
+      {
+        "away_team_canonical": "Nicholls",
+        "away_team_raw": "Nicholls Colonels",
+        "game_date": "2025-11-05",
+        "game_id": 401826746,
+        "home_team_canonical": "Kentucky",
+        "home_team_raw": "Kentucky Wildcats"
+      },
+      {
+        "away_team_canonical": "Lindenwood",
+        "away_team_raw": "Lindenwood Lions",
+        "game_date": "2025-11-05",
+        "game_id": 401819898,
+        "home_team_canonical": "Texas Tech",
+        "home_team_raw": "Texas Tech Red Raiders"
+      },
+      {
+        "away_team_canonical": "South Dakota",
+        "away_team_raw": "South Dakota Coyotes",
+        "game_date": "2025-11-06",
+        "game_id": 401811102,
+        "home_team_canonical": "Creighton",
+        "home_team_raw": "Creighton Bluejays"
+      },
+      {
+        "away_team_canonical": "North Florida",
+        "away_team_raw": "North Florida Ospreys",
+        "game_date": "2025-11-07",
+        "game_id": 401823441,
+        "home_team_canonical": "Florida",
+        "home_team_raw": "Florida Gators"
+      }
+    ]
+  },
+  "generated_at": "2026-01-11T15:46:45Z",
+  "inputs": {
+    "ncaahoopr_features": "backtest_datasets/ncaahoopR_features.csv",
+    "odds_consolidated": "odds/normalized/odds_consolidated_canonical.csv",
+    "ratings_season_minus_one": "ratings/barttorvik/ratings_2025.json",
+    "scores_fg": "scores/fg/games_2026.csv",
+    "scores_h1_all": "scores/h1/h1_games_all.csv"
+  },
+  "max_date": "2026-01-06",
+  "season": 2026
+}

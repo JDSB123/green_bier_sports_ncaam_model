@@ -60,21 +60,6 @@ ratings = reader.read_json("ratings/barttorvik/ratings_2025.json")
 aliases = reader.read_json("backtest_datasets/team_aliases_db.json")
 ```
 
-### Syncing Local Data to Azure
-
-```powershell
-# Sync canonical data (scores, odds, ratings, backtest datasets)
-python scripts/sync_raw_data_to_azure.py --canonical
-
-# Sync everything including ncaahoopR (7GB)
-python scripts/sync_raw_data_to_azure.py --all --include-ncaahoopR
-
-# Preview what would sync
-python scripts/sync_raw_data_to_azure.py --all --dry-run
-```
-
----
-
 ## Version Control
 
 ### Current Release: v34.1.0
@@ -162,16 +147,15 @@ This document establishes the **canonical sources** for all NCAAM data, ensuring
             ┌───────────────────────────────────────┘
             │
             ▼
-    [LOCAL CACHE - OPTIONAL]
-    ncaam_historical_data_local/
-    (for offline development)
+    [LOCAL CACHE - REMOVED]
+    Azure Blob Storage is the only source of truth.
 ```
 
 **Key Principles:**
-1. Azure is the PRIMARY source - local files are optional cache
+1. Azure is the PRIMARY source - no local cache or git data copies
 2. Backtesting reads directly from Azure (no download required)
 3. Large files (ncaahoopR 7GB) stay in Azure only
-4. Changes are synced TO Azure, not from Azure
+4. Changes are written to Azure directly by ingestion scripts
 
 ---
 
@@ -207,11 +191,9 @@ This document establishes the **canonical sources** for all NCAAM data, ensuring
 | H1 Total | 10,261 (87.2%) |
 | Ratings | 9,389 (79.8%) |
 
-**Build & Sync:**
+**Build:**
 ```powershell
-# Build locally, then sync to Azure
-python testing/scripts/build_backtest_dataset.py
-python scripts/sync_raw_data_to_azure.py --canonical
+python testing/scripts/build_backtest_dataset_canonical.py
 ```
 
 ---
@@ -242,7 +224,7 @@ python scripts/sync_raw_data_to_azure.py --canonical
 
 ### Adding New Historical Data (Canonical Process)
 
-1. **Add raw data** locally to `ncaam_historical_data_local/`
+1. **Add raw data** to a staging directory (not tracked) and keep Azure as the source of truth
 2. **Run canonical data validator** (PREVENTIVE):
    ```powershell
    python testing/scripts/canonical_data_validator.py --data-type scores --source local
@@ -266,7 +248,7 @@ python scripts/sync_raw_data_to_azure.py --canonical
 
 ### Updating Team Resolution
 
-1. **Edit aliases** in `ncaam_historical_data_local/backtest_datasets/team_aliases_db.json`
+1. **Edit aliases** in the Team Registry (Postgres) and export to Azure
 2. **Run team resolution gate**:
    ```powershell
    python testing/scripts/team_resolution_gate.py --verify
@@ -281,7 +263,7 @@ python scripts/sync_raw_data_to_azure.py --canonical
 
 | Variable | Purpose | Where Set |
 |----------|---------|-----------|
-| `AZURE_STORAGE_CONNECTION_STRING` | Azure Blob access | Local env / az CLI |
+| `AZURE_CANONICAL_CONNECTION_STRING` | Azure Blob access (canonical data) | Local env / az CLI |
 | `THE_ODDS_API_KEY` | Live odds API | `secrets/odds_api_key.txt` |
 | `DB_PASSWORD` | PostgreSQL access | Docker secret |
 | `REDIS_PASSWORD` | Redis access | Docker secret |

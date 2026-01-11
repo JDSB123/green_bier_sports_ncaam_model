@@ -2,13 +2,13 @@
 """Add ncaahoopR team name aliases."""
 
 import json
-from pathlib import Path
 
-ALIASES_FILE = Path(__file__).resolve().parents[2] / "ncaam_historical_data_local" / "backtest_datasets" / "team_aliases_db.json"
+from testing.azure_io import read_json, write_json
+
+ALIASES_BLOB = "backtest_datasets/team_aliases_db.json"
 
 # Load existing aliases
-with open(ALIASES_FILE, 'r') as f:
-    aliases = json.load(f)
+aliases = read_json(ALIASES_BLOB)
 
 print(f"Existing aliases: {len(aliases)}")
 
@@ -186,7 +186,6 @@ for key, value in new_aliases.items():
         print(f"  Added: {key} -> {value}")
 
 # Save
-with open(ALIASES_FILE, 'w') as f:
-    json.dump(aliases, f, indent=2, sort_keys=True)
+write_json(ALIASES_BLOB, aliases, indent=2, sort_keys=True)
 
 print(f"\nAdded {added} new aliases. Total: {len(aliases)}")

@@ -119,14 +119,8 @@ gateway.exe
 !setup.bat
 testing/data/kaggle/
 
-# Historical data - use ncaam_historical_data_local/ (separate git submodule)
-# Source of truth: https://github.com/JDSB123/ncaam-historical-data
-ncaam_historical_data_local/
 
-# Testing data - derived/generated (regenerate from ncaam_historical_data_local)
-testing/data/validation_results/
-testing/data/market_validation/
-testing/results/
+
 
 # NCAAM v33 secrets (do not commit)
 ncaam_v33_model_db_password
@@ -143,6 +137,3 @@ telegram_history/
 
 # Backtest output
 backtest_output.txt
-
-# Azure data cache (local cache of Azure blob data)
-.azure_cache/

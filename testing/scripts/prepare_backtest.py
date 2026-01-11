@@ -10,16 +10,16 @@ from pathlib import Path
 # Add project root for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from testing.data_paths import DATA_PATHS
+from testing.azure_io import read_csv, write_csv, write_json, blob_exists
 
-# Paths - use ncaam_historical_data_local as source of truth
-SOURCE_FILE = DATA_PATHS.backtest_datasets / "training_data_with_odds.csv"
-TARGET_DIR = DATA_PATHS.odds_normalized
-TARGET_GAMES_FILE = DATA_PATHS.scores_fg / "games_all.csv"
-TARGET_DIR.mkdir(parents=True, exist_ok=True)
+# Paths - Azure is the only source of truth.
+SOURCE_BLOB = str(DATA_PATHS.backtest_datasets / "training_data_with_odds.csv")
+TARGET_DIR_BLOB = str(DATA_PATHS.odds_normalized)
+TARGET_GAMES_BLOB = str(DATA_PATHS.scores_fg / "games_all.csv")
 
 def prepare_games_file():
-    print(f"Reading {SOURCE_FILE}...")
-    df = pd.read_csv(SOURCE_FILE)
+    print(f"Reading {SOURCE_BLOB}...")
+    df = read_csv(SOURCE_BLOB)
     
     print("Columns found:", df.columns.tolist())
     
@@ -47,8 +47,8 @@ def prepare_games_file():
         df['neutral'] = df['neutral'].astype(str).str.lower()
         
     # Save
-    print(f"Saving to {TARGET_GAMES_FILE}...")
-    df.to_csv(TARGET_GAMES_FILE, index=False)
+    print(f"Saving to {TARGET_GAMES_BLOB}...")
+    write_csv(TARGET_GAMES_BLOB, df)
     print("Games file prepared.")
 
 def fetch_ratings(seasons):
@@ -57,10 +57,10 @@ def fetch_ratings(seasons):
     
     for season in seasons:
         url = f"{BARTTORVIK_BASE}/{season}_team_results.json"
-        target_file = TARGET_DIR / f"barttorvik_{season}.json"
+        target_blob = f"{TARGET_DIR_BLOB}/barttorvik_{season}.json"
         
-        if target_file.exists():
-            print(f"Ratings for {season} already exist at {target_file}")
+        if blob_exists(target_blob):
+            print(f"Ratings for {season} already exist at {target_blob}")
             continue
             
         print(f"Fetching season {season} from {url}...")
@@ -69,8 +69,7 @@ def fetch_ratings(seasons):
             resp.raise_for_status()
             data = resp.json()
             
-            with open(target_file, 'w') as f:
-                json.dump(data, f)
+            write_json(target_blob, data)
             print(f"Saved {season} ratings.")
         except Exception as e:
             print(f"Failed to fetch {season}: {e}")

@@ -5,6 +5,8 @@
 
 ---
 
+**Note:** Azure Blob Storage (`metricstrackersgbsv/ncaam-historical-data`) is the source of truth.
+
 ## ⚠️ CRITICAL: H1 (First-Half) Data Limitations
 
 **The Odds API does NOT provide historical H1 data before May 3, 2023.**
@@ -103,7 +105,7 @@ All data sources use the same season classification:
 
 ### Odds (Canonical)
 ```
-ncaam_historical_data_local/odds/canonical/
+ncaam-historical-data/odds/canonical/
 ├── spreads/
 │   ├── fg/spreads_fg_all.csv      # Full-game spreads
 │   └── h1/spreads_h1_all.csv      # First-half spreads
@@ -114,14 +116,14 @@ ncaam_historical_data_local/odds/canonical/
 
 ### Scores (Canonical)
 ```
-ncaam_historical_data_local/scores/
+ncaam-historical-data/scores/
 ├── fg/games_all.csv               # Full-game scores
 └── h1/h1_games_all.csv            # First-half scores
 ```
 
 ### Ratings
 ```
-ncaam_historical_data_local/ratings/barttorvik/
+ncaam-historical-data/ratings/barttorvik/
 ├── barttorvik_2021.json           # Per-season team ratings
 ├── barttorvik_2022.json
 ├── ...
@@ -134,7 +136,7 @@ ncaam_historical_data_local/ratings/barttorvik/
 
 **SINGLE SOURCE OF TRUTH:**
 ```
-ncaam_historical_data_local/backtest_datasets/team_aliases_db.json
+Azure Blob: backtest_datasets/team_aliases_db.json
 ```
 
 - 362 canonical team names

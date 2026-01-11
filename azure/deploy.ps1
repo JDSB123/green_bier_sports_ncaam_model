@@ -84,7 +84,11 @@ param(
 
     # Azure Storage connection string for pick history (external account: metricstrackersgbsv)
     [Parameter(Mandatory=$false)]
-    [string]$StorageConnectionString
+    [string]$StorageConnectionString,
+
+    # Azure Storage connection string for canonical historical data (metricstrackersgbsv)
+    [Parameter(Mandatory=$false)]
+    [string]$CanonicalStorageConnectionString
 )
 
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -264,6 +268,12 @@ if ([string]::IsNullOrEmpty($StorageConnectionString)) {
     Write-Host "  [INFO] Using provided storage connection string (external storage account)" -ForegroundColor Cyan
 }
 
+if ([string]::IsNullOrEmpty($CanonicalStorageConnectionString)) {
+    Write-Host "  [INFO] Canonical storage connection string not provided - will reuse storage connection string if available" -ForegroundColor Gray
+} else {
+    Write-Host "  [INFO] Using provided canonical storage connection string" -ForegroundColor Cyan
+}
+
 # ─────────────────────────────────────────────────────────────────────────────────
 # PREREQUISITES CHECK
 # ─────────────────────────────────────────────────────────────────────────────────
@@ -387,6 +397,7 @@ if (-not $SkipInfra) {
             imageTag=$ImageTag `
             resourceNameSuffix='-gbsv' `
             storageConnectionString=$StorageConnectionString `
+            canonicalStorageConnectionString=$CanonicalStorageConnectionString `
         --output json | ConvertFrom-Json
 
     if ($LASTEXITCODE -ne 0) {

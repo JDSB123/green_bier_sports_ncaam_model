@@ -1,0 +1,1502 @@
+game_date,home_team,away_team,season,market,predicted,market_line,edge,bet_side,actual,outcome,wager,profit
+2023-11-07,Kansas Jayhawks,North Carolina Central Eagles,2024,h1_spread,-6.89,-17.0,91.88,away,21.5,LOSS,100.0,-100.0
+2023-11-07,Duke Blue Devils,Dartmouth Big Green,2024,h1_spread,-8.48,-16.5,72.92,away,19.0,LOSS,100.0,-100.0
+2023-11-06,Purdue Boilermakers,Samford Bulldogs,2024,h1_spread,-7.02,-12.0,45.29,away,26.5,LOSS,100.0,-100.0
+2023-11-07,Michigan State Spartans,James Madison Dukes,2024,h1_spread,-4.66,-9.5,44.03,away,-1.5,WIN,100.0,90.9
+2023-11-07,Marquette Golden Eagles,Northern Illinois Huskies,2024,h1_spread,-8.75,-15.0,56.85,away,11.0,WIN,100.0,90.9
+2023-11-07,Houston Cougars,UL Monroe Warhawks,2024,h1_spread,-10.4,-17.5,64.54,away,26.5,LOSS,100.0,-100.0
+2023-11-06,Tennessee Volunteers,Tennessee Tech Golden Eagles,2024,h1_spread,-9.83,-19.25,85.62,away,19.0,WIN,100.0,90.9
+2023-11-07,Arizona Wildcats,Morgan State Bears,2024,h1_spread,-10.72,-18.5,70.72,away,31.5,LOSS,100.0,-100.0
+2023-11-07,Miami Hurricanes,NJIT Highlanders,2024,h1_spread,-9.39,-14.0,41.88,away,20.5,LOSS,100.0,-100.0
+2023-11-07,Arkansas Razorbacks,Alcorn State Braves,2024,h1_spread,-8.04,-16.5,76.87,away,17.0,LOSS,100.0,-100.0
+2023-11-07,Texas Longhorns,Incarnate Word Cardinals,2024,h1_spread,-11.34,-18.0,60.57,away,16.0,WIN,100.0,90.9
+2023-11-07,North Carolina Tar Heels,Radford Highlanders,2024,h1_spread,-5.35,-11.5,55.91,away,8.0,WIN,100.0,90.9
+2023-11-07,Alabama Crimson Tide,Morehead State Eagles,2024,h1_spread,-8.97,-13.0,36.62,away,16.0,LOSS,100.0,-100.0
+2023-11-07,Illinois Fighting Illini,Eastern Illinois Panthers,2024,h1_spread,-9.44,-16.5,64.15,away,14.0,WIN,100.0,90.9
+2023-11-08,Creighton Bluejays,Florida A&M Rattlers,2024,h1_spread,-11.82,-20.0,74.34,away,25.5,LOSS,100.0,-100.0
+2023-11-08,Baylor Bears,Auburn Tigers,2024,h1_spread,-2.21,0.5,24.68,home,3.0,WIN,100.0,90.9
+2023-11-09,Loyola Chicago Ramblers,Florida Atlantic Owls,2024,h1_spread,4.22,4.0,2.04,away,-6.5,WIN,100.0,90.9
+2023-11-10,Michigan State Spartans,Southern Indiana Screaming Eagles,2024,h1_spread,-8.74,-18.5,88.7,away,11.5,WIN,100.0,90.9
+2023-11-10,Saint Mary's Gaels,New Mexico Lobos,2024,h1_spread,-3.9,-4.75,7.76,away,7.0,LOSS,100.0,-100.0
+2023-11-11,Kansas Jayhawks,Manhattan Jaspers,2024,h1_spread,-9.95,-20.5,95.91,away,19.0,WIN,100.0,90.9
+2023-11-11,Duke Blue Devils,Arizona Wildcats,2024,h1_spread,-0.61,-3.0,21.74,away,-2.5,WIN,100.0,90.9
+2023-11-11,Purdue Boilermakers,Morehead State Eagles,2024,h1_spread,-8.25,-17.0,79.56,away,15.0,WIN,100.0,90.9
+2023-11-11,Marquette Golden Eagles,Rider Broncs,2024,h1_spread,-8.18,-14.5,57.47,away,15.0,LOSS,100.0,-100.0
+2023-11-11,Wisconsin Badgers,Tennessee Volunteers,2024,h1_spread,1.3,1.0,2.73,away,-5.0,WIN,100.0,90.9
+2023-11-11,Gonzaga Bulldogs,Yale Bulldogs,2024,h1_spread,-5.05,-7.0,17.7,away,7.5,LOSS,100.0,-100.0
+2023-11-11,Miami Hurricanes,UCF Knights,2024,h1_spread,-3.02,-5.5,22.51,away,8.0,LOSS,100.0,-100.0
+2023-11-11,Ohio State Buckeyes,Texas A&M Aggies,2024,h1_spread,-0.72,-0.5,2.0,home,-3.5,LOSS,100.0,-100.0
+2023-11-11,BYU Cougars,San Diego State Aztecs,2024,h1_spread,1.25,-1.0,20.45,away,4.5,LOSS,100.0,-100.0
+2023-11-11,Alabama Crimson Tide,Indiana State Sycamores,2024,h1_spread,-6.3,-11.5,47.25,away,11.0,WIN,100.0,90.9
+2023-11-11,Illinois Fighting Illini,Oakland Golden Grizzlies,2024,h1_spread,-7.29,-14.25,63.27,away,5.5,WIN,100.0,90.9
+2023-11-12,North Carolina Tar Heels,Lehigh Mountain Hawks,2024,h1_spread,-7.72,-14.0,57.1,away,11.0,WIN,100.0,90.9
+2023-11-13,Saint Mary's Gaels,Weber State Wildcats,2024,h1_spread,-7.41,-9.5,18.96,away,-2.0,WIN,100.0,90.9
+2023-11-14,Purdue Boilermakers,Xavier Musketeers,2024,h1_spread,-2.66,-10.0,66.76,away,6.0,WIN,100.0,90.9
+2023-11-14,Arizona Wildcats,Southern Jaguars,2024,h1_spread,-10.12,-18.25,73.88,away,19.0,LOSS,100.0,-100.0
+2023-11-14,Houston Cougars,Stetson Hatters,2024,h1_spread,-8.43,-18.5,91.57,away,15.5,WIN,100.0,90.9
+2023-11-14,Miami Hurricanes,Florida International Panthers,2024,h1_spread,-6.6,-13.75,65.04,away,3.0,WIN,100.0,90.9
+2023-11-14,Arkansas Razorbacks,Old Dominion Monarchs,2024,h1_spread,-6.6,-12.5,53.61,away,4.5,WIN,100.0,90.9
+2023-11-14,Pennsylvania Quakers,Villanova Wildcats,2024,h1_spread,0.5,6.5,54.57,home,2.0,WIN,100.0,90.9
+2023-11-15,Illinois Fighting Illini,Marquette Golden Eagles,2024,h1_spread,0.78,-0.75,13.95,away,-3.5,WIN,100.0,90.9
+2023-11-14,Tennessee Volunteers,Wofford Terriers,2024,h1_spread,-8.9,-18.0,82.73,away,10.5,WIN,100.0,90.9
+2023-11-15,Creighton Bluejays,Iowa Hawkeyes,2024,h1_spread,-2.94,-7.0,36.92,away,4.0,WIN,100.0,90.9
+2023-11-15,Florida Atlantic Owls,Eastern Michigan Eagles,2024,h1_spread,-9.32,-16.0,60.77,away,21.5,LOSS,100.0,-100.0
+2023-11-15,USC Trojans,UC Irvine Anteaters,2024,h1_spread,-3.37,-6.5,28.42,away,-5.0,WIN,100.0,90.9
+2023-11-15,Alabama Crimson Tide,South Alabama Jaguars,2024,h1_spread,-6.02,-12.5,58.88,away,28.0,LOSS,100.0,-100.0
+2023-11-15,Colorado Buffaloes,Milwaukee Panthers,2024,h1_spread,-5.8,-11.0,47.29,away,13.5,LOSS,100.0,-100.0
+2023-11-16,Texas Longhorns,Rice Owls,2024,h1_spread,-8.44,-12.5,36.9,away,8.0,WIN,100.0,90.9
+2023-11-16,Towson Tigers,Houston Cougars,2024,h1_spread,4.29,13.0,79.18,home,-8.0,WIN,100.0,90.9
+2023-11-18,Arizona Wildcats,Belmont Bruins,2024,h1_spread,-6.54,-14.5,72.39,away,16.0,LOSS,100.0,-100.0
+2023-11-17,Utah Utes,Houston Cougars,2024,h1_spread,2.35,5.5,28.67,home,-5.0,WIN,100.0,90.9
+2023-11-17,Duke Blue Devils,Bucknell Bison,2024,h1_spread,-9.12,-20.0,98.91,away,15.0,WIN,100.0,90.9
+2023-11-18,Texas A&M Aggies,Oral Roberts Golden Eagles,2024,h1_spread,-3.51,-12.0,77.16,away,4.0,WIN,100.0,90.9
+2023-11-18,Arkansas Razorbacks,UNC Greensboro Spartans,2024,h1_spread,-4.74,-8.5,34.15,away,-3.0,WIN,100.0,90.9
+2023-11-18,Kentucky Wildcats,Stonehill Skyhawks,2024,h1_spread,-9.29,-21.0,106.46,away,17.0,WIN,100.0,90.9
+2023-11-17,Michigan State Spartans,Butler Bulldogs,2024,h1_spread,-5.01,-5.5,4.48,away,10.0,LOSS,100.0,-100.0
+2023-11-18,North Carolina Tar Heels,UC Riverside Highlanders,2024,h1_spread,-5.09,-13.75,78.71,away,12.5,WIN,100.0,90.9
+2023-11-18,Villanova Wildcats,Maryland Terrapins,2024,h1_spread,-0.54,-3.5,26.93,away,8.5,LOSS,100.0,-100.0
+2023-11-18,Alabama Crimson Tide,Mercer Bears,2024,h1_spread,-9.12,-16.5,67.08,away,15.5,WIN,100.0,90.9
+2023-11-18,Illinois Fighting Illini,Valparaiso Beacons,2024,h1_spread,-7.4,-17.0,87.31,away,11.5,WIN,100.0,90.9
+2023-11-18,James Madison Dukes,Radford Highlanders,2024,h1_spread,-2.89,-5.0,19.14,away,1.5,WIN,100.0,90.9
+2023-11-19,Creighton Bluejays,Texas Southern Tigers,2024,h1_spread,-9.46,-18.0,77.65,away,16.0,WIN,100.0,90.9
+2023-11-18,Florida Atlantic Owls,Bryant Bulldogs,2024,h1_spread,-6.95,-14.0,64.08,away,-4.5,WIN,100.0,90.9
+2023-11-19,Arizona Wildcats,UT Arlington Mavericks,2024,h1_spread,-8.68,-16.0,66.56,away,22.5,LOSS,100.0,-100.0
+2023-11-20,Houston Cougars,Dayton Flyers,2024,h1_spread,-5.3,-7.0,15.49,away,7.0,PUSH,100.0,0.0
+2023-11-19,Miami Hurricanes,Kansas State Wildcats,2024,h1_spread,-1.58,-1.75,1.53,away,4.0,LOSS,100.0,-100.0
+2023-11-20,USC Trojans,Brown Bears,2024,h1_spread,-4.98,-10.5,50.16,away,5.5,WIN,100.0,90.9
+2023-11-19,Michigan State Spartans,Alcorn State Braves,2024,h1_spread,-7.9,-13.5,50.91,away,16.0,LOSS,100.0,-100.0
+2023-11-19,Louisville Cardinals,Texas Longhorns,2024,h1_spread,6.61,10.5,35.4,home,-0.5,WIN,100.0,90.9
+2023-11-20,Illinois Fighting Illini,Southern Jaguars,2024,h1_spread,-7.52,-14.0,58.88,away,14.0,PUSH,100.0,0.0
+2023-11-20,Gonzaga Bulldogs,Purdue Boilermakers,2024,h1_spread,-1.51,3.0,40.96,home,-5.0,LOSS,100.0,-100.0
+2023-11-21,Marquette Golden Eagles,UCLA Bruins,2024,h1_spread,-0.56,-3.25,24.44,away,1.0,WIN,100.0,90.9
+2023-11-20,Syracuse Orange,Tennessee Volunteers,2024,h1_spread,3.61,7.0,30.85,home,-8.5,LOSS,100.0,-100.0
+2023-11-21,Kentucky Wildcats,Saint Joseph's Hawks,2024,h1_spread,-6.13,-8.5,21.52,away,4.0,WIN,100.0,90.9
+2023-11-21,Richmond Spiders,Colorado Buffaloes,2024,h1_spread,1.28,5.0,33.85,home,-2.5,WIN,100.0,90.9
+2023-11-20,Virginia Cavaliers,Wisconsin Badgers,2024,h1_spread,-2.38,-1.5,8.01,home,-12.0,LOSS,100.0,-100.0
+2023-11-22,Duke Blue Devils,La Salle Explorers,2024,h1_spread,-7.44,-15.0,68.76,away,14.5,WIN,100.0,90.9
+2023-11-21,Gonzaga Bulldogs,Syracuse Orange,2024,h1_spread,-6.73,-7.0,2.44,away,9.5,LOSS,100.0,-100.0
+2023-11-21,Southern Illinois Salukis,James Madison Dukes,2024,h1_spread,-0.55,2.5,27.77,home,-3.0,LOSS,100.0,-100.0
+2023-11-22,Kansas Jayhawks,Tennessee Volunteers,2024,h1_spread,-0.96,-0.5,4.18,home,4.5,WIN,100.0,90.9
+2023-11-22,Marquette Golden Eagles,Purdue Boilermakers,2024,h1_spread,-1.13,1.25,21.64,home,-1.5,LOSS,100.0,-100.0
+2023-11-22,Creighton Bluejays,Loyola Chicago Ramblers,2024,h1_spread,-8.1,-11.0,26.37,away,11.5,LOSS,100.0,-100.0
+2023-11-23,Oregon State Beavers,Baylor Bears,2024,h1_spread,4.62,9.0,39.83,home,-8.0,WIN,100.0,90.9
+2023-11-23,Fresno State Bulldogs,James Madison Dukes,2024,h1_spread,-0.9,2.5,30.9,home,-15.5,LOSS,100.0,-100.0
+2023-11-23,Creighton Bluejays,Colorado State Rams,2024,h1_spread,-5.36,-4.5,7.78,home,-10.5,LOSS,100.0,-100.0
+2023-11-23,Texas A&M Aggies,Penn State Nittany Lions,2024,h1_spread,-1.85,-4.25,21.83,away,6.0,LOSS,100.0,-100.0
+2023-11-23,North Carolina Tar Heels,Villanova Wildcats,2024,h1_spread,-2.04,-1.5,4.92,home,-1.0,LOSS,100.0,-100.0
+2023-11-23,Butler Bulldogs,Florida Atlantic Owls,2024,h1_spread,2.08,3.5,12.93,home,-2.5,WIN,100.0,90.9
+2023-11-23,Memphis Tigers,Arkansas Razorbacks,2024,h1_spread,-1.95,0.5,22.24,home,2.5,WIN,100.0,90.9
+2023-11-23,USC Trojans,Seton Hall Pirates,2024,h1_spread,-1.97,-2.5,4.79,away,4.0,LOSS,100.0,-100.0
+2023-11-24,Houston Cougars,Montana Grizzlies,2024,h1_spread,-8.19,-15.25,64.21,away,17.5,LOSS,100.0,-100.0
+2023-11-24,Duke Blue Devils,Southern Indiana Screaming Eagles,2024,h1_spread,-9.34,-21.5,110.53,away,9.0,WIN,100.0,90.9
+2023-11-24,Florida Atlantic Owls,Texas A&M Aggies,2024,h1_spread,-1.52,2.5,36.56,home,3.5,WIN,100.0,90.9
+2023-11-24,Florida Gators,Baylor Bears,2024,h1_spread,1.4,1.0,3.64,away,-2.0,WIN,100.0,90.9
+2023-11-25,Kentucky Wildcats,Marshall Thundering Herd,2024,h1_spread,-3.74,-11.0,66.03,away,18.0,LOSS,100.0,-100.0
+2023-11-25,Ohio State Buckeyes,Alabama Crimson Tide,2024,h1_spread,1.5,3.5,18.18,home,5.5,WIN,100.0,90.9
+2023-11-26,Texas Longhorns,Wyoming Cowboys,2024,h1_spread,-7.24,-9.25,18.26,away,11.5,LOSS,100.0,-100.0
+2023-11-26,Colorado Buffaloes,Iona Gaels,2024,h1_spread,-1.36,-11.5,92.21,away,8.5,WIN,100.0,90.9
+2023-11-26,Virginia Tech Hokies,Florida Atlantic Owls,2024,h1_spread,0.21,1.0,7.18,home,-17.0,LOSS,100.0,-100.0
+2023-11-29,Purdue Boilermakers,Texas Southern Tigers,2024,h1_spread,-10.06,-18.25,74.45,away,16.0,WIN,100.0,90.9
+2023-11-29,Marquette Golden Eagles,Southern Jaguars,2024,h1_spread,-9.81,-18.25,76.75,away,18.5,LOSS,100.0,-100.0
+2023-11-29,Kansas Jayhawks,Eastern Illinois Panthers,2024,h1_spread,-11.44,-21.5,91.46,away,4.0,WIN,100.0,90.9
+2023-11-29,Kentucky Wildcats,Miami Hurricanes,2024,h1_spread,-1.41,-3.5,19.0,away,11.0,LOSS,100.0,-100.0
+2023-11-29,Georgia Tech Yellow Jackets,Mississippi State Bulldogs,2024,h1_spread,0.8,4.5,33.67,home,4.0,WIN,100.0,90.9
+2023-11-29,Alabama Crimson Tide,Clemson Tigers,2024,h1_spread,-4.99,-4.5,4.42,home,-4.0,LOSS,100.0,-100.0
+2023-11-30,Arkansas Razorbacks,Duke Blue Devils,2024,h1_spread,-1.05,2.0,27.69,home,2.5,WIN,100.0,90.9
+2023-11-30,North Carolina Tar Heels,Tennessee Volunteers,2024,h1_spread,0.63,-1.0,14.79,away,4.0,LOSS,100.0,-100.0
+2023-11-30,Virginia Cavaliers,Texas A&M Aggies,2024,h1_spread,-0.96,-1.5,4.92,away,6.0,LOSS,100.0,-100.0
+2023-11-29,Villanova Wildcats,Saint Joseph's Hawks,2024,h1_spread,-4.91,-6.5,14.47,away,-6.5,WIN,100.0,90.9
+2023-11-30,Colorado State Rams,Colorado Buffaloes,2024,h1_spread,-0.22,-2.0,16.22,away,2.5,LOSS,100.0,-100.0
+2023-11-30,James Madison Dukes,Buffalo Bulls,2024,h1_spread,-3.26,-14.0,97.63,away,7.5,WIN,100.0,90.9
+2023-11-30,Florida Atlantic Owls,Liberty Flames,2024,h1_spread,-2.56,-4.5,17.65,away,12.5,LOSS,100.0,-100.0
+2023-12-01,Oklahoma State Cowboys,Creighton Bluejays,2024,h1_spread,0.4,4.5,37.27,home,-7.0,LOSS,100.0,-100.0
+2023-12-01,Texas Longhorns,Texas State Bobcats,2024,h1_spread,-8.0,-12.0,36.4,away,9.5,WIN,100.0,90.9
+2023-12-01,Oklahoma Sooners,Arkansas-Pine Bluff Golden Lions,2024,h1_spread,-8.07,-16.0,72.08,away,10.5,WIN,100.0,90.9
+2023-12-02,Northwestern Wildcats,Purdue Boilermakers,2024,h1_spread,0.46,3.0,23.07,home,2.0,WIN,100.0,90.9
+2023-12-01,Xavier Musketeers,Houston Cougars,2024,h1_spread,0.38,5.0,42.04,home,-3.0,WIN,100.0,90.9
+2023-12-02,BYU Cougars,Fresno State Bulldogs,2024,h1_spread,-3.32,-8.5,47.05,away,14.5,LOSS,100.0,-100.0
+2023-12-02,Arizona Wildcats,Colgate Raiders,2024,h1_spread,-5.9,-13.5,69.08,away,13.5,PUSH,100.0,0.0
+2023-12-02,Wisconsin Badgers,Marquette Golden Eagles,2024,h1_spread,1.05,1.5,4.1,home,5.5,WIN,100.0,90.9
+2023-12-02,Georgia Tech Yellow Jackets,Duke Blue Devils,2024,h1_spread,2.97,7.0,36.63,home,2.0,WIN,100.0,90.9
+2023-12-02,Miami Hurricanes,Notre Dame Fighting Irish,2024,h1_spread,-5.37,-8.0,23.91,away,6.5,WIN,100.0,90.9
+2023-12-02,Baylor Bears,Northwestern State Demons,2024,h1_spread,-7.95,-20.0,109.53,away,25.5,LOSS,100.0,-100.0
+2023-12-02,Kentucky Wildcats,UNC Wilmington Seahawks,2024,h1_spread,-5.76,-10.5,43.13,away,-3.5,WIN,100.0,90.9
+2023-12-02,Florida Atlantic Owls,Charleston Cougars,2024,h1_spread,-3.13,-7.5,39.7,away,8.0,LOSS,100.0,-100.0
+2023-12-02,North Carolina Tar Heels,Florida State Seminoles,2024,h1_spread,-5.94,-7.0,9.64,away,4.0,WIN,100.0,90.9
+2023-12-02,Villanova Wildcats,Drexel Dragons,2024,h1_spread,-5.03,-6.0,8.84,away,-1.0,WIN,100.0,90.9
+2023-12-03,Colorado State Rams,Washington Huskies,2024,h1_spread,-1.68,-2.0,2.95,away,2.5,LOSS,100.0,-100.0
+2023-12-02,Rutgers Scarlet Knights,Illinois Fighting Illini,2024,h1_spread,-1.71,-1.0,6.44,home,-9.0,LOSS,100.0,-100.0
+2023-12-03,Mississippi State Bulldogs,Southern Jaguars,2024,h1_spread,-7.06,-15.0,72.21,away,-0.5,WIN,100.0,90.9
+2023-12-05,Purdue Boilermakers,Iowa Hawkeyes,2024,h1_spread,-3.54,-7.5,36.0,away,9.5,LOSS,100.0,-100.0
+2023-12-06,Baylor Bears,Seton Hall Pirates,2024,h1_spread,-3.65,-6.5,25.92,away,9.0,LOSS,100.0,-100.0
+2023-12-06,Gonzaga Bulldogs,Arkansas-Pine Bluff Golden Lions,2024,h1_spread,-10.77,-19.5,79.38,away,20.0,LOSS,100.0,-100.0
+2023-12-05,Illinois Fighting Illini,Florida Atlantic Owls,2024,h1_spread,-0.32,1.0,12.01,home,4.5,WIN,100.0,90.9
+2023-12-06,BYU Cougars,Evansville Purple Aces,2024,h1_spread,-8.52,-14.5,54.35,away,20.5,LOSS,100.0,-100.0
+2023-12-05,Tennessee Volunteers,George Mason Patriots,2024,h1_spread,-7.25,-9.25,18.22,away,10.5,LOSS,100.0,-100.0
+2023-12-06,Oklahoma Sooners,Providence Friars,2024,h1_spread,-1.4,-3.0,14.52,away,10.5,LOSS,100.0,-100.0
+2023-12-06,Michigan State Spartans,Wisconsin Badgers,2024,h1_spread,-2.87,-2.5,3.39,home,-6.5,LOSS,100.0,-100.0
+2023-12-07,Houston Cougars,Rice Owls,2024,h1_spread,-9.13,-16.0,62.49,away,18.0,LOSS,100.0,-100.0
+2023-12-07,Marquette Golden Eagles,Texas Longhorns,2024,h1_spread,-1.1,-4.5,30.95,away,10.5,LOSS,100.0,-100.0
+2023-12-07,Colorado State Rams,Denver Pioneers,2024,h1_spread,-5.37,-12.0,60.3,away,5.0,WIN,100.0,90.9
+2023-12-07,Texas A&M Aggies,DePaul Blue Demons,2024,h1_spread,-5.44,-12.0,59.68,away,12.5,LOSS,100.0,-100.0
+2023-12-07,Clemson Tigers,South Carolina Gamecocks,2024,h1_spread,-5.62,-5.0,5.61,home,2.5,LOSS,100.0,-100.0
+2023-12-08,UNC Greensboro Spartans,Eastern Kentucky Colonels,2024,h1_spread,-2.5,-4.0,13.63,away,1.0,WIN,100.0,90.9
+2023-12-08,Iowa State Cyclones,Iowa Hawkeyes,2024,h1_spread,-1.54,-4.0,22.37,away,12.5,LOSS,100.0,-100.0
+2023-12-08,Central Arkansas Bears,Little Rock Trojans,2024,h1_spread,-1.59,3.0,41.71,home,2.0,WIN,100.0,90.9
+2023-12-09,Duquesne Dukes,Saint Peter's Peacocks,2024,h1_spread,-5.62,-8.5,26.15,away,4.5,WIN,100.0,90.9
+2023-12-09,Boston College Eagles,Holy Cross Crusaders,2024,h1_spread,-5.83,-11.75,53.78,away,15.5,LOSS,100.0,-100.0
+2023-12-09,Rider Broncs,Stonehill Skyhawks,2024,h1_spread,-3.8,-6.0,19.96,away,8.5,LOSS,100.0,-100.0
+2023-12-09,Manhattan Jaspers,Fairleigh Dickinson Knights,2024,h1_spread,-0.57,-0.75,1.64,away,-2.5,WIN,100.0,90.9
+2023-12-09,Harvard Crimson,Army Black Knights,2024,h1_spread,-2.7,-7.5,43.6,away,3.0,WIN,100.0,90.9
+2023-12-09,High Point Panthers,North Carolina A&T Aggies,2024,h1_spread,-2.26,-11.25,81.72,away,6.5,WIN,100.0,90.9
+2023-12-09,Eastern Michigan Eagles,Oakland Golden Grizzlies,2024,h1_spread,-0.65,3.0,33.21,home,-7.0,LOSS,100.0,-100.0
+2023-12-09,Jacksonville State Gamecocks,UIC Flames,2024,h1_spread,-2.67,0.5,28.86,home,-3.0,LOSS,100.0,-100.0
+2023-12-09,Quinnipiac Bobcats,Navy Midshipmen,2024,h1_spread,-1.61,-3.25,14.9,away,1.5,WIN,100.0,90.9
+2023-12-09,Arizona Wildcats,Wisconsin Badgers,2024,h1_spread,-4.36,-5.5,10.33,away,12.5,LOSS,100.0,-100.0
+2023-12-09,Kansas Jayhawks,Missouri Tigers,2024,h1_spread,-3.63,-7.5,35.17,away,4.5,WIN,100.0,90.9
+2023-12-09,Houston Cougars,Jackson State Tigers,2024,h1_spread,-11.2,-18.5,66.39,away,17.0,WIN,100.0,90.9
+2023-12-09,Purdue Boilermakers,Alabama Crimson Tide,2024,h1_spread,-0.78,-2.5,15.67,away,3.0,LOSS,100.0,-100.0
+2023-12-10,Washington Huskies,Gonzaga Bulldogs,2024,h1_spread,3.14,2.0,10.34,away,2.5,LOSS,100.0,-100.0
+2023-12-10,Marquette Golden Eagles,Notre Dame Fighting Irish,2024,h1_spread,-6.47,-11.5,45.7,away,9.5,WIN,100.0,90.9
+2023-12-09,Creighton Bluejays,Central Michigan Chippewas,2024,h1_spread,-10.96,-17.5,59.44,away,22.5,LOSS,100.0,-100.0
+2023-12-09,Texas Longhorns,Houston Christian Huskies,2024,h1_spread,-12.48,-18.5,54.77,away,13.5,WIN,100.0,90.9
+2023-12-09,Colorado State Rams,Saint Mary's Gaels,2024,h1_spread,2.31,-2.0,39.19,away,-1.5,WIN,100.0,90.9
+2023-12-10,Utah Utes,BYU Cougars,2024,h1_spread,-1.85,1.0,25.92,home,2.0,WIN,100.0,90.9
+2023-12-09,Kentucky Wildcats,Pennsylvania Quakers,2024,h1_spread,-4.72,-7.5,25.25,away,7.5,PUSH,100.0,0.0
+2023-12-10,Old Dominion Monarchs,James Madison Dukes,2024,h1_spread,0.3,3.25,26.8,home,-7.5,LOSS,100.0,-100.0
+2023-12-09,Oklahoma Sooners,Arkansas Razorbacks,2024,h1_spread,-0.21,-1.5,11.74,away,4.5,LOSS,100.0,-100.0
+2023-12-09,Duke Blue Devils,Charlotte 49ers,2024,h1_spread,-4.98,-9.0,36.57,away,12.0,LOSS,100.0,-100.0
+2023-12-10,Miami Hurricanes,Colorado Buffaloes,2024,h1_spread,-3.2,-0.5,24.54,home,-13.5,LOSS,100.0,-100.0
+2023-12-10,Texas A&M Aggies,Memphis Tigers,2024,h1_spread,-0.96,-4.5,32.2,away,-3.0,WIN,100.0,90.9
+2023-12-12,Gonzaga Bulldogs,Mississippi Valley State Delta Devils,2024,h1_spread,-12.51,-25.5,118.06,away,19.0,WIN,100.0,90.9
+2023-12-13,Tennessee Volunteers,Georgia Southern Eagles,2024,h1_spread,-7.81,-19.0,101.69,away,9.0,WIN,100.0,90.9
+2023-12-13,Duke Blue Devils,Hofstra Pride,2024,h1_spread,-4.22,-9.0,43.49,away,10.5,LOSS,100.0,-100.0
+2023-12-14,UNLV Rebels,Creighton Bluejays,2024,h1_spread,2.09,7.5,49.2,home,7.5,WIN,100.0,90.9
+2023-12-14,Florida Atlantic Owls,Florida International Panthers,2024,h1_spread,-6.59,-13.5,62.8,away,17.0,LOSS,100.0,-100.0
+2023-12-14,BYU Cougars,Denver Pioneers,2024,h1_spread,-6.35,-15.5,83.22,away,8.0,WIN,100.0,90.9
+2023-12-14,Northwestern Wildcats,Chicago State Cougars,2024,h1_spread,-8.53,-13.5,45.21,away,-1.0,WIN,100.0,90.9
+2023-12-16,Purdue Boilermakers,Arizona Wildcats,2024,h1_spread,-1.56,1.0,23.23,home,4.0,WIN,100.0,90.9
+2023-12-16,Indiana Hoosiers,Kansas Jayhawks,2024,h1_spread,-0.17,4.0,37.94,home,-2.0,WIN,100.0,90.9
+2023-12-16,Houston Cougars,Texas A&M Aggies,2024,h1_spread,-3.72,-4.0,2.58,away,2.0,WIN,100.0,90.9
+2023-12-16,Michigan State Spartans,Baylor Bears,2024,h1_spread,-0.72,1.5,20.21,home,12.0,WIN,100.0,90.9
+2023-12-17,Creighton Bluejays,Alabama Crimson Tide,2024,h1_spread,-0.18,-4.0,34.77,away,1.5,WIN,100.0,90.9
+2023-12-16,Kentucky Wildcats,North Carolina Tar Heels,2024,h1_spread,-2.18,0.0,19.85,home,2.0,WIN,100.0,90.9
+2023-12-17,Oklahoma Sooners,Green Bay Phoenix,2024,h1_spread,-10.7,-15.0,39.13,away,17.0,LOSS,100.0,-100.0
+2023-12-16,Memphis Tigers,Clemson Tigers,2024,h1_spread,-3.31,-1.5,16.44,home,1.0,LOSS,100.0,-100.0
+2023-12-16,St. Bonaventure Bonnies,Florida Atlantic Owls,2024,h1_spread,3.44,5.5,18.74,home,-5.0,WIN,100.0,90.9
+2023-12-17,BYU Cougars,Georgia State Panthers,2024,h1_spread,-6.65,-14.5,71.36,away,16.0,LOSS,100.0,-100.0
+2023-12-16,Texas Longhorns,LSU Tigers,2024,h1_spread,-7.15,-4.0,28.67,home,5.5,WIN,100.0,90.9
+2023-12-16,Hampton Pirates,James Madison Dukes,2024,h1_spread,4.47,9.0,41.2,home,-8.5,WIN,100.0,90.9
+2023-12-16,Virginia Cavaliers,Northeastern Huskies,2024,h1_spread,-8.22,-9.5,11.68,away,1.0,WIN,100.0,90.9
+2023-12-16,Miami Hurricanes,La Salle Explorers,2024,h1_spread,-6.91,-9.5,23.53,away,3.5,WIN,100.0,90.9
+2023-12-16,DePaul Blue Demons,Northwestern Wildcats,2024,h1_spread,1.97,5.5,32.09,home,-5.0,WIN,100.0,90.9
+2023-12-17,Illinois Fighting Illini,Colgate Raiders,2024,h1_spread,-3.3,-9.5,56.34,away,8.5,WIN,100.0,90.9
+2023-12-18,Jacksonville Dolphins,UL Monroe Warhawks,2024,h1_spread,-2.57,-3.5,8.42,away,5.0,LOSS,100.0,-100.0
+2023-12-18,Charleston Cougars,Coastal Carolina Chanticleers,2024,h1_spread,-7.14,-9.5,21.49,away,1.5,WIN,100.0,90.9
+2023-12-19,Campbell Fighting Camels,Morgan State Bears,2024,h1_spread,-3.69,-5.5,16.45,away,3.5,WIN,100.0,90.9
+2023-12-19,Michigan State Spartans,Oakland Golden Grizzlies,2024,h1_spread,-8.4,-9.0,5.47,away,8.5,WIN,100.0,90.9
+2023-12-19,Holy Cross Crusaders,Quinnipiac Bobcats,2024,h1_spread,2.28,3.0,6.55,home,-10.0,LOSS,100.0,-100.0
+2023-12-19,Little Rock Trojans,Murray State Racers,2024,h1_spread,1.01,0.5,4.62,away,7.0,LOSS,100.0,-100.0
+2023-12-19,Chicago State Cougars,UT Rio Grande Valley Vaqueros,2024,h1_spread,-0.49,-2.5,18.24,away,5.0,LOSS,100.0,-100.0
+2023-12-19,Tarleton State Texans,Jacksonville State Gamecocks,2024,h1_spread,-3.58,-2.5,9.85,home,-1.5,LOSS,100.0,-100.0
+2023-12-19,Evansville Purple Aces,UT Martin Skyhawks,2024,h1_spread,0.56,-4.0,41.43,away,3.5,WIN,100.0,90.9
+2023-12-19,Lamar Cardinals,Southern Miss Golden Eagles,2024,h1_spread,5.11,1.5,32.86,away,-1.5,PUSH,100.0,0.0
+2023-12-19,Sacramento State Hornets,UC San Diego Tritons,2024,h1_spread,-0.97,-0.5,4.28,home,-15.5,LOSS,100.0,-100.0
+2023-12-19,Fresno State Bulldogs,Portland State Vikings,2024,h1_spread,-3.51,-2.0,13.75,home,-1.5,LOSS,100.0,-100.0
+2023-12-19,Cal Poly Mustangs,Eastern Washington Eagles,2024,h1_spread,1.83,3.5,15.21,home,-4.5,LOSS,100.0,-100.0
+2023-12-19,Loyola Marymount Lions,Detroit Mercy Titans,2024,h1_spread,-3.43,-9.5,55.16,away,10.0,LOSS,100.0,-100.0
+2023-12-20,Providence Friars,Marquette Golden Eagles,2024,h1_spread,0.73,2.5,16.13,home,7.5,WIN,100.0,90.9
+2023-12-20,James Madison Dukes,Coppin State Eagles,2024,h1_spread,-7.07,-16.0,81.22,away,19.5,LOSS,100.0,-100.0
+2023-12-20,Memphis Tigers,Virginia Cavaliers,2024,h1_spread,-2.58,-1.5,9.85,home,11.5,WIN,100.0,90.9
+2023-12-20,Ole Miss Rebels,Troy Trojans,2024,h1_spread,-2.5,-7.5,45.45,away,10.5,LOSS,100.0,-100.0
+2023-12-21,Arizona Wildcats,Alabama Crimson Tide,2024,h1_spread,-0.72,-4.0,29.81,away,6.5,LOSS,100.0,-100.0
+2023-12-21,Oklahoma Sooners,North Carolina Tar Heels,2024,h1_spread,-1.05,1.5,23.22,home,-6.0,LOSS,100.0,-100.0
+2023-12-21,Duke Blue Devils,Baylor Bears,2024,h1_spread,-1.32,-1.0,2.93,home,4.0,WIN,100.0,90.9
+2023-12-21,Creighton Bluejays,Villanova Wildcats,2024,h1_spread,-3.69,-5.0,11.94,away,-1.0,WIN,100.0,90.9
+2023-12-21,Gonzaga Bulldogs,Jackson State Tigers,2024,h1_spread,-10.48,-15.0,41.06,away,12.0,WIN,100.0,90.9
+2023-12-21,Purdue Boilermakers,Jacksonville Dolphins,2024,h1_spread,-8.61,-18.5,89.93,away,21.5,LOSS,100.0,-100.0
+2023-12-22,Houston Cougars,Texas State Bobcats,2024,h1_spread,-8.68,-16.0,66.53,away,17.5,LOSS,100.0,-100.0
+2023-12-21,Tennessee Volunteers,Tarleton State Texans,2024,h1_spread,-6.52,-13.5,63.43,away,9.5,WIN,100.0,90.9
+2023-12-21,Louisville Cardinals,Kentucky Wildcats,2024,h1_spread,5.01,8.0,27.19,home,-9.5,LOSS,100.0,-100.0
+2023-12-23,Kansas Jayhawks,Yale Bulldogs,2024,h1_spread,-4.39,-8.5,37.38,away,7.5,WIN,100.0,90.9
+2023-12-23,Marquette Golden Eagles,Georgetown Hoyas,2024,h1_spread,-7.79,-10.0,20.12,away,15.0,LOSS,100.0,-100.0
+2023-12-23,Baylor Bears,Mississippi Valley State Delta Devils,2024,h1_spread,-11.74,-23.0,102.38,away,29.5,LOSS,100.0,-100.0
+2023-12-23,Loyola Marymount Lions,Colorado State Rams,2024,h1_spread,-0.83,2.5,30.29,home,-4.5,LOSS,100.0,-100.0
+2023-12-23,BYU Cougars,Bellarmine Knights,2024,h1_spread,-5.87,-15.75,89.84,away,21.0,LOSS,100.0,-100.0
+2023-12-22,Morgan State Bears,James Madison Dukes,2024,h1_spread,3.07,13.0,90.24,home,-7.0,WIN,100.0,90.9
+2023-12-23,Wisconsin Badgers,Chicago State Cougars,2024,h1_spread,-7.57,-14.0,58.45,away,13.5,WIN,100.0,90.9
+2023-12-23,Arizona Wildcats,Florida Atlantic Owls,2024,h1_spread,-2.92,-4.0,9.82,away,-0.5,WIN,100.0,90.9
+2023-12-23,Memphis Tigers,Vanderbilt Commodores,2024,h1_spread,-3.71,-9.5,52.66,away,1.0,WIN,100.0,90.9
+2023-12-23,Ole Miss Rebels,Southern Miss Golden Eagles,2024,h1_spread,-1.32,-5.5,38.0,away,8.5,LOSS,100.0,-100.0
+2023-12-24,Portland Pilots,Temple Owls,2024,h1_spread,-0.27,2.0,20.65,home,-0.5,WIN,100.0,90.9
+2023-12-24,Massachusetts Minutemen,Old Dominion Monarchs,2024,h1_spread,-1.12,-4.0,26.16,away,11.0,LOSS,100.0,-100.0
+2023-12-24,Hawai'i Rainbow Warriors,TCU Horned Frogs,2024,h1_spread,2.15,3.0,7.73,home,-7.0,LOSS,100.0,-100.0
+2023-12-25,Georgia Tech Yellow Jackets,Nevada Wolf Pack,2024,h1_spread,0.42,3.0,23.42,home,-4.0,LOSS,100.0,-100.0
+2023-12-28,Virginia Cavaliers,Morgan State Bears,2024,h1_spread,-8.74,-15.0,56.93,away,17.5,LOSS,100.0,-100.0
+2023-12-29,Oklahoma Sooners,Central Arkansas Bears,2024,h1_spread,-8.43,-19.0,96.08,away,8.0,WIN,100.0,90.9
+2023-12-30,Purdue Boilermakers,Eastern Kentucky Colonels,2024,h1_spread,-7.15,-16.75,87.31,away,13.5,WIN,100.0,90.9
+2023-12-30,California Golden Bears,Arizona Wildcats,2024,h1_spread,6.43,8.0,14.3,home,-9.5,LOSS,100.0,-100.0
+2023-12-30,Kentucky Wildcats,Illinois State Redbirds,2024,h1_spread,-8.62,-12.0,30.72,away,13.0,LOSS,100.0,-100.0
+2023-12-30,North Carolina Tar Heels,Charleston Southern Buccaneers,2024,h1_spread,-8.17,-18.5,93.94,away,22.5,LOSS,100.0,-100.0
+2023-12-30,Illinois Fighting Illini,Fairleigh Dickinson Knights,2024,h1_spread,-7.02,-14.75,70.24,away,16.5,LOSS,100.0,-100.0
+2023-12-30,Gonzaga Bulldogs,San Diego State Aztecs,2024,h1_spread,-2.23,-3.5,11.51,away,-5.0,WIN,100.0,90.9
+2023-12-30,Clemson Tigers,Radford Highlanders,2024,h1_spread,-4.83,-8.5,33.33,away,17.5,LOSS,100.0,-100.0
+2023-12-30,Texas Longhorns,UNC Greensboro Spartans,2024,h1_spread,-6.18,-9.0,25.64,away,17.5,LOSS,100.0,-100.0
+2023-12-30,Kansas Jayhawks,Wichita State Shockers,2024,h1_spread,-4.54,-7.0,22.39,away,9.5,LOSS,100.0,-100.0
+2023-12-31,Houston Cougars,Pennsylvania Quakers,2024,h1_spread,-7.0,-15.0,72.68,away,19.5,LOSS,100.0,-100.0
+2023-12-31,Florida Gulf Coast Eagles,Florida Atlantic Owls,2024,h1_spread,3.64,10.0,57.85,home,2.0,WIN,100.0,90.9
+2023-12-30,Marquette Golden Eagles,Creighton Bluejays,2024,h1_spread,-1.73,-2.5,6.99,away,2.5,PUSH,100.0,0.0
+2023-12-30,BYU Cougars,Wyoming Cowboys,2024,h1_spread,-3.73,-11.5,70.64,away,13.0,LOSS,100.0,-100.0
+2023-12-31,Memphis Tigers,Austin Peay Governors,2024,h1_spread,-10.27,-12.0,15.69,away,5.5,WIN,100.0,90.9
+2023-12-30,James Madison Dukes,Texas State Bobcats,2024,h1_spread,-3.26,-6.5,29.45,away,8.5,LOSS,100.0,-100.0
+2023-12-31,Stanford Cardinal,Arizona Wildcats,2024,h1_spread,1.61,7.0,49.04,home,9.0,WIN,100.0,90.9
+2023-12-31,Oklahoma Sooners,Monmouth Hawks,2024,h1_spread,-9.3,-14.0,42.74,away,8.0,WIN,100.0,90.9
+2023-12-31,Ole Miss Rebels,Bryant Bulldogs,2024,h1_spread,-3.74,-8.5,43.28,away,8.5,PUSH,100.0,0.0
+2024-01-01,Texas Longhorns,UT Arlington Mavericks,2024,h1_spread,-8.77,-11.0,20.29,away,8.5,WIN,100.0,90.9
+2024-01-03,Maryland Terrapins,Purdue Boilermakers,2024,h1_spread,0.33,3.5,28.86,home,-7.0,LOSS,100.0,-100.0
+2024-01-03,Tennessee Volunteers,Norfolk State Spartans,2024,h1_spread,-8.44,-14.25,52.82,away,18.5,LOSS,100.0,-100.0
+2024-01-03,Pittsburgh Panthers,North Carolina Tar Heels,2024,h1_spread,-0.58,2.0,23.46,home,-6.5,LOSS,100.0,-100.0
+2024-01-03,Illinois Fighting Illini,Northwestern Wildcats,2024,h1_spread,-0.81,-2.5,15.39,away,15.0,LOSS,100.0,-100.0
+2024-01-03,Colorado State Rams,New Mexico Lobos,2024,h1_spread,-0.09,-2.0,17.4,away,4.0,LOSS,100.0,-100.0
+2024-01-03,Duke Blue Devils,Syracuse Orange,2024,h1_spread,-5.78,-8.0,20.19,away,10.0,LOSS,100.0,-100.0
+2024-01-03,Florida Atlantic Owls,East Carolina Pirates,2024,h1_spread,-6.45,-10.0,32.26,away,7.5,WIN,100.0,90.9
+2024-01-03,Baylor Bears,Cornell Big Red,2024,h1_spread,-6.68,-9.5,25.67,away,9.5,PUSH,100.0,0.0
+2024-01-03,Wisconsin Badgers,Iowa Hawkeyes,2024,h1_spread,-0.62,-3.0,21.63,away,5.5,LOSS,100.0,-100.0
+2024-01-03,Auburn Tigers,Pennsylvania Quakers,2024,h1_spread,-4.8,-12.0,65.44,away,10.0,WIN,100.0,90.9
+2024-01-04,Miami Hurricanes,Clemson Tigers,2024,h1_spread,-2.79,1.0,34.45,home,6.5,WIN,100.0,90.9
+2024-01-03,Providence Friars,Seton Hall Pirates,2024,h1_spread,-1.82,-3.25,12.97,away,-2.0,WIN,100.0,90.9
+2024-01-05,Arizona Wildcats,Colorado Buffaloes,2024,h1_spread,-4.62,-7.5,26.21,away,23.5,LOSS,100.0,-100.0
+2024-01-05,Tulsa Golden Hurricane,Memphis Tigers,2024,h1_spread,6.29,5.0,11.7,away,-1.5,LOSS,100.0,-100.0
+2024-01-05,Louisiana Ragin' Cajuns,James Madison Dukes,2024,h1_spread,-2.46,3.5,54.14,home,-3.5,PUSH,100.0,0.0
+2024-01-05,Gonzaga Bulldogs,Pepperdine Waves,2024,h1_spread,-7.95,-12.5,41.4,away,13.0,LOSS,100.0,-100.0
+2024-01-06,Purdue Boilermakers,Illinois Fighting Illini,2024,h1_spread,-4.15,-6.0,16.78,away,2.5,WIN,100.0,90.9
+2024-01-06,Kansas Jayhawks,TCU Horned Frogs,2024,h1_spread,-2.62,-5.0,21.65,away,1.0,WIN,100.0,90.9
+2024-01-06,Houston Cougars,West Virginia Mountaineers,2024,h1_spread,-3.31,-11.5,74.45,away,17.0,LOSS,100.0,-100.0
+2024-01-06,Tennessee Volunteers,Ole Miss Rebels,2024,h1_spread,-6.07,-7.0,8.47,away,13.0,LOSS,100.0,-100.0
+2024-01-06,Florida Gators,Kentucky Wildcats,2024,h1_spread,0.61,-2.0,23.7,away,-1.0,WIN,100.0,90.9
+2024-01-06,Seton Hall Pirates,Marquette Golden Eagles,2024,h1_spread,1.05,2.25,10.92,home,1.5,WIN,100.0,90.9
+2024-01-06,Clemson Tigers,North Carolina Tar Heels,2024,h1_spread,-0.98,-1.5,4.69,away,-5.0,WIN,100.0,90.9
+2024-01-07,Arizona Wildcats,Utah Utes,2024,h1_spread,-4.57,-7.0,22.07,away,9.5,LOSS,100.0,-100.0
+2024-01-06,Oklahoma Sooners,Iowa State Cyclones,2024,h1_spread,-0.81,-1.5,6.29,away,4.0,LOSS,100.0,-100.0
+2024-01-07,BYU Cougars,Cincinnati Bearcats,2024,h1_spread,-0.47,-5.5,45.75,away,-5.5,WIN,100.0,90.9
+2024-01-07,Utah State Aggies,Colorado State Rams,2024,h1_spread,-4.26,-1.5,25.06,home,2.5,WIN,100.0,90.9
+2024-01-06,Notre Dame Fighting Irish,Duke Blue Devils,2024,h1_spread,2.9,8.0,46.4,home,-4.0,WIN,100.0,90.9
+2024-01-06,Charlotte 49ers,Florida Atlantic Owls,2024,h1_spread,1.45,4.5,27.73,home,1.0,WIN,100.0,90.9
+2024-01-06,Oklahoma State Cowboys,Baylor Bears,2024,h1_spread,0.23,2.5,20.61,home,-2.5,PUSH,100.0,0.0
+2024-01-06,Southern Miss Golden Eagles,James Madison Dukes,2024,h1_spread,-1.69,4.0,51.77,home,5.0,WIN,100.0,90.9
+2024-01-07,Texas Longhorns,Texas Tech Red Raiders,2024,h1_spread,-4.25,-3.5,6.78,home,-5.5,LOSS,100.0,-100.0
+2024-01-06,Wisconsin Badgers,Nebraska Cornhuskers,2024,h1_spread,-2.71,-3.5,7.2,away,8.0,LOSS,100.0,-100.0
+2024-01-06,Creighton Bluejays,Providence Friars,2024,h1_spread,-3.49,-6.5,27.32,away,4.5,WIN,100.0,90.9
+2024-01-07,Gonzaga Bulldogs,San Diego Toreros,2024,h1_spread,-8.5,-13.5,45.46,away,13.5,PUSH,100.0,0.0
+2024-01-06,Arkansas Razorbacks,Auburn Tigers,2024,h1_spread,-1.58,1.0,23.48,home,-16.0,LOSS,100.0,-100.0
+2024-01-07,Memphis Tigers,SMU Mustangs,2024,h1_spread,-6.4,-4.5,17.29,home,1.5,LOSS,100.0,-100.0
+2024-01-09,Monmouth Hawks,Northeastern Huskies,2024,h1_spread,0.24,-1.25,13.52,away,9.5,LOSS,100.0,-100.0
+2024-01-09,Southern Jaguars,Prairie View A&M Panthers,2024,h1_spread,-0.93,-7.5,59.7,away,10.5,LOSS,100.0,-100.0
+2024-01-09,North Carolina Central Eagles,Norfolk State Spartans,2024,h1_spread,-2.51,-0.5,18.25,home,1.0,WIN,100.0,90.9
+2024-01-09,Lamar Cardinals,Incarnate Word Cardinals,2024,h1_spread,-0.18,-4.0,34.71,away,8.0,LOSS,100.0,-100.0
+2024-01-09,Arkansas-Pine Bluff Golden Lions,Alabama State Hornets,2024,h1_spread,-3.1,0.5,32.69,home,-5.5,LOSS,100.0,-100.0
+2024-01-09,Mississippi Valley State Delta Devils,Alabama A&M Bulldogs,2024,h1_spread,0.57,4.0,31.17,home,-4.0,PUSH,100.0,0.0
+2024-01-10,Nebraska Cornhuskers,Purdue Boilermakers,2024,h1_spread,2.63,4.0,12.48,home,8.0,WIN,100.0,90.9
+2024-01-10,Iowa State Cyclones,Houston Cougars,2024,h1_spread,1.22,1.0,2.0,away,2.0,LOSS,100.0,-100.0
+2024-01-10,Kentucky Wildcats,Missouri Tigers,2024,h1_spread,-2.73,-6.5,34.29,away,6.5,PUSH,100.0,0.0
+2024-01-10,Pittsburgh Panthers,Duke Blue Devils,2024,h1_spread,0.72,2.5,16.19,home,-11.0,LOSS,100.0,-100.0
+2024-01-10,Baylor Bears,BYU Cougars,2024,h1_spread,-4.21,-2.5,15.53,home,4.5,WIN,100.0,90.9
+2024-01-10,Auburn Tigers,Texas A&M Aggies,2024,h1_spread,-1.51,-3.5,18.07,away,5.5,LOSS,100.0,-100.0
+2024-01-10,Boise State Broncos,Colorado State Rams,2024,h1_spread,-3.55,0.5,36.86,home,3.5,WIN,100.0,90.9
+2024-01-10,Utah State Aggies,Wyoming Cowboys,2024,h1_spread,-5.51,-9.0,31.75,away,12.0,LOSS,100.0,-100.0
+2024-01-10,DePaul Blue Demons,Creighton Bluejays,2024,h1_spread,3.33,9.0,51.53,home,-13.0,LOSS,100.0,-100.0
+2024-01-10,Cincinnati Bearcats,Texas Longhorns,2024,h1_spread,0.98,-2.5,31.64,away,-0.5,WIN,100.0,90.9
+2024-01-11,UCF Knights,Kansas Jayhawks,2024,h1_spread,0.84,3.5,24.2,home,2.5,WIN,100.0,90.9
+2024-01-11,Mississippi State Bulldogs,Tennessee Volunteers,2024,h1_spread,1.5,1.0,4.56,away,2.5,LOSS,100.0,-100.0
+2024-01-11,TCU Horned Frogs,Oklahoma Sooners,2024,h1_spread,-2.41,-3.0,5.32,away,4.5,LOSS,100.0,-100.0
+2024-01-11,Marquette Golden Eagles,Butler Bulldogs,2024,h1_spread,-6.18,-6.5,2.88,away,-3.5,WIN,100.0,90.9
+2024-01-11,Memphis Tigers,UTSA Roadrunners,2024,h1_spread,-8.45,-11.5,27.77,away,3.0,WIN,100.0,90.9
+2024-01-11,Ohio State Buckeyes,Wisconsin Badgers,2024,h1_spread,-2.14,-1.5,5.84,home,-5.5,LOSS,100.0,-100.0
+2024-01-11,Virginia Tech Hokies,Clemson Tigers,2024,h1_spread,-1.08,1.0,18.88,home,7.5,WIN,100.0,90.9
+2024-01-12,Illinois Fighting Illini,Michigan State Spartans,2024,h1_spread,-0.39,-1.5,10.08,away,1.5,PUSH,100.0,0.0
+2024-01-12,Santa Clara Broncos,Gonzaga Bulldogs,2024,h1_spread,2.0,4.5,22.69,home,0.5,WIN,100.0,90.9
+2024-01-12,Tulane Green Wave,Florida Atlantic Owls,2024,h1_spread,1.47,4.0,23.01,home,-0.5,WIN,100.0,90.9
+2024-01-12,Milwaukee Panthers,Cleveland State Vikings,2024,h1_spread,-0.12,-1.5,12.53,away,4.0,LOSS,100.0,-100.0
+2024-01-12,Indiana Hoosiers,Minnesota Golden Gophers,2024,h1_spread,-6.23,-2.5,33.87,home,6.0,WIN,100.0,90.9
+2024-01-13,South Florida Bulls,Rice Owls,2024,h1_spread,-2.92,-2.5,3.82,home,4.0,WIN,100.0,90.9
+2024-01-13,Duquesne Dukes,Dayton Flyers,2024,h1_spread,0.27,-0.5,6.96,away,-5.0,WIN,100.0,90.9
+2024-01-13,Rider Broncs,Manhattan Jaspers,2024,h1_spread,-3.56,-5.0,13.08,away,6.5,LOSS,100.0,-100.0
+2024-01-13,Marist Red Foxes,Quinnipiac Bobcats,2024,h1_spread,0.28,-0.5,7.09,away,-5.5,WIN,100.0,90.9
+2024-01-13,Niagara Purple Eagles,Fairfield Stags,2024,h1_spread,-1.7,1.0,24.56,home,12.0,WIN,100.0,90.9
+2024-01-13,Canisius Golden Griffins,Siena Saints,2024,h1_spread,-0.93,-5.0,36.96,away,2.0,WIN,100.0,90.9
+2024-01-13,Akron Zips,Buffalo Bulls,2024,h1_spread,-3.33,-9.5,56.13,away,8.5,WIN,100.0,90.9
+2024-01-13,Robert Morris Colonials,Purdue Fort Wayne Mastodons,2024,h1_spread,-1.56,1.5,27.8,home,1.5,WIN,100.0,90.9
+2024-01-13,North Florida Ospreys,Jacksonville Dolphins,2024,h1_spread,-1.38,-3.0,14.77,away,4.0,LOSS,100.0,-100.0
+2024-01-13,Kennesaw State Owls,Florida Gulf Coast Eagles,2024,h1_spread,-3.39,-4.0,5.57,away,1.5,WIN,100.0,90.9
+2024-01-13,Villanova Wildcats,DePaul Blue Demons,2024,h1_spread,-4.14,-11.5,66.87,away,12.5,LOSS,100.0,-100.0
+2024-01-13,Youngstown State Penguins,Wright State Raiders,2024,h1_spread,-2.26,-0.5,16.04,home,5.0,WIN,100.0,90.9
+2024-01-13,Iowa Hawkeyes,Nebraska Cornhuskers,2024,h1_spread,-3.59,-2.5,9.88,home,9.0,WIN,100.0,90.9
+2024-01-13,Nevada Wolf Pack,Boise State Broncos,2024,h1_spread,-0.41,-3.5,28.1,away,-4.0,WIN,100.0,90.9
+2024-01-13,Purdue Boilermakers,Penn State Nittany Lions,2024,h1_spread,-3.35,-10.5,65.04,away,8.5,WIN,100.0,90.9
+2024-01-13,TCU Horned Frogs,Houston Cougars,2024,h1_spread,1.0,1.5,4.57,home,0.5,WIN,100.0,90.9
+2024-01-13,Georgia Bulldogs,Tennessee Volunteers,2024,h1_spread,4.24,4.0,2.18,away,-3.0,LOSS,100.0,-100.0
+2024-01-13,North Carolina Tar Heels,Syracuse Orange,2024,h1_spread,-4.48,-6.5,18.37,away,18.0,LOSS,100.0,-100.0
+2024-01-13,Washington State Cougars,Arizona Wildcats,2024,h1_spread,1.17,4.5,30.3,home,1.5,WIN,100.0,90.9
+2024-01-13,Duke Blue Devils,Georgia Tech Yellow Jackets,2024,h1_spread,-5.97,-10.5,41.17,away,2.5,WIN,100.0,90.9
+2024-01-14,Baylor Bears,Cincinnati Bearcats,2024,h1_spread,-3.18,-3.5,2.94,away,1.5,WIN,100.0,90.9
+2024-01-13,Wisconsin Badgers,Northwestern Wildcats,2024,h1_spread,-0.54,-4.0,31.43,away,4.0,PUSH,100.0,0.0
+2024-01-13,Auburn Tigers,LSU Tigers,2024,h1_spread,-5.64,-8.0,21.49,away,7.5,WIN,100.0,90.9
+2024-01-13,UCF Knights,BYU Cougars,2024,h1_spread,-1.98,3.0,45.28,home,-2.5,WIN,100.0,90.9
+2024-01-13,New Mexico Lobos,San Diego State Aztecs,2024,h1_spread,0.81,-2.0,25.58,away,9.0,LOSS,100.0,-100.0
+2024-01-13,UNLV Rebels,Utah State Aggies,2024,h1_spread,0.99,0.5,4.44,away,-0.5,PUSH,100.0,0.0
+2024-01-13,Clemson Tigers,Boston College Eagles,2024,h1_spread,-4.58,-6.0,12.91,away,5.5,WIN,100.0,90.9
+2024-01-13,Creighton Bluejays,St. John's Red Storm,2024,h1_spread,-4.4,-3.5,8.22,home,0.5,LOSS,100.0,-100.0
+2024-01-13,West Virginia Mountaineers,Texas Longhorns,2024,h1_spread,-0.38,3.0,30.68,home,1.5,WIN,100.0,90.9
+2024-01-14,Illinois Fighting Illini,Maryland Terrapins,2024,h1_spread,-0.67,-5.0,39.35,away,-4.5,WIN,100.0,90.9
+2024-01-14,Wichita State Shockers,Memphis Tigers,2024,h1_spread,1.24,2.5,11.44,home,-13.0,LOSS,100.0,-100.0
+2024-01-14,Florida Atlantic Owls,UAB Blazers,2024,h1_spread,-2.2,-8.5,57.23,away,6.5,WIN,100.0,90.9
+2024-01-15,Marquette Golden Eagles,Villanova Wildcats,2024,h1_spread,-3.92,-3.5,3.8,home,6.5,WIN,100.0,90.9
+2024-01-17,Indiana Hoosiers,Purdue Boilermakers,2024,h1_spread,0.49,5.5,45.59,home,-10.5,LOSS,100.0,-100.0
+2024-01-17,Oklahoma State Cowboys,Kansas Jayhawks,2024,h1_spread,0.34,4.0,33.25,home,-12.0,LOSS,100.0,-100.0
+2024-01-16,Tennessee Volunteers,Florida Gators,2024,h1_spread,-5.05,-5.5,4.09,away,9.5,LOSS,100.0,-100.0
+2024-01-17,Kansas State Wildcats,Baylor Bears,2024,h1_spread,-0.71,-0.5,1.95,home,2.0,WIN,100.0,90.9
+2024-01-17,Penn State Nittany Lions,Wisconsin Badgers,2024,h1_spread,-2.57,3.0,50.67,home,2.0,WIN,100.0,90.9
+2024-01-17,New Mexico Lobos,Utah State Aggies,2024,h1_spread,-0.16,-3.5,30.39,away,6.5,LOSS,100.0,-100.0
+2024-01-17,Cincinnati Bearcats,TCU Horned Frogs,2024,h1_spread,-0.83,-1.5,6.07,away,2.0,LOSS,100.0,-100.0
+2024-01-17,BYU Cougars,Iowa State Cyclones,2024,h1_spread,-0.02,-2.0,17.98,away,7.5,LOSS,100.0,-100.0
+2024-01-17,Dayton Flyers,Saint Louis Billikens,2024,h1_spread,-2.57,-7.0,40.26,away,2.5,WIN,100.0,90.9
+2024-01-18,North Carolina Tar Heels,Louisville Cardinals,2024,h1_spread,-7.33,-12.5,47.04,away,8.0,WIN,100.0,90.9
+2024-01-18,Houston Cougars,Texas Tech Red Raiders,2024,h1_spread,-4.93,-7.5,23.35,away,11.5,LOSS,100.0,-100.0
+2024-01-18,Kentucky Wildcats,Mississippi State Bulldogs,2024,h1_spread,-3.06,-3.5,4.01,away,6.5,LOSS,100.0,-100.0
+2024-01-18,Arizona Wildcats,USC Trojans,2024,h1_spread,-3.89,-12.5,78.27,away,7.5,WIN,100.0,90.9
+2024-01-18,Vanderbilt Commodores,Auburn Tigers,2024,h1_spread,0.18,6.5,57.48,home,-7.5,LOSS,100.0,-100.0
+2024-01-18,Oklahoma Sooners,West Virginia Mountaineers,2024,h1_spread,0.1,-7.0,64.56,away,7.0,PUSH,100.0,0.0
+2024-01-18,LSU Tigers,Ole Miss Rebels,2024,h1_spread,-0.57,-1.5,8.48,away,4.5,LOSS,100.0,-100.0
+2024-01-19,Memphis Tigers,South Florida Bulls,2024,h1_spread,-6.03,-5.5,4.84,home,-0.5,LOSS,100.0,-100.0
+2024-01-19,Michigan Wolverines,Illinois Fighting Illini,2024,h1_spread,-1.74,1.25,27.23,home,-7.5,LOSS,100.0,-100.0
+2024-01-19,Florida Atlantic Owls,Wichita State Shockers,2024,h1_spread,-3.72,-9.0,47.99,away,4.5,WIN,100.0,90.9
+2024-01-20,Wisconsin Badgers,Indiana Hoosiers,2024,h1_spread,-0.57,-7.0,58.49,away,6.0,WIN,100.0,90.9
+2024-01-20,Iowa Hawkeyes,Purdue Boilermakers,2024,h1_spread,0.54,3.5,26.91,home,-7.0,LOSS,100.0,-100.0
+2024-01-20,West Virginia Mountaineers,Kansas Jayhawks,2024,h1_spread,-1.07,5.5,59.71,home,3.0,WIN,100.0,90.9
+2024-01-20,Boston College Eagles,North Carolina Tar Heels,2024,h1_spread,2.1,3.5,12.77,home,-5.0,LOSS,100.0,-100.0
+2024-01-20,Houston Cougars,UCF Knights,2024,h1_spread,-5.22,-10.0,43.48,away,7.5,WIN,100.0,90.9
+2024-01-20,Tennessee Volunteers,Alabama Crimson Tide,2024,h1_spread,-0.66,-3.0,21.3,away,10.0,LOSS,100.0,-100.0
+2024-01-21,Duke Blue Devils,Pittsburgh Panthers,2024,h1_spread,-3.72,-7.0,29.83,away,-2.0,WIN,100.0,90.9
+2024-01-20,Kentucky Wildcats,Georgia Bulldogs,2024,h1_spread,-5.8,-8.0,20.03,away,4.5,WIN,100.0,90.9
+2024-01-20,Texas Longhorns,Baylor Bears,2024,h1_spread,-2.3,-1.5,7.31,home,1.0,LOSS,100.0,-100.0
+2024-01-20,Arizona Wildcats,UCLA Bruins,2024,h1_spread,-0.88,-10.5,87.49,away,3.0,WIN,100.0,90.9
+2024-01-21,Auburn Tigers,Ole Miss Rebels,2024,h1_spread,-4.7,-6.5,16.33,away,11.5,LOSS,100.0,-100.0
+2024-01-20,Cincinnati Bearcats,Oklahoma Sooners,2024,h1_spread,-1.75,-2.0,2.3,away,-2.0,WIN,100.0,90.9
+2024-01-20,Utah State Aggies,Fresno State Bulldogs,2024,h1_spread,-5.1,-7.5,21.79,away,10.5,LOSS,100.0,-100.0
+2024-01-20,St. John's Red Storm,Marquette Golden Eagles,2024,h1_spread,1.64,-0.5,19.41,away,-0.5,WIN,100.0,90.9
+2024-01-20,Seton Hall Pirates,Creighton Bluejays,2024,h1_spread,0.82,0.5,2.89,away,-1.5,WIN,100.0,90.9
+2024-01-20,TCU Horned Frogs,Iowa State Cyclones,2024,h1_spread,-1.72,-2.5,7.07,away,-0.5,WIN,100.0,90.9
+2024-01-20,Texas Tech Red Raiders,BYU Cougars,2024,h1_spread,-2.27,-1.0,11.51,home,3.5,WIN,100.0,90.9
+2024-01-20,Dayton Flyers,Rhode Island Rams,2024,h1_spread,-5.88,-7.0,10.15,away,17.0,LOSS,100.0,-100.0
+2024-01-21,Illinois Fighting Illini,Rutgers Scarlet Knights,2024,h1_spread,-1.29,-6.5,47.35,away,11.5,LOSS,100.0,-100.0
+2024-01-21,UTSA Roadrunners,Florida Atlantic Owls,2024,h1_spread,4.92,9.5,41.6,home,-4.5,WIN,100.0,90.9
+2024-01-23,North Carolina Tar Heels,Wake Forest Demon Deacons,2024,h1_spread,-2.84,-4.0,10.58,away,10.5,LOSS,100.0,-100.0
+2024-01-23,Kansas Jayhawks,Cincinnati Bearcats,2024,h1_spread,-3.29,-4.5,11.03,away,2.5,WIN,100.0,90.9
+2024-01-24,Purdue Boilermakers,Michigan Wolverines,2024,h1_spread,-3.91,-10.5,59.91,away,16.0,LOSS,100.0,-100.0
+2024-01-24,BYU Cougars,Houston Cougars,2024,h1_spread,2.7,1.0,15.43,away,-3.5,WIN,100.0,90.9
+2024-01-24,South Carolina Gamecocks,Kentucky Wildcats,2024,h1_spread,3.82,3.0,7.43,away,8.5,LOSS,100.0,-100.0
+2024-01-24,Oklahoma Sooners,Texas Longhorns,2024,h1_spread,1.23,-2.5,33.88,away,-7.5,WIN,100.0,90.9
+2024-01-24,Louisville Cardinals,Duke Blue Devils,2024,h1_spread,5.62,8.0,21.59,home,-7.0,WIN,100.0,90.9
+2024-01-24,Minnesota Golden Gophers,Wisconsin Badgers,2024,h1_spread,2.29,1.5,7.2,away,-1.0,LOSS,100.0,-100.0
+2024-01-23,La Salle Explorers,Dayton Flyers,2024,h1_spread,2.31,4.5,19.93,home,-6.0,LOSS,100.0,-100.0
+2024-01-24,Creighton Bluejays,Xavier Musketeers,2024,h1_spread,-2.06,-4.5,22.22,away,3.5,WIN,100.0,90.9
+2024-01-25,Alabama Crimson Tide,Auburn Tigers,2024,h1_spread,-3.71,-2.0,15.52,home,2.0,PUSH,100.0,0.0
+2024-01-25,Northwestern Wildcats,Illinois Fighting Illini,2024,h1_spread,-2.19,1.5,33.57,home,2.5,WIN,100.0,90.9
+2024-01-25,DePaul Blue Demons,Marquette Golden Eagles,2024,h1_spread,3.56,11.0,67.61,home,-6.5,WIN,100.0,90.9
+2024-01-25,Rice Owls,Florida Atlantic Owls,2024,h1_spread,3.93,6.5,23.36,home,-6.5,PUSH,100.0,0.0
+2024-01-25,Iowa State Cyclones,Kansas State Wildcats,2024,h1_spread,-1.05,-4.5,31.33,away,5.5,LOSS,100.0,-100.0
+2024-01-26,Oregon State Beavers,Arizona Wildcats,2024,h1_spread,5.33,11.0,51.52,home,1.5,WIN,100.0,90.9
+2024-01-27,Wisconsin Badgers,Michigan State Spartans,2024,h1_spread,-0.13,-1.5,12.48,away,7.5,LOSS,100.0,-100.0
+2024-01-27,Florida State Seminoles,North Carolina Tar Heels,2024,h1_spread,2.94,3.5,5.1,home,-3.5,PUSH,100.0,0.0
+2024-01-27,Houston Cougars,Kansas State Wildcats,2024,h1_spread,-3.77,-9.0,47.51,away,11.0,LOSS,100.0,-100.0
+2024-01-27,Vanderbilt Commodores,Tennessee Volunteers,2024,h1_spread,1.54,7.5,54.16,home,-6.5,WIN,100.0,90.9
+2024-01-27,Arkansas Razorbacks,Kentucky Wildcats,2024,h1_spread,-1.66,3.0,42.38,home,-3.0,PUSH,100.0,0.0
+2024-01-27,Iowa State Cyclones,Kansas Jayhawks,2024,h1_spread,-0.16,-2.5,21.29,away,2.0,WIN,100.0,90.9
+2024-01-27,Mississippi State Bulldogs,Auburn Tigers,2024,h1_spread,0.14,1.5,12.39,home,3.0,WIN,100.0,90.9
+2024-01-27,Oregon Ducks,Arizona Wildcats,2024,h1_spread,0.51,2.0,13.53,home,-4.5,LOSS,100.0,-100.0
+2024-01-27,Illinois Fighting Illini,Indiana Hoosiers,2024,h1_spread,-0.83,-8.5,69.72,away,4.0,WIN,100.0,90.9
+2024-01-27,Oklahoma Sooners,Texas Tech Red Raiders,2024,h1_spread,-1.52,-2.0,4.37,away,-0.5,WIN,100.0,90.9
+2024-01-27,Duke Blue Devils,Clemson Tigers,2024,h1_spread,-3.32,-4.0,6.22,away,0.5,WIN,100.0,90.9
+2024-01-27,Marquette Golden Eagles,Seton Hall Pirates,2024,h1_spread,-4.05,-6.0,17.74,away,9.0,LOSS,100.0,-100.0
+2024-01-27,Baylor Bears,TCU Horned Frogs,2024,h1_spread,-2.51,-2.0,4.62,home,-1.5,LOSS,100.0,-100.0
+2024-01-28,Creighton Bluejays,DePaul Blue Demons,2024,h1_spread,-6.33,-14.5,74.26,away,11.5,WIN,100.0,90.9
+2024-01-27,Boise State Broncos,Utah State Aggies,2024,h1_spread,-0.8,-1.5,6.38,away,-3.0,WIN,100.0,90.9
+2024-01-27,BYU Cougars,Texas Longhorns,2024,h1_spread,2.01,-4.0,54.66,away,6.0,LOSS,100.0,-100.0
+2024-01-27,Wyoming Cowboys,Colorado State Rams,2024,h1_spread,-0.25,4.25,40.9,home,1.5,WIN,100.0,90.9
+2024-01-28,Rutgers Scarlet Knights,Purdue Boilermakers,2024,h1_spread,0.95,6.0,45.95,home,-4.0,WIN,100.0,90.9
+2024-01-28,UAB Blazers,Memphis Tigers,2024,h1_spread,-0.27,2.0,20.67,home,4.5,WIN,100.0,90.9
+2024-01-28,Florida Atlantic Owls,North Texas Mean Green,2024,h1_spread,-2.01,-5.0,27.19,away,1.5,WIN,100.0,90.9
+2024-01-29,New Mexico Lobos,Nevada Wolf Pack,2024,h1_spread,-1.95,-4.5,23.17,away,17.0,LOSS,100.0,-100.0
+2024-01-30,Texas Longhorns,Houston Cougars,2024,h1_spread,-0.81,2.5,30.13,home,-2.0,WIN,100.0,90.9
+2024-01-30,Virginia Tech Hokies,Duke Blue Devils,2024,h1_spread,0.74,2.0,11.47,home,-5.0,LOSS,100.0,-100.0
+2024-01-31,Georgia Tech Yellow Jackets,North Carolina Tar Heels,2024,h1_spread,1.67,4.5,25.72,home,0.5,WIN,100.0,90.9
+2024-01-30,Tennessee Volunteers,South Carolina Gamecocks,2024,h1_spread,-8.26,-8.0,2.37,home,-2.0,LOSS,100.0,-100.0
+2024-01-31,Kansas Jayhawks,Oklahoma State Cowboys,2024,h1_spread,-3.34,-8.5,46.89,away,14.5,LOSS,100.0,-100.0
+2024-01-31,Villanova Wildcats,Marquette Golden Eagles,2024,h1_spread,0.92,-1.5,21.98,away,-2.5,WIN,100.0,90.9
+2024-01-31,Ohio State Buckeyes,Illinois Fighting Illini,2024,h1_spread,-1.88,1.5,30.7,home,-6.0,LOSS,100.0,-100.0
+2024-01-31,TCU Horned Frogs,Texas Tech Red Raiders,2024,h1_spread,-2.43,-2.0,3.95,home,3.5,WIN,100.0,90.9
+2024-01-31,Dayton Flyers,George Washington Revolutionaries,2024,h1_spread,-4.95,-7.5,23.15,away,11.0,LOSS,100.0,-100.0
+2024-01-31,Kansas State Wildcats,Oklahoma Sooners,2024,h1_spread,-2.64,-1.5,10.35,home,-10.0,LOSS,100.0,-100.0
+2024-01-31,Purdue Boilermakers,Northwestern Wildcats,2024,h1_spread,-3.46,-8.5,45.8,away,4.5,WIN,100.0,90.9
+2024-02-01,Kentucky Wildcats,Florida Gators,2024,h1_spread,-3.61,-4.0,3.58,away,-1.5,WIN,100.0,90.9
+2024-02-01,Auburn Tigers,Vanderbilt Commodores,2024,h1_spread,-3.18,-10.5,66.57,away,13.5,LOSS,100.0,-100.0
+2024-02-01,UCF Knights,Baylor Bears,2024,h1_spread,0.73,2.0,11.57,home,-4.0,LOSS,100.0,-100.0
+2024-02-01,New Mexico Lobos,Boise State Broncos,2024,h1_spread,-0.86,-6.0,46.73,away,-4.0,WIN,100.0,90.9
+2024-01-31,Georgia Bulldogs,Alabama Crimson Tide,2024,h1_spread,5.08,3.5,14.39,away,-4.5,WIN,100.0,90.9
+2024-02-02,Nebraska Cornhuskers,Wisconsin Badgers,2024,h1_spread,-0.29,0.0,2.66,home,4.0,WIN,100.0,90.9
+2024-02-02,Arizona Wildcats,California Golden Bears,2024,h1_spread,-9.43,-11.0,14.3,away,13.0,LOSS,100.0,-100.0
+2024-02-03,Creighton Bluejays,Butler Bulldogs,2024,h1_spread,-5.95,-5.5,4.12,home,-0.5,LOSS,100.0,-100.0
+2024-02-03,Dayton Flyers,St. Bonaventure Bonnies,2024,h1_spread,-4.84,-4.0,7.62,home,2.5,LOSS,100.0,-100.0
+2024-02-03,North Carolina Tar Heels,Duke Blue Devils,2024,h1_spread,-0.2,-2.5,20.91,away,4.5,LOSS,100.0,-100.0
+2024-02-04,Kentucky Wildcats,Tennessee Volunteers,2024,h1_spread,-0.06,-0.5,4.03,away,-5.5,WIN,100.0,90.9
+2024-02-03,Georgetown Hoyas,Marquette Golden Eagles,2024,h1_spread,4.79,7.0,20.12,home,-17.0,LOSS,100.0,-100.0
+2024-02-04,Baylor Bears,Iowa State Cyclones,2024,h1_spread,-2.73,-2.0,6.65,home,1.0,LOSS,100.0,-100.0
+2024-02-03,Texas Tech Red Raiders,Cincinnati Bearcats,2024,h1_spread,-1.23,-2.5,11.51,away,-1.5,WIN,100.0,90.9
+2024-02-03,Ole Miss Rebels,Auburn Tigers,2024,h1_spread,1.7,1.5,1.85,away,-7.0,WIN,100.0,90.9
+2024-02-03,San Diego State Aztecs,Utah State Aggies,2024,h1_spread,-2.47,-3.0,4.8,away,7.0,LOSS,100.0,-100.0
+2024-02-03,Florida Atlantic Owls,Tulsa Golden Hurricane,2024,h1_spread,-8.77,-10.5,15.77,away,16.0,LOSS,100.0,-100.0
+2024-02-03,West Virginia Mountaineers,BYU Cougars,2024,h1_spread,-3.89,4.0,71.7,home,-6.5,LOSS,100.0,-100.0
+2024-02-03,UCF Knights,Oklahoma Sooners,2024,h1_spread,-1.2,0.5,15.41,home,5.5,WIN,100.0,90.9
+2024-02-04,Alabama Crimson Tide,Mississippi State Bulldogs,2024,h1_spread,-5.34,-4.5,7.68,home,16.0,WIN,100.0,90.9
+2024-02-03,TCU Horned Frogs,Texas Longhorns,2024,h1_spread,0.31,-2.5,25.56,away,-5.5,WIN,100.0,90.9
+2024-02-04,Wisconsin Badgers,Purdue Boilermakers,2024,h1_spread,1.42,1.0,3.81,away,-3.0,WIN,100.0,90.9
+2024-02-05,Arizona Wildcats,Stanford Cardinal,2024,h1_spread,-4.61,-11.0,58.14,away,5.5,WIN,100.0,90.9
+2024-02-04,Illinois Fighting Illini,Nebraska Cornhuskers,2024,h1_spread,-2.97,-5.5,22.98,away,1.5,WIN,100.0,90.9
+2024-02-06,Kansas State Wildcats,Kansas Jayhawks,2024,h1_spread,-0.6,2.0,23.68,home,2.5,WIN,100.0,90.9
+2024-02-07,North Carolina Tar Heels,Clemson Tigers,2024,h1_spread,-2.02,-3.5,13.49,away,-2.0,WIN,100.0,90.9
+2024-02-07,Houston Cougars,Oklahoma State Cowboys,2024,h1_spread,-4.72,-13.0,75.26,away,8.0,WIN,100.0,90.9
+2024-02-07,Baylor Bears,Texas Tech Red Raiders,2024,h1_spread,-3.44,-3.25,1.75,home,3.0,LOSS,100.0,-100.0
+2024-02-07,Texas Longhorns,Iowa State Cyclones,2024,h1_spread,-3.53,-1.0,23.04,home,-2.5,LOSS,100.0,-100.0
+2024-02-06,South Carolina Gamecocks,Ole Miss Rebels,2024,h1_spread,0.69,-2.0,24.48,away,1.5,WIN,100.0,90.9
+2024-02-07,Vanderbilt Commodores,Kentucky Wildcats,2024,h1_spread,0.1,4.75,42.28,home,-16.0,LOSS,100.0,-100.0
+2024-02-07,Saint Joseph's Hawks,Dayton Flyers,2024,h1_spread,1.62,1.0,5.63,away,-7.5,WIN,100.0,90.9
+2024-02-07,Oklahoma Sooners,BYU Cougars,2024,h1_spread,-2.29,-1.25,9.41,home,8.0,WIN,100.0,90.9
+2024-02-07,Utah State Aggies,Nevada Wolf Pack,2024,h1_spread,-3.29,-3.0,2.67,home,-7.0,LOSS,100.0,-100.0
+2024-02-07,Air Force Falcons,San Diego State Aztecs,2024,h1_spread,3.21,5.5,20.86,home,-6.5,LOSS,100.0,-100.0
+2024-02-07,Wyoming Cowboys,New Mexico Lobos,2024,h1_spread,1.16,6.0,43.96,home,-9.0,LOSS,100.0,-100.0
+2024-02-08,Tennessee Volunteers,LSU Tigers,2024,h1_spread,-7.0,-8.0,9.09,away,10.0,LOSS,100.0,-100.0
+2024-02-08,Duke Blue Devils,Notre Dame Fighting Irish,2024,h1_spread,-5.9,-9.75,35.04,away,9.0,WIN,100.0,90.9
+2024-02-08,Michigan Wolverines,Wisconsin Badgers,2024,h1_spread,-2.01,5.0,63.73,home,2.0,WIN,100.0,90.9
+2024-02-08,Auburn Tigers,Alabama Crimson Tide,2024,h1_spread,0.71,-3.5,38.25,away,9.0,LOSS,100.0,-100.0
+2024-02-08,Providence Friars,Creighton Bluejays,2024,h1_spread,0.49,1.0,4.6,home,2.0,WIN,100.0,90.9
+2024-02-09,Utah Utes,Arizona Wildcats,2024,h1_spread,1.57,2.5,8.44,home,-3.0,LOSS,100.0,-100.0
+2024-02-09,UAB Blazers,Florida Atlantic Owls,2024,h1_spread,-0.8,3.0,34.5,home,1.5,WIN,100.0,90.9
+2024-02-10,VCU Rams,Dayton Flyers,2024,h1_spread,-1.57,1.5,27.87,home,1.0,WIN,100.0,90.9
+2024-02-10,Nevada Wolf Pack,San Diego State Aztecs,2024,h1_spread,1.27,-1.5,25.14,away,2.0,LOSS,100.0,-100.0
+2024-02-11,Purdue Boilermakers,Indiana Hoosiers,2024,h1_spread,-3.49,-10.0,59.22,away,10.0,PUSH,100.0,0.0
+2024-02-10,Miami Hurricanes,North Carolina Tar Heels,2024,h1_spread,-2.27,1.75,36.58,home,-1.5,WIN,100.0,90.9
+2024-02-10,Kansas Jayhawks,Baylor Bears,2024,h1_spread,-1.61,-3.0,12.64,away,1.5,WIN,100.0,90.9
+2024-02-10,Cincinnati Bearcats,Houston Cougars,2024,h1_spread,1.67,3.0,12.13,home,-2.5,WIN,100.0,90.9
+2024-02-11,Texas A&M Aggies,Tennessee Volunteers,2024,h1_spread,-0.12,0.5,5.66,home,8.0,WIN,100.0,90.9
+2024-02-10,Marquette Golden Eagles,St. John's Red Storm,2024,h1_spread,-4.64,-4.0,5.77,home,5.5,WIN,100.0,90.9
+2024-02-11,Colorado Buffaloes,Arizona Wildcats,2024,h1_spread,1.62,-0.5,19.24,away,-10.0,WIN,100.0,90.9
+2024-02-10,Duke Blue Devils,Boston College Eagles,2024,h1_spread,-6.4,-7.5,10.04,away,7.5,PUSH,100.0,0.0
+2024-02-10,Michigan State Spartans,Illinois Fighting Illini,2024,h1_spread,-2.61,-2.0,5.53,home,4.0,WIN,100.0,90.9
+2024-02-10,Rutgers Scarlet Knights,Wisconsin Badgers,2024,h1_spread,-1.97,1.5,31.58,home,11.0,WIN,100.0,90.9
+2024-02-10,Florida Gators,Auburn Tigers,2024,h1_spread,0.69,0.5,1.69,away,8.0,LOSS,100.0,-100.0
+2024-02-10,Iowa State Cyclones,TCU Horned Frogs,2024,h1_spread,-1.28,-4.5,29.3,away,6.0,LOSS,100.0,-100.0
+2024-02-10,South Carolina Gamecocks,Vanderbilt Commodores,2024,h1_spread,2.22,-6.5,79.26,away,7.5,LOSS,100.0,-100.0
+2024-02-10,LSU Tigers,Alabama Crimson Tide,2024,h1_spread,4.84,4.5,3.12,away,-8.5,WIN,100.0,90.9
+2024-02-10,Kentucky Wildcats,Gonzaga Bulldogs,2024,h1_spread,0.07,-2.5,23.34,away,-2.0,WIN,100.0,90.9
+2024-02-10,Xavier Musketeers,Creighton Bluejays,2024,h1_spread,-0.94,0.5,13.13,home,-3.5,LOSS,100.0,-100.0
+2024-02-11,BYU Cougars,Kansas State Wildcats,2024,h1_spread,0.42,-6.5,62.94,away,3.0,WIN,100.0,90.9
+2024-02-11,Utah State Aggies,Boise State Broncos,2024,h1_spread,-2.2,-2.5,2.71,away,9.5,LOSS,100.0,-100.0
+2024-02-10,Texas Tech Red Raiders,UCF Knights,2024,h1_spread,-1.79,-4.0,20.14,away,3.5,WIN,100.0,90.9
+2024-02-11,New Mexico Lobos,UNLV Rebels,2024,h1_spread,-2.65,-6.5,35.03,away,-1.5,WIN,100.0,90.9
+2024-02-11,Wichita State Shockers,Florida Atlantic Owls,2024,h1_spread,0.72,4.0,29.81,home,-6.5,LOSS,100.0,-100.0
+2024-02-13,Texas Tech Red Raiders,Kansas Jayhawks,2024,h1_spread,0.55,-1.5,18.66,away,14.5,LOSS,100.0,-100.0
+2024-02-13,Butler Bulldogs,Marquette Golden Eagles,2024,h1_spread,3.18,2.0,10.76,away,-3.0,WIN,100.0,90.9
+2024-02-14,Syracuse Orange,North Carolina Tar Heels,2024,h1_spread,1.48,4.5,27.46,home,3.5,WIN,100.0,90.9
+2024-02-14,Cincinnati Bearcats,Iowa State Cyclones,2024,h1_spread,-1.05,-0.75,2.77,home,-4.5,LOSS,100.0,-100.0
+2024-02-14,Illinois Fighting Illini,Michigan Wolverines,2024,h1_spread,-1.26,-9.0,70.41,away,14.5,LOSS,100.0,-100.0
+2024-02-14,Dayton Flyers,Duquesne Dukes,2024,h1_spread,-3.27,-4.5,11.22,away,8.0,LOSS,100.0,-100.0
+2024-02-14,Creighton Bluejays,Georgetown Hoyas,2024,h1_spread,-7.56,-11.5,35.86,away,11.0,WIN,100.0,90.9
+2024-02-14,BYU Cougars,UCF Knights,2024,h1_spread,-1.02,-7.0,54.37,away,1.0,WIN,100.0,90.9
+2024-02-14,Wisconsin Badgers,Ohio State Buckeyes,2024,h1_spread,-0.86,-5.0,37.66,away,4.0,WIN,100.0,90.9
+2024-02-14,Virginia Cavaliers,Pittsburgh Panthers,2024,h1_spread,-2.63,-3.5,7.93,away,-5.5,WIN,100.0,90.9
+2024-02-14,Indiana State Sycamores,Illinois State Redbirds,2024,h1_spread,-6.1,-10.5,39.96,away,-6.5,WIN,100.0,90.9
+2024-02-15,Arkansas Razorbacks,Tennessee Volunteers,2024,h1_spread,-0.22,4.5,42.89,home,-14.5,LOSS,100.0,-100.0
+2024-02-15,Auburn Tigers,South Carolina Gamecocks,2024,h1_spread,-6.9,-6.5,3.6,home,20.0,WIN,100.0,90.9
+2024-02-16,Purdue Boilermakers,Minnesota Golden Gophers,2024,h1_spread,-8.21,-10.0,16.26,away,4.0,WIN,100.0,90.9
+2024-02-16,Saint Mary's Gaels,Pepperdine Waves,2024,h1_spread,-7.3,-11.0,33.68,away,22.0,LOSS,100.0,-100.0
+2024-02-16,Florida Atlantic Owls,Temple Owls,2024,h1_spread,-4.46,-11.5,64.02,away,6.0,WIN,100.0,90.9
+2024-02-16,Cornell Big Red,Harvard Crimson,2024,h1_spread,-1.79,-5.0,29.14,away,6.5,LOSS,100.0,-100.0
+2024-02-17,Georgetown Hoyas,Villanova Wildcats,2024,h1_spread,2.37,5.5,28.46,home,-8.0,LOSS,100.0,-100.0
+2024-02-17,Saint Louis Billikens,VCU Rams,2024,h1_spread,-0.36,2.5,26.03,home,-5.0,LOSS,100.0,-100.0
+2024-02-17,Saint Peter's Peacocks,Siena Saints,2024,h1_spread,0.43,-5.25,51.67,away,11.0,LOSS,100.0,-100.0
+2024-02-17,Rider Broncs,Mount St. Mary's Mountaineers,2024,h1_spread,-2.24,0.5,24.88,home,2.0,WIN,100.0,90.9
+2024-02-17,Fairfield Stags,Niagara Purple Eagles,2024,h1_spread,-1.3,-3.5,20.01,away,-1.0,WIN,100.0,90.9
+2024-02-17,Marist Red Foxes,Canisius Golden Griffins,2024,h1_spread,-0.92,-3.0,18.91,away,11.5,LOSS,100.0,-100.0
+2024-02-17,Columbia Lions,Dartmouth Big Green,2024,h1_spread,0.56,-5.5,55.07,away,5.0,WIN,100.0,90.9
+2024-02-17,Pennsylvania Quakers,Yale Bulldogs,2024,h1_spread,-0.26,3.0,29.66,home,-7.0,LOSS,100.0,-100.0
+2024-02-17,Princeton Tigers,Brown Bears,2024,h1_spread,-3.41,-7.75,39.43,away,4.5,WIN,100.0,90.9
+2024-02-17,Kennesaw State Owls,North Florida Ospreys,2024,h1_spread,-4.01,-2.5,13.71,home,-0.5,LOSS,100.0,-100.0
+2024-02-17,Toledo Rockets,Ohio Bobcats,2024,h1_spread,-3.44,-3.0,4.02,home,1.0,LOSS,100.0,-100.0
+2024-02-17,San Diego State Aztecs,New Mexico Lobos,2024,h1_spread,-3.81,-3.0,7.4,home,5.5,WIN,100.0,90.9
+2024-02-17,Houston Cougars,Texas Longhorns,2024,h1_spread,-2.19,-6.0,34.68,away,10.5,LOSS,100.0,-100.0
+2024-02-18,Arizona Wildcats,Arizona State Sun Devils,2024,h1_spread,-4.13,-11.0,62.48,away,22.5,LOSS,100.0,-100.0
+2024-02-17,Oklahoma Sooners,Kansas Jayhawks,2024,h1_spread,0.53,1.5,8.79,home,-5.0,LOSS,100.0,-100.0
+2024-02-17,North Carolina Tar Heels,Virginia Tech Hokies,2024,h1_spread,-2.44,-6.0,32.38,away,7.5,LOSS,100.0,-100.0
+2024-02-17,Tennessee Volunteers,Vanderbilt Commodores,2024,h1_spread,-4.54,-12.0,67.8,away,17.5,LOSS,100.0,-100.0
+2024-02-17,Florida State Seminoles,Duke Blue Devils,2024,h1_spread,4.24,3.0,11.26,away,-4.5,WIN,100.0,90.9
+2024-02-17,Iowa State Cyclones,Texas Tech Red Raiders,2024,h1_spread,-2.21,-4.0,16.26,away,4.0,PUSH,100.0,0.0
+2024-02-17,South Carolina Gamecocks,LSU Tigers,2024,h1_spread,-0.24,-4.5,38.73,away,-0.5,WIN,100.0,90.9
+2024-02-17,West Virginia Mountaineers,Baylor Bears,2024,h1_spread,-1.18,4.5,51.63,home,-6.5,LOSS,100.0,-100.0
+2024-02-17,Auburn Tigers,Kentucky Wildcats,2024,h1_spread,-1.58,-5.0,31.1,away,-5.5,WIN,100.0,90.9
+2024-02-17,Maryland Terrapins,Illinois Fighting Illini,2024,h1_spread,-2.33,1.0,30.26,home,-2.5,LOSS,100.0,-100.0
+2024-02-17,Alabama Crimson Tide,Texas A&M Aggies,2024,h1_spread,-3.72,-4.5,7.09,away,12.5,LOSS,100.0,-100.0
+2024-02-17,Dayton Flyers,Fordham Rams,2024,h1_spread,-4.13,-8.0,35.22,away,4.0,WIN,100.0,90.9
+2024-02-17,Butler Bulldogs,Creighton Bluejays,2024,h1_spread,2.95,1.0,17.75,away,-11.0,WIN,100.0,90.9
+2024-02-17,Oklahoma State Cowboys,BYU Cougars,2024,h1_spread,-2.48,3.0,49.78,home,5.0,WIN,100.0,90.9
+2024-02-17,Iowa Hawkeyes,Wisconsin Badgers,2024,h1_spread,-2.38,-0.5,17.09,home,1.0,WIN,100.0,90.9
+2024-02-17,Virginia Cavaliers,Wake Forest Demon Deacons,2024,h1_spread,-3.04,-1.0,18.59,home,1.0,PUSH,100.0,0.0
+2024-02-18,Southern Illinois Salukis,Indiana State Sycamores,2024,h1_spread,0.07,2.5,22.11,home,2.5,WIN,100.0,90.9
+2024-02-18,Ohio State Buckeyes,Purdue Boilermakers,2024,h1_spread,0.78,4.5,33.85,home,2.0,WIN,100.0,90.9
+2024-02-18,South Florida Bulls,Florida Atlantic Owls,2024,h1_spread,2.51,3.0,4.44,home,2.0,WIN,100.0,90.9
+2024-02-20,Houston Cougars,Iowa State Cyclones,2024,h1_spread,-4.22,-4.5,2.54,away,4.0,WIN,100.0,90.9
+2024-02-21,Missouri Tigers,Tennessee Volunteers,2024,h1_spread,1.17,7.0,52.99,home,-2.5,WIN,100.0,90.9
+2024-02-21,BYU Cougars,Baylor Bears,2024,h1_spread,1.21,-2.5,33.72,away,3.5,LOSS,100.0,-100.0
+2024-02-21,Saint Mary's Gaels,San Francisco Dons,2024,h1_spread,-5.14,-4.5,5.84,home,2.0,LOSS,100.0,-100.0
+2024-02-21,Utah State Aggies,San Diego State Aztecs,2024,h1_spread,-0.53,-2.0,13.38,away,2.5,LOSS,100.0,-100.0
+2024-02-21,Texas Tech Red Raiders,TCU Horned Frogs,2024,h1_spread,-0.57,-2.5,17.58,away,0.5,WIN,100.0,90.9
+2024-02-22,Marquette Golden Eagles,DePaul Blue Demons,2024,h1_spread,-6.56,-15.5,81.25,away,17.0,LOSS,100.0,-100.0
+2024-02-22,Miami Hurricanes,Duke Blue Devils,2024,h1_spread,-0.97,3.5,40.67,home,-14.5,LOSS,100.0,-100.0
+2024-02-21,Penn State Nittany Lions,Illinois Fighting Illini,2024,h1_spread,-2.31,4.5,61.9,home,0.5,WIN,100.0,90.9
+2024-02-22,Alabama Crimson Tide,Florida Gators,2024,h1_spread,-5.89,-5.5,3.57,home,2.5,LOSS,100.0,-100.0
+2024-02-22,George Mason Patriots,Dayton Flyers,2024,h1_spread,1.29,1.5,1.92,home,2.0,WIN,100.0,90.9
+2024-02-22,LSU Tigers,Kentucky Wildcats,2024,h1_spread,2.56,3.0,4.03,home,0.5,WIN,100.0,90.9
+2024-02-22,New Mexico Lobos,Colorado State Rams,2024,h1_spread,-2.91,-4.5,14.42,away,1.0,WIN,100.0,90.9
+2024-02-23,Purdue Boilermakers,Rutgers Scarlet Knights,2024,h1_spread,-3.95,-8.5,41.4,away,14.0,LOSS,100.0,-100.0
+2024-02-23,Arizona Wildcats,Washington State Cougars,2024,h1_spread,-4.17,-7.5,30.3,away,-1.5,WIN,100.0,90.9
+2024-02-23,Akron Zips,Kent State Golden Flashes,2024,h1_spread,-0.4,-4.0,32.75,away,6.5,LOSS,100.0,-100.0
+2024-02-24,Jacksonville Dolphins,North Florida Ospreys,2024,h1_spread,-1.62,-0.25,12.5,home,6.0,WIN,100.0,90.9
+2024-02-24,Mount St. Mary's Mountaineers,Saint Peter's Peacocks,2024,h1_spread,-2.68,-0.5,19.82,home,-2.5,LOSS,100.0,-100.0
+2024-02-24,Manhattan Jaspers,Marist Red Foxes,2024,h1_spread,-0.57,3.5,36.99,home,-3.5,PUSH,100.0,0.0
+2024-02-24,Rider Broncs,Iona Gaels,2024,h1_spread,2.52,-1.25,34.27,away,1.5,LOSS,100.0,-100.0
+2024-02-24,Canisius Golden Griffins,Niagara Purple Eagles,2024,h1_spread,-1.78,0.5,20.73,home,5.0,WIN,100.0,90.9
+2024-02-24,Dartmouth Big Green,Pennsylvania Quakers,2024,h1_spread,1.64,3.0,12.36,home,-6.5,LOSS,100.0,-100.0
+2024-02-24,Bowling Green Falcons,Toledo Rockets,2024,h1_spread,3.43,2.5,8.43,away,4.0,LOSS,100.0,-100.0
+2024-02-24,Green Bay Phoenix,Purdue Fort Wayne Mastodons,2024,h1_spread,2.85,-0.5,30.45,away,-13.0,WIN,100.0,90.9
+2024-02-24,Cornell Big Red,Yale Bulldogs,2024,h1_spread,0.9,-1.5,21.81,away,1.5,PUSH,100.0,0.0
+2024-02-24,Harvard Crimson,Princeton Tigers,2024,h1_spread,0.73,3.0,20.68,home,-6.5,LOSS,100.0,-100.0
+2024-02-24,Columbia Lions,Brown Bears,2024,h1_spread,2.56,-2.0,41.41,away,-1.0,WIN,100.0,90.9
+2024-02-24,Milwaukee Panthers,Youngstown State Penguins,2024,h1_spread,0.19,1.5,11.89,home,-2.0,LOSS,100.0,-100.0
+2024-02-24,Fordham Rams,Duquesne Dukes,2024,h1_spread,-0.64,1.5,19.45,home,6.0,WIN,100.0,90.9
+2024-02-24,Quinnipiac Bobcats,Fairfield Stags,2024,h1_spread,-3.18,-1.5,15.29,home,-2.0,LOSS,100.0,-100.0
+2024-02-24,Baylor Bears,Houston Cougars,2024,h1_spread,-0.01,1.5,13.74,home,-3.0,LOSS,100.0,-100.0
+2024-02-24,Arizona Wildcats,Washington Huskies,2024,h1_spread,-6.08,-9.5,31.12,away,8.0,WIN,100.0,90.9
+2024-02-25,Tennessee Volunteers,Texas A&M Aggies,2024,h1_spread,-2.88,-6.5,32.93,away,17.5,LOSS,100.0,-100.0
+2024-02-24,Iowa State Cyclones,West Virginia Mountaineers,2024,h1_spread,-0.59,-10.5,90.09,away,3.5,WIN,100.0,90.9
+2024-02-24,Wake Forest Demon Deacons,Duke Blue Devils,2024,h1_spread,1.14,-1.5,23.96,away,2.0,LOSS,100.0,-100.0
+2024-02-24,Kansas Jayhawks,Texas Longhorns,2024,h1_spread,-0.81,-3.5,24.49,away,9.5,LOSS,100.0,-100.0
+2024-02-24,Virginia Cavaliers,North Carolina Tar Heels,2024,h1_spread,-1.71,1.0,24.62,home,-5.0,LOSS,100.0,-100.0
+2024-02-24,Illinois Fighting Illini,Iowa Hawkeyes,2024,h1_spread,-0.89,-5.5,41.95,away,5.0,WIN,100.0,90.9
+2024-02-24,Kentucky Wildcats,Alabama Crimson Tide,2024,h1_spread,0.79,-1.0,16.24,away,11.0,LOSS,100.0,-100.0
+2024-02-24,Georgia Bulldogs,Auburn Tigers,2024,h1_spread,2.88,3.5,5.67,home,-10.5,LOSS,100.0,-100.0
+2024-02-25,Saint Mary's Gaels,San Diego Toreros,2024,h1_spread,-7.85,-14.0,55.92,away,13.0,WIN,100.0,90.9
+2024-02-25,Fresno State Bulldogs,San Diego State Aztecs,2024,h1_spread,3.07,7.0,35.69,home,-16.0,LOSS,100.0,-100.0
+2024-02-24,Ole Miss Rebels,South Carolina Gamecocks,2024,h1_spread,-3.69,-2.0,15.39,home,-6.5,LOSS,100.0,-100.0
+2024-02-25,Arizona State Sun Devils,Washington State Cougars,2024,h1_spread,-1.54,2.5,36.73,home,6.0,WIN,100.0,90.9
+2024-02-25,UNLV Rebels,Colorado State Rams,2024,h1_spread,-1.77,0.0,16.07,home,3.0,WIN,100.0,90.9
+2024-02-24,UCF Knights,Texas Tech Red Raiders,2024,h1_spread,-1.21,-1.0,1.95,home,7.0,WIN,100.0,90.9
+2024-02-24,Florida Gators,Vanderbilt Commodores,2024,h1_spread,-0.99,-9.5,77.34,away,6.5,WIN,100.0,90.9
+2024-02-24,Kansas State Wildcats,BYU Cougars,2024,h1_spread,-3.42,-1.0,22.03,home,5.0,WIN,100.0,90.9
+2024-02-25,Michigan Wolverines,Purdue Boilermakers,2024,h1_spread,0.91,7.5,59.91,home,-4.0,WIN,100.0,90.9
+2024-02-25,Marquette Golden Eagles,Xavier Musketeers,2024,h1_spread,-2.29,-6.5,38.31,away,12.0,LOSS,100.0,-100.0
+2024-02-27,North Carolina Tar Heels,Miami Hurricanes,2024,h1_spread,-0.73,-8.5,70.67,away,2.0,WIN,100.0,90.9
+2024-02-27,TCU Horned Frogs,Baylor Bears,2024,h1_spread,-0.49,-1.5,9.17,away,-4.0,WIN,100.0,90.9
+2024-02-28,Houston Cougars,Cincinnati Bearcats,2024,h1_spread,-4.67,-8.0,30.31,away,4.0,WIN,100.0,90.9
+2024-02-28,Kansas Jayhawks,BYU Cougars,2024,h1_spread,-4.32,-4.5,1.65,away,-4.0,WIN,100.0,90.9
+2024-02-28,Mississippi State Bulldogs,Kentucky Wildcats,2024,h1_spread,0.06,-2.5,23.26,away,-1.0,WIN,100.0,90.9
+2024-02-28,Dayton Flyers,Davidson Wildcats,2024,h1_spread,-3.66,-6.0,21.26,away,7.0,LOSS,100.0,-100.0
+2024-02-28,Fresno State Bulldogs,Utah State Aggies,2024,h1_spread,2.1,5.75,33.16,home,-2.0,WIN,100.0,90.9
+2024-02-29,Tennessee Volunteers,Auburn Tigers,2024,h1_spread,-2.86,-4.0,10.32,away,4.0,PUSH,100.0,0.0
+2024-02-29,Marquette Golden Eagles,Providence Friars,2024,h1_spread,-3.73,-6.5,25.22,away,11.0,LOSS,100.0,-100.0
+2024-02-29,Arizona State Sun Devils,Arizona Wildcats,2024,h1_spread,1.13,6.5,48.84,home,-9.0,LOSS,100.0,-100.0
+2024-02-29,Iowa State Cyclones,Oklahoma Sooners,2024,h1_spread,-2.19,-5.5,30.07,away,6.5,LOSS,100.0,-100.0
+2024-02-29,Duke Blue Devils,Louisville Cardinals,2024,h1_spread,-8.62,-12.0,30.68,away,12.5,LOSS,100.0,-100.0
+2024-02-29,Creighton Bluejays,Seton Hall Pirates,2024,h1_spread,-3.82,-5.0,10.75,away,10.5,LOSS,100.0,-100.0
+2024-02-29,Illinois Fighting Illini,Minnesota Golden Gophers,2024,h1_spread,-5.56,-7.0,13.12,away,4.0,WIN,100.0,90.9
+2024-02-29,Ole Miss Rebels,Alabama Crimson Tide,2024,h1_spread,3.91,2.5,12.82,away,-7.5,WIN,100.0,90.9
+2024-02-29,Texas A&M Aggies,South Carolina Gamecocks,2024,h1_spread,-6.88,-3.0,35.3,home,-1.0,LOSS,100.0,-100.0
+2024-02-28,Florida Gators,Missouri Tigers,2024,h1_spread,-0.62,-7.5,62.53,away,4.5,WIN,100.0,90.9
+2024-03-01,Pepperdine Waves,Saint Mary's Gaels,2024,h1_spread,4.3,9.25,45.04,home,-13.0,LOSS,100.0,-100.0
+2024-03-01,Washington State Cougars,USC Trojans,2024,h1_spread,-1.22,-4.5,29.8,away,1.5,WIN,100.0,90.9
+2024-03-01,San Francisco Dons,Gonzaga Bulldogs,2024,h1_spread,2.79,2.0,7.21,away,-9.0,WIN,100.0,90.9
+2024-03-02,Loyola Chicago Ramblers,Dayton Flyers,2024,h1_spread,2.62,0.5,19.31,away,2.5,LOSS,100.0,-100.0
+2024-03-02,Utah State Aggies,Air Force Falcons,2024,h1_spread,-5.23,-10.25,45.6,away,6.0,WIN,100.0,90.9
+2024-03-03,Oklahoma Sooners,Houston Cougars,2024,h1_spread,1.91,4.25,21.25,home,-1.0,WIN,100.0,90.9
+2024-03-03,Purdue Boilermakers,Michigan State Spartans,2024,h1_spread,-3.05,-5.75,24.58,away,3.0,WIN,100.0,90.9
+2024-03-02,Creighton Bluejays,Marquette Golden Eagles,2024,h1_spread,-1.27,-4.5,29.37,away,7.0,LOSS,100.0,-100.0
+2024-03-02,Arizona Wildcats,Oregon Ducks,2024,h1_spread,-3.51,-7.5,36.26,away,10.0,LOSS,100.0,-100.0
+2024-03-02,Baylor Bears,Kansas Jayhawks,2024,h1_spread,-1.39,-2.5,10.09,away,4.0,LOSS,100.0,-100.0
+2024-03-02,UCF Knights,Iowa State Cyclones,2024,h1_spread,-0.5,2.0,22.76,home,-4.0,LOSS,100.0,-100.0
+2024-03-02,Duke Blue Devils,Virginia Cavaliers,2024,h1_spread,-2.59,-5.5,26.45,away,12.5,LOSS,100.0,-100.0
+2024-03-02,Auburn Tigers,Mississippi State Bulldogs,2024,h1_spread,-3.14,-5.5,21.48,away,7.5,LOSS,100.0,-100.0
+2024-03-02,Wisconsin Badgers,Illinois Fighting Illini,2024,h1_spread,-1.24,-1.5,2.41,away,-4.0,WIN,100.0,90.9
+2024-03-02,Kentucky Wildcats,Arkansas Razorbacks,2024,h1_spread,-1.34,-7.5,56.01,away,4.5,WIN,100.0,90.9
+2024-03-03,Saint Mary's Gaels,Gonzaga Bulldogs,2024,h1_spread,-0.85,-1.5,5.92,away,-6.5,WIN,100.0,90.9
+2024-03-02,South Carolina Gamecocks,Florida Gators,2024,h1_spread,1.71,-1.0,24.64,away,3.0,LOSS,100.0,-100.0
+2024-03-03,Washington State Cougars,UCLA Bruins,2024,h1_spread,1.79,-4.0,52.64,away,6.0,LOSS,100.0,-100.0
+2024-03-02,Charlotte 49ers,South Florida Bulls,2024,h1_spread,-2.56,-2.0,5.11,home,-7.5,LOSS,100.0,-100.0
+2024-03-05,Baylor Bears,Texas Longhorns,2024,h1_spread,-0.7,-4.0,30.03,away,4.0,PUSH,100.0,0.0
+2024-03-06,Missouri Tigers,Auburn Tigers,2024,h1_spread,-0.19,6.5,60.85,home,-13.5,LOSS,100.0,-100.0
+2024-03-06,Kansas Jayhawks,Kansas State Wildcats,2024,h1_spread,-2.4,-7.0,41.86,away,11.0,LOSS,100.0,-100.0
+2024-03-06,UNLV Rebels,San Diego State Aztecs,2024,h1_spread,1.96,1.5,4.19,away,2.0,LOSS,100.0,-100.0
+2024-03-06,South Florida Bulls,Tulane Green Wave,2024,h1_spread,-0.46,-4.0,32.2,away,6.5,LOSS,100.0,-100.0
+2024-03-06,Saint Louis Billikens,Dayton Flyers,2024,h1_spread,-0.43,5.0,49.35,home,-8.5,LOSS,100.0,-100.0
+2024-03-07,Iowa State Cyclones,BYU Cougars,2024,h1_spread,-2.98,-4.0,9.3,away,2.5,WIN,100.0,90.9
+2024-03-07,Kentucky Wildcats,Vanderbilt Commodores,2024,h1_spread,-3.1,-10.5,67.28,away,8.0,WIN,100.0,90.9
+2024-03-08,UCLA Bruins,Arizona Wildcats,2024,h1_spread,-2.12,5.0,64.76,home,-11.5,LOSS,100.0,-100.0
+2024-03-09,San Diego State Aztecs,Boise State Broncos,2024,h1_spread,-3.17,-3.5,2.96,away,-1.0,WIN,100.0,90.9
+2024-03-09,Dayton Flyers,VCU Rams,2024,h1_spread,-1.43,-4.5,27.87,away,2.5,WIN,100.0,90.9
+2024-03-09,Houston Cougars,Kansas Jayhawks,2024,h1_spread,-2.88,-4.0,10.19,away,15.0,LOSS,100.0,-100.0
+2024-03-09,Tennessee Volunteers,Kentucky Wildcats,2024,h1_spread,-2.94,-4.5,14.15,away,-2.0,WIN,100.0,90.9
+2024-03-10,USC Trojans,Arizona Wildcats,2024,h1_spread,0.89,4.5,32.82,home,6.5,WIN,100.0,90.9
+2024-03-09,Kansas State Wildcats,Iowa State Cyclones,2024,h1_spread,-1.95,2.0,35.87,home,3.5,WIN,100.0,90.9
+2024-03-09,Duke Blue Devils,North Carolina Tar Heels,2024,h1_spread,-2.8,-2.5,2.72,home,-2.5,LOSS,100.0,-100.0
+2024-03-09,Xavier Musketeers,Marquette Golden Eagles,2024,h1_spread,-0.71,2.0,24.67,home,-3.0,LOSS,100.0,-100.0
+2024-03-09,Villanova Wildcats,Creighton Bluejays,2024,h1_spread,0.69,1.0,2.85,home,-1.0,PUSH,100.0,0.0
+2024-03-09,Texas Tech Red Raiders,Baylor Bears,2024,h1_spread,0.44,-1.0,13.12,away,5.0,LOSS,100.0,-100.0
+2024-03-09,Auburn Tigers,Georgia Bulldogs,2024,h1_spread,-5.88,-9.0,28.4,away,7.0,WIN,100.0,90.9
+2024-03-09,Alabama Crimson Tide,Arkansas Razorbacks,2024,h1_spread,-3.62,-9.0,48.87,away,2.0,WIN,100.0,90.9
+2024-03-09,Mississippi State Bulldogs,South Carolina Gamecocks,2024,h1_spread,-5.26,-2.5,25.08,home,-2.0,LOSS,100.0,-100.0
+2024-03-10,BYU Cougars,Oklahoma State Cowboys,2024,h1_spread,-0.52,-7.5,63.42,away,7.0,WIN,100.0,90.9
+2024-03-10,Utah State Aggies,New Mexico Lobos,2024,h1_spread,-2.84,-2.0,7.66,home,1.0,LOSS,100.0,-100.0
+2024-03-09,Tulsa Golden Hurricane,South Florida Bulls,2024,h1_spread,1.75,3.0,11.32,home,3.0,WIN,100.0,90.9
+2024-03-10,Purdue Boilermakers,Wisconsin Badgers,2024,h1_spread,-4.42,-5.75,12.1,away,4.0,WIN,100.0,90.9
+2024-03-10,Iowa Hawkeyes,Illinois Fighting Illini,2024,h1_spread,-2.11,0.5,23.77,home,-6.0,LOSS,100.0,-100.0
+2024-03-12,Gonzaga Bulldogs,San Francisco Dons,2024,h1_spread,-5.79,-5.5,2.67,home,6.0,WIN,100.0,90.9
+2024-03-12,Saint Mary's Gaels,Santa Clara Broncos,2024,h1_spread,-4.35,-6.5,19.52,away,7.0,LOSS,100.0,-100.0
+2024-03-13,Saint Mary's Gaels,Gonzaga Bulldogs,2024,h1_spread,-0.85,1.5,21.36,home,4.5,WIN,100.0,90.9
+2024-03-14,Kansas Jayhawks,Cincinnati Bearcats,2024,h1_spread,-3.29,1.5,43.51,home,-10.0,LOSS,100.0,-100.0
+2024-03-13,BYU Cougars,UCF Knights,2024,h1_spread,-1.02,-3.5,22.55,away,7.0,LOSS,100.0,-100.0
+2024-03-14,Houston Cougars,TCU Horned Frogs,2024,h1_spread,-4.0,-6.5,22.75,away,7.5,LOSS,100.0,-100.0
+2024-03-14,North Carolina Tar Heels,Florida State Seminoles,2024,h1_spread,-5.94,-6.25,2.82,away,12.5,LOSS,100.0,-100.0
+2024-03-14,Arizona Wildcats,USC Trojans,2024,h1_spread,-3.89,-5.0,10.09,away,10.5,LOSS,100.0,-100.0
+2024-03-14,Iowa State Cyclones,Kansas State Wildcats,2024,h1_spread,-1.05,-4.0,26.78,away,9.5,LOSS,100.0,-100.0
+2024-03-14,Creighton Bluejays,Providence Friars,2024,h1_spread,-3.49,-4.5,9.14,away,-2.5,WIN,100.0,90.9
+2024-03-15,Marquette Golden Eagles,Villanova Wildcats,2024,h1_spread,-3.92,-2.0,17.44,home,3.0,WIN,100.0,90.9
+2024-03-15,Baylor Bears,Cincinnati Bearcats,2024,h1_spread,-3.18,-4.0,7.49,away,6.0,LOSS,100.0,-100.0
+2024-03-14,South Carolina Gamecocks,Arkansas Razorbacks,2024,h1_spread,3.98,-3.0,63.44,away,7.0,LOSS,100.0,-100.0
+2024-03-14,Utah State Aggies,Fresno State Bulldogs,2024,h1_spread,-5.1,-7.25,19.52,away,6.0,WIN,100.0,90.9
+2024-03-14,Texas Tech Red Raiders,BYU Cougars,2024,h1_spread,-2.27,1.5,34.24,home,7.0,WIN,100.0,90.9
+2024-03-15,Washington State Cougars,Stanford Cardinal,2024,h1_spread,-1.94,-4.0,18.75,away,8.5,LOSS,100.0,-100.0
+2024-03-15,Nevada Wolf Pack,Colorado State Rams,2024,h1_spread,-2.46,-2.0,4.21,home,-3.5,LOSS,100.0,-100.0
+2024-03-15,Houston Cougars,Texas Tech Red Raiders,2024,h1_spread,-4.93,-6.0,9.71,away,11.5,LOSS,100.0,-100.0
+2024-03-15,Purdue Boilermakers,Michigan State Spartans,2024,h1_spread,-3.05,-4.5,13.22,away,2.5,WIN,100.0,90.9
+2024-03-15,North Carolina Tar Heels,Pittsburgh Panthers,2024,h1_spread,-2.42,-4.0,14.37,away,3.5,WIN,100.0,90.9
+2024-03-15,Tennessee Volunteers,Mississippi State Bulldogs,2024,h1_spread,-4.5,-5.5,9.07,away,-8.5,WIN,100.0,90.9
+2024-03-16,Arizona Wildcats,Oregon Ducks,2024,h1_spread,-3.51,-6.5,27.17,away,-4.0,WIN,100.0,90.9
+2024-03-16,Iowa State Cyclones,Baylor Bears,2024,h1_spread,-0.27,-1.0,6.65,away,7.0,LOSS,100.0,-100.0
+2024-03-15,Kentucky Wildcats,Texas A&M Aggies,2024,h1_spread,-1.43,-3.0,14.24,away,-5.0,WIN,100.0,90.9
+2024-03-16,Marquette Golden Eagles,Providence Friars,2024,h1_spread,-3.73,-2.5,11.14,home,5.5,WIN,100.0,90.9
+2024-03-15,Auburn Tigers,South Carolina Gamecocks,2024,h1_spread,-6.9,-4.0,26.33,home,15.5,WIN,100.0,90.9
+2024-03-15,Illinois Fighting Illini,Ohio State Buckeyes,2024,h1_spread,-1.12,-2.5,12.52,away,1.5,WIN,100.0,90.9
+2024-03-16,Utah State Aggies,San Diego State Aztecs,2024,h1_spread,-0.53,2.5,27.53,home,-8.0,LOSS,100.0,-100.0
+2024-03-16,Alabama Crimson Tide,Florida Gators,2024,h1_spread,-5.89,-2.5,30.84,home,-7.0,LOSS,100.0,-100.0
+2024-03-16,Washington State Cougars,Colorado Buffaloes,2024,h1_spread,-1.95,1.0,26.81,home,-3.0,LOSS,100.0,-100.0
+2024-03-16,Houston Cougars,Iowa State Cyclones,2024,h1_spread,-4.22,-3.0,11.09,home,-14.0,LOSS,100.0,-100.0
+2024-03-16,Purdue Boilermakers,Wisconsin Badgers,2024,h1_spread,-4.42,-3.0,12.9,home,-0.5,LOSS,100.0,-100.0
+2024-03-16,Auburn Tigers,Mississippi State Bulldogs,2024,h1_spread,-3.14,-4.5,12.39,away,3.5,WIN,100.0,90.9
+2024-03-16,Illinois Fighting Illini,Nebraska Cornhuskers,2024,h1_spread,-2.97,-2.5,4.29,home,5.5,WIN,100.0,90.9
+2024-03-20,Virginia Cavaliers,Colorado State Rams,2024,h1_spread,-3.92,1.5,49.26,home,-12.5,LOSS,100.0,-100.0
+2024-03-19,Howard Bison,Wagner Seahawks,2024,h1_spread,-3.42,-1.5,17.44,home,-1.5,LOSS,100.0,-100.0
+2024-03-21,Boise State Broncos,Colorado Buffaloes,2024,h1_spread,-2.27,2.0,38.81,home,-3.5,LOSS,100.0,-100.0
+2024-03-21,North Carolina Tar Heels,Wagner Seahawks,2024,h1_spread,-8.11,-14.5,58.1,away,14.0,WIN,100.0,90.9
+2024-03-21,Arizona Wildcats,Long Beach State Beach,2024,h1_spread,-7.2,-12.0,43.64,away,10.0,WIN,100.0,90.9
+2024-03-21,Iowa State Cyclones,South Dakota State Jackrabbits,2024,h1_spread,-6.11,-8.5,21.77,away,8.5,PUSH,100.0,0.0
+2024-03-22,Tennessee Volunteers,Saint Peter's Peacocks,2024,h1_spread,-10.35,-12.25,17.31,away,17.0,LOSS,100.0,-100.0
+2024-03-21,Creighton Bluejays,Akron Zips,2024,h1_spread,-5.54,-6.5,8.76,away,8.5,LOSS,100.0,-100.0
+2024-03-21,Illinois Fighting Illini,Morehead State Eagles,2024,h1_spread,-5.59,-6.0,3.69,away,8.0,LOSS,100.0,-100.0
+2024-03-21,Kentucky Wildcats,Oakland Golden Grizzlies,2024,h1_spread,-8.38,-7.5,8.02,home,-2.0,LOSS,100.0,-100.0
+2024-03-22,Kansas Jayhawks,Samford Bulldogs,2024,h1_spread,-6.36,-4.0,21.45,home,2.0,LOSS,100.0,-100.0
+2024-03-21,BYU Cougars,Duquesne Dukes,2024,h1_spread,-2.86,-5.0,19.42,away,-2.0,WIN,100.0,90.9
+2024-03-21,South Carolina Gamecocks,Oregon Ducks,2024,h1_spread,3.31,1.0,21.03,away,-7.0,WIN,100.0,90.9
+2024-03-21,Dayton Flyers,Nevada Wolf Pack,2024,h1_spread,-1.92,0.5,21.98,home,1.5,WIN,100.0,90.9
+2024-03-21,Texas Longhorns,Colorado State Rams,2024,h1_spread,-5.99,-1.5,40.82,home,6.0,WIN,100.0,90.9
+2024-03-22,Washington State Cougars,Drake Bulldogs,2024,h1_spread,-1.52,0.5,18.35,home,2.5,WIN,100.0,90.9
+2024-03-21,Mississippi State Bulldogs,Michigan State Spartans,2024,h1_spread,0.08,0.5,3.86,home,-9.0,LOSS,100.0,-100.0
+2024-03-23,Houston Cougars,Longwood Lancers,2024,h1_spread,-8.11,-15.0,62.65,away,20.0,LOSS,100.0,-100.0
+2024-03-22,Marquette Golden Eagles,Western Kentucky Hilltoppers,2024,h1_spread,-7.36,-8.5,10.37,away,9.0,LOSS,100.0,-100.0
+2024-03-22,Baylor Bears,Colgate Raiders,2024,h1_spread,-5.19,-8.5,30.11,away,12.5,LOSS,100.0,-100.0
+2024-03-22,Auburn Tigers,Yale Bulldogs,2024,h1_spread,-3.56,-7.5,35.79,away,-1.0,WIN,100.0,90.9
+2024-03-22,Duke Blue Devils,Vermont Catamounts,2024,h1_spread,-4.78,-6.5,15.66,away,8.5,LOSS,100.0,-100.0
+2024-03-23,Wisconsin Badgers,James Madison Dukes,2024,h1_spread,-3.28,-2.5,7.12,home,-5.5,LOSS,100.0,-100.0
+2024-03-22,Clemson Tigers,New Mexico Lobos,2024,h1_spread,-1.78,1.0,25.28,home,10.5,WIN,100.0,90.9
+2024-03-22,Florida Gators,Colorado Buffaloes,2024,h1_spread,-1.0,-0.0,9.11,home,-1.0,LOSS,100.0,-100.0
+2024-03-22,Florida Atlantic Owls,Northwestern Wildcats,2024,h1_spread,-1.99,-2.5,4.67,away,-6.0,WIN,100.0,90.9
+2024-03-22,Nebraska Cornhuskers,Texas A&M Aggies,2024,h1_spread,1.13,0.5,5.73,away,-7.5,WIN,100.0,90.9
+2024-03-23,Utah State Aggies,TCU Horned Frogs,2024,h1_spread,-1.58,2.0,32.52,home,8.0,WIN,100.0,90.9
+2024-03-23,North Carolina Tar Heels,Michigan State Spartans,2024,h1_spread,-0.8,-2.5,15.46,away,8.0,LOSS,100.0,-100.0
+2024-03-23,Iowa State Cyclones,Washington State Cougars,2024,h1_spread,-2.22,-3.5,11.62,away,5.5,LOSS,100.0,-100.0
+2024-03-24,Tennessee Volunteers,Texas Longhorns,2024,h1_spread,-1.35,-3.5,19.58,away,2.0,WIN,100.0,90.9
+2024-03-24,Illinois Fighting Illini,Duquesne Dukes,2024,h1_spread,-3.69,-5.5,16.48,away,13.0,LOSS,100.0,-100.0
+2024-03-24,Creighton Bluejays,Oregon Ducks,2024,h1_spread,-2.97,-2.0,8.78,home,6.5,WIN,100.0,90.9
+2024-03-23,Kansas Jayhawks,Gonzaga Bulldogs,2024,h1_spread,-0.84,2.5,30.32,home,-10.5,LOSS,100.0,-100.0
+2024-03-24,Purdue Boilermakers,Utah State Aggies,2024,h1_spread,-3.2,-6.5,30.0,away,19.5,LOSS,100.0,-100.0
+2024-03-25,Houston Cougars,Texas A&M Aggies,2024,h1_spread,-3.72,-4.75,9.4,away,2.5,WIN,100.0,90.9
+2024-03-24,Marquette Golden Eagles,Colorado Buffaloes,2024,h1_spread,-4.3,-2.5,16.38,home,2.0,LOSS,100.0,-100.0
+2024-03-24,Baylor Bears,Clemson Tigers,2024,h1_spread,-3.49,-2.5,9.03,home,-4.0,LOSS,100.0,-100.0
+2024-03-24,Duke Blue Devils,James Madison Dukes,2024,h1_spread,-5.26,-3.0,20.5,home,19.0,WIN,100.0,90.9
+2024-03-25,San Diego State Aztecs,Yale Bulldogs,2024,h1_spread,-4.32,-3.0,11.99,home,14.0,WIN,100.0,90.9
+2024-03-28,Arizona Wildcats,Clemson Tigers,2024,h1_spread,-4.21,-3.5,6.43,home,-2.5,LOSS,100.0,-100.0
+2024-03-29,Purdue Boilermakers,Gonzaga Bulldogs,2024,h1_spread,-1.49,-2.5,9.14,away,6.0,LOSS,100.0,-100.0
+2024-03-30,Houston Cougars,Duke Blue Devils,2024,h1_spread,-3.17,-2.5,6.06,home,-1.5,LOSS,100.0,-100.0
+2024-03-31,Alabama Crimson Tide,Clemson Tigers,2024,h1_spread,-4.99,-2.0,27.14,home,3.5,WIN,100.0,90.9
+2024-11-05,Kansas Jayhawks,Howard Bison,2025,h1_spread,-8.62,-16.5,71.63,away,15.0,WIN,100.0,90.9
+2024-11-05,Alabama Crimson Tide,UNC Asheville Bulldogs,2025,h1_spread,-7.61,-16.5,80.84,away,28.0,LOSS,100.0,-100.0
+2024-11-05,Houston Cougars,Jackson State Tigers,2025,h1_spread,-12.67,-21.5,80.23,away,28.5,LOSS,100.0,-100.0
+2024-11-05,Iowa State Cyclones,Mississippi Valley State Delta Devils,2025,h1_spread,-15.47,-26.5,100.27,away,19.5,WIN,100.0,90.9
+2024-11-05,Gonzaga Bulldogs,Baylor Bears,2025,h1_spread,-2.22,-3.5,11.61,away,19.0,LOSS,100.0,-100.0
+2024-11-05,North Carolina Tar Heels,Elon Phoenix,2025,h1_spread,-10.79,-16.0,47.32,away,7.0,WIN,100.0,90.9
+2024-11-05,Arizona Wildcats,Canisius Golden Griffins,2025,h1_spread,-10.04,-20.5,95.1,away,14.5,WIN,100.0,90.9
+2024-11-05,UCF Knights,Texas A&M Aggies,2025,h1_spread,0.1,3.0,26.35,home,1.5,WIN,100.0,90.9
+2024-11-05,Marquette Golden Eagles,Stony Brook Seawolves,2025,h1_spread,-7.36,-14.0,60.35,away,20.0,LOSS,100.0,-100.0
+2024-11-05,Cincinnati Bearcats,Arkansas-Pine Bluff Golden Lions,2025,h1_spread,-9.58,-21.0,103.81,away,27.5,LOSS,100.0,-100.0
+2024-11-05,UCLA Bruins,Rider Broncs,2025,h1_spread,-4.92,-13.0,73.41,away,17.5,LOSS,100.0,-100.0
+2024-11-05,Kentucky Wildcats,Wright State Raiders,2025,h1_spread,-5.99,-13.0,63.76,away,20.5,LOSS,100.0,-100.0
+2024-11-06,North Texas Mean Green,Evansville Purple Aces,2025,h1_spread,-5.38,-7.5,19.25,away,8.5,LOSS,100.0,-100.0
+2024-11-06,Kansas State Wildcats,New Orleans Privateers,2025,h1_spread,-8.46,-17.5,82.21,away,12.0,WIN,100.0,90.9
+2024-11-06,Arizona State Sun Devils,Idaho State Bengals,2025,h1_spread,-4.2,-10.5,57.25,away,3.5,WIN,100.0,90.9
+2024-11-06,BYU Cougars,Central Arkansas Bears,2025,h1_spread,-10.84,-19.5,78.7,away,19.0,WIN,100.0,90.9
+2024-11-06,San Francisco Dons,Cal Poly Mustangs,2025,h1_spread,-8.98,-12.5,32.03,away,4.0,WIN,100.0,90.9
+2024-11-06,Washington Huskies,UC Davis Aggies,2025,h1_spread,-4.78,-8.5,33.84,away,3.0,WIN,100.0,90.9
+2024-11-07,Auburn Tigers,Vermont Catamounts,2025,h1_spread,-7.1,-10.0,26.39,away,25.5,LOSS,100.0,-100.0
+2024-11-07,Creighton Bluejays,UT Rio Grande Valley Vaqueros,2025,h1_spread,-11.7,-17.5,52.71,away,6.5,WIN,100.0,90.9
+2024-11-07,Arkansas Razorbacks,Lipscomb Bisons,2025,h1_spread,-4.42,-8.75,39.38,away,8.0,WIN,100.0,90.9
+2024-11-07,Indiana Hoosiers,SIU Edwardsville Cougars,2025,h1_spread,-6.47,-15.5,82.07,away,9.5,WIN,100.0,90.9
+2024-11-06,Rutgers Scarlet Knights,Wagner Seahawks,2025,h1_spread,-5.32,-10.5,47.08,away,11.5,LOSS,100.0,-100.0
+2024-11-08,Florida Gators,Jacksonville Dolphins,2025,h1_spread,-9.31,-14.5,47.17,away,10.5,WIN,100.0,90.9
+2024-11-09,Kansas Jayhawks,North Carolina Tar Heels,2025,h1_spread,-0.15,-8.5,75.89,away,1.5,WIN,100.0,90.9
+2024-11-09,Alabama Crimson Tide,Arkansas State Red Wolves,2025,h1_spread,-6.52,-15.0,77.08,away,4.5,WIN,100.0,90.9
+2024-11-08,Duke Blue Devils,Army Black Knights,2025,h1_spread,-12.59,-19.0,58.31,away,21.0,LOSS,100.0,-100.0
+2024-11-09,Purdue Boilermakers,Northern Kentucky Norse,2025,h1_spread,-10.08,-12.5,21.96,away,11.0,WIN,100.0,90.9
+2024-11-09,Marquette Golden Eagles,George Mason Patriots,2025,h1_spread,-5.36,-7.5,19.44,away,9.5,LOSS,100.0,-100.0
+2024-11-09,Texas Longhorns,Houston Christian Huskies,2025,h1_spread,-12.35,-17.5,46.79,away,15.5,WIN,100.0,90.9
+2024-11-09,Cincinnati Bearcats,Morehead State Eagles,2025,h1_spread,-4.49,-16.5,109.21,away,13.5,WIN,100.0,90.9
+2024-11-09,UCLA Bruins,New Mexico Lobos,2025,h1_spread,0.72,-2.5,29.3,away,-4.0,WIN,100.0,90.9
+2024-11-10,Houston Cougars,Auburn Tigers,2025,h1_spread,-2.81,-3.0,1.77,away,-2.5,WIN,100.0,90.9
+2024-11-09,Arizona Wildcats,Old Dominion Monarchs,2025,h1_spread,-10.9,-19.5,78.19,away,29.0,LOSS,100.0,-100.0
+2024-11-09,Louisville Cardinals,Tennessee Volunteers,2025,h1_spread,5.42,-1.0,58.4,away,-11.0,WIN,100.0,90.9
+2024-11-09,Kentucky Wildcats,Bucknell Bison,2025,h1_spread,-8.55,-16.5,72.26,away,14.0,WIN,100.0,90.9
+2024-11-10,Gonzaga Bulldogs,Arizona State Sun Devils,2025,h1_spread,-6.66,-13.0,57.59,away,4.0,WIN,100.0,90.9
+2024-11-10,Creighton Bluejays,Fairleigh Dickinson Knights,2025,h1_spread,-11.9,-22.0,91.83,away,13.0,WIN,100.0,90.9
+2024-11-10,Indiana Hoosiers,Eastern Illinois Panthers,2025,h1_spread,-7.26,-16.0,79.44,away,17.5,LOSS,100.0,-100.0
+2024-11-12,Purdue Boilermakers,Yale Bulldogs,2025,h1_spread,-7.19,-8.0,7.33,away,4.0,WIN,100.0,90.9
+2024-11-12,Marquette Golden Eagles,Central Michigan Chippewas,2025,h1_spread,-9.38,-16.0,60.2,away,4.0,WIN,100.0,90.9
+2024-11-11,Ohio State Buckeyes,Youngstown State Penguins,2025,h1_spread,-4.96,-11.5,59.47,away,17.0,LOSS,100.0,-100.0
+2024-11-12,Texas A&M Aggies,Lamar Cardinals,2025,h1_spread,-7.55,-15.5,72.26,away,13.0,WIN,100.0,90.9
+2024-11-12,Rutgers Scarlet Knights,Saint Peter's Peacocks,2025,h1_spread,-4.11,-10.0,53.53,away,5.0,WIN,100.0,90.9
+2024-11-13,Baylor Bears,Sam Houston Bearkats,2025,h1_spread,-5.95,-9.5,32.3,away,18.5,LOSS,100.0,-100.0
+2024-11-13,Ole Miss Rebels,South Alabama Jaguars,2025,h1_spread,-5.25,-10.5,47.76,away,5.0,WIN,100.0,90.9
+2024-11-14,Auburn Tigers,Kent State Golden Flashes,2025,h1_spread,-8.63,-13.5,44.24,away,11.5,WIN,100.0,90.9
+2024-11-14,Houston Cougars,Louisiana Ragin' Cajuns,2025,h1_spread,-9.33,-19.75,94.73,away,23.0,LOSS,100.0,-100.0
+2024-11-14,Tennessee Volunteers,Montana Grizzlies,2025,h1_spread,-7.87,-15.5,69.34,away,17.5,LOSS,100.0,-100.0
+2024-11-14,Creighton Bluejays,Houston Christian Huskies,2025,h1_spread,-13.48,-20.0,59.24,away,17.5,WIN,100.0,90.9
+2024-11-14,Arkansas Razorbacks,Troy Trojans,2025,h1_spread,-2.14,-7.0,44.17,away,8.0,LOSS,100.0,-100.0
+2024-11-13,St. John's Red Storm,Wagner Seahawks,2025,h1_spread,-9.15,-16.0,62.3,away,10.5,WIN,100.0,90.9
+2024-11-14,North Dakota Fighting Hawks,Utah Valley Wolverines,2025,h1_spread,-0.48,3.0,31.64,home,3.0,WIN,100.0,90.9
+2024-11-14,New Orleans Privateers,Lindenwood Lions,2025,h1_spread,-2.81,-0.75,18.73,home,4.0,WIN,100.0,90.9
+2024-11-15,UMBC Retrievers,Coppin State Eagles,2025,h1_spread,-6.17,-7.5,12.13,away,12.5,LOSS,100.0,-100.0
+2024-11-15,Robert Morris Colonials,Stonehill Skyhawks,2025,h1_spread,-4.13,-4.5,3.32,away,6.0,LOSS,100.0,-100.0
+2024-11-15,Buffalo Bulls,Bryant Bulldogs,2025,h1_spread,3.06,3.5,3.99,home,-11.5,LOSS,100.0,-100.0
+2024-11-15,Wichita State Shockers,Northern Iowa Panthers,2025,h1_spread,-0.62,-4.0,30.76,away,3.0,WIN,100.0,90.9
+2024-11-15,Missouri Tigers,Mississippi Valley State Delta Devils,2025,h1_spread,-9.85,-19.5,87.77,away,36.0,LOSS,100.0,-100.0
+2024-11-15,Chattanooga Mocs,Morehead State Eagles,2025,h1_spread,-0.87,-6.5,51.2,away,7.0,LOSS,100.0,-100.0
+2024-11-15,Oklahoma State Cowboys,Southern Illinois Salukis,2025,h1_spread,-1.77,-6.5,43.04,away,3.5,WIN,100.0,90.9
+2024-11-15,South Dakota State Jackrabbits,Northern Colorado Bears,2025,h1_spread,-3.31,-1.5,16.42,home,-4.5,LOSS,100.0,-100.0
+2024-11-15,Kansas State Wildcats,LSU Tigers,2025,h1_spread,-1.92,-4.5,23.47,away,-5.5,WIN,100.0,90.9
+2024-11-15,Pacific Tigers,Northern Arizona Lumberjacks,2025,h1_spread,0.73,-2.5,29.33,away,-1.5,WIN,100.0,90.9
+2024-11-16,Purdue Boilermakers,Alabama Crimson Tide,2025,h1_spread,-3.49,2.0,49.95,home,4.5,WIN,100.0,90.9
+2024-11-16,Gonzaga Bulldogs,UMass Lowell River Hawks,2025,h1_spread,-7.76,-15.5,70.4,away,29.5,LOSS,100.0,-100.0
+2024-11-16,Wisconsin Badgers,Arizona Wildcats,2025,h1_spread,0.39,2.5,19.19,home,7.5,WIN,100.0,90.9
+2024-11-16,Maryland Terrapins,Marquette Golden Eagles,2025,h1_spread,1.7,-1.0,24.54,away,-2.0,WIN,100.0,90.9
+2024-11-15,Florida State Seminoles,Florida Gators,2025,h1_spread,1.1,2.5,12.69,home,-6.5,LOSS,100.0,-100.0
+2024-11-16,Texas A&M Aggies,Ohio State Buckeyes,2025,h1_spread,-1.83,-3.0,10.62,away,7.0,LOSS,100.0,-100.0
+2024-11-15,Rutgers Scarlet Knights,Monmouth Hawks,2025,h1_spread,-3.82,-13.0,83.41,away,8.5,WIN,100.0,90.9
+2024-11-16,Kansas Jayhawks,Oakland Golden Grizzlies,2025,h1_spread,-5.31,-16.5,101.7,away,10.5,WIN,100.0,90.9
+2024-11-16,Duke Blue Devils,Wofford Terriers,2025,h1_spread,-9.11,-15.0,53.56,away,25.5,LOSS,100.0,-100.0
+2024-11-16,Indiana Hoosiers,South Carolina Gamecocks,2025,h1_spread,-0.24,-4.5,38.76,away,8.0,LOSS,100.0,-100.0
+2024-11-16,Ole Miss Rebels,Colorado State Rams,2025,h1_spread,-0.15,-2.5,21.35,away,7.5,LOSS,100.0,-100.0
+2024-11-17,Tennessee Volunteers,Austin Peay Governors,2025,h1_spread,-9.81,-15.5,51.69,away,17.5,LOSS,100.0,-100.0
+2024-11-18,Baylor Bears,Tarleton State Texans,2025,h1_spread,-6.07,-19.0,117.56,away,31.5,LOSS,100.0,-100.0
+2024-11-17,St. John's Red Storm,New Mexico Lobos,2025,h1_spread,-2.41,-4.0,14.48,away,7.0,LOSS,100.0,-100.0
+2024-11-19,San Diego State Aztecs,Gonzaga Bulldogs,2025,h1_spread,0.16,6.0,53.05,home,-6.5,LOSS,100.0,-100.0
+2024-11-19,Auburn Tigers,North Alabama Lions,2025,h1_spread,-10.54,-16.5,54.15,away,16.5,PUSH,100.0,0.0
+2024-11-19,Wisconsin Badgers,UT Rio Grande Valley Vaqueros,2025,h1_spread,-10.47,-12.5,18.47,away,1.5,WIN,100.0,90.9
+2024-11-19,Arkansas Razorbacks,Pacific Tigers,2025,h1_spread,-8.8,-12.5,33.6,away,9.5,WIN,100.0,90.9
+2024-11-20,Kansas Jayhawks,UNC Wilmington Seahawks,2025,h1_spread,-5.3,-14.5,83.67,away,9.0,WIN,100.0,90.9
+2024-11-20,Marquette Golden Eagles,Purdue Boilermakers,2025,h1_spread,0.45,-2.5,26.82,away,9.0,LOSS,100.0,-100.0
+2024-11-20,Kentucky Wildcats,Lipscomb Bisons,2025,h1_spread,-7.65,-12.0,39.54,away,14.5,LOSS,100.0,-100.0
+2024-11-20,Northern Kentucky Norse,Cincinnati Bearcats,2025,h1_spread,3.08,8.0,44.7,home,-8.0,PUSH,100.0,0.0
+2024-11-20,Florida Gators,Florida A&M Rattlers,2025,h1_spread,-11.03,-21.25,92.92,away,12.0,WIN,100.0,90.9
+2024-11-21,Gonzaga Bulldogs,Long Beach State Beach,2025,h1_spread,-8.26,-20.5,111.3,away,21.5,LOSS,100.0,-100.0
+2024-11-21,Alabama Crimson Tide,Illinois Fighting Illini,2025,h1_spread,-1.24,-4.5,29.66,away,6.5,LOSS,100.0,-100.0
+2024-11-21,Texas A&M Aggies,Southern Jaguars,2025,h1_spread,-7.47,-15.5,72.97,away,8.5,WIN,100.0,90.9
+2024-11-22,St. John's Red Storm,Baylor Bears,2025,h1_spread,-1.49,1.5,27.16,home,-0.5,WIN,100.0,90.9
+2024-11-21,Indiana Hoosiers,UNC Greensboro Spartans,2025,h1_spread,-3.37,-10.5,64.84,away,5.5,WIN,100.0,90.9
+2024-11-23,Houston Cougars,Hofstra Pride,2025,h1_spread,-8.21,-17.5,84.49,away,18.0,LOSS,100.0,-100.0
+2024-11-23,Kentucky Wildcats,Jackson State Tigers,2025,h1_spread,-9.4,-21.5,109.99,away,24.5,LOSS,100.0,-100.0
+2024-11-23,Hawai'i Rainbow Warriors,North Carolina Tar Heels,2025,h1_spread,4.97,9.0,36.64,home,-9.0,PUSH,100.0,0.0
+2024-11-23,Arizona Wildcats,Duke Blue Devils,2025,h1_spread,-1.86,-0.5,12.39,home,-7.0,LOSS,100.0,-100.0
+2024-11-23,Creighton Bluejays,Nebraska Cornhuskers,2025,h1_spread,-2.87,-5.5,23.88,away,-5.5,WIN,100.0,90.9
+2024-11-23,Arkansas Razorbacks,Little Rock Trojans,2025,h1_spread,-3.58,-12.0,76.55,away,6.0,WIN,100.0,90.9
+2024-11-23,Florida Gators,Southern Illinois Salukis,2025,h1_spread,-5.28,-11.5,56.52,away,12.5,LOSS,100.0,-100.0
+2024-11-23,Purdue Boilermakers,Marshall Thundering Herd,2025,h1_spread,-10.94,-12.5,14.2,away,17.5,LOSS,100.0,-100.0
+2024-11-23,Marquette Golden Eagles,Georgia Bulldogs,2025,h1_spread,-4.69,-3.5,10.85,home,5.5,WIN,100.0,90.9
+2024-11-23,Georgia Tech Yellow Jackets,Cincinnati Bearcats,2025,h1_spread,1.2,3.5,20.94,home,-11.5,LOSS,100.0,-100.0
+2024-11-24,Georgia Bulldogs,St. John's Red Storm,2025,h1_spread,1.14,3.5,21.45,home,1.5,WIN,100.0,90.9
+2024-11-24,Kennesaw State Owls,Rutgers Scarlet Knights,2025,h1_spread,2.39,6.0,32.78,home,1.0,WIN,100.0,90.9
+2024-11-26,Iowa State Cyclones,Auburn Tigers,2025,h1_spread,-1.0,2.0,27.28,home,-1.0,WIN,100.0,90.9
+2024-11-26,North Carolina Tar Heels,Dayton Flyers,2025,h1_spread,-3.69,-5.0,11.87,away,1.0,WIN,100.0,90.9
+2024-11-27,North Carolina Tar Heels,Auburn Tigers,2025,h1_spread,-0.74,2.0,24.95,home,-6.5,LOSS,100.0,-100.0
+2024-11-27,Dayton Flyers,Iowa State Cyclones,2025,h1_spread,0.95,5.5,41.35,home,-2.5,WIN,100.0,90.9
+2024-11-26,Kentucky Wildcats,Western Kentucky Hilltoppers,2025,h1_spread,-5.59,-14.0,76.43,away,9.5,WIN,100.0,90.9
+2024-11-27,Auburn Tigers,Memphis Tigers,2025,h1_spread,-6.19,-4.5,15.35,home,7.0,WIN,100.0,90.9
+2024-11-27,Iowa State Cyclones,Colorado Buffaloes,2025,h1_spread,-3.07,-7.5,40.31,away,14.0,LOSS,100.0,-100.0
+2024-11-27,Tennessee Volunteers,UT Martin Skyhawks,2025,h1_spread,-9.23,-22.5,120.62,away,21.5,WIN,100.0,90.9
+2024-11-28,Marquette Golden Eagles,Stonehill Skyhawks,2025,h1_spread,-13.34,-20.0,60.54,away,17.5,WIN,100.0,90.9
+2024-11-28,North Carolina Tar Heels,Michigan State Spartans,2025,h1_spread,-2.77,-2.5,2.44,home,-1.5,LOSS,100.0,-100.0
+2024-11-27,Indiana Hoosiers,Louisville Cardinals,2025,h1_spread,-4.51,-2.0,22.82,home,-14.0,LOSS,100.0,-100.0
+2024-11-28,Cincinnati Bearcats,Alabama State Hornets,2025,h1_spread,-8.53,-17.0,77.0,away,9.0,WIN,100.0,90.9
+2024-11-27,Baylor Bears,New Orleans Privateers,2025,h1_spread,-11.08,-21.0,90.19,away,15.5,WIN,100.0,90.9
+2024-11-28,Wake Forest Demon Deacons,Florida Gators,2025,h1_spread,-0.72,4.0,42.93,home,-8.5,LOSS,100.0,-100.0
+2024-11-30,Kentucky Wildcats,Georgia State Panthers,2025,h1_spread,-7.94,-18.5,95.97,away,14.5,WIN,100.0,90.9
+2024-11-29,Florida Gators,Wichita State Shockers,2025,h1_spread,-5.78,-5.5,2.52,home,18.5,WIN,100.0,90.9
+2024-11-30,Mississippi State Bulldogs,Butler Bulldogs,2025,h1_spread,-2.27,-4.5,20.27,away,-5.0,WIN,100.0,90.9
+2024-11-30,Kansas Jayhawks,Furman Paladins,2025,h1_spread,-6.04,-12.5,58.74,away,17.5,LOSS,100.0,-100.0
+2024-12-01,Houston Cougars,San Diego State Aztecs,2025,h1_spread,-5.33,-7.5,19.69,away,-1.5,WIN,100.0,90.9
+2024-12-01,Alabama Crimson Tide,Oregon Ducks,2025,h1_spread,-3.76,-4.0,2.15,away,-1.0,WIN,100.0,90.9
+2024-11-30,Marquette Golden Eagles,Western Carolina Catamounts,2025,h1_spread,-5.95,-18.5,114.05,away,16.0,WIN,100.0,90.9
+2024-11-30,Wisconsin Badgers,Chicago State Cougars,2025,h1_spread,-9.01,-19.5,95.37,away,10.5,WIN,100.0,90.9
+2024-11-30,Rutgers Scarlet Knights,Texas A&M Aggies,2025,h1_spread,1.36,3.0,14.92,home,-2.0,WIN,100.0,90.9
+2024-11-30,Notre Dame Fighting Irish,Creighton Bluejays,2025,h1_spread,3.61,4.0,3.53,home,-2.0,WIN,100.0,90.9
+2024-12-02,Georgetown Hoyas,UMBC Retrievers,2025,h1_spread,-3.09,-9.0,53.7,away,12.0,LOSS,100.0,-100.0
+2024-12-03,Old Dominion Monarchs,William & Mary Tribe,2025,h1_spread,-2.06,4.0,55.08,home,2.5,WIN,100.0,90.9
+2024-12-03,Drexel Dragons,Bryant Bulldogs,2025,h1_spread,-2.64,-0.5,19.49,home,-2.5,LOSS,100.0,-100.0
+2024-12-03,Coppin State Eagles,Loyola Maryland Greyhounds,2025,h1_spread,0.33,4.0,33.32,home,-5.5,LOSS,100.0,-100.0
+2024-12-03,Miami (OH) RedHawks,Air Force Falcons,2025,h1_spread,-1.34,-3.5,19.6,away,6.5,LOSS,100.0,-100.0
+2024-12-03,Rhode Island Rams,Yale Bulldogs,2025,h1_spread,1.51,-1.5,27.36,away,3.0,LOSS,100.0,-100.0
+2024-12-03,UL Monroe Warhawks,UT Arlington Mavericks,2025,h1_spread,2.56,3.5,8.56,home,-7.0,LOSS,100.0,-100.0
+2024-12-03,Tulane Green Wave,SE Louisiana Lions,2025,h1_spread,-4.98,-4.0,8.91,home,-2.0,LOSS,100.0,-100.0
+2024-12-03,Saint Louis Billikens,Jackson State Tigers,2025,h1_spread,-4.08,-11.5,67.45,away,4.0,WIN,100.0,90.9
+2024-12-03,Colorado Buffaloes,Pacific Tigers,2025,h1_spread,-11.94,-8.5,31.27,home,4.5,LOSS,100.0,-100.0
+2024-12-03,Nevada Wolf Pack,Washington State Cougars,2025,h1_spread,-1.7,-6.5,43.67,away,-5.5,WIN,100.0,90.9
+2024-12-04,Tennessee Volunteers,Syracuse Orange,2025,h1_spread,-4.99,-13.0,72.79,away,13.0,PUSH,100.0,0.0
+2024-12-04,Clemson Tigers,Kentucky Wildcats,2025,h1_spread,-1.55,0.5,18.6,home,2.0,WIN,100.0,90.9
+2024-12-04,Wisconsin Badgers,Michigan Wolverines,2025,h1_spread,-5.11,-1.5,32.79,home,-1.5,LOSS,100.0,-100.0
+2024-12-03,Villanova Wildcats,Cincinnati Bearcats,2025,h1_spread,-1.77,2.0,34.29,home,4.0,WIN,100.0,90.9
+2024-12-04,Oklahoma Sooners,Georgia Tech Yellow Jackets,2025,h1_spread,-3.98,-6.75,25.2,away,7.5,LOSS,100.0,-100.0
+2024-12-04,Texas A&M Aggies,Wake Forest Demon Deacons,2025,h1_spread,-1.61,-5.0,30.86,away,6.5,LOSS,100.0,-100.0
+2024-12-04,Louisville Cardinals,Ole Miss Rebels,2025,h1_spread,1.69,-1.5,29.03,away,-11.5,WIN,100.0,90.9
+2024-12-05,Creighton Bluejays,Kansas Jayhawks,2025,h1_spread,-2.77,1.75,41.13,home,6.5,WIN,100.0,90.9
+2024-12-05,Duke Blue Devils,Auburn Tigers,2025,h1_spread,-0.96,-2.0,9.42,away,3.0,LOSS,100.0,-100.0
+2024-12-05,Iowa State Cyclones,Marquette Golden Eagles,2025,h1_spread,-2.05,-2.5,4.12,away,5.5,LOSS,100.0,-100.0
+2024-12-05,North Carolina Tar Heels,Alabama Crimson Tide,2025,h1_spread,-1.83,-0.5,12.13,home,-7.5,LOSS,100.0,-100.0
+2024-12-05,USC Trojans,Oregon Ducks,2025,h1_spread,-0.7,3.0,33.63,home,-4.0,LOSS,100.0,-100.0
+2024-12-05,Florida Gators,Virginia Cavaliers,2025,h1_spread,-3.65,-10.5,62.26,away,9.0,WIN,100.0,90.9
+2024-12-05,Memphis Tigers,Louisiana Tech Bulldogs,2025,h1_spread,-1.64,-6.5,44.16,away,5.0,WIN,100.0,90.9
+2024-12-05,Mississippi State Bulldogs,Pittsburgh Panthers,2025,h1_spread,-1.22,-3.0,16.19,away,16.5,LOSS,100.0,-100.0
+2024-12-05,Fresno State Bulldogs,San Diego State Aztecs,2025,h1_spread,4.45,7.0,23.16,home,-11.0,LOSS,100.0,-100.0
+2024-12-05,Penn State Nittany Lions,Purdue Boilermakers,2025,h1_spread,3.73,-1.5,47.51,away,5.5,LOSS,100.0,-100.0
+2024-12-07,Northwestern Wildcats,Illinois Fighting Illini,2025,h1_spread,0.45,1.25,7.28,home,2.0,WIN,100.0,90.9
+2024-12-08,Gonzaga Bulldogs,Kentucky Wildcats,2025,h1_spread,-2.6,-3.5,8.15,away,-0.5,WIN,100.0,90.9
+2024-12-07,Marquette Golden Eagles,Wisconsin Badgers,2025,h1_spread,-2.52,-3.5,8.93,away,7.0,LOSS,100.0,-100.0
+2024-12-07,Houston Cougars,Butler Bulldogs,2025,h1_spread,-6.37,-10.25,35.26,away,14.0,LOSS,100.0,-100.0
+2024-12-07,Virginia Tech Hokies,Pittsburgh Panthers,2025,h1_spread,-0.65,4.5,46.84,home,-2.5,WIN,100.0,90.9
+2024-12-07,North Carolina Tar Heels,Georgia Tech Yellow Jackets,2025,h1_spread,-6.54,-10.5,36.02,away,1.5,WIN,100.0,90.9
+2024-12-08,Oklahoma Sooners,Alcorn State Braves,2025,h1_spread,-7.87,-18.5,96.65,away,8.0,WIN,100.0,90.9
+2024-12-08,Ole Miss Rebels,Lindenwood Lions,2025,h1_spread,-9.63,-19.0,85.2,away,16.5,WIN,100.0,90.9
+2024-12-08,San Diego State Aztecs,San Diego Toreros,2025,h1_spread,-7.56,-14.5,63.13,away,8.5,WIN,100.0,90.9
+2024-12-08,Missouri Tigers,Kansas Jayhawks,2025,h1_spread,2.52,3.5,8.9,home,4.5,WIN,100.0,90.9
+2024-12-08,Auburn Tigers,Richmond Spiders,2025,h1_spread,-6.08,-18.0,108.37,away,22.0,LOSS,100.0,-100.0
+2024-12-08,Iowa State Cyclones,Jackson State Tigers,2025,h1_spread,-10.87,-22.0,101.18,away,21.0,WIN,100.0,90.9
+2024-12-08,Purdue Boilermakers,Maryland Terrapins,2025,h1_spread,-6.65,-2.5,37.73,home,2.5,PUSH,100.0,0.0
+2024-12-08,Louisville Cardinals,Duke Blue Devils,2025,h1_spread,5.5,4.5,9.13,away,-5.5,WIN,100.0,90.9
+2024-12-08,Oregon Ducks,UCLA Bruins,2025,h1_spread,-2.88,-2.0,7.96,home,-1.0,LOSS,100.0,-100.0
+2024-12-08,Cincinnati Bearcats,Howard Bison,2025,h1_spread,-7.63,-16.5,80.65,away,8.5,WIN,100.0,90.9
+2024-12-08,Memphis Tigers,Arkansas State Red Wolves,2025,h1_spread,-2.92,-7.0,37.07,away,-6.5,WIN,100.0,90.9
+2024-12-08,Texas Tech Red Raiders,Texas A&M Aggies,2025,h1_spread,-1.47,-0.5,8.85,home,-2.5,LOSS,100.0,-100.0
+2024-12-09,Indiana Hoosiers,Minnesota Golden Gophers,2025,h1_spread,-1.28,-5.5,38.36,away,7.5,LOSS,100.0,-100.0
+2024-12-10,Norfolk State Spartans,Hofstra Pride,2025,h1_spread,1.75,-2.5,38.61,away,-6.5,WIN,100.0,90.9
+2024-12-10,VCU Rams,Pennsylvania Quakers,2025,h1_spread,-4.73,-14.5,88.85,away,9.5,WIN,100.0,90.9
+2024-12-10,Baylor Bears,Abilene Christian Wildcats,2025,h1_spread,-7.8,-14.5,60.88,away,15.5,LOSS,100.0,-100.0
+2024-12-10,Tennessee Volunteers,Miami Hurricanes,2025,h1_spread,-5.5,-9.0,31.77,away,6.5,WIN,100.0,90.9
+2024-12-11,Duke Blue Devils,Incarnate Word Cardinals,2025,h1_spread,-12.82,-20.5,69.81,away,13.0,WIN,100.0,90.9
+2024-12-11,Arkansas Razorbacks,Michigan Wolverines,2025,h1_spread,-1.97,2.5,40.65,home,1.0,WIN,100.0,90.9
+2024-12-11,Houston Cougars,Troy Trojans,2025,h1_spread,-8.65,-17.0,75.94,away,10.0,WIN,100.0,90.9
+2024-12-11,Illinois Fighting Illini,Wisconsin Badgers,2025,h1_spread,-2.74,-3.5,6.94,away,3.0,WIN,100.0,90.9
+2024-12-12,Kentucky Wildcats,Colgate Raiders,2025,h1_spread,-6.53,-19.0,113.35,away,5.5,WIN,100.0,90.9
+2024-12-13,Iowa Hawkeyes,Iowa State Cyclones,2025,h1_spread,1.27,3.0,15.73,home,-4.5,LOSS,100.0,-100.0
+2024-12-14,George Washington Revolutionaries,Army Black Knights,2025,h1_spread,-5.28,-5.5,1.99,away,7.5,LOSS,100.0,-100.0
+2024-12-14,Louisiana Tech Bulldogs,Georgia Southern Eagles,2025,h1_spread,-5.75,-6.5,6.78,away,7.0,LOSS,100.0,-100.0
+2024-12-14,UTSA Roadrunners,North Dakota Fighting Hawks,2025,h1_spread,-1.21,-3.5,20.77,away,2.0,WIN,100.0,90.9
+2024-12-14,Nebraska Cornhuskers,Indiana Hoosiers,2025,h1_spread,-3.83,-2.5,12.08,home,8.5,WIN,100.0,90.9
+2024-12-14,Utah Tech Trailblazers,Weber State Wildcats,2025,h1_spread,0.58,2.0,12.94,home,-1.0,WIN,100.0,90.9
+2024-12-14,Colorado Buffaloes,South Dakota State Jackrabbits,2025,h1_spread,-5.66,-4.0,15.06,home,5.5,WIN,100.0,90.9
+2024-12-14,Illinois Fighting Illini,Tennessee Volunteers,2025,h1_spread,-1.29,0.5,16.27,home,-1.0,LOSS,100.0,-100.0
+2024-12-14,Kentucky Wildcats,Louisville Cardinals,2025,h1_spread,-7.07,-5.5,14.31,home,4.0,LOSS,100.0,-100.0
+2024-12-15,Dayton Flyers,Marquette Golden Eagles,2025,h1_spread,0.4,-0.5,8.22,away,4.0,LOSS,100.0,-100.0
+2024-12-15,Alabama Crimson Tide,Creighton Bluejays,2025,h1_spread,-1.24,-7.0,52.37,away,4.0,WIN,100.0,90.9
+2024-12-14,Purdue Boilermakers,Texas A&M Aggies,2025,h1_spread,-4.97,-1.0,36.09,home,-2.0,LOSS,100.0,-100.0
+2024-12-14,Clemson Tigers,Memphis Tigers,2025,h1_spread,-4.27,-3.5,6.97,home,-2.5,LOSS,100.0,-100.0
+2024-12-14,Butler Bulldogs,Wisconsin Badgers,2025,h1_spread,0.0,2.5,22.7,home,-4.5,LOSS,100.0,-100.0
+2024-12-14,Cincinnati Bearcats,Xavier Musketeers,2025,h1_spread,-2.22,-4.5,20.71,away,1.5,WIN,100.0,90.9
+2024-12-14,Arizona Wildcats,UCLA Bruins,2025,h1_spread,-6.05,-2.0,36.86,home,-1.5,LOSS,100.0,-100.0
+2024-12-15,Oregon Ducks,Stephen F. Austin Lumberjacks,2025,h1_spread,-5.59,-12.5,62.83,away,9.0,WIN,100.0,90.9
+2024-12-17,Charleston Cougars,Wofford Terriers,2025,h1_spread,-4.73,-3.5,11.18,home,5.0,WIN,100.0,90.9
+2024-12-17,Central Arkansas Bears,The Citadel Bulldogs,2025,h1_spread,0.65,-2.5,28.66,away,1.0,WIN,100.0,90.9
+2024-12-17,Rice Owls,Alcorn State Braves,2025,h1_spread,-3.66,-9.5,53.1,away,1.0,WIN,100.0,90.9
+2024-12-17,Northern Colorado Bears,Air Force Falcons,2025,h1_spread,-1.91,-5.5,32.61,away,2.5,WIN,100.0,90.9
+2024-12-17,Northern Iowa Panthers,Montana Grizzlies,2025,h1_spread,-3.2,-6.0,25.43,away,14.0,LOSS,100.0,-100.0
+2024-12-17,Texas Tech Red Raiders,Oral Roberts Golden Eagles,2025,h1_spread,-8.25,-16.5,75.02,away,18.0,LOSS,100.0,-100.0
+2024-12-17,TCU Horned Frogs,South Alabama Jaguars,2025,h1_spread,-6.57,-7.0,3.93,away,4.5,WIN,100.0,90.9
+2024-12-17,UTEP Miners,Tarleton State Texans,2025,h1_spread,-0.78,-8.5,70.2,away,2.5,WIN,100.0,90.9
+2024-12-18,Tennessee Volunteers,Western Carolina Catamounts,2025,h1_spread,-6.38,-21.5,137.43,away,24.0,LOSS,100.0,-100.0
+2024-12-18,Auburn Tigers,Georgia State Panthers,2025,h1_spread,-9.91,-24.5,132.63,away,20.5,WIN,100.0,90.9
+2024-12-18,Duke Blue Devils,George Mason Patriots,2025,h1_spread,-5.87,-11.5,51.18,away,10.5,WIN,100.0,90.9
+2024-12-18,Ole Miss Rebels,Southern Jaguars,2025,h1_spread,-5.69,-14.0,75.54,away,6.5,WIN,100.0,90.9
+2024-12-18,UCLA Bruins,Prairie View A&M Panthers,2025,h1_spread,-8.39,-20.5,110.07,away,18.0,WIN,100.0,90.9
+2024-12-18,Dayton Flyers,UNLV Rebels,2025,h1_spread,-2.72,-6.0,29.79,away,0.5,WIN,100.0,90.9
+2024-12-18,South Carolina Gamecocks,Clemson Tigers,2025,h1_spread,-0.15,0.5,5.94,home,1.5,WIN,100.0,90.9
+2024-12-19,North Dakota Fighting Hawks,Alabama Crimson Tide,2025,h1_spread,5.62,14.0,76.2,home,-3.5,WIN,100.0,90.9
+2024-12-19,Marquette Golden Eagles,Butler Bulldogs,2025,h1_spread,-4.02,-7.5,31.63,away,5.0,WIN,100.0,90.9
+2024-12-19,Houston Cougars,Toledo Rockets,2025,h1_spread,-9.27,-18.25,81.64,away,14.5,WIN,100.0,90.9
+2024-12-19,Virginia Cavaliers,Memphis Tigers,2025,h1_spread,-2.14,1.75,35.4,home,-1.0,WIN,100.0,90.9
+2024-12-20,Georgia Bulldogs,Buffalo Bulls,2025,h1_spread,-9.0,-15.5,59.05,away,25.5,LOSS,100.0,-100.0
+2024-12-20,North Alabama Lions,Charleston Southern Buccaneers,2025,h1_spread,-2.78,-5.0,20.19,away,8.5,LOSS,100.0,-100.0
+2024-12-20,Belmont Bruins,UC Irvine Anteaters,2025,h1_spread,-1.15,1.0,19.55,home,-4.0,LOSS,100.0,-100.0
+2024-12-20,Middle Tennessee Blue Raiders,Lipscomb Bisons,2025,h1_spread,-0.78,-1.25,4.26,away,1.0,WIN,100.0,90.9
+2024-12-20,Morehead State Eagles,UT Martin Skyhawks,2025,h1_spread,-3.76,-2.5,11.5,home,0.5,LOSS,100.0,-100.0
+2024-12-20,Texas Longhorns,New Orleans Privateers,2025,h1_spread,-10.7,-20.0,84.5,away,18.0,WIN,100.0,90.9
+2024-12-20,Little Rock Trojans,SIU Edwardsville Cougars,2025,h1_spread,-3.73,-1.5,20.23,home,2.0,WIN,100.0,90.9
+2024-12-20,Wyoming Cowboys,Bellarmine Knights,2025,h1_spread,-4.6,-8.0,30.93,away,18.5,LOSS,100.0,-100.0
+2024-12-20,Southern Indiana Screaming Eagles,Tennessee State Tigers,2025,h1_spread,-0.28,-2.5,20.18,away,1.0,WIN,100.0,90.9
+2024-12-20,Lindenwood Lions,Tennessee Tech Golden Eagles,2025,h1_spread,-0.73,-1.5,6.97,away,-3.0,WIN,100.0,90.9
+2024-12-20,Southeast Missouri State Redhawks,Eastern Illinois Panthers,2025,h1_spread,0.53,-2.5,27.57,away,3.5,LOSS,100.0,-100.0
+2024-12-20,Utah Tech Trailblazers,South Dakota Coyotes,2025,h1_spread,-2.81,1.5,39.17,home,2.5,WIN,100.0,90.9
+2024-12-20,Pepperdine Waves,Long Beach State Beach,2025,h1_spread,-1.62,-3.0,12.56,away,-1.5,WIN,100.0,90.9
+2024-12-20,Texas A&M Aggies,Houston Christian Huskies,2025,h1_spread,-11.75,-18.5,61.38,away,16.0,WIN,100.0,90.9
+2024-12-21,Auburn Tigers,Purdue Boilermakers,2025,h1_spread,-0.6,-5.5,44.59,away,9.0,LOSS,100.0,-100.0
+2024-12-21,Georgia Tech Yellow Jackets,Duke Blue Devils,2025,h1_spread,3.76,9.0,47.67,home,-13.0,LOSS,100.0,-100.0
+2024-12-21,Florida Gators,North Florida Ospreys,2025,h1_spread,-8.2,-17.0,80.03,away,27.0,LOSS,100.0,-100.0
+2024-12-21,Xavier Musketeers,Marquette Golden Eagles,2025,h1_spread,1.27,2.25,8.89,home,-1.0,WIN,100.0,90.9
+2024-12-22,Stanford Cardinal,Oregon Ducks,2025,h1_spread,0.34,2.5,19.67,home,-7.5,LOSS,100.0,-100.0
+2024-12-22,Gonzaga Bulldogs,Bucknell Bison,2025,h1_spread,-9.65,-21.0,103.14,away,10.5,WIN,100.0,90.9
+2024-12-21,Michigan State Spartans,Florida Atlantic Owls,2025,h1_spread,-2.92,-7.5,41.68,away,8.5,LOSS,100.0,-100.0
+2024-12-21,Memphis Tigers,Mississippi State Bulldogs,2025,h1_spread,0.39,1.0,5.52,home,-6.5,LOSS,100.0,-100.0
+2024-12-21,Clemson Tigers,Wake Forest Demon Deacons,2025,h1_spread,-2.25,-4.5,20.46,away,5.5,LOSS,100.0,-100.0
+2024-12-22,Iowa State Cyclones,Morgan State Bears,2025,h1_spread,-12.28,-26.25,126.96,away,13.5,WIN,100.0,90.9
+2024-12-22,Alabama Crimson Tide,Kent State Golden Flashes,2025,h1_spread,-7.54,-12.5,45.06,away,13.5,LOSS,100.0,-100.0
+2024-12-22,Kansas Jayhawks,Brown Bears,2025,h1_spread,-6.73,-14.5,70.61,away,17.0,LOSS,100.0,-100.0
+2024-12-22,Oklahoma Sooners,Central Arkansas Bears,2025,h1_spread,-9.54,-15.5,54.19,away,11.5,WIN,100.0,90.9
+2024-12-22,Michigan Wolverines,Purdue Fort Wayne Mastodons,2025,h1_spread,-2.9,-12.5,87.25,away,15.5,LOSS,100.0,-100.0
+2024-12-24,Tennessee Volunteers,Middle Tennessee Blue Raiders,2025,h1_spread,-9.72,-16.5,61.65,away,9.0,WIN,100.0,90.9
+2024-12-25,Murray State Racers,Loyola Chicago Ramblers,2025,h1_spread,0.38,1.5,10.17,home,1.5,WIN,100.0,90.9
+2024-12-25,Charlotte 49ers,Charleston Cougars,2025,h1_spread,-1.07,3.0,36.96,home,-1.5,WIN,100.0,90.9
+2024-12-26,Nebraska Cornhuskers,Oregon State Beavers,2025,h1_spread,-5.85,-2.0,35.05,home,6.0,WIN,100.0,90.9
+2024-12-28,Texas A&M Aggies,Abilene Christian Wildcats,2025,h1_spread,-6.82,-12.25,49.32,away,19.0,LOSS,100.0,-100.0
+2024-12-28,Memphis Tigers,Ole Miss Rebels,2025,h1_spread,-1.16,-0.5,5.99,home,8.5,WIN,100.0,90.9
+2024-12-29,Alabama Crimson Tide,South Dakota State Jackrabbits,2025,h1_spread,-6.63,-13.25,60.17,away,11.5,WIN,100.0,90.9
+2024-12-29,Florida Gators,Stetson Hatters,2025,h1_spread,-8.18,-23.5,139.31,away,20.0,WIN,100.0,90.9
+2024-12-29,Oregon Ducks,Weber State Wildcats,2025,h1_spread,-5.1,-12.5,67.3,away,20.0,LOSS,100.0,-100.0
+2024-12-29,Oklahoma Sooners,Prairie View A&M Panthers,2025,h1_spread,-9.81,-17.5,69.95,away,11.0,WIN,100.0,90.9
+2024-12-29,Purdue Boilermakers,Toledo Rockets,2025,h1_spread,-8.87,-12.5,33.01,away,9.5,WIN,100.0,90.9
+2024-12-29,Illinois Fighting Illini,Chicago State Cougars,2025,h1_spread,-10.25,-23.5,120.49,away,26.5,LOSS,100.0,-100.0
+2024-12-30,Auburn Tigers,Monmouth Hawks,2025,h1_spread,-9.25,-22.5,120.47,away,14.5,WIN,100.0,90.9
+2024-12-31,Colorado Buffaloes,Iowa State Cyclones,2025,h1_spread,0.07,4.5,40.31,home,-5.0,LOSS,100.0,-100.0
+2024-12-31,Oklahoma State Cowboys,Houston Cougars,2025,h1_spread,5.22,6.5,11.67,home,-6.5,PUSH,100.0,0.0
+2024-12-31,Kansas State Wildcats,Cincinnati Bearcats,2025,h1_spread,-0.39,2.0,21.71,home,1.5,WIN,100.0,90.9
+2024-12-30,Michigan State Spartans,Western Michigan Broncos,2025,h1_spread,-9.74,-15.5,52.38,away,9.0,WIN,100.0,90.9
+2024-12-31,Pepperdine Waves,Gonzaga Bulldogs,2025,h1_spread,5.14,12.0,62.38,home,-3.5,WIN,100.0,90.9
+2024-12-31,Arkansas Razorbacks,Oakland Golden Grizzlies,2025,h1_spread,-2.22,-9.5,66.21,away,15.0,LOSS,100.0,-100.0
+2024-12-31,Tennessee Volunteers,Norfolk State Spartans,2025,h1_spread,-9.53,-18.5,81.54,away,7.5,WIN,100.0,90.9
+2024-12-31,Duke Blue Devils,Virginia Tech Hokies,2025,h1_spread,-4.33,-14.5,92.49,away,11.5,WIN,100.0,90.9
+2024-12-31,Kansas Jayhawks,West Virginia Mountaineers,2025,h1_spread,-5.53,-7.5,17.93,away,-0.5,WIN,100.0,90.9
+2024-12-31,Providence Friars,Marquette Golden Eagles,2025,h1_spread,1.14,3.5,21.48,home,-14.0,LOSS,100.0,-100.0
+2024-12-31,Kentucky Wildcats,Brown Bears,2025,h1_spread,-6.87,-14.5,69.37,away,17.0,LOSS,100.0,-100.0
+2024-12-31,Baylor Bears,Utah Utes,2025,h1_spread,-2.82,-6.5,33.43,away,12.5,LOSS,100.0,-100.0
+2025-01-03,Oregon Ducks,Illinois Fighting Illini,2025,h1_spread,1.03,-2.5,32.05,away,-16.0,WIN,100.0,90.9
+2025-01-03,Gonzaga Bulldogs,Portland Pilots,2025,h1_spread,-9.78,-19.5,88.4,away,15.5,WIN,100.0,90.9
+2025-01-03,Minnesota Golden Gophers,Purdue Boilermakers,2025,h1_spread,3.72,3.0,6.52,away,-10.0,WIN,100.0,90.9
+2025-01-03,Florida Atlantic Owls,Memphis Tigers,2025,h1_spread,-2.75,1.5,38.63,home,-14.0,LOSS,100.0,-100.0
+2025-01-04,Marquette Golden Eagles,Creighton Bluejays,2025,h1_spread,-1.28,-5.5,38.33,away,4.0,WIN,100.0,90.9
+2025-01-04,Ohio State Buckeyes,Michigan State Spartans,2025,h1_spread,-0.63,-1.5,7.94,away,-3.5,WIN,100.0,90.9
+2025-01-04,Tennessee Volunteers,Arkansas Razorbacks,2025,h1_spread,-6.08,-6.5,3.8,away,12.0,LOSS,100.0,-100.0
+2025-01-04,Auburn Tigers,Missouri Tigers,2025,h1_spread,-7.62,-11.0,30.69,away,8.0,WIN,100.0,90.9
+2025-01-04,Iowa State Cyclones,Baylor Bears,2025,h1_spread,-2.59,-4.5,17.39,away,9.5,LOSS,100.0,-100.0
+2025-01-04,SMU Mustangs,Duke Blue Devils,2025,h1_spread,2.02,4.5,22.54,home,-13.5,LOSS,100.0,-100.0
+2025-01-04,Alabama Crimson Tide,Oklahoma Sooners,2025,h1_spread,-3.73,-7.5,34.31,away,14.0,LOSS,100.0,-100.0
+2025-01-04,Kentucky Wildcats,Florida Gators,2025,h1_spread,-1.43,-2.0,5.22,away,3.0,LOSS,100.0,-100.0
+2025-01-05,Texas A&M Aggies,Texas Longhorns,2025,h1_spread,-0.9,-3.5,23.67,away,10.0,LOSS,100.0,-100.0
+2025-01-04,Houston Cougars,BYU Cougars,2025,h1_spread,-4.82,-5.5,6.21,away,15.5,LOSS,100.0,-100.0
+2025-01-04,Nebraska Cornhuskers,UCLA Bruins,2025,h1_spread,-4.03,-1.25,25.24,home,4.0,WIN,100.0,90.9
+2025-01-04,Cincinnati Bearcats,Arizona Wildcats,2025,h1_spread,1.42,-1.5,26.56,away,-2.5,WIN,100.0,90.9
+2025-01-04,Mississippi State Bulldogs,South Carolina Gamecocks,2025,h1_spread,-1.97,-6.0,36.61,away,17.5,LOSS,100.0,-100.0
+2025-01-05,Loyola Marymount Lions,Gonzaga Bulldogs,2025,h1_spread,4.98,8.75,34.26,home,-14.0,LOSS,100.0,-100.0
+2025-01-04,Ole Miss Rebels,Georgia Bulldogs,2025,h1_spread,-1.39,-2.5,10.08,away,6.0,LOSS,100.0,-100.0
+2025-01-05,UCF Knights,Kansas Jayhawks,2025,h1_spread,0.56,2.5,17.61,home,-25.5,LOSS,100.0,-100.0
+2025-01-05,Purdue Boilermakers,Northwestern Wildcats,2025,h1_spread,-5.18,-3.5,15.28,home,9.0,WIN,100.0,90.9
+2025-01-05,Memphis Tigers,North Texas Mean Green,2025,h1_spread,-0.84,-4.5,33.24,away,2.0,WIN,100.0,90.9
+2025-01-05,Washington Huskies,Illinois Fighting Illini,2025,h1_spread,1.31,4.0,24.43,home,-2.0,WIN,100.0,90.9
+2025-01-07,Houston Cougars,TCU Horned Frogs,2025,h1_spread,-5.83,-10.5,42.44,away,9.5,WIN,100.0,90.9
+2025-01-08,Florida Gators,Tennessee Volunteers,2025,h1_spread,-0.22,-1.5,11.6,away,15.0,LOSS,100.0,-100.0
+2025-01-08,Texas Longhorns,Auburn Tigers,2025,h1_spread,0.46,6.0,50.36,home,-2.5,WIN,100.0,90.9
+2025-01-08,Iowa State Cyclones,Utah Utes,2025,h1_spread,-3.91,-10.5,59.91,away,11.5,LOSS,100.0,-100.0
+2025-01-08,Duke Blue Devils,Pittsburgh Panthers,2025,h1_spread,-3.48,-8.0,41.11,away,14.5,LOSS,100.0,-100.0
+2025-01-08,Georgia Bulldogs,Kentucky Wildcats,2025,h1_spread,0.77,0.5,2.47,away,6.5,LOSS,100.0,-100.0
+2025-01-08,Marquette Golden Eagles,Georgetown Hoyas,2025,h1_spread,-7.67,-7.5,1.55,home,4.0,LOSS,100.0,-100.0
+2025-01-08,Vanderbilt Commodores,Mississippi State Bulldogs,2025,h1_spread,3.21,1.0,20.07,away,-6.0,WIN,100.0,90.9
+2025-01-08,West Virginia Mountaineers,Arizona Wildcats,2025,h1_spread,4.46,1.5,26.88,away,-9.5,WIN,100.0,90.9
+2025-01-08,UCLA Bruins,Michigan Wolverines,2025,h1_spread,-2.44,-1.5,8.56,home,-9.5,LOSS,100.0,-100.0
+2025-01-09,South Carolina Gamecocks,Alabama Crimson Tide,2025,h1_spread,0.68,6.5,52.92,home,-10.0,LOSS,100.0,-100.0
+2025-01-09,Oklahoma Sooners,Texas A&M Aggies,2025,h1_spread,-0.75,-1.5,6.82,away,-1.0,WIN,100.0,90.9
+2025-01-09,Kansas Jayhawks,Arizona State Sun Devils,2025,h1_spread,-5.43,-8.5,27.95,away,9.5,LOSS,100.0,-100.0
+2025-01-09,Illinois Fighting Illini,Penn State Nittany Lions,2025,h1_spread,-4.99,-4.5,4.5,home,19.5,WIN,100.0,90.9
+2025-01-09,Gonzaga Bulldogs,San Diego Toreros,2025,h1_spread,-9.22,-18.5,84.36,away,6.5,WIN,100.0,90.9
+2025-01-09,Arkansas Razorbacks,Ole Miss Rebels,2025,h1_spread,-0.65,-1.5,7.74,away,-3.5,WIN,100.0,90.9
+2025-01-09,Ohio State Buckeyes,Oregon Ducks,2025,h1_spread,-1.96,-1.5,4.15,home,-1.0,LOSS,100.0,-100.0
+2025-01-10,Michigan State Spartans,Washington Huskies,2025,h1_spread,-3.12,-8.0,44.39,away,17.0,LOSS,100.0,-100.0
+2025-01-09,Rutgers Scarlet Knights,Purdue Boilermakers,2025,h1_spread,4.83,1.5,30.26,away,-9.0,WIN,100.0,90.9
+2025-01-11,Maryland Terrapins,UCLA Bruins,2025,h1_spread,-1.98,-3.0,9.24,away,9.0,LOSS,100.0,-100.0
+2025-01-11,Texas Longhorns,Tennessee Volunteers,2025,h1_spread,-0.16,2.5,24.15,home,-2.0,WIN,100.0,90.9
+2025-01-11,South Carolina Gamecocks,Auburn Tigers,2025,h1_spread,1.77,9.5,70.29,home,-1.5,WIN,100.0,90.9
+2025-01-11,Texas Tech Red Raiders,Iowa State Cyclones,2025,h1_spread,0.59,-1.5,19.02,away,-0.5,WIN,100.0,90.9
+2025-01-11,Duke Blue Devils,Notre Dame Fighting Irish,2025,h1_spread,-6.9,-11.5,41.77,away,4.0,WIN,100.0,90.9
+2025-01-12,Texas A&M Aggies,Alabama Crimson Tide,2025,h1_spread,-0.02,1.5,13.86,home,-3.0,LOSS,100.0,-100.0
+2025-01-12,Mississippi State Bulldogs,Kentucky Wildcats,2025,h1_spread,-0.67,-2.5,16.62,away,-2.5,WIN,100.0,90.9
+2025-01-11,Arkansas Razorbacks,Florida Gators,2025,h1_spread,1.81,2.0,1.76,home,-4.0,LOSS,100.0,-100.0
+2025-01-11,Cincinnati Bearcats,Kansas Jayhawks,2025,h1_spread,-0.51,0.0,4.61,home,-7.0,LOSS,100.0,-100.0
+2025-01-11,Kansas State Wildcats,Houston Cougars,2025,h1_spread,4.01,6.0,18.05,home,-15.0,LOSS,100.0,-100.0
+2025-01-11,Illinois Fighting Illini,USC Trojans,2025,h1_spread,-4.83,-7.5,24.3,away,-5.0,WIN,100.0,90.9
+2025-01-11,Georgia Bulldogs,Oklahoma Sooners,2025,h1_spread,-0.58,-4.0,31.12,away,5.0,LOSS,100.0,-100.0
+2025-01-12,Gonzaga Bulldogs,Washington State Cougars,2025,h1_spread,-3.59,-10.5,62.83,away,6.5,WIN,100.0,90.9
+2025-01-11,Memphis Tigers,East Carolina Pirates,2025,h1_spread,-3.88,-7.0,28.32,away,2.0,WIN,100.0,90.9
+2025-01-11,Ole Miss Rebels,LSU Tigers,2025,h1_spread,-1.78,-5.5,33.83,away,6.0,LOSS,100.0,-100.0
+2025-01-12,Utah State Aggies,Boise State Broncos,2025,h1_spread,-0.91,-3.0,18.96,away,1.0,WIN,100.0,90.9
+2025-01-12,Penn State Nittany Lions,Oregon Ducks,2025,h1_spread,-0.53,0.5,9.38,home,-0.5,PUSH,100.0,0.0
+2025-01-12,Northwestern Wildcats,Michigan State Spartans,2025,h1_spread,-0.75,1.0,15.88,home,-5.0,LOSS,100.0,-100.0
+2025-01-12,Colorado Buffaloes,West Virginia Mountaineers,2025,h1_spread,-5.57,-1.5,36.97,home,-4.0,LOSS,100.0,-100.0
+2025-01-12,Michigan Wolverines,Washington Huskies,2025,h1_spread,0.53,-8.0,77.55,away,8.0,PUSH,100.0,0.0
+2025-01-13,Rutgers Scarlet Knights,UCLA Bruins,2025,h1_spread,-0.81,2.0,25.5,home,3.5,WIN,100.0,90.9
+2025-01-13,Maryland Terrapins,Minnesota Golden Gophers,2025,h1_spread,-1.57,-8.5,63.03,away,3.0,WIN,100.0,90.9
+2025-01-13,Arkansas-Pine Bluff Golden Lions,Prairie View A&M Panthers,2025,h1_spread,-1.94,1.0,26.76,home,-5.5,LOSS,100.0,-100.0
+2025-01-14,Notre Dame Fighting Irish,Boston College Eagles,2025,h1_spread,0.15,-6.5,60.47,away,9.0,LOSS,100.0,-100.0
+2025-01-14,Mississippi Valley State Delta Devils,Texas Southern Tigers,2025,h1_spread,3.91,9.5,50.84,home,-14.5,LOSS,100.0,-100.0
+2025-01-14,Alcorn State Braves,Alabama State Hornets,2025,h1_spread,-1.94,1.5,31.29,home,1.0,WIN,100.0,90.9
+2025-01-14,Furman Paladins,Wofford Terriers,2025,h1_spread,-3.0,-3.5,4.52,away,-9.5,WIN,100.0,90.9
+2025-01-14,Stephen F. Austin Lumberjacks,SE Louisiana Lions,2025,h1_spread,-4.05,-3.0,9.56,home,-3.5,LOSS,100.0,-100.0
+2025-01-14,Morgan State Bears,Norfolk State Spartans,2025,h1_spread,1.14,5.5,39.67,home,2.0,WIN,100.0,90.9
+2025-01-14,Howard Bison,Coppin State Eagles,2025,h1_spread,-5.75,-7.5,15.91,away,7.5,PUSH,100.0,0.0
+2025-01-14,Jackson State Tigers,Alabama A&M Bulldogs,2025,h1_spread,-2.24,-4.5,20.52,away,5.0,LOSS,100.0,-100.0
+2025-01-14,Lamar Cardinals,New Orleans Privateers,2025,h1_spread,-4.05,-7.5,31.37,away,-3.0,WIN,100.0,90.9
+2025-01-14,Elon Phoenix,Campbell Fighting Camels,2025,h1_spread,-1.33,-4.0,24.29,away,6.5,LOSS,100.0,-100.0
+2025-01-15,Auburn Tigers,Mississippi State Bulldogs,2025,h1_spread,-4.3,-4.0,2.69,home,11.0,WIN,100.0,90.9
+2025-01-15,Duke Blue Devils,Miami Hurricanes,2025,h1_spread,-5.59,-13.5,71.95,away,17.5,LOSS,100.0,-100.0
+2025-01-15,Alabama Crimson Tide,Ole Miss Rebels,2025,h1_spread,-4.76,-7.0,20.38,away,-5.0,WIN,100.0,90.9
+2025-01-15,Florida Gators,Missouri Tigers,2025,h1_spread,-5.73,-6.0,2.45,away,-0.5,WIN,100.0,90.9
+2025-01-15,DePaul Blue Demons,Marquette Golden Eagles,2025,h1_spread,6.87,7.5,5.71,home,-1.0,WIN,100.0,90.9
+2025-01-15,Kentucky Wildcats,Texas A&M Aggies,2025,h1_spread,-2.1,-4.0,17.3,away,6.0,LOSS,100.0,-100.0
+2025-01-15,Indiana Hoosiers,Illinois Fighting Illini,2025,h1_spread,2.2,3.5,11.78,home,-12.5,LOSS,100.0,-100.0
+2025-01-15,Wisconsin Badgers,Ohio State Buckeyes,2025,h1_spread,-2.33,-3.5,10.61,away,1.0,WIN,100.0,90.9
+2025-01-16,Iowa State Cyclones,Kansas Jayhawks,2025,h1_spread,-3.1,-3.5,3.59,away,8.5,LOSS,100.0,-100.0
+2025-01-16,Tennessee Volunteers,Georgia Bulldogs,2025,h1_spread,-5.12,-6.5,12.53,away,9.0,LOSS,100.0,-100.0
+2025-01-16,Houston Cougars,West Virginia Mountaineers,2025,h1_spread,-8.94,-9.5,5.12,away,8.0,WIN,100.0,90.9
+2025-01-16,Michigan State Spartans,Penn State Nittany Lions,2025,h1_spread,-3.8,-6.5,24.56,away,2.5,WIN,100.0,90.9
+2025-01-16,Washington Huskies,Purdue Boilermakers,2025,h1_spread,3.05,4.0,8.68,home,-5.5,LOSS,100.0,-100.0
+2025-01-16,UNLV Rebels,Utah State Aggies,2025,h1_spread,-0.92,2.5,31.12,home,1.5,WIN,100.0,90.9
+2025-01-17,Oregon State Beavers,Gonzaga Bulldogs,2025,h1_spread,4.19,5.0,7.33,home,4.0,WIN,100.0,90.9
+2025-01-17,Temple Owls,Memphis Tigers,2025,h1_spread,1.26,4.0,24.91,home,3.5,WIN,100.0,90.9
+2025-01-17,Minnesota Golden Gophers,Michigan Wolverines,2025,h1_spread,-2.86,5.5,75.99,home,1.5,WIN,100.0,90.9
+2025-01-17,Akron Zips,Ohio Bobcats,2025,h1_spread,-1.78,-1.5,2.58,home,6.0,WIN,100.0,90.9
+2025-01-18,Saint Joseph's Hawks,VCU Rams,2025,h1_spread,-1.28,1.5,25.28,home,-4.5,LOSS,100.0,-100.0
+2025-01-18,Villanova Wildcats,Providence Friars,2025,h1_spread,-2.36,-5.0,24.01,away,1.0,WIN,100.0,90.9
+2025-01-18,Green Bay Phoenix,Robert Morris Colonials,2025,h1_spread,-2.93,3.5,58.48,home,-11.0,LOSS,100.0,-100.0
+2025-01-18,Ohio State Buckeyes,Indiana Hoosiers,2025,h1_spread,-3.13,-4.0,7.86,away,-0.5,WIN,100.0,90.9
+2025-01-18,Georgetown Hoyas,DePaul Blue Demons,2025,h1_spread,-3.7,-3.0,6.38,home,-2.5,LOSS,100.0,-100.0
+2025-01-18,Milwaukee Panthers,Youngstown State Penguins,2025,h1_spread,0.72,-2.75,31.54,away,7.5,LOSS,100.0,-100.0
+2025-01-18,UCLA Bruins,Iowa Hawkeyes,2025,h1_spread,-0.04,-3.5,31.46,away,12.0,LOSS,100.0,-100.0
+2025-01-18,Fresno State Bulldogs,Air Force Falcons,2025,h1_spread,-1.46,-2.0,4.91,away,4.5,LOSS,100.0,-100.0
+2025-01-18,Georgia Bulldogs,Auburn Tigers,2025,h1_spread,2.74,3.0,2.37,home,-1.0,WIN,100.0,90.9
+2025-01-18,West Virginia Mountaineers,Iowa State Cyclones,2025,h1_spread,4.13,3.5,5.74,away,3.5,LOSS,100.0,-100.0
+2025-01-19,Boston College Eagles,Duke Blue Devils,2025,h1_spread,2.25,14.0,106.79,home,-12.5,WIN,100.0,90.9
+2025-01-18,Kentucky Wildcats,Alabama Crimson Tide,2025,h1_spread,-0.62,-1.5,7.98,away,-2.5,WIN,100.0,90.9
+2025-01-18,Florida Gators,Texas Longhorns,2025,h1_spread,-1.57,-6.5,44.84,away,12.0,LOSS,100.0,-100.0
+2025-01-18,Vanderbilt Commodores,Tennessee Volunteers,2025,h1_spread,5.39,3.0,21.7,away,0.5,LOSS,100.0,-100.0
+2025-01-18,Marquette Golden Eagles,Xavier Musketeers,2025,h1_spread,-4.27,-5.5,11.16,away,-1.0,WIN,100.0,90.9
+2025-01-18,Kansas Jayhawks,Kansas State Wildcats,2025,h1_spread,-3.6,-8.5,44.5,away,5.0,WIN,100.0,90.9
+2025-01-18,UCF Knights,Houston Cougars,2025,h1_spread,3.97,7.5,32.07,home,-0.5,WIN,100.0,90.9
+2025-01-19,Texas A&M Aggies,LSU Tigers,2025,h1_spread,-3.56,-6.5,26.71,away,5.5,WIN,100.0,90.9
+2025-01-18,Oregon Ducks,Purdue Boilermakers,2025,h1_spread,2.76,-1.5,38.71,away,-3.5,WIN,100.0,90.9
+2025-01-19,Gonzaga Bulldogs,Santa Clara Broncos,2025,h1_spread,-6.32,-8.5,19.81,away,-2.0,WIN,100.0,90.9
+2025-01-18,USC Trojans,Wisconsin Badgers,2025,h1_spread,0.59,-0.5,9.91,away,-7.5,WIN,100.0,90.9
+2025-01-19,Michigan State Spartans,Illinois Fighting Illini,2025,h1_spread,-0.3,-0.5,1.79,away,1.0,LOSS,100.0,-100.0
+2025-01-19,Charlotte 49ers,Memphis Tigers,2025,h1_spread,-0.84,6.5,66.72,home,-4.5,WIN,100.0,90.9
+2025-01-19,Michigan Wolverines,Northwestern Wildcats,2025,h1_spread,1.39,-5.5,62.67,away,2.0,WIN,100.0,90.9
+2025-01-19,Baylor Bears,TCU Horned Frogs,2025,h1_spread,-2.94,-6.5,32.37,away,-1.5,WIN,100.0,90.9
+2025-01-20,UNC Wilmington Seahawks,William & Mary Tribe,2025,h1_spread,-5.73,-3.5,20.29,home,5.5,WIN,100.0,90.9
+2025-01-20,Cornell Big Red,Brown Bears,2025,h1_spread,-3.41,-4.5,9.87,away,-0.5,WIN,100.0,90.9
+2025-01-20,Harvard Crimson,Pennsylvania Quakers,2025,h1_spread,-1.29,-3.5,20.05,away,-7.5,WIN,100.0,90.9
+2025-01-20,Princeton Tigers,Columbia Lions,2025,h1_spread,-4.63,-4.0,5.7,home,2.0,LOSS,100.0,-100.0
+2025-01-20,Prairie View A&M Panthers,Alcorn State Braves,2025,h1_spread,0.44,-2.0,22.15,away,-4.0,WIN,100.0,90.9
+2025-01-20,Yale Bulldogs,Dartmouth Big Green,2025,h1_spread,-7.69,-9.5,16.47,away,8.0,WIN,100.0,90.9
+2025-01-20,Northwestern State Demons,New Orleans Privateers,2025,h1_spread,-2.16,-5.0,25.83,away,6.0,LOSS,100.0,-100.0
+2025-01-20,Drexel Dragons,Hofstra Pride,2025,h1_spread,-0.86,-1.5,5.8,away,2.5,LOSS,100.0,-100.0
+2025-01-20,Texas Southern Tigers,Jackson State Tigers,2025,h1_spread,-2.31,-2.5,1.75,away,4.0,LOSS,100.0,-100.0
+2025-01-20,New Mexico Lobos,Fresno State Bulldogs,2025,h1_spread,-7.47,-13.0,50.23,away,14.0,LOSS,100.0,-100.0
+2025-01-20,Incarnate Word Cardinals,UT Rio Grande Valley Vaqueros,2025,h1_spread,-0.67,-1.5,7.51,away,-3.5,WIN,100.0,90.9
+2025-01-20,Villanova Wildcats,Georgetown Hoyas,2025,h1_spread,-5.89,-3.5,21.75,home,-0.5,LOSS,100.0,-100.0
+2025-01-20,Penn State Nittany Lions,Rutgers Scarlet Knights,2025,h1_spread,-2.6,-4.0,12.71,away,4.0,PUSH,100.0,0.0
+2025-01-21,Florida A&M Rattlers,Mississippi Valley State Delta Devils,2025,h1_spread,-4.55,-8.5,35.93,away,15.0,LOSS,100.0,-100.0
+2025-01-21,Colgate Raiders,Bucknell Bison,2025,h1_spread,-3.52,-4.0,4.36,away,3.5,WIN,100.0,90.9
+2025-01-21,Le Moyne Dolphins,Stonehill Skyhawks,2025,h1_spread,-4.51,0.5,45.57,home,0.5,WIN,100.0,90.9
+2025-01-21,Chicago State Cougars,Fairleigh Dickinson Knights,2025,h1_spread,-3.16,2.0,46.87,home,-5.0,LOSS,100.0,-100.0
+2025-01-21,Montana Grizzlies,Idaho Vandals,2025,h1_spread,-4.65,-2.5,19.58,home,2.5,PUSH,100.0,0.0
+2025-01-21,Montana State Bobcats,Eastern Washington Eagles,2025,h1_spread,-0.73,-3.0,20.66,away,5.0,LOSS,100.0,-100.0
+2025-01-21,North Carolina A&T Aggies,Hampton Pirates,2025,h1_spread,-0.74,1.0,15.78,home,-0.5,WIN,100.0,90.9
+2025-01-23,South Carolina Gamecocks,Florida Gators,2025,h1_spread,-0.13,6.5,60.23,home,-0.5,WIN,100.0,90.9
+2025-01-22,Houston Cougars,Utah Utes,2025,h1_spread,-5.71,-9.5,34.41,away,17.0,LOSS,100.0,-100.0
+2025-01-23,TCU Horned Frogs,Kansas Jayhawks,2025,h1_spread,-0.58,4.5,46.16,home,-6.5,LOSS,100.0,-100.0
+2025-01-23,Ole Miss Rebels,Texas A&M Aggies,2025,h1_spread,0.28,-1.5,16.21,away,-0.5,WIN,100.0,90.9
+2025-01-23,St. John's Red Storm,Xavier Musketeers,2025,h1_spread,-3.72,-4.0,2.55,away,4.0,PUSH,100.0,0.0
+2025-01-24,Illinois Fighting Illini,Maryland Terrapins,2025,h1_spread,-4.92,-3.5,12.9,home,-10.5,LOSS,100.0,-100.0
+2025-01-24,Memphis Tigers,Wichita State Shockers,2025,h1_spread,-2.98,-6.5,31.98,away,4.0,WIN,100.0,90.9
+2025-01-25,Marquette Golden Eagles,Villanova Wildcats,2025,h1_spread,-3.28,-5.5,20.2,away,6.5,LOSS,100.0,-100.0
+2025-01-25,Purdue Boilermakers,Michigan Wolverines,2025,h1_spread,-8.08,-2.0,55.23,home,13.5,WIN,100.0,90.9
+2025-01-26,Auburn Tigers,Tennessee Volunteers,2025,h1_spread,-2.12,-3.5,12.57,away,1.0,WIN,100.0,90.9
+2025-01-25,Wake Forest Demon Deacons,Duke Blue Devils,2025,h1_spread,0.63,6.5,53.33,home,-3.5,WIN,100.0,90.9
+2025-01-25,Arizona State Sun Devils,Iowa State Cyclones,2025,h1_spread,4.03,5.5,13.37,home,-7.5,LOSS,100.0,-100.0
+2025-01-26,Alabama Crimson Tide,LSU Tigers,2025,h1_spread,-5.04,-10.5,49.67,away,3.5,WIN,100.0,90.9
+2025-01-25,Florida Gators,Georgia Bulldogs,2025,h1_spread,-3.85,-6.5,24.13,away,15.0,LOSS,100.0,-100.0
+2025-01-25,Kansas Jayhawks,Houston Cougars,2025,h1_spread,1.91,0.0,17.36,away,-3.0,WIN,100.0,90.9
+2025-01-25,Rutgers Scarlet Knights,Michigan State Spartans,2025,h1_spread,1.9,4.0,19.09,home,-3.5,WIN,100.0,90.9
+2025-01-25,Vanderbilt Commodores,Kentucky Wildcats,2025,h1_spread,4.04,0.75,29.88,away,2.5,LOSS,100.0,-100.0
+2025-01-25,Texas Longhorns,Texas A&M Aggies,2025,h1_spread,-2.1,-0.5,14.58,home,0.5,PUSH,100.0,0.0
+2025-01-25,South Carolina Gamecocks,Mississippi State Bulldogs,2025,h1_spread,-1.03,3.5,41.16,home,-2.5,WIN,100.0,90.9
+2025-01-25,Minnesota Golden Gophers,Oregon Ducks,2025,h1_spread,-0.54,2.0,23.1,home,4.0,WIN,100.0,90.9
+2025-01-25,Missouri Tigers,Ole Miss Rebels,2025,h1_spread,0.28,-1.5,16.15,away,4.0,LOSS,100.0,-100.0
+2025-01-25,Kansas State Wildcats,West Virginia Mountaineers,2025,h1_spread,-3.42,-1.0,22.02,home,6.5,WIN,100.0,90.9
+2025-01-26,Illinois Fighting Illini,Northwestern Wildcats,2025,h1_spread,-3.45,-4.5,9.55,away,4.5,PUSH,100.0,0.0
+2025-01-26,Wisconsin Badgers,Nebraska Cornhuskers,2025,h1_spread,-1.64,-4.0,21.46,away,14.0,LOSS,100.0,-100.0
+2025-01-26,Memphis Tigers,UAB Blazers,2025,h1_spread,-2.14,-4.0,16.91,away,11.5,LOSS,100.0,-100.0
+2025-01-28,Arizona Wildcats,Iowa State Cyclones,2025,h1_spread,-1.82,-1.5,2.95,home,5.5,WIN,100.0,90.9
+2025-01-29,Michigan State Spartans,Minnesota Golden Gophers,2025,h1_spread,-3.79,-8.0,38.29,away,11.0,LOSS,100.0,-100.0
+2025-01-29,Tennessee Volunteers,Kentucky Wildcats,2025,h1_spread,-2.85,-6.0,28.63,away,-2.5,WIN,100.0,90.9
+2025-01-29,Butler Bulldogs,Marquette Golden Eagles,2025,h1_spread,1.02,4.5,31.63,home,-4.5,PUSH,100.0,0.0
+2025-01-29,Kansas Jayhawks,UCF Knights,2025,h1_spread,-3.56,-7.0,31.25,away,2.0,WIN,100.0,90.9
+2025-01-29,Texas A&M Aggies,Oklahoma Sooners,2025,h1_spread,-2.25,-4.5,20.45,away,3.5,WIN,100.0,90.9
+2025-01-28,Georgetown Hoyas,St. John's Red Storm,2025,h1_spread,4.12,2.5,14.71,away,-12.5,WIN,100.0,90.9
+2025-01-29,Louisville Cardinals,Wake Forest Demon Deacons,2025,h1_spread,3.37,-5.5,80.64,away,6.5,LOSS,100.0,-100.0
+2025-01-30,LSU Tigers,Auburn Tigers,2025,h1_spread,3.13,7.0,35.22,home,-6.5,WIN,100.0,90.9
+2025-01-30,Mississippi State Bulldogs,Alabama Crimson Tide,2025,h1_spread,0.21,-0.5,6.42,away,-2.0,WIN,100.0,90.9
+2025-01-30,West Virginia Mountaineers,Houston Cougars,2025,h1_spread,5.94,5.0,8.51,away,-7.0,WIN,100.0,90.9
+2025-01-30,Maryland Terrapins,Wisconsin Badgers,2025,h1_spread,0.68,-2.75,31.2,away,4.0,LOSS,100.0,-100.0
+2025-01-30,Texas Tech Red Raiders,TCU Horned Frogs,2025,h1_spread,-1.93,-6.75,43.78,away,7.0,LOSS,100.0,-100.0
+2025-01-30,Ole Miss Rebels,Texas Longhorns,2025,h1_spread,0.89,-3.5,39.88,away,1.5,WIN,100.0,90.9
+2025-01-31,UCLA Bruins,Oregon Ducks,2025,h1_spread,-0.12,-2.5,21.6,away,13.0,LOSS,100.0,-100.0
+2025-01-31,Nebraska Cornhuskers,Illinois Fighting Illini,2025,h1_spread,-0.12,2.5,23.86,home,3.0,WIN,100.0,90.9
+2025-01-31,Tulane Green Wave,Memphis Tigers,2025,h1_spread,0.33,3.5,28.85,home,-6.0,LOSS,100.0,-100.0
+2025-02-01,Duke Blue Devils,North Carolina Tar Heels,2025,h1_spread,-1.72,-7.5,52.56,away,8.5,LOSS,100.0,-100.0
+2025-02-01,Iowa State Cyclones,Kansas State Wildcats,2025,h1_spread,-5.21,-8.5,29.91,away,-9.5,WIN,100.0,90.9
+2025-02-01,Alabama Crimson Tide,Georgia Bulldogs,2025,h1_spread,-4.65,-7.0,21.37,away,10.5,LOSS,100.0,-100.0
+2025-02-01,Tennessee Volunteers,Florida Gators,2025,h1_spread,-2.78,-1.5,11.6,home,10.0,WIN,100.0,90.9
+2025-02-01,USC Trojans,Michigan State Spartans,2025,h1_spread,0.63,2.5,17.0,home,3.0,WIN,100.0,90.9
+2025-02-01,Baylor Bears,Kansas Jayhawks,2025,h1_spread,-2.02,-1.0,9.25,home,5.5,WIN,100.0,90.9
+2025-02-02,Kentucky Wildcats,Arkansas Razorbacks,2025,h1_spread,-4.73,-5.0,2.44,away,-5.0,WIN,100.0,90.9
+2025-02-02,South Carolina Gamecocks,Texas A&M Aggies,2025,h1_spread,-0.8,3.0,34.52,home,-2.0,WIN,100.0,90.9
+2025-02-01,Mississippi State Bulldogs,Missouri Tigers,2025,h1_spread,-4.83,-3.5,12.08,home,-13.5,LOSS,100.0,-100.0
+2025-02-01,St. John's Red Storm,Providence Friars,2025,h1_spread,-3.58,-7.0,31.05,away,1.0,WIN,100.0,90.9
+2025-02-01,Northwestern Wildcats,Wisconsin Badgers,2025,h1_spread,-0.79,2.0,25.34,home,-3.0,LOSS,100.0,-100.0
+2025-02-01,Georgia Tech Yellow Jackets,Louisville Cardinals,2025,h1_spread,-3.25,5.5,79.53,home,3.5,WIN,100.0,90.9
+2025-02-01,Oklahoma Sooners,Vanderbilt Commodores,2025,h1_spread,-5.69,-1.5,38.08,home,15.0,WIN,100.0,90.9
+2025-02-03,Oregon Ducks,Nebraska Cornhuskers,2025,h1_spread,-0.35,-3.5,28.64,away,-3.0,WIN,100.0,90.9
+2025-02-02,Rice Owls,Memphis Tigers,2025,h1_spread,1.34,5.5,37.84,home,-1.5,WIN,100.0,90.9
+2025-02-04,Kansas Jayhawks,Iowa State Cyclones,2025,h1_spread,0.1,-1.5,14.59,away,8.5,LOSS,100.0,-100.0
+2025-02-05,Auburn Tigers,Oklahoma Sooners,2025,h1_spread,-4.82,-10.5,51.68,away,14.0,LOSS,100.0,-100.0
+2025-02-05,Houston Cougars,Oklahoma State Cowboys,2025,h1_spread,-8.22,-12.5,38.94,away,4.5,WIN,100.0,90.9
+2025-02-05,Florida Gators,Vanderbilt Commodores,2025,h1_spread,-7.11,-5.5,14.64,home,5.5,PUSH,100.0,0.0
+2025-02-05,Iowa Hawkeyes,Purdue Boilermakers,2025,h1_spread,2.67,3.5,7.51,home,-4.5,LOSS,100.0,-100.0
+2025-02-05,UCLA Bruins,Michigan State Spartans,2025,h1_spread,1.21,-0.5,15.51,away,1.0,LOSS,100.0,-100.0
+2025-02-04,St. John's Red Storm,Marquette Golden Eagles,2025,h1_spread,-0.95,-1.25,2.75,away,3.0,LOSS,100.0,-100.0
+2025-02-05,Texas Tech Red Raiders,Baylor Bears,2025,h1_spread,-0.49,-4.5,36.41,away,7.0,LOSS,100.0,-100.0
+2025-02-05,Ole Miss Rebels,Kentucky Wildcats,2025,h1_spread,0.88,-2.5,30.73,away,7.0,LOSS,100.0,-100.0
+2025-02-05,BYU Cougars,Arizona Wildcats,2025,h1_spread,0.34,-1.5,16.7,away,-5.5,WIN,100.0,90.9
+2025-02-05,Wisconsin Badgers,Indiana Hoosiers,2025,h1_spread,-3.97,-5.0,9.38,away,6.0,LOSS,100.0,-100.0
+2025-02-06,Syracuse Orange,Duke Blue Devils,2025,h1_spread,2.07,10.5,76.6,home,-14.5,LOSS,100.0,-100.0
+2025-02-06,Tennessee Volunteers,Missouri Tigers,2025,h1_spread,-7.01,-4.75,20.52,home,2.0,LOSS,100.0,-100.0
+2025-02-06,Memphis Tigers,Tulsa Golden Hurricane,2025,h1_spread,-4.59,-9.5,44.68,away,6.0,WIN,100.0,90.9
+2025-02-06,Rutgers Scarlet Knights,Illinois Fighting Illini,2025,h1_spread,3.1,4.0,8.21,home,4.5,WIN,100.0,90.9
+2025-02-05,Michigan Wolverines,Oregon Ducks,2025,h1_spread,0.82,-4.0,43.79,away,2.0,WIN,100.0,90.9
+2025-02-07,Ohio State Buckeyes,Maryland Terrapins,2025,h1_spread,-2.85,-1.0,16.81,home,1.5,WIN,100.0,90.9
+2025-02-08,Purdue Boilermakers,USC Trojans,2025,h1_spread,-6.56,-7.5,8.56,away,9.0,LOSS,100.0,-100.0
+2025-02-08,Auburn Tigers,Florida Gators,2025,h1_spread,-3.39,-6.0,23.7,away,-4.5,WIN,100.0,90.9
+2025-02-08,Clemson Tigers,Duke Blue Devils,2025,h1_spread,-0.12,3.5,32.87,home,3.0,WIN,100.0,90.9
+2025-02-08,Oklahoma Sooners,Tennessee Volunteers,2025,h1_spread,1.2,2.75,14.11,home,-9.0,LOSS,100.0,-100.0
+2025-02-08,Colorado Buffaloes,Houston Cougars,2025,h1_spread,1.87,8.0,55.72,home,-5.0,WIN,100.0,90.9
+2025-02-08,Iowa State Cyclones,TCU Horned Frogs,2025,h1_spread,-4.03,-14.5,95.21,away,15.0,LOSS,100.0,-100.0
+2025-02-08,Michigan State Spartans,Oregon Ducks,2025,h1_spread,-2.83,-4.5,15.19,away,6.0,LOSS,100.0,-100.0
+2025-02-08,Missouri Tigers,Texas A&M Aggies,2025,h1_spread,2.06,-2.5,41.45,away,-1.5,WIN,100.0,90.9
+2025-02-08,Creighton Bluejays,Marquette Golden Eagles,2025,h1_spread,-1.72,-2.0,2.58,away,5.0,LOSS,100.0,-100.0
+2025-02-09,Arizona Wildcats,Texas Tech Red Raiders,2025,h1_spread,-3.92,-2.0,17.43,home,4.5,WIN,100.0,90.9
+2025-02-08,Kentucky Wildcats,South Carolina Gamecocks,2025,h1_spread,-2.8,-6.0,29.08,away,11.5,LOSS,100.0,-100.0
+2025-02-08,Kansas State Wildcats,Kansas Jayhawks,2025,h1_spread,0.6,1.5,8.14,home,4.0,WIN,100.0,90.9
+2025-02-08,Iowa Hawkeyes,Wisconsin Badgers,2025,h1_spread,-0.29,2.5,25.4,home,-5.5,LOSS,100.0,-100.0
+2025-02-08,Georgia Bulldogs,Mississippi State Bulldogs,2025,h1_spread,-0.06,-0.5,4.03,away,-0.5,WIN,100.0,90.9
+2025-02-08,Minnesota Golden Gophers,Illinois Fighting Illini,2025,h1_spread,1.98,3.5,13.77,home,-10.5,LOSS,100.0,-100.0
+2025-02-08,Indiana Hoosiers,Michigan Wolverines,2025,h1_spread,-2.64,2.0,42.17,home,-1.5,WIN,100.0,90.9
+2025-02-09,LSU Tigers,Ole Miss Rebels,2025,h1_spread,-1.22,3.0,38.38,home,-1.0,WIN,100.0,90.9
+2025-02-09,Memphis Tigers,Temple Owls,2025,h1_spread,-4.26,-8.5,38.55,away,4.0,WIN,100.0,90.9
+2025-02-09,Maryland Terrapins,Rutgers Scarlet Knights,2025,h1_spread,-2.68,-4.5,16.56,away,4.5,PUSH,100.0,0.0
+2025-02-11,Houston Cougars,Baylor Bears,2025,h1_spread,-4.39,-5.5,10.07,away,5.5,PUSH,100.0,0.0
+2025-02-11,Clemson Tigers,North Carolina Tar Heels,2025,h1_spread,-0.33,-2.5,19.69,away,10.0,LOSS,100.0,-100.0
+2025-02-12,Vanderbilt Commodores,Auburn Tigers,2025,h1_spread,6.0,4.75,11.4,away,-6.0,WIN,100.0,90.9
+2025-02-12,Texas Longhorns,Alabama Crimson Tide,2025,h1_spread,-0.63,2.5,28.45,home,-11.5,LOSS,100.0,-100.0
+2025-02-12,Kentucky Wildcats,Tennessee Volunteers,2025,h1_spread,-0.15,1.5,15.0,home,5.5,WIN,100.0,90.9
+2025-02-12,Michigan Wolverines,Purdue Boilermakers,2025,h1_spread,5.08,-1.75,62.05,away,1.0,WIN,100.0,90.9
+2025-02-12,Texas A&M Aggies,Georgia Bulldogs,2025,h1_spread,-3.17,-4.25,9.78,away,8.0,LOSS,100.0,-100.0
+2025-02-12,UCF Knights,Iowa State Cyclones,2025,h1_spread,2.17,4.0,16.66,home,-6.0,LOSS,100.0,-100.0
+2025-02-12,Michigan State Spartans,Indiana Hoosiers,2025,h1_spread,-4.01,-6.5,22.65,away,-2.0,WIN,100.0,90.9
+2025-02-12,Kansas State Wildcats,Arizona Wildcats,2025,h1_spread,2.53,1.5,9.4,away,1.5,LOSS,100.0,-100.0
+2025-02-12,Kansas Jayhawks,Colorado Buffaloes,2025,h1_spread,-1.46,-9.75,75.35,away,6.0,WIN,100.0,90.9
+2025-02-13,Duke Blue Devils,California Golden Bears,2025,h1_spread,-6.74,-14.5,70.54,away,10.5,WIN,100.0,90.9
+2025-02-12,Villanova Wildcats,St. John's Red Storm,2025,h1_spread,-0.27,1.0,11.58,home,1.0,WIN,100.0,90.9
+2025-02-13,Texas Tech Red Raiders,Arizona State Sun Devils,2025,h1_spread,-4.94,-9.0,36.93,away,2.5,WIN,100.0,90.9
+2025-02-13,South Carolina Gamecocks,Ole Miss Rebels,2025,h1_spread,-2.58,2.5,46.18,home,-2.0,WIN,100.0,90.9
+2025-02-13,Missouri Tigers,Oklahoma Sooners,2025,h1_spread,1.31,-5.5,61.9,away,12.0,LOSS,100.0,-100.0
+2025-02-14,South Florida Bulls,Memphis Tigers,2025,h1_spread,-1.58,4.0,50.72,home,-7.5,LOSS,100.0,-100.0
+2025-02-14,Nebraska Cornhuskers,Maryland Terrapins,2025,h1_spread,-3.54,-0.5,27.66,home,-4.0,LOSS,100.0,-100.0
+2025-02-14,Dartmouth Big Green,Columbia Lions,2025,h1_spread,1.61,-1.0,23.77,away,11.0,LOSS,100.0,-100.0
+2025-02-14,Niagara Purple Eagles,Mount St. Mary's Mountaineers,2025,h1_spread,-0.32,-0.5,1.61,away,-0.5,WIN,100.0,90.9
+2025-02-15,Loyola Chicago Ramblers,Saint Louis Billikens,2025,h1_spread,-3.92,-1.5,22.03,home,4.5,WIN,100.0,90.9
+2025-02-15,Harvard Crimson,Cornell Big Red,2025,h1_spread,1.08,3.5,21.97,home,1.0,WIN,100.0,90.9
+2025-02-15,Yale Bulldogs,Pennsylvania Quakers,2025,h1_spread,-4.51,-9.25,43.08,away,0.5,WIN,100.0,90.9
+2025-02-15,Brown Bears,Princeton Tigers,2025,h1_spread,1.1,2.5,12.71,home,7.0,WIN,100.0,90.9
+2025-02-15,Green Bay Phoenix,Northern Kentucky Norse,2025,h1_spread,-0.36,3.5,35.09,home,-6.5,LOSS,100.0,-100.0
+2025-02-15,Kent State Golden Flashes,Ohio Bobcats,2025,h1_spread,-0.83,-2.5,15.14,away,0.5,WIN,100.0,90.9
+2025-02-15,Saint Peter's Peacocks,Fairfield Stags,2025,h1_spread,-1.1,-2.0,8.18,away,6.5,LOSS,100.0,-100.0
+2025-02-15,Siena Saints,Marist Red Foxes,2025,h1_spread,3.07,-1.5,41.59,away,-0.5,WIN,100.0,90.9
+2025-02-15,Iona Gaels,Rider Broncs,2025,h1_spread,-1.2,-3.0,16.36,away,-1.5,WIN,100.0,90.9
+2025-02-15,Sacred Heart Pioneers,Quinnipiac Bobcats,2025,h1_spread,0.98,1.5,4.73,home,-4.5,LOSS,100.0,-100.0
+2025-02-15,Indiana Hoosiers,UCLA Bruins,2025,h1_spread,-1.7,1.0,24.52,home,-2.0,LOSS,100.0,-100.0
+2025-02-15,Milwaukee Panthers,Wright State Raiders,2025,h1_spread,0.62,-3.5,37.46,away,4.0,LOSS,100.0,-100.0
+2025-02-15,Duke Blue Devils,Stanford Cardinal,2025,h1_spread,-6.15,-11.0,44.06,away,18.0,LOSS,100.0,-100.0
+2025-02-16,Florida Gators,South Carolina Gamecocks,2025,h1_spread,-2.87,-8.0,46.59,away,10.5,LOSS,100.0,-100.0
+2025-02-15,Tennessee Volunteers,Vanderbilt Commodores,2025,h1_spread,-8.39,-6.5,17.15,home,2.5,LOSS,100.0,-100.0
+2025-02-15,Arizona Wildcats,Houston Cougars,2025,h1_spread,-0.02,1.5,13.82,home,-2.0,LOSS,100.0,-100.0
+2025-02-15,Purdue Boilermakers,Wisconsin Badgers,2025,h1_spread,-4.47,-2.5,17.89,home,-5.0,LOSS,100.0,-100.0
+2025-02-15,Texas A&M Aggies,Arkansas Razorbacks,2025,h1_spread,-4.13,-4.5,3.32,away,4.0,WIN,100.0,90.9
+2025-02-15,Iowa State Cyclones,Cincinnati Bearcats,2025,h1_spread,-4.1,-6.5,21.84,away,5.5,WIN,100.0,90.9
+2025-02-16,Illinois Fighting Illini,Michigan State Spartans,2025,h1_spread,-2.7,-3.5,7.3,away,-7.0,WIN,100.0,90.9
+2025-02-15,Oklahoma State Cowboys,Texas Tech Red Raiders,2025,h1_spread,1.32,5.5,38.01,home,-19.0,LOSS,100.0,-100.0
+2025-02-16,Texas Longhorns,Kentucky Wildcats,2025,h1_spread,-1.51,-2.5,9.03,away,2.0,WIN,100.0,90.9
+2025-02-16,Utah Utes,Kansas Jayhawks,2025,h1_spread,-0.69,3.5,38.13,home,3.5,WIN,100.0,90.9
+2025-02-15,Ole Miss Rebels,Mississippi State Bulldogs,2025,h1_spread,0.05,-1.75,16.38,away,-5.0,WIN,100.0,90.9
+2025-02-15,Georgia Bulldogs,Missouri Tigers,2025,h1_spread,-3.39,1.0,39.87,home,-6.5,LOSS,100.0,-100.0
+2025-02-15,Florida State Seminoles,Clemson Tigers,2025,h1_spread,1.08,2.5,12.94,home,-13.0,LOSS,100.0,-100.0
+2025-02-16,St. John's Red Storm,Creighton Bluejays,2025,h1_spread,-0.73,-3.5,25.17,away,3.0,WIN,100.0,90.9
+2025-02-16,Wichita State Shockers,Memphis Tigers,2025,h1_spread,-0.02,4.5,41.07,home,2.5,WIN,100.0,90.9
+2025-02-16,Ohio State Buckeyes,Michigan Wolverines,2025,h1_spread,-4.27,-0.5,34.31,home,-1.5,LOSS,100.0,-100.0
+2025-02-16,Maryland Terrapins,Iowa Hawkeyes,2025,h1_spread,-0.52,-6.5,54.33,away,13.0,LOSS,100.0,-100.0
+2025-02-18,Virginia Cavaliers,Duke Blue Devils,2025,h1_spread,2.01,8.5,59.02,home,-9.0,LOSS,100.0,-100.0
+2025-02-18,Baylor Bears,Arizona Wildcats,2025,h1_spread,-0.09,-1.0,8.29,away,-3.5,WIN,100.0,90.9
+2025-02-19,Florida Gators,Oklahoma Sooners,2025,h1_spread,-2.92,-8.5,50.71,away,11.0,LOSS,100.0,-100.0
+2025-02-19,Arizona State Sun Devils,Houston Cougars,2025,h1_spread,5.83,6.5,6.05,home,-7.5,LOSS,100.0,-100.0
+2025-02-19,Mississippi State Bulldogs,Texas A&M Aggies,2025,h1_spread,-1.27,-1.5,2.1,away,8.0,LOSS,100.0,-100.0
+2025-02-19,Iowa State Cyclones,Colorado Buffaloes,2025,h1_spread,-3.07,-11.0,72.13,away,7.0,WIN,100.0,90.9
+2025-02-19,TCU Horned Frogs,Texas Tech Red Raiders,2025,h1_spread,-1.07,4.0,46.05,home,1.5,WIN,100.0,90.9
+2025-02-19,Wisconsin Badgers,Illinois Fighting Illini,2025,h1_spread,-0.26,-2.5,20.33,away,10.5,LOSS,100.0,-100.0
+2025-02-19,Michigan State Spartans,Purdue Boilermakers,2025,h1_spread,1.43,-1.5,26.62,away,4.5,LOSS,100.0,-100.0
+2025-02-19,Marquette Golden Eagles,Seton Hall Pirates,2025,h1_spread,-3.38,-10.5,64.71,away,12.0,LOSS,100.0,-100.0
+2025-02-20,Auburn Tigers,Arkansas Razorbacks,2025,h1_spread,-6.7,-9.5,25.46,away,3.5,WIN,100.0,90.9
+2025-02-20,Missouri Tigers,Alabama Crimson Tide,2025,h1_spread,3.53,-0.5,36.68,away,6.0,LOSS,100.0,-100.0
+2025-02-20,DePaul Blue Demons,St. John's Red Storm,2025,h1_spread,6.32,6.5,1.64,home,-12.0,LOSS,100.0,-100.0
+2025-02-20,Kentucky Wildcats,Vanderbilt Commodores,2025,h1_spread,-7.04,-2.5,41.24,home,10.5,WIN,100.0,90.9
+2025-02-21,Maryland Terrapins,USC Trojans,2025,h1_spread,-1.41,-6.25,44.01,away,8.5,LOSS,100.0,-100.0
+2025-02-22,Michigan Wolverines,Michigan State Spartans,2025,h1_spread,2.15,-1.75,35.43,away,-6.5,WIN,100.0,90.9
+2025-02-22,Villanova Wildcats,Marquette Golden Eagles,2025,h1_spread,0.28,0.5,2.02,home,7.5,WIN,100.0,90.9
+2025-02-22,Auburn Tigers,Georgia Bulldogs,2025,h1_spread,-5.74,-9.0,29.65,away,6.0,WIN,100.0,90.9
+2025-02-22,LSU Tigers,Florida Gators,2025,h1_spread,1.23,5.5,38.79,home,-7.0,LOSS,100.0,-100.0
+2025-02-22,Alabama Crimson Tide,Kentucky Wildcats,2025,h1_spread,-2.38,-6.5,37.48,away,6.5,PUSH,100.0,0.0
+2025-02-22,Houston Cougars,Iowa State Cyclones,2025,h1_spread,-3.3,-6.5,29.05,away,4.5,WIN,100.0,90.9
+2025-02-22,Texas A&M Aggies,Tennessee Volunteers,2025,h1_spread,0.45,-0.5,8.62,away,-4.0,WIN,100.0,90.9
+2025-02-22,Texas Tech Red Raiders,West Virginia Mountaineers,2025,h1_spread,-5.04,-5.5,4.19,away,11.0,LOSS,100.0,-100.0
+2025-02-22,Wisconsin Badgers,Oregon Ducks,2025,h1_spread,-2.79,-4.5,15.55,away,-2.0,WIN,100.0,90.9
+2025-02-23,Arkansas Razorbacks,Missouri Tigers,2025,h1_spread,-2.42,-0.5,17.5,home,3.5,WIN,100.0,90.9
+2025-02-23,Arizona Wildcats,BYU Cougars,2025,h1_spread,-3.34,-4.0,6.03,away,-0.5,WIN,100.0,90.9
+2025-02-22,Oklahoma Sooners,Mississippi State Bulldogs,2025,h1_spread,-0.98,2.0,27.09,home,3.0,WIN,100.0,90.9
+2025-02-22,Kansas Jayhawks,Oklahoma State Cowboys,2025,h1_spread,-4.81,-8.5,33.57,away,16.0,LOSS,100.0,-100.0
+2025-02-22,Vanderbilt Commodores,Ole Miss Rebels,2025,h1_spread,1.66,-0.5,19.6,away,2.5,LOSS,100.0,-100.0
+2025-02-22,Louisville Cardinals,Florida State Seminoles,2025,h1_spread,1.54,-7.5,82.22,away,4.0,WIN,100.0,90.9
+2025-02-23,Indiana Hoosiers,Purdue Boilermakers,2025,h1_spread,3.94,2.0,17.61,away,7.5,LOSS,100.0,-100.0
+2025-02-23,Memphis Tigers,Florida Atlantic Owls,2025,h1_spread,-0.25,-4.5,38.63,away,9.5,LOSS,100.0,-100.0
+2025-02-25,Nebraska Cornhuskers,Michigan Wolverines,2025,h1_spread,-4.97,0.5,49.7,home,-1.5,LOSS,100.0,-100.0
+2025-02-26,Miami Hurricanes,Duke Blue Devils,2025,h1_spread,2.59,14.5,108.31,home,-18.5,LOSS,100.0,-100.0
+2025-02-26,Georgia Bulldogs,Florida Gators,2025,h1_spread,0.85,3.5,24.13,home,2.5,WIN,100.0,90.9
+2025-02-26,LSU Tigers,Tennessee Volunteers,2025,h1_spread,2.51,5.5,27.19,home,-3.0,WIN,100.0,90.9
+2025-02-26,Alabama Crimson Tide,Mississippi State Bulldogs,2025,h1_spread,-3.21,-4.5,11.76,away,19.0,LOSS,100.0,-100.0
+2025-02-26,Oklahoma State Cowboys,Iowa State Cyclones,2025,h1_spread,3.41,6.5,28.07,home,3.0,WIN,100.0,90.9
+2025-02-26,Wisconsin Badgers,Washington Huskies,2025,h1_spread,-3.08,-8.0,44.76,away,13.0,LOSS,100.0,-100.0
+2025-02-26,Missouri Tigers,South Carolina Gamecocks,2025,h1_spread,1.36,-7.0,75.97,away,15.0,LOSS,100.0,-100.0
+2025-02-26,Virginia Tech Hokies,Louisville Cardinals,2025,h1_spread,-5.68,5.5,101.62,home,-2.5,WIN,100.0,90.9
+2025-02-26,Marquette Golden Eagles,Providence Friars,2025,h1_spread,-4.14,-7.5,30.57,away,15.0,LOSS,100.0,-100.0
+2025-02-27,Auburn Tigers,Ole Miss Rebels,2025,h1_spread,-5.85,-7.5,15.02,away,15.0,LOSS,100.0,-100.0
+2025-02-27,Butler Bulldogs,St. John's Red Storm,2025,h1_spread,0.47,3.0,23.02,home,-3.0,PUSH,100.0,0.0
+2025-02-26,Maryland Terrapins,Michigan State Spartans,2025,h1_spread,0.72,-2.5,29.29,away,-1.5,WIN,100.0,90.9
+2025-02-27,Texas A&M Aggies,Vanderbilt Commodores,2025,h1_spread,-6.44,-4.5,17.63,home,-1.0,LOSS,100.0,-100.0
+2025-02-27,Clemson Tigers,Notre Dame Fighting Irish,2025,h1_spread,-5.52,-8.5,27.09,away,7.5,WIN,100.0,90.9
+2025-02-27,Oklahoma Sooners,Kentucky Wildcats,2025,h1_spread,-0.15,1.5,15.02,home,-0.5,WIN,100.0,90.9
+2025-02-27,Memphis Tigers,Rice Owls,2025,h1_spread,-4.34,-7.0,24.21,away,6.0,WIN,100.0,90.9
+2025-02-27,Arizona Wildcats,Utah Utes,2025,h1_spread,-4.24,-8.5,38.77,away,8.5,PUSH,100.0,0.0
+2025-02-27,Arizona State Sun Devils,BYU Cougars,2025,h1_spread,2.52,4.0,13.48,home,-5.0,LOSS,100.0,-100.0
+2025-02-28,Michigan Wolverines,Rutgers Scarlet Knights,2025,h1_spread,-1.25,-5.25,36.33,away,1.0,WIN,100.0,90.9
+2025-02-28,Loyola Marymount Lions,Saint Mary's Gaels,2025,h1_spread,4.18,7.5,30.2,home,-1.5,WIN,100.0,90.9
+2025-03-01,Purdue Boilermakers,UCLA Bruins,2025,h1_spread,-7.13,-3.5,33.04,home,5.0,WIN,100.0,90.9
+2025-03-01,Kentucky Wildcats,Auburn Tigers,2025,h1_spread,0.47,2.5,18.48,home,-8.0,LOSS,100.0,-100.0
+2025-03-02,Duke Blue Devils,Florida State Seminoles,2025,h1_spread,-5.46,-13.5,73.09,away,17.5,LOSS,100.0,-100.0
+2025-03-02,Florida Gators,Texas A&M Aggies,2025,h1_spread,-2.17,-4.5,21.17,away,9.5,LOSS,100.0,-100.0
+2025-03-01,Houston Cougars,Cincinnati Bearcats,2025,h1_spread,-5.9,-7.5,14.53,away,4.5,WIN,100.0,90.9
+2025-03-01,Tennessee Volunteers,Alabama Crimson Tide,2025,h1_spread,-1.97,-2.5,4.8,away,1.5,WIN,100.0,90.9
+2025-03-01,St. John's Red Storm,Seton Hall Pirates,2025,h1_spread,-2.83,-12.0,83.37,away,5.0,WIN,100.0,90.9
+2025-03-02,Iowa State Cyclones,Arizona Wildcats,2025,h1_spread,-1.18,-3.5,21.13,away,8.5,LOSS,100.0,-100.0
+2025-03-01,Kansas Jayhawks,Texas Tech Red Raiders,2025,h1_spread,-1.99,-2.5,4.65,away,-2.5,WIN,100.0,90.9
+2025-03-01,Virginia Cavaliers,Clemson Tigers,2025,h1_spread,0.62,3.5,26.15,home,-6.5,LOSS,100.0,-100.0
+2025-03-01,Vanderbilt Commodores,Missouri Tigers,2025,h1_spread,-0.12,1.5,14.73,home,2.0,WIN,100.0,90.9
+2025-03-01,Penn State Nittany Lions,Maryland Terrapins,2025,h1_spread,-1.42,2.5,35.67,home,-2.0,WIN,100.0,90.9
+2025-03-01,Louisville Cardinals,Pittsburgh Panthers,2025,h1_spread,3.53,-6.0,86.6,away,5.5,WIN,100.0,90.9
+2025-03-02,Georgetown Hoyas,Marquette Golden Eagles,2025,h1_spread,4.67,4.5,1.55,away,-7.5,WIN,100.0,90.9
+2025-03-02,Saint Mary's Gaels,Oregon State Beavers,2025,h1_spread,-6.39,-7.0,5.55,away,5.0,WIN,100.0,90.9
+2025-03-01,Mississippi State Bulldogs,LSU Tigers,2025,h1_spread,-3.33,-6.5,28.81,away,6.0,WIN,100.0,90.9
+2025-03-02,BYU Cougars,West Virginia Mountaineers,2025,h1_spread,-5.62,-6.0,3.46,away,10.5,LOSS,100.0,-100.0
+2025-03-02,Michigan State Spartans,Wisconsin Badgers,2025,h1_spread,-1.54,-2.5,8.73,away,4.5,LOSS,100.0,-100.0
+2025-03-02,Michigan Wolverines,Illinois Fighting Illini,2025,h1_spread,3.34,-1.5,44.03,away,-10.0,WIN,100.0,90.9
+2025-03-02,UAB Blazers,Memphis Tigers,2025,h1_spread,-0.86,-0.5,3.27,home,-3.5,LOSS,100.0,-100.0
+2025-03-04,Duke Blue Devils,Wake Forest Demon Deacons,2025,h1_spread,-3.63,-12.0,76.05,away,16.5,LOSS,100.0,-100.0
+2025-03-04,Houston Cougars,Kansas Jayhawks,2025,h1_spread,-4.91,-5.5,5.37,away,3.0,WIN,100.0,90.9
+2025-03-05,Texas A&M Aggies,Auburn Tigers,2025,h1_spread,1.06,2.5,13.05,home,5.5,WIN,100.0,90.9
+2025-03-05,Iowa State Cyclones,BYU Cougars,2025,h1_spread,-3.01,-5.0,18.07,away,-1.5,WIN,100.0,90.9
+2025-03-05,UTSA Roadrunners,Memphis Tigers,2025,h1_spread,2.3,4.5,19.96,home,-2.5,WIN,100.0,90.9
+2025-03-05,Purdue Boilermakers,Rutgers Scarlet Knights,2025,h1_spread,-7.83,-6.5,12.08,home,14.5,WIN,100.0,90.9
+2025-03-05,Kentucky Wildcats,LSU Tigers,2025,h1_spread,-4.16,-6.5,21.28,away,15.5,LOSS,100.0,-100.0
+2025-03-05,Arizona Wildcats,Arizona State Sun Devils,2025,h1_spread,-7.35,-10.75,30.87,away,6.5,WIN,100.0,90.9
+2025-03-05,Mississippi State Bulldogs,Texas Longhorns,2025,h1_spread,-0.67,-4.0,30.32,away,-2.5,WIN,100.0,90.9
+2025-03-06,Ole Miss Rebels,Tennessee Volunteers,2025,h1_spread,2.23,1.0,11.19,away,1.0,LOSS,100.0,-100.0
+2025-03-06,Alabama Crimson Tide,Florida Gators,2025,h1_spread,-2.3,-1.5,7.31,home,-2.5,LOSS,100.0,-100.0
+2025-03-06,Texas Tech Red Raiders,Colorado Buffaloes,2025,h1_spread,-0.97,-11.5,95.7,away,8.0,WIN,100.0,90.9
+2025-03-06,Boston College Eagles,Clemson Tigers,2025,h1_spread,0.87,9.0,73.92,home,-4.5,WIN,100.0,90.9
+2025-03-06,Minnesota Golden Gophers,Wisconsin Badgers,2025,h1_spread,0.75,3.5,25.01,home,-3.5,PUSH,100.0,0.0
+2025-03-05,Michigan Wolverines,Maryland Terrapins,2025,h1_spread,-0.08,-0.5,3.86,away,-3.0,WIN,100.0,90.9
+2025-03-06,Louisville Cardinals,California Golden Bears,2025,h1_spread,0.26,-8.5,79.67,away,8.5,PUSH,100.0,0.0
+2025-03-06,Oklahoma Sooners,Missouri Tigers,2025,h1_spread,-4.31,2.5,61.9,home,6.0,WIN,100.0,90.9
+2025-03-07,Iowa Hawkeyes,Michigan State Spartans,2025,h1_spread,-0.25,4.0,38.68,home,-3.5,WIN,100.0,90.9
+2025-03-08,Memphis Tigers,South Florida Bulls,2025,h1_spread,-1.42,-7.5,55.27,away,8.0,LOSS,100.0,-100.0
+2025-03-08,Illinois Fighting Illini,Purdue Boilermakers,2025,h1_spread,0.23,-2.5,24.84,away,4.0,LOSS,100.0,-100.0
+2025-03-08,Auburn Tigers,Alabama Crimson Tide,2025,h1_spread,-2.59,-4.5,17.37,away,-1.0,WIN,100.0,90.9
+2025-03-09,Baylor Bears,Houston Cougars,2025,h1_spread,1.39,2.5,10.07,home,-2.0,WIN,100.0,90.9
+2025-03-08,Tennessee Volunteers,South Carolina Gamecocks,2025,h1_spread,-4.15,-9.0,44.08,away,5.0,WIN,100.0,90.9
+2025-03-08,Florida Gators,Ole Miss Rebels,2025,h1_spread,-3.95,-7.0,27.69,away,9.5,LOSS,100.0,-100.0
+2025-03-09,Arizona State Sun Devils,Texas Tech Red Raiders,2025,h1_spread,1.94,7.0,46.02,home,-14.0,LOSS,100.0,-100.0
+2025-03-08,Kansas State Wildcats,Iowa State Cyclones,2025,h1_spread,2.21,3.0,7.19,home,-8.0,LOSS,100.0,-100.0
+2025-03-08,Clemson Tigers,Virginia Tech Hokies,2025,h1_spread,-2.94,-10.5,68.71,away,9.0,WIN,100.0,90.9
+2025-03-08,Wisconsin Badgers,Penn State Nittany Lions,2025,h1_spread,-3.76,-6.5,24.93,away,-5.5,WIN,100.0,90.9
+2025-03-08,Maryland Terrapins,Northwestern Wildcats,2025,h1_spread,-0.03,-6.5,58.81,away,6.5,PUSH,100.0,0.0
+2025-03-08,Louisville Cardinals,Stanford Cardinal,2025,h1_spread,0.85,-6.0,62.29,away,10.0,LOSS,100.0,-100.0
+2025-03-08,Missouri Tigers,Kentucky Wildcats,2025,h1_spread,2.66,-3.5,55.97,away,-4.0,WIN,100.0,90.9
+2025-03-08,LSU Tigers,Texas A&M Aggies,2025,h1_spread,0.56,4.0,31.26,home,-7.0,LOSS,100.0,-100.0
+2025-03-09,BYU Cougars,Utah Utes,2025,h1_spread,-2.4,-6.5,37.29,away,5.5,WIN,100.0,90.9
+2025-03-08,Kansas Jayhawks,Arizona Wildcats,2025,h1_spread,0.43,-2.5,26.63,away,3.5,LOSS,100.0,-100.0
+2025-03-08,Arkansas Razorbacks,Mississippi State Bulldogs,2025,h1_spread,0.9,-0.5,12.76,away,0.5,PUSH,100.0,0.0
+2025-03-09,Michigan State Spartans,Michigan Wolverines,2025,h1_spread,-5.15,-4.0,10.43,home,8.5,WIN,100.0,90.9
+2025-03-11,Saint Mary's Gaels,Pepperdine Waves,2025,h1_spread,-7.33,-11.0,33.32,away,7.5,WIN,100.0,90.9
+2025-03-12,Saint Mary's Gaels,Gonzaga Bulldogs,2025,h1_spread,-0.7,1.75,22.24,home,-3.5,LOSS,100.0,-100.0
+2025-03-12,Iowa State Cyclones,Cincinnati Bearcats,2025,h1_spread,-4.1,-4.5,3.66,away,10.0,LOSS,100.0,-100.0
+2025-03-13,Duke Blue Devils,Georgia Tech Yellow Jackets,2025,h1_spread,-6.76,-14.0,65.85,away,4.0,WIN,100.0,90.9
+2025-03-13,Houston Cougars,Colorado Buffaloes,2025,h1_spread,-4.87,-10.5,51.18,away,4.5,WIN,100.0,90.9
+2025-03-13,St. John's Red Storm,Butler Bulldogs,2025,h1_spread,-3.47,-7.5,36.66,away,10.5,LOSS,100.0,-100.0
+2025-03-13,Texas Tech Red Raiders,Baylor Bears,2025,h1_spread,-0.49,-3.5,27.32,away,1.0,WIN,100.0,90.9
+2025-03-13,BYU Cougars,Iowa State Cyclones,2025,h1_spread,0.01,1.5,13.52,home,2.0,WIN,100.0,90.9
+2025-03-13,Louisville Cardinals,Stanford Cardinal,2025,h1_spread,0.85,-6.0,62.29,away,1.0,WIN,100.0,90.9
+2025-03-13,Texas A&M Aggies,Texas Longhorns,2025,h1_spread,-0.9,-3.5,23.67,away,-2.5,WIN,100.0,90.9
+2025-03-14,Kentucky Wildcats,Oklahoma Sooners,2025,h1_spread,-2.85,-4.0,10.47,away,0.5,WIN,100.0,90.9
+2025-03-13,Wisconsin Badgers,Northwestern Wildcats,2025,h1_spread,-2.21,-4.5,20.79,away,3.5,WIN,100.0,90.9
+2025-03-14,Purdue Boilermakers,USC Trojans,2025,h1_spread,-6.56,-5.5,9.63,home,2.5,LOSS,100.0,-100.0
+2025-03-13,Missouri Tigers,Mississippi State Bulldogs,2025,h1_spread,1.83,-1.5,30.26,away,6.0,LOSS,100.0,-100.0
+2025-03-13,Oregon Ducks,Indiana Hoosiers,2025,h1_spread,-2.68,-1.0,15.26,home,6.5,WIN,100.0,90.9
+2025-03-13,Illinois Fighting Illini,Iowa Hawkeyes,2025,h1_spread,-3.94,-6.0,18.71,away,6.0,PUSH,100.0,0.0
+2025-03-13,Xavier Musketeers,Marquette Golden Eagles,2025,h1_spread,1.27,1.0,2.47,away,-1.0,PUSH,100.0,0.0
+2025-03-14,Duke Blue Devils,North Carolina Tar Heels,2025,h1_spread,-1.72,-3.5,16.19,away,1.5,WIN,100.0,90.9
+2025-03-14,Houston Cougars,BYU Cougars,2025,h1_spread,-4.82,-3.5,11.97,home,10.0,WIN,100.0,90.9
+2025-03-14,Auburn Tigers,Ole Miss Rebels,2025,h1_spread,-5.85,-7.5,15.02,away,2.5,WIN,100.0,90.9
+2025-03-14,Florida Gators,Missouri Tigers,2025,h1_spread,-5.73,-4.5,11.19,home,7.0,WIN,100.0,90.9
+2025-03-15,Alabama Crimson Tide,Kentucky Wildcats,2025,h1_spread,-2.38,-4.5,19.29,away,14.5,LOSS,100.0,-100.0
+2025-03-14,St. John's Red Storm,Marquette Golden Eagles,2025,h1_spread,-0.95,-2.5,14.11,away,8.0,LOSS,100.0,-100.0
+2025-03-14,Michigan State Spartans,Oregon Ducks,2025,h1_spread,-2.83,-3.5,6.1,away,5.0,LOSS,100.0,-100.0
+2025-03-14,Tennessee Volunteers,Texas Longhorns,2025,h1_spread,-2.84,-5.5,24.15,away,5.5,PUSH,100.0,0.0
+2025-03-15,Texas Tech Red Raiders,Arizona Wildcats,2025,h1_spread,0.92,-0.5,12.88,away,-3.0,WIN,100.0,90.9
+2025-03-15,Louisville Cardinals,Clemson Tigers,2025,h1_spread,4.12,0.5,32.91,away,1.5,LOSS,100.0,-100.0
+2025-03-14,Maryland Terrapins,Illinois Fighting Illini,2025,h1_spread,1.92,-0.5,21.99,away,11.5,LOSS,100.0,-100.0
+2025-03-14,Memphis Tigers,Wichita State Shockers,2025,h1_spread,-2.98,-4.75,16.07,away,1.5,WIN,100.0,90.9
+2025-03-14,UCLA Bruins,Wisconsin Badgers,2025,h1_spread,1.17,0.5,6.05,away,-8.0,WIN,100.0,90.9
+2025-03-15,Michigan Wolverines,Purdue Boilermakers,2025,h1_spread,5.08,1.0,37.05,away,9.0,LOSS,100.0,-100.0
+2025-03-16,Duke Blue Devils,Louisville Cardinals,2025,h1_spread,-8.5,-3.5,45.5,home,5.5,WIN,100.0,90.9
+2025-03-15,Houston Cougars,Arizona Wildcats,2025,h1_spread,-2.98,-3.5,4.73,away,4.0,LOSS,100.0,-100.0
+2025-03-15,Auburn Tigers,Tennessee Volunteers,2025,h1_spread,-2.12,-3.0,8.03,away,-2.5,WIN,100.0,90.9
+2025-03-15,Florida Gators,Alabama Crimson Tide,2025,h1_spread,-0.7,-1.5,7.31,away,11.0,LOSS,100.0,-100.0
+2025-03-15,St. John's Red Storm,Creighton Bluejays,2025,h1_spread,-0.73,-3.5,25.17,away,8.0,LOSS,100.0,-100.0
+2025-03-15,Memphis Tigers,Tulane Green Wave,2025,h1_spread,-3.33,-4.5,10.67,away,0.5,WIN,100.0,90.9
+2025-03-16,Florida Gators,Tennessee Volunteers,2025,h1_spread,-0.22,-2.5,20.69,away,4.5,LOSS,100.0,-100.0
+2025-03-16,Memphis Tigers,UAB Blazers,2025,h1_spread,-2.14,-1.5,5.82,home,6.0,WIN,100.0,90.9
+2025-03-16,Michigan Wolverines,Wisconsin Badgers,2025,h1_spread,2.11,2.5,3.57,home,3.0,WIN,100.0,90.9
+2025-03-19,San Diego State Aztecs,North Carolina Tar Heels,2025,h1_spread,0.27,2.5,20.25,home,-13.5,LOSS,100.0,-100.0
+2025-03-20,Houston Cougars,SIU Edwardsville Cougars,2025,h1_spread,-12.31,-17.25,44.91,away,19.0,LOSS,100.0,-100.0
+2025-03-20,Auburn Tigers,Alabama State Hornets,2025,h1_spread,-11.63,-19.5,71.58,away,10.0,WIN,100.0,90.9
+2025-03-20,Tennessee Volunteers,Wofford Terriers,2025,h1_spread,-9.03,-10.5,13.38,away,7.5,WIN,100.0,90.9
+2025-03-20,Wisconsin Badgers,Montana Grizzlies,2025,h1_spread,-6.43,-9.5,27.94,away,9.5,PUSH,100.0,0.0
+2025-03-21,Texas Tech Red Raiders,UNC Wilmington Seahawks,2025,h1_spread,-4.81,-8.5,33.56,away,5.0,WIN,100.0,90.9
+2025-03-20,Purdue Boilermakers,High Point Panthers,2025,h1_spread,-8.19,-4.5,33.51,home,6.0,WIN,100.0,90.9
+2025-03-21,Michigan Wolverines,UC San Diego Tritons,2025,h1_spread,-2.07,-1.25,7.45,home,1.5,WIN,100.0,90.9
+2025-03-20,BYU Cougars,VCU Rams,2025,h1_spread,-4.06,-1.5,23.29,home,4.5,WIN,100.0,90.9
+2025-03-20,Missouri Tigers,Drake Bulldogs,2025,h1_spread,1.31,-2.75,36.89,away,-5.0,WIN,100.0,90.9
+2025-03-20,Kansas Jayhawks,Arkansas Razorbacks,2025,h1_spread,-4.6,-2.5,19.05,home,-3.5,LOSS,100.0,-100.0
+2025-03-21,UCLA Bruins,Utah State Aggies,2025,h1_spread,-0.37,-3.0,23.93,away,12.5,LOSS,100.0,-100.0
+2025-03-20,Louisville Cardinals,Creighton Bluejays,2025,h1_spread,5.21,-2.25,67.84,away,-7.0,WIN,100.0,90.9
+2025-03-20,Gonzaga Bulldogs,Georgia Bulldogs,2025,h1_spread,-4.87,-3.5,12.5,home,10.5,WIN,100.0,90.9
+2025-03-21,Duke Blue Devils,Mount St. Mary's Mountaineers,2025,h1_spread,-9.22,-19.5,93.49,away,22.0,LOSS,100.0,-100.0
+2025-03-21,Florida Gators,Norfolk State Spartans,2025,h1_spread,-8.25,-18.25,90.87,away,13.0,WIN,100.0,90.9
+2025-03-21,Alabama Crimson Tide,Robert Morris Colonials,2025,h1_spread,-10.66,-12.25,14.44,away,4.5,WIN,100.0,90.9
+2025-03-22,Michigan State Spartans,Bryant Bulldogs,2025,h1_spread,-6.66,-10.0,30.38,away,12.5,LOSS,100.0,-100.0
+2025-03-21,Iowa State Cyclones,Lipscomb Bisons,2025,h1_spread,-9.12,-7.75,12.44,home,13.5,WIN,100.0,90.9
+2025-03-21,Kentucky Wildcats,Troy Trojans,2025,h1_spread,-5.37,-6.0,5.69,away,9.5,LOSS,100.0,-100.0
+2025-03-21,Memphis Tigers,Colorado State Rams,2025,h1_spread,0.19,0.5,2.83,home,-4.0,LOSS,100.0,-100.0
+2025-03-22,Oregon Ducks,Liberty Flames,2025,h1_spread,-4.66,-3.5,10.5,home,14.5,WIN,100.0,90.9
+2025-03-21,Ole Miss Rebels,North Carolina Tar Heels,2025,h1_spread,2.09,0.5,14.48,away,3.5,LOSS,100.0,-100.0
+2025-03-22,Illinois Fighting Illini,Xavier Musketeers,2025,h1_spread,-4.49,-2.5,18.1,home,6.5,WIN,100.0,90.9
+2025-03-21,Saint Mary's Gaels,Vanderbilt Commodores,2025,h1_spread,-7.34,-2.5,43.96,home,1.5,LOSS,100.0,-100.0
+2025-03-21,Marquette Golden Eagles,New Mexico Lobos,2025,h1_spread,-2.96,-2.5,4.18,home,-4.5,LOSS,100.0,-100.0
+2025-03-21,Mississippi State Bulldogs,Baylor Bears,2025,h1_spread,-0.29,-0.5,1.9,away,-1.5,WIN,100.0,90.9
+2025-03-22,Auburn Tigers,Creighton Bluejays,2025,h1_spread,-2.33,-4.75,22.01,away,6.0,LOSS,100.0,-100.0
+2025-03-23,Houston Cougars,Gonzaga Bulldogs,2025,h1_spread,-3.67,-2.75,8.36,home,2.5,LOSS,100.0,-100.0
+2025-03-22,St. John's Red Storm,Arkansas Razorbacks,2025,h1_spread,-5.1,-3.5,14.55,home,-4.5,LOSS,100.0,-100.0
+2025-03-23,Tennessee Volunteers,UCLA Bruins,2025,h1_spread,-5.61,-2.5,28.29,home,4.5,WIN,100.0,90.9
+2025-03-22,Texas Tech Red Raiders,Drake Bulldogs,2025,h1_spread,-2.22,-3.5,11.59,away,6.5,LOSS,100.0,-100.0
+2025-03-22,Texas A&M Aggies,Michigan Wolverines,2025,h1_spread,-4.61,-1.5,28.23,home,-6.0,LOSS,100.0,-100.0
+2025-03-23,Duke Blue Devils,Baylor Bears,2025,h1_spread,-2.55,-6.75,38.19,away,11.5,LOSS,100.0,-100.0
+2025-03-23,Alabama Crimson Tide,Saint Mary's Gaels,2025,h1_spread,-2.08,-3.0,8.38,away,7.0,LOSS,100.0,-100.0
+2025-03-24,Michigan State Spartans,New Mexico Lobos,2025,h1_spread,-1.98,-3.5,13.8,away,4.0,LOSS,100.0,-100.0
+2025-03-23,Kentucky Wildcats,Illinois Fighting Illini,2025,h1_spread,-0.36,1.5,16.91,home,4.5,WIN,100.0,90.9
+2025-03-23,Maryland Terrapins,Colorado State Rams,2025,h1_spread,-0.25,-4.5,38.6,away,0.5,WIN,100.0,90.9
+2025-03-24,Arizona Wildcats,Oregon Ducks,2025,h1_spread,-4.68,-2.5,19.81,home,2.0,LOSS,100.0,-100.0
+2025-03-27,Florida Gators,Maryland Terrapins,2025,h1_spread,-3.85,-3.5,3.2,home,8.0,WIN,100.0,90.9
+2025-03-28,Duke Blue Devils,Arizona Wildcats,2025,h1_spread,-1.14,-5.5,39.66,away,3.5,WIN,100.0,90.9
+2025-03-28,Texas Tech Red Raiders,Arkansas Razorbacks,2025,h1_spread,-4.11,-2.75,12.34,home,1.0,LOSS,100.0,-100.0
+2025-03-29,Auburn Tigers,Michigan Wolverines,2025,h1_spread,-7.17,-4.5,24.28,home,6.5,WIN,100.0,90.9
+2025-03-29,Houston Cougars,Purdue Boilermakers,2025,h1_spread,-1.9,-5.5,32.72,away,1.0,WIN,100.0,90.9
+2025-03-28,Michigan State Spartans,Ole Miss Rebels,2025,h1_spread,-3.82,-1.5,21.13,home,1.5,PUSH,100.0,0.0
+2025-03-28,Tennessee Volunteers,Kentucky Wildcats,2025,h1_spread,-2.85,-2.5,3.18,home,6.5,WIN,100.0,90.9
+2025-03-29,Florida Gators,Texas Tech Red Raiders,2025,h1_spread,-2.2,-3.5,11.84,away,2.5,WIN,100.0,90.9
+2025-03-30,Duke Blue Devils,Alabama Crimson Tide,2025,h1_spread,-2.05,-4.0,17.7,away,10.0,LOSS,100.0,-100.0
+2025-03-30,Houston Cougars,Tennessee Volunteers,2025,h1_spread,-3.42,-1.5,17.48,home,9.5,WIN,100.0,90.9
+2025-03-30,Auburn Tigers,Michigan State Spartans,2025,h1_spread,-3.52,-3.0,4.76,home,3.0,PUSH,100.0,0.0
+2025-04-05,Auburn Tigers,Florida Gators,2025,h1_spread,-3.39,1.5,44.49,home,-3.0,LOSS,100.0,-100.0
+2025-04-06,Duke Blue Devils,Houston Cougars,2025,h1_spread,0.34,-2.5,25.84,away,-1.5,WIN,100.0,90.9
+2025-04-08,Houston Cougars,Florida Gators,2025,h1_spread,-4.7,0.5,47.27,home,-1.0,LOSS,100.0,-100.0

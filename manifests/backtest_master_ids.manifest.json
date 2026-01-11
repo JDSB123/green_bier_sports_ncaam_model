@@ -1,0 +1,73 @@
+{
+  "by_season": {
+    "odds": {
+      "2023": {
+        "games": 1095,
+        "odds_match_rate": 0.8118721461187215,
+        "odds_matched": 889,
+        "spread_nonnull_rate": 0.8118721461187215,
+        "total_nonnull_rate": 0.8045662100456621
+      },
+      "2024": {
+        "games": 897,
+        "odds_match_rate": 0.850613154960981,
+        "odds_matched": 763,
+        "spread_nonnull_rate": 0.850613154960981,
+        "total_nonnull_rate": 0.850613154960981
+      },
+      "2025": {
+        "games": 932,
+        "odds_match_rate": 0.8433476394849786,
+        "odds_matched": 786,
+        "spread_nonnull_rate": 0.8433476394849786,
+        "total_nonnull_rate": 0.8433476394849786
+      },
+      "2026": {
+        "games": 416,
+        "odds_match_rate": 0.3605769230769231,
+        "odds_matched": 150,
+        "spread_nonnull_rate": 0.3605769230769231,
+        "total_nonnull_rate": 0.3605769230769231
+      }
+    },
+    "ratings": {
+      "2023": {
+        "both_rated_rate": 0.7680365296803653,
+        "games": 1095
+      },
+      "2024": {
+        "both_rated_rate": 0.7814938684503902,
+        "games": 897
+      },
+      "2025": {
+        "both_rated_rate": 0.740343347639485,
+        "games": 932
+      },
+      "2026": {
+        "both_rated_rate": 0.7860576923076923,
+        "games": 416
+      }
+    }
+  },
+  "counts": {
+    "games_rows": 3340,
+    "merged_rows": 3340,
+    "odds_rows": 19344
+  },
+  "coverage": {
+    "h1_scores_match_rate": 1.0,
+    "odds_match_rate": 0.7748502994011977,
+    "odds_spread_nonnull_rate": 0.7748502994011977,
+    "odds_total_nonnull_rate": 0.7724550898203593,
+    "ratings_both_teams_rate": 0.7661676646706587
+  },
+  "generated_at": "2026-01-11T15:46:47Z",
+  "max_date": "2026-01-06",
+  "seasons": [
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "team_registry_source": "uuid5_fallback"
+}

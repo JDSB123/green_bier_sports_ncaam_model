@@ -2,18 +2,16 @@
 """Analyze H1 archive files for pricing data."""
 
 import pandas as pd
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "ncaam_historical_data_local"
+from testing.azure_io import read_csv
 
 print("=" * 70)
 print("H1 ARCHIVE FILE - DETAILED ANALYSIS")
 print("=" * 70)
 
 # Load the archive file
-fpath = DATA / "odds" / "normalized" / "odds_h1_archive_matchups.csv"
-df = pd.read_csv(fpath)
+fpath = "odds/normalized/odds_h1_archive_matchups.csv"
+df = read_csv(fpath)
 
 print(f"Total rows: {len(df):,}")
 

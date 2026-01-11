@@ -60,7 +60,7 @@
 
 These settings should be applied to both:
 - `JDSB123/green_bier_sports_ncaam_model` (main prediction model)
-- `JDSB123/ncaam-historical-data` (data repository)
+- `JDSB123/ncaam-historical-data` (deprecated data repository)
 
 ### 1. Branch Protection on `main`
 
@@ -99,7 +99,7 @@ These settings should be applied to both:
 |-------------|-------|---------|
 | `ODDS_API_KEY` | Your actual API key | CI/CD testing, deployments |
 | `AZURE_CREDENTIALS` | Azure service principal JSON | Deploy to Azure |
-| `HISTORICAL_DATA_PAT` | GitHub Personal Access Token | Clone ncaam-historical-data repo |
+| `HISTORICAL_DATA_PAT` | Deprecated | Historical data repo no longer required |
 
 **Create ODDS_API_KEY:**
 ```
@@ -110,7 +110,7 @@ Value: your_actual_key_from_https://the-odds-api.com
 **Create HISTORICAL_DATA_PAT:**
 ```
 Name: HISTORICAL_DATA_PAT
-Value: GitHub PAT with only read access to JDSB123/ncaam-historical-data
+Value: Deprecated (historical data repo no longer required)
 Scopes: repo (read-only)
 Expiration: 90 days
 ```
@@ -122,7 +122,7 @@ Value: Azure Service Principal JSON
 Format: {"clientId":"...","clientSecret":"...","subscriptionId":"...","tenantId":"..."}
 ```
 
-#### For `ncaam-historical-data`:
+#### For `ncaam-historical-data` (deprecated):
 
 | Secret Name | Value | Purpose |
 |-------------|-------|---------|
@@ -276,8 +276,8 @@ After applying GitHub settings, verify:
 ### GitHub Configuration (TODO)
 - [ ] **green_bier_sports_ncaam_model** - Branch protection
 - [ ] **green_bier_sports_ncaam_model** - Repository secrets
-- [ ] **ncaam-historical-data** - Branch protection
-- [ ] **ncaam-historical-data** - Repository secrets
+- [ ] **ncaam-historical-data** - Branch protection (deprecated)
+- [ ] **ncaam-historical-data** - Repository secrets (deprecated)
 - [ ] **Both repos** - Dependabot setup
 - [ ] **Both repos** - Create SECURITY.md
 - [ ] **green_bier_sports_ncaam_model** - Create .github/CODEOWNERS

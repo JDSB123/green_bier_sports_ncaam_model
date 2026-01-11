@@ -31,6 +31,7 @@ from typing import Dict, List, Optional, Tuple
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from testing.azure_data_reader import get_azure_reader
 
 try:
     import pandas as pd
@@ -174,7 +175,6 @@ class CLVBacktestEngine:
         
         # Paths
         self.root_dir = Path(__file__).resolve().parents[2]
-        self.data_dir = self.root_dir / "ncaam_historical_data_local" / "backtest_datasets"
         self.results_dir = self.root_dir / "testing" / "results" / "clv_backtest"
         self.results_dir.mkdir(parents=True, exist_ok=True)
         
@@ -198,14 +198,17 @@ class CLVBacktestEngine:
     
     def load_backtest_data(self) -> pd.DataFrame:
         """Load backtest dataset."""
-        enhanced_path = self.data_dir / "backtest_master_enhanced.csv"
-        consolidated_path = self.data_dir / "backtest_master_consolidated.csv"
-        base_path = self.data_dir / "backtest_master.csv"
-        
-        for path in [enhanced_path, consolidated_path, base_path]:
-            if path.exists():
-                print(f"Loading: {path.name}")
-                df = pd.read_csv(path)
+        reader = get_azure_reader()
+        candidates = [
+            "backtest_datasets/backtest_master_enhanced.csv",
+            "backtest_datasets/backtest_master_consolidated.csv",
+            "backtest_datasets/backtest_master.csv",
+        ]
+
+        for blob_path in candidates:
+            if reader.blob_exists(blob_path):
+                print(f"Loading: {Path(blob_path).name}")
+                df = reader.read_csv(blob_path)
                 df["game_date"] = pd.to_datetime(df["game_date"])
                 return df
         

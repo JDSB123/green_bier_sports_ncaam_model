@@ -12,7 +12,7 @@ Validates:
 - Schema adherence
 
 Usage:
-    python testing/scripts/canonical_data_validator.py --data-type scores --source espn
+    python testing/scripts/canonical_data_validator.py --data-type scores --source azure
     python testing/scripts/canonical_data_validator.py --comprehensive  # Validate all data
     python testing/scripts/canonical_data_validator.py --report-only    # Just report issues
 """
@@ -28,7 +28,7 @@ import pandas as pd
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from testing.azure_data_reader import get_azure_reader, get_hybrid_reader
+from testing.azure_data_reader import get_azure_reader
 from testing.canonical.quality_gates import DataQualityGate, ValidationSeverity
 from testing.canonical.schema_evolution import SchemaEvolutionManager, detect_data_vintage
 from testing.canonical.team_resolution_service import get_team_resolver
@@ -56,7 +56,6 @@ class CanonicalDataValidator:
         self.schema_manager = SchemaEvolutionManager()
         self.team_resolver = get_team_resolver()
         self.azure_reader = get_azure_reader()
-        self.hybrid_reader = get_hybrid_reader()
 
     def validate_data_source(
         self,
@@ -69,7 +68,7 @@ class CanonicalDataValidator:
 
         Args:
             data_type: Type of data ("scores", "odds", "ratings")
-            source: Data source ("azure", "local", "hybrid")
+            source: Data source ("azure" only)
             seasons: Specific seasons to validate
 
         Returns:
@@ -91,14 +90,10 @@ class CanonicalDataValidator:
         }
 
         try:
-            # Get data reader
-            if source == "azure":
-                reader = self.azure_reader
-            elif source == "local":
-                reader = self.hybrid_reader
-                reader.prefer_azure = False
-            else:  # hybrid
-                reader = self.hybrid_reader
+            if source != "azure":
+                raise ValueError("Only Azure is supported for canonical validation.")
+
+            reader = self.azure_reader
 
             # Load and validate data
             if data_type == "scores":
@@ -196,8 +191,6 @@ class CanonicalDataValidator:
             ("scores", "azure"),
             ("odds", "azure"),
             ("ratings", "azure"),
-            ("scores", "local"),
-            ("odds", "local")
         ]
 
         for data_type, source in data_sources:
@@ -247,6 +240,12 @@ class CanonicalDataValidator:
     def _load_odds_data(self, reader, seasons: Optional[List[int]] = None) -> Optional[pd.DataFrame]:
         """Load odds data for validation."""
         try:
+            if seasons:
+                dfs = []
+                for season in seasons:
+                    df = reader.read_canonical_odds(season=season)
+                    dfs.append(df)
+                return pd.concat(dfs, ignore_index=True) if dfs else None
             return reader.read_canonical_odds()
         except Exception as e:
             print(f"Failed to load odds data: {e}")
@@ -258,11 +257,17 @@ class CanonicalDataValidator:
             if seasons:
                 dfs = []
                 for season in seasons:
-                    ratings_dict = reader.read_canonical_ratings(season)
-                    # Convert to DataFrame
-                    df = pd.DataFrame.from_dict(ratings_dict, orient="index")
-                    df["season"] = season
-                    df["team"] = df.index
+                    ratings_payload = reader.read_canonical_ratings(season)
+                    if isinstance(ratings_payload, list):
+                        df = pd.DataFrame(ratings_payload)
+                        if "season" not in df.columns:
+                            df["season"] = season
+                    elif isinstance(ratings_payload, dict):
+                        df = pd.DataFrame.from_dict(ratings_payload, orient="index")
+                        df["season"] = season
+                        df["team"] = df.index
+                    else:
+                        raise ValueError("Unsupported ratings payload format")
                     dfs.append(df)
                 return pd.concat(dfs, ignore_index=True) if dfs else None
             else:
@@ -270,10 +275,17 @@ class CanonicalDataValidator:
                 dfs = []
                 for season in range(2020, 2026):
                     try:
-                        ratings_dict = reader.read_canonical_ratings(season)
-                        df = pd.DataFrame.from_dict(ratings_dict, orient="index")
-                        df["season"] = season
-                        df["team"] = df.index
+                        ratings_payload = reader.read_canonical_ratings(season)
+                        if isinstance(ratings_payload, list):
+                            df = pd.DataFrame(ratings_payload)
+                            if "season" not in df.columns:
+                                df["season"] = season
+                        elif isinstance(ratings_payload, dict):
+                            df = pd.DataFrame.from_dict(ratings_payload, orient="index")
+                            df["season"] = season
+                            df["team"] = df.index
+                        else:
+                            raise ValueError("Unsupported ratings payload format")
                         dfs.append(df)
                     except:
                         pass
@@ -330,8 +342,12 @@ def main():
     parser = argparse.ArgumentParser(description="Canonical data validator")
     parser.add_argument("--data-type", choices=["scores", "odds", "ratings"],
                        help="Type of data to validate")
-    parser.add_argument("--source", choices=["azure", "local", "hybrid"],
-                       default="azure", help="Data source")
+    parser.add_argument(
+        "--source",
+        choices=["azure"],
+        default="azure",
+        help="Data source (Azure only)",
+    )
     parser.add_argument("--seasons", type=int, nargs="+",
                        help="Specific seasons to validate")
     parser.add_argument("--comprehensive", action="store_true",
@@ -364,7 +380,11 @@ def main():
         save_validation_report(results, args.output)
 
     # Exit with appropriate code
-    if not results.get("passed", False) and not report_only:
+    passed = results.get("overall_passed")
+    if passed is None:
+        passed = results.get("passed", False)
+
+    if not passed and not report_only:
         print("\nValidation FAILED - blocking data ingestion")
         sys.exit(1)
     else:

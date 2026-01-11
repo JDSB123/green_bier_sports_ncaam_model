@@ -1,0 +1,29 @@
+{
+  "data_type": "odds",
+  "source": "azure",
+  "timestamp": "2026-01-11T13:23:52.782601",
+  "seasons_validated": [],
+  "total_records": 25263,
+  "passed": false,
+  "issues": [
+    {
+      "severity": "critical",
+      "rule": "scores_team_resolution",
+      "message": "Unresolved team names: ['LIU Brooklyn Blackbirds', 'Mcneese St Mcneese', 'Hartford Hawks', 'Valparaiso Crusaders', 'Houston Baptist Huskies']...",
+      "field": null,
+      "row_count": 0
+    }
+  ],
+  "recommendations": [
+    "Consider upgrading to modern data sources for better quality",
+    "Critical issues found - data should not be used for production",
+    "Add missing team names to aliases database"
+  ],
+  "detected_vintage": "legacy",
+  "quality_standards": {
+    "null_threshold": 0.2,
+    "duplicate_threshold": 0.1,
+    "team_resolution_threshold": 0.7
+  },
+  "validation_passed": false
+}

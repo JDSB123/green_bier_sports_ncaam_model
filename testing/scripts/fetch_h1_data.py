@@ -13,12 +13,9 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
-import os
 import sys
 import time
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 try:
@@ -37,16 +34,10 @@ except ImportError:
 # Canonicalization threshold - fail if more than 10% of games have unresolved teams
 UNRESOLVED_THRESHOLD = 0.10
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-HISTORICAL_ROOT = Path(
-    os.environ.get("HISTORICAL_DATA_ROOT", ROOT_DIR / "ncaam_historical_data_local")
-).resolve()
-SCORES_FG_DIR = Path(
-    os.environ.get("HISTORICAL_SCORES_FG_DIR", HISTORICAL_ROOT / "scores" / "fg")
-).resolve()
-SCORES_H1_DIR = Path(
-    os.environ.get("HISTORICAL_SCORES_H1_DIR", HISTORICAL_ROOT / "scores" / "h1")
-).resolve()
+from testing.azure_io import read_csv, upload_text, write_json, blob_exists
+
+SCORES_FG_BLOB = "scores/fg/games_all.csv"
+SCORES_H1_BLOB = "scores/h1/h1_games_all.csv"
 
 ESPN_SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary"
 
@@ -189,26 +180,24 @@ def parse_h1_scores(summary: dict, game_id: str) -> dict | None:
         return None
 
 
-def load_game_ids(filepath: Path) -> list[dict]:
+def load_game_ids(blob_path: str) -> list[dict]:
     """Load game IDs and basic info from CSV."""
+    df = read_csv(blob_path)
     games = []
-    with filepath.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            games.append({
-                "game_id": row["game_id"],
-                "date": row["date"],
-                "home_team": row["home_team"],
-                "away_team": row["away_team"],
-                "home_score": int(row.get("home_score", 0) or 0),
-                "away_score": int(row.get("away_score", 0) or 0),
-            })
+    for _, row in df.iterrows():
+        games.append({
+            "game_id": str(row.get("game_id", "")),
+            "date": str(row.get("date", "")),
+            "home_team": row.get("home_team", ""),
+            "away_team": row.get("away_team", ""),
+            "home_score": int(row.get("home_score", 0) or 0),
+            "away_score": int(row.get("away_score", 0) or 0),
+        })
     return games
 
 
-def save_h1_data(h1_games: list[dict], filepath: Path) -> None:
-    """Save 1H data to CSV."""
-    filepath.parent.mkdir(parents=True, exist_ok=True)
+def save_h1_data(h1_games: list[dict], blob_path: str) -> None:
+    """Save 1H data to CSV in Azure Blob Storage."""
 
     headers = [
         "game_id", "date", "home_team", "away_team",
@@ -216,13 +205,11 @@ def save_h1_data(h1_games: list[dict], filepath: Path) -> None:
         "home_fg", "away_fg", "fg_total"
     ]
 
-    with filepath.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
-        writer.writeheader()
-        for g in h1_games:
-            writer.writerow({h: g.get(h, "") for h in headers})
-
-    print(f"[INFO] Saved {len(h1_games)} games with 1H data to {filepath}")
+    lines = [",".join(headers)]
+    for g in h1_games:
+        lines.append(",".join([str(g.get(h, "")).replace(",", ";") for h in headers]))
+    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv")
+    print(f"[INFO] Saved {len(h1_games)} games with 1H data to {blob_path}")
 
 
 def main() -> int:
@@ -251,23 +238,22 @@ def main() -> int:
     print("=" * 72)
 
     # Load existing game IDs
-    games_file = Path(args.input).resolve() if args.input else (SCORES_FG_DIR / "games_all.csv")
-    if not games_file.exists():
-        print(f"[ERROR] Games file not found: {games_file}")
+    games_blob = args.input if args.input else SCORES_FG_BLOB
+    if not blob_exists(games_blob):
+        print(f"[ERROR] Games file not found: {games_blob}")
         print("        Run fetch_historical_data.py first!")
         return 1
 
-    games = load_game_ids(games_file)
-    print(f"[INFO] Loaded {len(games)} games from {games_file}")
+    games = load_game_ids(games_blob)
+    print(f"[INFO] Loaded {len(games)} games from {games_blob}")
 
     # Check for existing progress
-    output_file = Path(args.output).resolve() if args.output else (SCORES_H1_DIR / "h1_games_all.csv")
+    output_blob = args.output if args.output else SCORES_H1_BLOB
     existing_ids = set()
-    if output_file.exists():
-        with output_file.open("r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                existing_ids.add(row["game_id"])
+    if blob_exists(output_blob):
+        existing_df = read_csv(output_blob)
+        if "game_id" in existing_df.columns:
+            existing_ids = set(existing_df["game_id"].astype(str).tolist())
         print(f"[INFO] Found {len(existing_ids)} existing 1H records")
 
     # Fetch 1H data for each game
@@ -276,10 +262,8 @@ def main() -> int:
 
     # If resuming, load existing data
     if existing_ids:
-        with output_file.open("r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                h1_games.append(row)
+        existing_df = read_csv(output_blob)
+        h1_games.extend(existing_df.to_dict(orient="records"))
 
     games_to_fetch = [g for g in games if g["game_id"] not in existing_ids]
     print(f"[INFO] Need to fetch {len(games_to_fetch)} new games")
@@ -293,7 +277,7 @@ def main() -> int:
         if (i + 1) % 50 == 0:
             print(f"  Progress: {i + 1}/{len(games_to_fetch)} ({len(h1_games)} with 1H data)")
             # Save progress
-            save_h1_data(h1_games, output_file)
+            save_h1_data(h1_games, output_blob)
 
         summary = fetch_game_summary(game_id)
         if not summary:
@@ -318,13 +302,12 @@ def main() -> int:
         time.sleep(0.02)  # Was 0.15
 
     # Final save
-    save_h1_data(h1_games, output_file)
+    save_h1_data(h1_games, output_blob)
 
     # Also save as JSON
-    json_file = Path(args.output_json).resolve() if args.output_json else output_file.with_suffix(".json")
-    with json_file.open("w", encoding="utf-8") as f:
-        json.dump(h1_games, f, indent=2)
-    print(f"[INFO] Saved JSON to {json_file}")
+    json_blob = args.output_json if args.output_json else output_blob.replace(".csv", ".json")
+    write_json(json_blob, h1_games, indent=2)
+    print(f"[INFO] Saved JSON to {json_blob}")
 
     # Check threshold for unresolved teams
     total_processed = len(h1_games) + len(unresolved_games)

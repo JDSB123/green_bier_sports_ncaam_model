@@ -25,8 +25,9 @@ import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Optional
+
+from testing.azure_data_reader import get_azure_reader
 
 
 @dataclass
@@ -47,9 +48,12 @@ class TeamResolutionGate:
     normalization fallbacks if needed.
     """
     
-    # Paths
-    _aliases_path: Path = field(default_factory=lambda: Path(__file__).resolve().parents[2] / 
-                                 "ncaam_historical_data_local" / "backtest_datasets" / "team_aliases_db.json")
+    # Azure blob path
+    _aliases_blob: str = field(
+        default_factory=lambda: os.getenv(
+            "TEAM_ALIASES_BLOB", "backtest_datasets/team_aliases_db.json"
+        )
+    )
     
     # Loaded aliases: {lowercase_variant: canonical_name}
     _aliases: dict = field(default_factory=dict)
@@ -72,25 +76,49 @@ class TeamResolutionGate:
     
     def _load_aliases(self) -> None:
         """Load the master team aliases database."""
-        # Allow override via environment
-        aliases_path = Path(os.environ.get("TEAM_ALIASES_PATH", self._aliases_path))
-        
-        if not aliases_path.exists():
-            raise FileNotFoundError(
-                f"Team aliases not found at {aliases_path}. "
-                "Ensure ncaam_historical_data_local is present."
-            )
-        
-        with open(aliases_path, "r", encoding="utf-8") as f:
-            raw_aliases = json.load(f)
+        reader = get_azure_reader()
+        raw_aliases = reader.read_json(self._aliases_blob)
         
         # Build lowercase lookup
         self._aliases = {k.lower().strip(): v for k, v in raw_aliases.items()}
         
-        # Also add canonical names as self-references
+        # Also add canonical names as self-references, but NEVER override an explicit
+        # alias mapping. This matters because some historical artifacts contain
+        # "canonical-to-canonical" redirects (e.g. "Texas A&M-Corpus Christi" -> "Texas A&M-CC")
+        # to unify naming across sources.
         canonical_names = set(raw_aliases.values())
         for name in canonical_names:
-            self._aliases[name.lower().strip()] = name
+            key = name.lower().strip()
+            if key not in self._aliases:
+                self._aliases[key] = name
+
+    def _lookup(self, candidate: str) -> Optional[str]:
+        """
+        Try multiple deterministic lookup keys for a candidate string.
+        """
+        if not candidate:
+            return None
+        keys = []
+        c = candidate.strip()
+        if not c:
+            return None
+
+        # Exact lowercase
+        keys.append(c.lower().strip())
+
+        # Hyphen spacing variants (some sources emit "A-B" vs "A - B")
+        keys.append(c.lower().replace(" - ", "-").strip())
+        keys.append(c.lower().replace("-", " - ").strip())
+
+        # De-dupe while preserving order
+        seen = set()
+        for k in keys:
+            kk = " ".join(k.split())
+            if kk and kk not in seen:
+                seen.add(kk)
+                if kk in self._aliases:
+                    return self._aliases[kk]
+        return None
     
     def resolve(self, raw_name: str, source: str = "unknown") -> Optional[str]:
         """
@@ -111,27 +139,38 @@ class TeamResolutionGate:
             return None
         
         # Attempt 1: Exact match (case-insensitive)
-        lookup = original.lower()
-        if lookup in self._aliases:
-            canonical = self._aliases[lookup]
+        canonical = self._lookup(original)
+        if canonical:
             self._record_resolution(original, canonical, "exact", source)
             return canonical
         
         # Attempt 2: Apply standard normalizations
         normalized = self._normalize(original)
-        lookup = normalized.lower()
-        if lookup in self._aliases:
-            canonical = self._aliases[lookup]
+        canonical = self._lookup(normalized)
+        if canonical:
             self._record_resolution(original, canonical, "normalized", source)
             return canonical
         
         # Attempt 3: Aggressive normalization (remove mascots, etc.)
         aggressive = self._normalize_aggressive(original)
-        lookup = aggressive.lower()
-        if lookup in self._aliases:
-            canonical = self._aliases[lookup]
+        canonical = self._lookup(aggressive)
+        if canonical:
             self._record_resolution(original, canonical, "aggressive", source)
             return canonical
+
+        # Attempt 4: Deterministic suffix stripping (common for ESPN mascots):
+        # e.g. "Texas A&M-Corpus Christi Islanders" -> "Texas A&M-Corpus Christi"
+        # We ONLY accept if the stripped base already exists in aliases.
+        base = aggressive.strip()
+        words = base.split()
+        for n in (1, 2, 3):
+            if len(words) <= n:
+                continue
+            stripped = " ".join(words[:-n]).strip()
+            canonical = self._lookup(stripped)
+            if canonical:
+                self._record_resolution(original, canonical, f"suffix_strip_{n}", source)
+                return canonical
         
         # Failed - log and return None
         self._record_unresolved(original, source)
@@ -277,18 +316,14 @@ class TeamResolutionGate:
         
         print("=" * 60 + "\n")
     
-    def save_unresolved(self, path: Optional[Path] = None) -> Path:
-        """Save unresolved names to JSON for review."""
-        if path is None:
-            path = Path(__file__).resolve().parents[2] / "ncaam_historical_data_local" / \
-                   "team_resolution" / "unresolved_names.json"
-        
-        path.parent.mkdir(parents=True, exist_ok=True)
-        
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.unresolved_names, f, indent=2, sort_keys=True)
-        
-        return path
+    def save_unresolved(self, blob_path: Optional[str] = None) -> str:
+        """Save unresolved names to Azure Blob Storage for review."""
+        if blob_path is None:
+            blob_path = "team_resolution/unresolved_names.json"
+
+        reader = get_azure_reader()
+        reader.write_json(blob_path, self.unresolved_names, indent=2, sort_keys=True)
+        return blob_path
 
 
 # Singleton instance for convenience

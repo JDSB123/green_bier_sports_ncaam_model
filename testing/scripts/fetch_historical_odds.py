@@ -26,12 +26,10 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import os
 import sys
 import time
 from datetime import datetime, timedelta, date
-from pathlib import Path
 from typing import Any, Iterable
 
 try:
@@ -40,13 +38,9 @@ except ImportError:
     print("[ERROR] requests library required: pip install requests")
     sys.exit(1)
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-HISTORICAL_ROOT = Path(
-    os.environ.get("HISTORICAL_DATA_ROOT", ROOT_DIR / "ncaam_historical_data_local")
-).resolve()
-ODDS_RAW_DIR = Path(
-    os.environ.get("HISTORICAL_ODDS_RAW_DIR", HISTORICAL_ROOT / "odds" / "raw")
-).resolve()
+from testing.azure_io import upload_text
+
+ODDS_RAW_PREFIX = "odds/raw"
 
 # Import team canonicalization from single source of truth
 # team_utils.py is in the same directory (testing/scripts/)
@@ -78,12 +72,13 @@ def get_api_key() -> str:
         return key.strip()
     
     # Check Docker secret
+    from pathlib import Path
     docker_secret = Path("/run/secrets/odds_api_key")
     if docker_secret.exists():
         return docker_secret.read_text().strip()
     
     # Check local secrets file
-    local_secret = ROOT_DIR / "secrets" / "odds_api_key.txt"
+    local_secret = Path(__file__).resolve().parents[2] / "secrets" / "odds_api_key.txt"
     if local_secret.exists():
         return local_secret.read_text().strip()
     
@@ -470,7 +465,7 @@ def fetch_date_range(
     api_key: str,
     start_date: str,
     end_date: str,
-    output_dir: Path,
+    output_prefix: str,
     markets: str,
     tourney_window: tuple[date, date] | None = None,
     save_interval: int = 7,  # Save every 7 days
@@ -577,8 +572,8 @@ def fetch_date_range(
             # Save incrementally
             if days_since_save >= save_interval and all_odds:
                 tag = f"_{checkpoint_tag}" if checkpoint_tag else ""
-                temp_path = output_dir / f"odds_partial{tag}_{start_date.replace('-', '')}_{date_str.replace('-', '')}.csv"
-                save_odds_csv(all_odds, temp_path)
+                temp_blob = f"{output_prefix}/odds_partial{tag}_{start_date.replace('-', '')}_{date_str.replace('-', '')}.csv"
+                save_odds_csv(all_odds, temp_blob)
                 print(f"  [CHECKPOINT] Saved {len(all_odds)} records")
                 days_since_save = 0
 
@@ -647,9 +642,8 @@ def _build_headers(rows: Iterable[dict]) -> list[str]:
     return ordered
 
 
-def save_odds_csv(odds: list[dict], filepath: Path) -> None:
-    """Save odds to CSV."""
-    filepath.parent.mkdir(parents=True, exist_ok=True)
+def save_odds_csv(odds: list[dict], blob_path: str) -> None:
+    """Save odds to CSV in Azure Blob Storage."""
 
     if not odds:
         print("[WARN] No odds to save")
@@ -657,12 +651,12 @@ def save_odds_csv(odds: list[dict], filepath: Path) -> None:
 
     headers = _build_headers(odds)
 
-    with filepath.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=headers)
-        writer.writeheader()
-        writer.writerows(odds)
+    lines = [",".join(headers)]
+    for row in odds:
+        lines.append(",".join([str(row.get(h, "")).replace(",", ";") for h in headers]))
+    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv")
 
-    print(f"[INFO] Saved {len(odds)} odds records to {filepath}")
+    print(f"[INFO] Saved {len(odds)} odds records to {blob_path}")
 
 
 def _season_date_range(season: int) -> tuple[str, str]:
@@ -784,7 +778,7 @@ def main(argv: list[str] | None = None) -> int:
         api_key,
         start_date,
         end_date,
-        ODDS_RAW_DIR,
+        ODDS_RAW_PREFIX,
         args.markets,
         tourney_window=tourney_window,
         bookmakers_mode=args.bookmakers,
@@ -793,18 +787,18 @@ def main(argv: list[str] | None = None) -> int:
 
     # Save results
     if args.output:
-        output_path = Path(args.output)
+        output_blob = args.output
     else:
         start_clean = start_date.replace("-", "")
         end_clean = end_date.replace("-", "")
         job_label = f"_{args.job_id}" if args.job_id else ""
         if args.season:
             season_label = f"season_{args.season}"
-            output_path = ODDS_RAW_DIR / f"odds_{season_label}{job_label}_{start_clean}_{end_clean}.csv"
+            output_blob = f"{ODDS_RAW_PREFIX}/odds_{season_label}{job_label}_{start_clean}_{end_clean}.csv"
         else:
-            output_path = ODDS_RAW_DIR / f"odds{job_label}_{start_clean}_{end_clean}.csv"
+            output_blob = f"{ODDS_RAW_PREFIX}/odds{job_label}_{start_clean}_{end_clean}.csv"
 
-    save_odds_csv(odds, output_path)
+    save_odds_csv(odds, output_blob)
 
     print("\n" + "=" * 72)
     print(f" SUCCESS: Fetched {len(odds)} odds records")

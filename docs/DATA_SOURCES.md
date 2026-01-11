@@ -44,7 +44,7 @@ for chunk in reader_raw.read_csv_chunks("ncaahoopR_data-master/box_scores/2025.c
 
 ### Master Odds File (SINGLE SOURCE OF TRUTH)
 
-**File:** `ncaam_historical_data_local/odds/normalized/odds_consolidated_canonical.csv`
+**File:** `odds/normalized/odds_consolidated_canonical.csv` (Azure blob path)
 
 This is the **only file** you should use for odds data. It contains:
 - 217,151 rows (27,623 unique games)
@@ -149,7 +149,7 @@ if spread_pred < 0:  # Home favored
 ## Data Manifest
 
 For a complete inventory of available data, see:
-`ncaam_historical_data_local/DATA_MANIFEST.json`
+`DATA_MANIFEST.json` (Azure blob path)
 
 ---
 
@@ -174,7 +174,7 @@ For a complete inventory of available data, see:
 ## Data Workflow
 
 ```
-1. Raw Data ingested/updated locally
+1. Raw Data ingested/updated in a staging directory (not tracked)
                 |
                 v
 2. sync_raw_data_to_azure.py uploads to Azure (SINGLE SOURCE OF TRUTH)

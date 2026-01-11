@@ -171,7 +171,7 @@ class CanonicalIngestionPipeline:
                 name="spread_sign_convention",
                 description="Validate spread sign conventions",
                 validator=self._validate_spread_signs,
-                severity="error"
+                severity="warning"
             ),
             DataQualityRule(
                 name="price_ranges",
@@ -520,17 +520,22 @@ class CanonicalIngestionPipeline:
         return [f"Missing required columns: {missing}"] if missing else []
 
     def _validate_spread_signs(self, df: pd.DataFrame) -> List[str]:
-        """Validate spread sign conventions."""
-        errors = []
+        """Validate spread ranges when favorite context is unavailable."""
+        issues = []
 
-        if "spread" in df.columns:
-            spreads = df["spread"].dropna()
-            # Home favorites should have negative spreads
-            invalid_signs = spreads[spreads > 0]  # This is simplistic - would need more logic
-            if len(invalid_signs) > 0:
-                errors.append(f"{len(invalid_signs)} spreads with potentially incorrect signs")
+        if "spread" not in df.columns:
+            return issues
 
-        return errors
+        spreads = df["spread"].dropna()
+        if spreads.empty:
+            return issues
+
+        # Without a favorite indicator, sign alone is not actionable.
+        extreme = spreads[spreads.abs() > 50]
+        if len(extreme) > 0:
+            issues.append(f"{len(extreme)} spreads outside +/-50")
+
+        return issues
 
     def _validate_price_ranges(self, df: pd.DataFrame) -> List[str]:
         """Validate betting prices are reasonable."""

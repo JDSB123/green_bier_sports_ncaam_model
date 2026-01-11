@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
 Analyze historical data to determine feature importance for NCAAM predictions.
-Uses actual data files available in ncaam_historical_data_local/
+Uses canonical data from Azure Blob Storage.
 """
 
 import pandas as pd
 import numpy as np
-import json
-from pathlib import Path
 import logging
 from datetime import datetime
 from sklearn.model_selection import train_test_split
@@ -16,6 +14,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_sc
 import warnings
 warnings.filterwarnings('ignore')
 
+from testing.azure_io import read_csv, read_json, list_files
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -23,15 +23,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Data paths
-DATA_DIR = Path("ncaam_historical_data_local")
-BACKTEST_DIR = DATA_DIR / "backtest_datasets"
-NCAAHOPR_DIR = DATA_DIR / "ncaahoopR_data-master"
+# Data paths (Azure-only)
+BACKTEST_PREFIX = "backtest_datasets"
+NCAAHOPR_PREFIX = "ncaahoopR_data-master"
 
 def load_training_data():
     """Load the main training data with odds"""
     logger.info("Loading training data with odds...")
-    df = pd.read_csv(BACKTEST_DIR / "training_data_with_odds.csv")
+    df = read_csv(f"{BACKTEST_PREFIX}/training_data_with_odds.csv")
     logger.info(f"  Loaded {len(df)} games from {df.game_date.min()} to {df.game_date.max()}")
     
     # Convert date
@@ -55,9 +54,9 @@ def load_training_data():
 def load_h1_data():
     """Load first half historical data"""
     logger.info("Loading first half data...")
-    h1_file = BACKTEST_DIR / "h1_historical_odds.csv"
-    if h1_file.exists():
-        df = pd.read_csv(h1_file)
+    h1_blob = f"{BACKTEST_PREFIX}/h1_historical_odds.csv"
+    if list_files(h1_blob):
+        df = read_csv(h1_blob)
         logger.info(f"  Loaded {len(df)} first half records")
         return df
     else:
@@ -67,53 +66,49 @@ def load_h1_data():
 def load_barttorvik_ratings():
     """Load Barttorvik ratings"""
     logger.info("Loading Barttorvik ratings...")
-    df = pd.read_csv(BACKTEST_DIR / "barttorvik_ratings.csv")
+    df = read_csv(f"{BACKTEST_PREFIX}/barttorvik_ratings.csv")
     logger.info(f"  Loaded ratings for {len(df)} teams")
     logger.info(f"  Columns: {df.columns.tolist()}")
     return df
 
 def load_team_aliases():
     """Load team alias mappings"""
-    with open(BACKTEST_DIR / "team_aliases_db.json", 'r') as f:
-        return json.load(f)
+    return read_json(f"{BACKTEST_PREFIX}/team_aliases_db.json")
 
 def analyze_ncaahoopR_sample():
     """Sample analysis of ncaahoopR data structure"""
     logger.info("\n=== Analyzing ncaahoopR Data Structure ===")
     
     # Check a sample season
-    season_dir = NCAAHOPR_DIR / "2023-24"
+    season_prefix = f"{NCAAHOPR_PREFIX}/2023-24"
     
     # Play-by-play
-    pbp_dir = season_dir / "pbp_logs"
-    if pbp_dir.exists():
-        pbp_files = list(pbp_dir.glob("*.csv"))
+    pbp_prefix = f"{season_prefix}/pbp_logs/"
+    pbp_files = list_files(pbp_prefix, pattern="*.csv")
+    if pbp_files:
         logger.info(f"  Found {len(pbp_files)} PBP files")
-        if pbp_files:
-            # Load sample PBP
-            sample_pbp = pd.read_csv(pbp_files[0])
-            logger.info(f"  Sample PBP columns: {sample_pbp.columns.tolist()[:10]}...")
-            logger.info(f"  Sample PBP shape: {sample_pbp.shape}")
+        sample_pbp = read_csv(pbp_files[0], nrows=5)
+        logger.info(f"  Sample PBP columns: {sample_pbp.columns.tolist()[:10]}...")
+        logger.info(f"  Sample PBP shape: {sample_pbp.shape}")
     
     # Box scores
-    box_dir = season_dir / "box_scores" 
-    if box_dir.exists():
-        box_files = list(box_dir.glob("*.csv"))
+    box_prefix = f"{season_prefix}/box_scores/"
+    box_files = list_files(box_prefix, pattern="*.csv")
+    if box_files:
         logger.info(f"  Found {len(box_files)} box score files")
-        if box_files:
-            sample_box = pd.read_csv(box_files[0])
-            logger.info(f"  Sample box columns: {sample_box.columns.tolist()[:10]}...")
+        sample_box = read_csv(box_files[0], nrows=5)
+        logger.info(f"  Sample box columns: {sample_box.columns.tolist()[:10]}...")
     
     # Rosters
-    roster_dir = season_dir / "rosters"
-    if roster_dir.exists():
-        roster_files = list(roster_dir.glob("*.csv"))
+    roster_prefix = f"{season_prefix}/rosters/"
+    roster_files = list_files(roster_prefix, pattern="*.csv")
+    if roster_files:
         logger.info(f"  Found {len(roster_files)} roster files")
     
     # Schedules
-    schedule_dir = season_dir / "schedules"
-    if schedule_dir.exists():
-        schedule_files = list(schedule_dir.glob("*.csv"))
+    schedule_prefix = f"{season_prefix}/schedules/"
+    schedule_files = list_files(schedule_prefix, pattern="*.csv")
+    if schedule_files:
         logger.info(f"  Found {len(schedule_files)} schedule files")
 
 def extract_basic_features(games_df, ratings_df, aliases):

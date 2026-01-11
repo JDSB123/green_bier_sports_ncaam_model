@@ -1,0 +1,38 @@
+{
+  "market": "fg_spread",
+  "seasons": [
+    2024,
+    2025
+  ],
+  "total_games": 11763,
+  "games_with_odds": 10323,
+  "games_with_ratings": 9389,
+  "total_bets": 0,
+  "wins": 0,
+  "losses": 0,
+  "pushes": 0,
+  "total_wagered": 0.0,
+  "total_profit": 0.0,
+  "roi": 0.0,
+  "win_rate": 0.0,
+  "avg_edge": 0.0,
+  "by_season": {
+    "2024": {
+      "bets": 0,
+      "wins": 0,
+      "losses": 0,
+      "profit": 0,
+      "roi": 0,
+      "win_rate": 0
+    },
+    "2025": {
+      "bets": 0,
+      "wins": 0,
+      "losses": 0,
+      "profit": 0,
+      "roi": 0,
+      "win_rate": 0
+    }
+  },
+  "timestamp": "20260110_124537"
+}

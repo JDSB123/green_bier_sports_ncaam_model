@@ -36,6 +36,7 @@ from testing.azure_data_reader import (
     get_azure_reader, read_canonical_scores, read_canonical_odds,
     read_backtest_master
 )
+from testing.azure_io import write_csv, write_json
 from testing.canonical.ingestion_pipeline import CanonicalIngestionPipeline, DataSource
 from testing.canonical.quality_gates import DataQualityGate
 from testing.canonical.schema_evolution import SchemaEvolutionManager
@@ -322,13 +323,10 @@ def build_canonical_backtest_dataset(
         return None
 
 
-def save_canonical_dataset(df: pd.DataFrame, output_path: Optional[Path] = None):
+def save_canonical_dataset(df: pd.DataFrame, output_blob: Optional[str] = None):
     """Save the canonical dataset with metadata."""
-    if output_path is None:
-        root_dir = Path(__file__).resolve().parents[2]
-        output_path = root_dir / "ncaam_historical_data_local" / "backtest_datasets" / "backtest_master_canonical.csv"
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_blob is None:
+        output_blob = "backtest_datasets/backtest_master_canonical.csv"
 
     # Add metadata
     metadata = {
@@ -343,16 +341,17 @@ def save_canonical_dataset(df: pd.DataFrame, output_path: Optional[Path] = None)
     }
 
     # Save main data
-    df.to_csv(output_path, index=False)
+    write_csv(output_blob, df)
 
     # Save metadata
-    metadata_path = output_path.with_suffix(".metadata.json")
-    with open(metadata_path, 'w') as f:
-        import json
-        json.dump(metadata, f, indent=2, default=str)
+    if output_blob.endswith(".csv"):
+        metadata_blob = output_blob[:-4] + ".metadata.json"
+    else:
+        metadata_blob = output_blob + ".metadata.json"
+    write_json(metadata_blob, metadata, indent=2)
 
-    print(f"Saved canonical dataset: {output_path}")
-    print(f"Saved metadata: {metadata_path}")
+    print(f"Saved canonical dataset: {output_blob}")
+    print(f"Saved metadata: {metadata_blob}")
 
 
 def main():
@@ -365,8 +364,8 @@ def main():
                        help="Specific seasons to include")
     parser.add_argument("--lenient", action="store_true",
                        help="Use lenient validation (warnings instead of errors)")
-    parser.add_argument("--output", type=Path,
-                       help="Output path for dataset")
+    parser.add_argument("--output", type=str,
+                       help="Output blob path for dataset")
 
     args = parser.parse_args()
 

@@ -15,28 +15,28 @@ import argparse
 import json
 import sys
 from datetime import datetime
-from pathlib import Path
 from typing import Dict
 
 import pandas as pd
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "ncaam_historical_data_local"
-OUTPUT_DIR = DATA / "backtest_datasets"
-ALIASES_FILE = OUTPUT_DIR / "team_aliases_db.json"
+from testing.azure_io import read_csv, read_json, write_csv, write_json
+
+ALIASES_BLOB = "backtest_datasets/team_aliases_db.json"
 
 # Input files
-BACKTEST_MASTER = OUTPUT_DIR / "backtest_master.csv"
-NCAAHOOPR_FEATURES = OUTPUT_DIR / "ncaahoopR_features.csv"
+BACKTEST_MASTER = "backtest_datasets/backtest_master.csv"
+NCAAHOOPR_FEATURES = "backtest_datasets/ncaahoopR_features.csv"
+OUTPUT_BLOB = "backtest_datasets/backtest_master_consolidated.csv"
+SUMMARY_BLOB = "backtest_datasets/backtest_master_consolidated_summary.json"
 
 
 def load_team_aliases() -> Dict[str, str]:
     """Load team name aliases."""
-    if ALIASES_FILE.exists():
-        with open(ALIASES_FILE) as f:
-            return json.load(f)
-    return {}
+    try:
+        return read_json(ALIASES_BLOB)
+    except FileNotFoundError:
+        return {}
 
 
 def resolve_team_name(name: str, aliases: Dict[str, str]) -> str:
@@ -49,11 +49,11 @@ def resolve_team_name(name: str, aliases: Dict[str, str]) -> str:
 
 def load_backtest_master() -> pd.DataFrame:
     """Load the existing backtest master with scores, odds, and Barttorvik."""
-    if not BACKTEST_MASTER.exists():
+    try:
+        df = read_csv(BACKTEST_MASTER)
+    except FileNotFoundError:
         print(f"[ERROR] Backtest master not found: {BACKTEST_MASTER}")
         sys.exit(1)
-    
-    df = pd.read_csv(BACKTEST_MASTER)
     df["game_date"] = pd.to_datetime(df["game_date"])
     
     print(f"[OK] Loaded backtest master: {len(df):,} games")
@@ -65,11 +65,11 @@ def load_backtest_master() -> pd.DataFrame:
 
 def load_ncaahoopR_features() -> pd.DataFrame:
     """Load ncaahoopR extracted features."""
-    if not NCAAHOOPR_FEATURES.exists():
+    try:
+        df = read_csv(NCAAHOOPR_FEATURES)
+    except FileNotFoundError:
         print(f"[WARN] ncaahoopR features not found: {NCAAHOOPR_FEATURES}")
         return pd.DataFrame()
-    
-    df = pd.read_csv(NCAAHOOPR_FEATURES)
     df["game_date"] = pd.to_datetime(df["game_date"])
     
     print(f"[OK] Loaded ncaahoopR features: {len(df):,} team-game records")
@@ -207,9 +207,8 @@ def main():
     
     # Save output
     print("\n--- Saving Consolidated Master ---")
-    output_file = OUTPUT_DIR / "backtest_master_consolidated.csv"
-    consolidated.to_csv(output_file, index=False)
-    print(f"[OK] Saved {len(consolidated):,} games to {output_file.name}")
+    write_csv(OUTPUT_BLOB, consolidated)
+    print(f"[OK] Saved {len(consolidated):,} games to {OUTPUT_BLOB}")
     
     # Summary
     print("\n" + "=" * 70)
@@ -264,10 +263,8 @@ def main():
         "columns": list(consolidated.columns),
     }
     
-    summary_file = OUTPUT_DIR / "backtest_master_consolidated_summary.json"
-    with open(summary_file, "w") as f:
-        json.dump(summary, f, indent=2)
-    print(f"\n[OK] Saved summary to {summary_file.name}")
+    write_json(SUMMARY_BLOB, summary, indent=2)
+    print(f"\n[OK] Saved summary to {SUMMARY_BLOB}")
     
     print("\n" + "=" * 70)
     print("[DONE] SINGLE SOURCE OF TRUTH CREATED")

@@ -17,32 +17,6 @@ Usage:
 This legacy script will be removed in a future version.
 """
 
-#!/usr/bin/env python3
-"""
-SCORE DATA INTEGRITY AUDIT (DEPRECATED)
-
-Cross-validates game scores across ALL historical data sources to ensure
-data integrity and consistency. This is critical for backtesting validity.
-
-Sources validated:
-1. ESPN Canonical Scores (games_all_canonical.csv)
-2. ESPN H1 Canonical Scores (h1_games_all_canonical.csv)
-3. ncaahoopR Schedule Data (team schedules with scores)
-4. Games 2023-2025 (backtest_datasets/games_2023_2025.csv)
-5. Training Data With Odds (backtest_datasets/training_data_with_odds.csv)
-
-Checks performed:
-- Cross-source score consistency (same game = same scores)
-- Score sanity validation (reasonable ranges)
-- H1 vs FG consistency (H1 scores < FG scores)
-- Duplicate detection within sources
-- Date/team alignment validation
-
-Usage:
-    python testing/scripts/score_integrity_audit.py
-    python testing/scripts/score_integrity_audit.py --verbose
-"""
-
 from __future__ import annotations
 
 import argparse

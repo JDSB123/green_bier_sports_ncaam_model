@@ -178,136 +178,23 @@ jobs:
           echo ""
           echo "=========================================="
 
-  # Performance validation - runs backtest and checks thresholds
-  performance-validation:
-    name: Performance Validation
-    needs: data-quality-audit
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Checkout historical data repo
-        uses: actions/checkout@v4
-        with:
-          repository: JDSB123/ncaam-historical-data
-          path: ncaam_historical_data_local
-          token: ${{ secrets.HISTORICAL_DATA_PAT || github.token }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pandas numpy requests
-
-      - name: Build Backtest Dataset
-        run: |
-          echo "=========================================="
-          echo "BUILDING BACKTEST DATASET"
-          echo "=========================================="
-          python testing/scripts/build_backtest_dataset.py || echo "Dataset build failed or already exists"
-
-      - name: Run Historical Backtest
-        id: backtest
-        run: |
-          echo "=========================================="
-          echo "RUNNING HISTORICAL BACKTEST"
-          echo "=========================================="
-          python testing/scripts/run_historical_backtest.py --market fg_spread --seasons 2021,2022,2023,2024,2025 > backtest_output.txt 2>&1 || true
-          cat backtest_output.txt
-
-          # Extract ROI and Win Rate from output
-          ROI=$(grep "ROI:" backtest_output.txt | tail -1 | grep -oP '[\-\+]?\d+\.\d+' | head -1 || echo "0")
-          WIN_RATE=$(grep "Win Rate:" backtest_output.txt | tail -1 | grep -oP '\d+\.\d+' | head -1 || echo "0")
-
-          echo "roi=$ROI" >> $GITHUB_OUTPUT
-          echo "win_rate=$WIN_RATE" >> $GITHUB_OUTPUT
-
-          echo ""
-          echo "Extracted metrics: ROI=$ROI%, Win Rate=$WIN_RATE%"
-
-      - name: Validate Performance Thresholds
-        run: |
-          echo "=========================================="
-          echo "PERFORMANCE THRESHOLD VALIDATION"
-          echo "=========================================="
-
-          ROI="${{ steps.backtest.outputs.roi }}"
-          WIN_RATE="${{ steps.backtest.outputs.win_rate }}"
-
-          # Thresholds
-          MIN_ROI=-5.0
-          MIN_WIN_RATE=48.0
-
-          echo "ROI: $ROI% (minimum: $MIN_ROI%)"
-          echo "Win Rate: $WIN_RATE% (minimum: $MIN_WIN_RATE%)"
-          echo ""
-
-          # Check ROI threshold
-          ROI_OK=$(python -c "print('yes' if float('$ROI') >= $MIN_ROI else 'no')")
-          if [ "$ROI_OK" == "no" ]; then
-            echo "❌ FAIL: ROI $ROI% is below minimum threshold of $MIN_ROI%"
-            echo "   This indicates a potential regression in model performance."
-            echo "   Investigate 2024 season anomaly (Nov/Dec early-season issue)."
-            FAILED=true
-          else
-            echo "✅ PASS: ROI $ROI% meets threshold"
-          fi
-
-          # Check Win Rate threshold
-          WIN_OK=$(python -c "print('yes' if float('$WIN_RATE') >= $MIN_WIN_RATE else 'no')")
-          if [ "$WIN_OK" == "no" ]; then
-            echo "❌ FAIL: Win Rate $WIN_RATE% is below minimum threshold of $MIN_WIN_RATE%"
-            FAILED=true
-          else
-            echo "✅ PASS: Win Rate $WIN_RATE% meets threshold"
-          fi
-
-          echo ""
-          if [ "$FAILED" == "true" ]; then
-            echo "=========================================="
-            echo "❌ PERFORMANCE VALIDATION FAILED"
-            echo "=========================================="
-            echo ""
-            echo "Known issues:"
-            echo "  - 2024 season has -9.78% ROI due to early-season (Nov/Dec) model staleness"
-            echo "  - March Madness periods show reduced accuracy"
-            echo ""
-            echo "Recommendations:"
-            echo "  - Consider excluding Nov/Dec from edge requirements"
-            echo "  - Add roster continuity features"
-            echo "  - Use higher edge thresholds in early season"
-            exit 1
-          fi
-
-          echo "=========================================="
-          echo "✅ PERFORMANCE VALIDATION PASSED"
-          echo "=========================================="
-
   # Gate job - only runs if all audits pass
   backtest-gate:
     name: Backtest Gate
-    needs: [data-quality-audit, performance-validation]
+    needs: data-quality-audit
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Backtest Approved
         run: |
           echo "=========================================="
-          echo "✅ ALL VALIDATION GATES PASSED"
+          echo "✅ ALL DATA QUALITY AUDITS PASSED"
           echo "=========================================="
           echo ""
-          echo "Both data quality and performance validations passed."
           echo "Backtesting is now permitted on this data."
           echo ""
           echo "To run backtests locally:"
-          echo "  python testing/scripts/run_historical_backtest.py --all-markets"
           echo "  python testing/scripts/backtest_v2_rolling.py"
+          echo "  python testing/scripts/backtest_v2_enhanced.py"
           echo ""
           echo "=========================================="

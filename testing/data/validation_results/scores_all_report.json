@@ -1,0 +1,15 @@
+{
+  "data_type": "scores",
+  "source": "azure",
+  "timestamp": "2026-01-11T13:21:02.898380",
+  "seasons_validated": [],
+  "total_records": 0,
+  "passed": false,
+  "issues": [
+    {
+      "severity": "error",
+      "message": "No scores data found"
+    }
+  ],
+  "recommendations": []
+}

@@ -1,0 +1,418 @@
+{
+  "counts": {
+    "box_team_games_resolved": 12048,
+    "box_team_games_total": 12048,
+    "odds_rows_total": 5738,
+    "odds_unique_games_resolved": 5737,
+    "ratings_teams_resolved": 362,
+    "ratings_teams_total": 362,
+    "scores_fg_games_resolved": 955,
+    "scores_fg_games_total": 967,
+    "scores_fg_games_with_unresolved_team": 12,
+    "scores_h1_games_resolved": 966,
+    "scores_h1_games_total": 978
+  },
+  "coverage": {
+    "odds_field_coverage_within_matched_games": {
+      "fg_spread_any": 749,
+      "fg_spread_prices_any": 749,
+      "fg_total_any": 749,
+      "fg_total_prices_any": 749,
+      "h1_spread_any": 736,
+      "h1_spread_prices_any": 736,
+      "h1_total_any": 736,
+      "h1_total_prices_any": 736,
+      "total_matched_games": 749
+    },
+    "scores_to_h1_scores_directional": {
+      "match_rate": 1.0,
+      "matched": 955,
+      "total_scores_resolved": 955
+    },
+    "scores_to_ncaahoopr_team_features": {
+      "away_team_has_features": 391,
+      "both_team_coverage_rate": 0.3863874345549738,
+      "both_teams_have_features": 369,
+      "home_team_has_features": 404,
+      "total_scores_resolved": 955
+    },
+    "scores_to_odds_directional": {
+      "match_rate": 0.7842931937172775,
+      "matched": 749,
+      "total_scores_resolved": 955
+    },
+    "scores_to_odds_swap_tolerant": {
+      "match_rate": 0.8230366492146597,
+      "matched": 786,
+      "total_scores_resolved": 955
+    },
+    "scores_to_ratings_season_minus_one": {
+      "both_teams_have_ratings": 694,
+      "coverage_rate": 0.7267015706806282,
+      "ratings_season": 2024,
+      "total_scores_resolved": 955
+    }
+  },
+  "examples": {
+    "sample_scores_games": [
+      {
+        "away_team_canonical": "Howard",
+        "away_team_raw": "Howard Bison",
+        "game_date": "2024-11-05",
+        "game_id": 401706962,
+        "home_team_canonical": "Kansas",
+        "home_team_raw": "Kansas Jayhawks"
+      },
+      {
+        "away_team_canonical": "UNC Asheville",
+        "away_team_raw": "UNC Asheville Bulldogs",
+        "game_date": "2024-11-05",
+        "game_id": 401719228,
+        "home_team_canonical": "Alabama",
+        "home_team_raw": "Alabama Crimson Tide"
+      },
+      {
+        "away_team_canonical": "Jackson State",
+        "away_team_raw": "Jackson State Tigers",
+        "game_date": "2024-11-05",
+        "game_id": 401706926,
+        "home_team_canonical": "Houston",
+        "home_team_raw": "Houston Cougars"
+      },
+      {
+        "away_team_canonical": "Miss. Valley St.",
+        "away_team_raw": "Mississippi Valley State Delta Devils",
+        "game_date": "2024-11-05",
+        "game_id": 401706954,
+        "home_team_canonical": "Iowa St.",
+        "home_team_raw": "Iowa State Cyclones"
+      },
+      {
+        "away_team_canonical": "Baylor",
+        "away_team_raw": "Baylor Bears",
+        "game_date": "2024-11-05",
+        "game_id": 401727062,
+        "home_team_canonical": "Gonzaga",
+        "home_team_raw": "Gonzaga Bulldogs"
+      },
+      {
+        "away_team_canonical": "Maine",
+        "away_team_raw": "Maine Black Bears",
+        "game_date": "2024-11-05",
+        "game_id": 401706881,
+        "home_team_canonical": "Duke",
+        "home_team_raw": "Duke Blue Devils"
+      },
+      {
+        "away_team_canonical": "Elon",
+        "away_team_raw": "Elon Phoenix",
+        "game_date": "2024-11-05",
+        "game_id": 401700434,
+        "home_team_canonical": "North Carolina",
+        "home_team_raw": "North Carolina Tar Heels"
+      },
+      {
+        "away_team_canonical": "Canisius",
+        "away_team_raw": "Canisius Golden Griffins",
+        "game_date": "2024-11-05",
+        "game_id": 401706149,
+        "home_team_canonical": "Arizona",
+        "home_team_raw": "Arizona Wildcats"
+      },
+      {
+        "away_team_canonical": "Gardner-Webb Runnin'",
+        "away_team_raw": "Gardner-Webb Runnin' Bulldogs",
+        "game_date": "2024-11-05",
+        "game_id": 401715335,
+        "home_team_canonical": "Tennessee",
+        "home_team_raw": "Tennessee Volunteers"
+      },
+      {
+        "away_team_canonical": "Texas A&M",
+        "away_team_raw": "Texas A&M Aggies",
+        "game_date": "2024-11-05",
+        "game_id": 401715355,
+        "home_team_canonical": "UCF",
+        "home_team_raw": "UCF Knights"
+      },
+      {
+        "away_team_canonical": "Texas A&M-CC",
+        "away_team_raw": "Texas A&M-Corpus Christi Islanders",
+        "game_date": "2024-11-04",
+        "game_id": 401707976,
+        "home_team_canonical": "Purdue",
+        "home_team_raw": "Purdue Boilermakers"
+      },
+      {
+        "away_team_canonical": "Stony Brook",
+        "away_team_raw": "Stony Brook Seawolves",
+        "game_date": "2024-11-05",
+        "game_id": 401715476,
+        "home_team_canonical": "Marquette",
+        "home_team_raw": "Marquette Golden Eagles"
+      },
+      {
+        "away_team_canonical": "Ohio St.",
+        "away_team_raw": "Ohio State Buckeyes",
+        "game_date": "2024-11-05",
+        "game_id": 401715344,
+        "home_team_canonical": "Texas",
+        "home_team_raw": "Texas Longhorns"
+      },
+      {
+        "away_team_canonical": "Arkansas-Pine Bluff",
+        "away_team_raw": "Arkansas-Pine Bluff Golden Lions",
+        "game_date": "2024-11-05",
+        "game_id": 401715627,
+        "home_team_canonical": "Cincinnati",
+        "home_team_raw": "Cincinnati Bearcats"
+      },
+      {
+        "away_team_canonical": "South Florida",
+        "away_team_raw": "South Florida Bulls",
+        "game_date": "2024-11-05",
+        "game_id": 401714888,
+        "home_team_canonical": "Florida",
+        "home_team_raw": "Florida Gators"
+      },
+      {
+        "away_team_canonical": "Rider",
+        "away_team_raw": "Rider Broncs",
+        "game_date": "2024-11-05",
+        "game_id": 401706148,
+        "home_team_canonical": "UCLA",
+        "home_team_raw": "UCLA Bruins"
+      },
+      {
+        "away_team_canonical": "Wright State",
+        "away_team_raw": "Wright State Raiders",
+        "game_date": "2024-11-05",
+        "game_id": 401714908,
+        "home_team_canonical": "Kentucky",
+        "home_team_raw": "Kentucky Wildcats"
+      },
+      {
+        "away_team_canonical": "Long Island",
+        "away_team_raw": "Long Island University Sharks",
+        "game_date": "2024-11-05",
+        "game_id": 401715317,
+        "home_team_canonical": "Ole Miss",
+        "home_team_raw": "Ole Miss Rebels"
+      },
+      {
+        "away_team_canonical": "Florida International",
+        "away_team_raw": "Florida International Panthers",
+        "game_date": "2024-11-06",
+        "game_id": 401722276,
+        "home_team_canonical": "Rice",
+        "home_team_raw": "Rice Owls"
+      },
+      {
+        "away_team_canonical": "Toccoa Falls",
+        "away_team_raw": "Toccoa Falls Eagles",
+        "game_date": "2024-11-06",
+        "game_id": 401700264,
+        "home_team_canonical": "Kennesaw State",
+        "home_team_raw": "Kennesaw State Owls"
+      },
+      {
+        "away_team_canonical": "Evansville",
+        "away_team_raw": "Evansville Purple Aces",
+        "game_date": "2024-11-06",
+        "game_id": 401722271,
+        "home_team_canonical": "North Texas",
+        "home_team_raw": "North Texas Mean Green"
+      },
+      {
+        "away_team_canonical": "Bethune-Cookman",
+        "away_team_raw": "Bethune-Cookman Wildcats",
+        "game_date": "2024-11-06",
+        "game_id": 401715636,
+        "home_team_canonical": "Texas Tech",
+        "home_team_raw": "Texas Tech Red Raiders"
+      },
+      {
+        "away_team_canonical": "New Orleans",
+        "away_team_raw": "New Orleans Privateers",
+        "game_date": "2024-11-06",
+        "game_id": 401706971,
+        "home_team_canonical": "Kansas St.",
+        "home_team_raw": "Kansas State Wildcats"
+      },
+      {
+        "away_team_canonical": "Idaho State",
+        "away_team_raw": "Idaho State Bengals",
+        "game_date": "2024-11-06",
+        "game_id": 401720869,
+        "home_team_canonical": "Arizona St.",
+        "home_team_raw": "Arizona State Sun Devils"
+      },
+      {
+        "away_team_canonical": "Central Arkansas",
+        "away_team_raw": "Central Arkansas Bears",
+        "game_date": "2024-11-06",
+        "game_id": 401706909,
+        "home_team_canonical": "BYU",
+        "home_team_raw": "BYU Cougars"
+      }
+    ],
+    "sample_scores_games_with_unresolved_team": [
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "SUNY-Canton Roos",
+        "game_date": "2024-11-06",
+        "game_id": 401721763,
+        "home_team_canonical": "Colgate",
+        "home_team_raw": "Colgate Raiders"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Ecclesia Royals",
+        "game_date": "2024-11-15",
+        "game_id": 401727086,
+        "home_team_canonical": "UL Monroe",
+        "home_team_raw": "UL Monroe Warhawks"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Tabor",
+        "game_date": "2024-11-15",
+        "game_id": 401732949,
+        "home_team_canonical": "Tarleton State",
+        "home_team_raw": "Tarleton State Texans"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Oakwood Ambassadors",
+        "game_date": "2024-12-03",
+        "game_id": 401722084,
+        "home_team_canonical": "Miss. Valley St.",
+        "home_team_raw": "Mississippi Valley State Delta Devils"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "East-West University Phantoms",
+        "game_date": "2024-12-03",
+        "game_id": 401727334,
+        "home_team_canonical": "Southern Indiana",
+        "home_team_raw": "Southern Indiana Screaming Eagles"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Sarah Lawrence Gryphons",
+        "game_date": "2024-12-10",
+        "game_id": 401721708,
+        "home_team_canonical": "Columbia",
+        "home_team_raw": "Columbia Lions"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Lincoln University (CA) Oaklanders",
+        "game_date": "2024-12-10",
+        "game_id": 401722369,
+        "home_team_canonical": "San Jos\u00e9 State",
+        "home_team_raw": "San Jos\u00e9 State Spartans"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Whittier Poets",
+        "game_date": "2024-12-17",
+        "game_id": 401725810,
+        "home_team_canonical": "Utah Tech",
+        "home_team_raw": "Utah Tech Trailblazers"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Willamette Bearcats",
+        "game_date": "2024-12-17",
+        "game_id": 401725347,
+        "home_team_canonical": "Portland",
+        "home_team_raw": "Portland Pilots"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Milligan Buffaloes",
+        "game_date": "2024-12-19",
+        "game_id": 401727415,
+        "home_team_canonical": "Western Carolina",
+        "home_team_raw": "Western Carolina Catamounts"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Virginia-Lynchburg Dragons",
+        "game_date": "2024-12-19",
+        "game_id": 401719236,
+        "home_team_canonical": "UNC Asheville",
+        "home_team_raw": "UNC Asheville Bulldogs"
+      },
+      {
+        "away_team_canonical": null,
+        "away_team_raw": "Arlington Baptist Patriots",
+        "game_date": "2024-12-28",
+        "game_id": 401727065,
+        "home_team_canonical": "Baylor",
+        "home_team_raw": "Baylor Bears"
+      }
+    ],
+    "sample_unmatched_scores_vs_odds": [
+      {
+        "away_team_canonical": "Gardner-Webb Runnin'",
+        "away_team_raw": "Gardner-Webb Runnin' Bulldogs",
+        "game_date": "2024-11-05",
+        "game_id": 401715335,
+        "home_team_canonical": "Tennessee",
+        "home_team_raw": "Tennessee Volunteers"
+      },
+      {
+        "away_team_canonical": "Ohio St.",
+        "away_team_raw": "Ohio State Buckeyes",
+        "game_date": "2024-11-05",
+        "game_id": 401715344,
+        "home_team_canonical": "Texas",
+        "home_team_raw": "Texas Longhorns"
+      },
+      {
+        "away_team_canonical": "South Florida",
+        "away_team_raw": "South Florida Bulls",
+        "game_date": "2024-11-05",
+        "game_id": 401714888,
+        "home_team_canonical": "Florida",
+        "home_team_raw": "Florida Gators"
+      },
+      {
+        "away_team_canonical": "Toccoa Falls",
+        "away_team_raw": "Toccoa Falls Eagles",
+        "game_date": "2024-11-06",
+        "game_id": 401700264,
+        "home_team_canonical": "Kennesaw State",
+        "home_team_raw": "Kennesaw State Owls"
+      },
+      {
+        "away_team_canonical": "New Orleans",
+        "away_team_raw": "New Orleans Privateers",
+        "game_date": "2024-11-06",
+        "game_id": 401706971,
+        "home_team_canonical": "Kansas St.",
+        "home_team_raw": "Kansas State Wildcats"
+      },
+      {
+        "away_team_canonical": "Idaho State",
+        "away_team_raw": "Idaho State Bengals",
+        "game_date": "2024-11-06",
+        "game_id": 401720869,
+        "home_team_canonical": "Arizona St.",
+        "home_team_raw": "Arizona State Sun Devils"
+      }
+    ]
+  },
+  "generated_at": "2026-01-11T15:46:45Z",
+  "inputs": {
+    "ncaahoopr_features": "backtest_datasets/ncaahoopR_features.csv",
+    "odds_consolidated": "odds/normalized/odds_consolidated_canonical.csv",
+    "ratings_season_minus_one": "ratings/barttorvik/ratings_2024.json",
+    "scores_fg": "scores/fg/games_2025.csv",
+    "scores_h1_all": "scores/h1/h1_games_all.csv"
+  },
+  "max_date": "2026-01-06",
+  "season": 2025
+}

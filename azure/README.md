@@ -191,7 +191,7 @@ az containerapp update `
 
 **Total Estimated Cost: ~$41-51/month** (Storage cost depends on blob data volume, typically minimal)
 
-**Note:** Storage account is created internally in `NCAAM-GBSV-MODEL-RG` by default (v34.1.0). You can override this by providing `-StorageConnectionString` to use an external storage account.
+**Note:** Storage account is created internally in `NCAAM-GBSV-MODEL-RG` by default (v34.1.0). You can override this by providing `-StorageConnectionString` to use an external storage account. For canonical historical data, use `-CanonicalStorageConnectionString` if it lives in a different account.
 
 ## Environment Variables
 
@@ -214,6 +214,7 @@ Secrets are stored in Key Vault (`ncaam-stablegbsvkv`); Container Apps also keep
 - `odds-api-key` - The Odds API key (provided by you)
 - `acr-password` - ACR pull credential (auto-generated)
 - `storage-connection-string` - Storage account connection string (auto-generated from internal storage, or provided if using external)
+- `canonical-storage-connection-string` - Canonical historical data storage (optional override)
 
 ## Manual picks run (optional)
 

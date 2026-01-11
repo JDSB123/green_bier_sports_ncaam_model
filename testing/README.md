@@ -9,7 +9,7 @@ service tree.
    ```bash
    pip install -r testing/requirements.txt
    ```
-2. Ensure canonical historical data exists under `ncaam_historical_data_local/`.
+2. Ensure Azure Blob access is configured.
 3. Run the backtest suite:
    ```bash
    python testing/run_backtest_suite.py calibration --seasons 2022 2023 2024 2025

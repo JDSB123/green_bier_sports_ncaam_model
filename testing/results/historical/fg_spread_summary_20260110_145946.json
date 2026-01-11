@@ -1,0 +1,29 @@
+{
+  "market": "fg_spread",
+  "seasons": [
+    2023
+  ],
+  "total_games": 1172,
+  "games_with_odds": 968,
+  "games_with_ratings": 953,
+  "total_bets": 877,
+  "wins": 457,
+  "losses": 405,
+  "pushes": 15,
+  "total_wagered": 87700.0,
+  "total_profit": 1051.93,
+  "roi": 1.2,
+  "win_rate": 53.0,
+  "avg_edge": 43.37,
+  "by_season": {
+    "2023": {
+      "bets": 877,
+      "wins": 457,
+      "losses": 405,
+      "profit": 1051.93,
+      "roi": 1.2,
+      "win_rate": 53.0
+    }
+  },
+  "timestamp": "20260110_145946"
+}

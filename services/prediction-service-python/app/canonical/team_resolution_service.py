@@ -9,6 +9,7 @@ This is a production copy of testing/canonical/team_resolution_service.py
 """
 
 import json
+import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass
@@ -16,13 +17,21 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Set
 from functools import lru_cache
 
+import pandas as pd
+
+try:
+    from azure.storage.blob import BlobServiceClient
+    AZURE_AVAILABLE = True
+except ImportError:
+    AZURE_AVAILABLE = False
+
 try:
     from fuzzywuzzy import fuzz
     from fuzzywuzzy.process import extractOne, extract
     FUZZY_AVAILABLE = True
 except ImportError:
     FUZZY_AVAILABLE = False
-    print("WARNING: fuzzywuzzy not installed. Team resolution will be limited.")
+    # Fuzzy matching is OPTIONAL and must be explicitly enabled.
 
 
 @dataclass
@@ -37,6 +46,28 @@ class ResolutionResult:
     def __post_init__(self):
         if self.alternatives is None:
             self.alternatives = []
+
+
+def _load_aliases_from_azure() -> Dict[str, str]:
+    if not AZURE_AVAILABLE:
+        raise ImportError("azure-storage-blob is required to load aliases from Azure.")
+
+    conn_str = os.getenv("AZURE_CANONICAL_CONNECTION_STRING")
+    if not conn_str:
+        raise RuntimeError(
+            "AZURE_CANONICAL_CONNECTION_STRING is required to load team aliases from Azure."
+        )
+
+    container = os.getenv("AZURE_CANONICAL_CONTAINER", "ncaam-historical-data")
+    blob_path = os.getenv(
+        "TEAM_ALIASES_BLOB", "backtest_datasets/team_aliases_db.json"
+    )
+
+    service = BlobServiceClient.from_connection_string(conn_str)
+    container_client = service.get_container_client(container)
+    blob_client = container_client.get_blob_client(blob_path)
+    payload = blob_client.download_blob().readall()
+    return json.loads(payload.decode("utf-8"))
 
 
 class TeamResolutionService:
@@ -55,34 +86,41 @@ class TeamResolutionService:
         self,
         aliases_file: Optional[Path] = None,
         fuzzy_threshold: int = 85,
-        learn_corrections: bool = True,
+        learn_corrections: bool = False,
+        enable_fuzzy: bool = False,
         cache_size: int = 10000
     ):
         """
         Initialize the team resolution service.
 
         Args:
-            aliases_file: Path to team aliases JSON file
+            aliases_file: Disabled (Azure-only); keep None
             fuzzy_threshold: Minimum confidence for fuzzy matching (0-100)
             learn_corrections: Whether to learn from manual corrections
             cache_size: Size of LRU cache for performance
         """
-        if not FUZZY_AVAILABLE:
-            raise ImportError("fuzzywuzzy required for team resolution")
+        # IMPORTANT:
+        # - Authoritative ingestion must be deterministic (no fuzzy).
+        # - Fuzzy matching is allowed ONLY as an opt-in suggestion tool.
+        self.enable_fuzzy = bool(enable_fuzzy)
+        if self.enable_fuzzy and not FUZZY_AVAILABLE:
+            raise ImportError(
+                "Fuzzy matching requested but fuzzywuzzy is not installed. "
+                "Install: pip install fuzzywuzzy python-levenshtein"
+            )
 
-        # Default to standard locations (try container location first)
-        if aliases_file is None:
-            # Try container location first
-            container_location = Path(__file__).resolve().parent.parent.parent / "team_aliases_db.json"
-            if container_location.exists():
-                aliases_file = container_location
-            else:
-                # Fall back to data directory
-                aliases_file = Path(__file__).resolve().parents[3] / "ncaam_historical_data_local" / "backtest_datasets" / "team_aliases_db.json"
+        if aliases_file is not None:
+            raise RuntimeError(
+                "Local aliases_file overrides are disabled. "
+                "Use the Azure blob via TEAM_ALIASES_BLOB."
+            )
 
-        self.aliases_file = aliases_file
+        self.aliases_file = None
         self.fuzzy_threshold = fuzzy_threshold
         self.learn_corrections = learn_corrections
+
+        # Performance optimization
+        self._normalize_cache = {}
 
         # Load core data
         self._aliases = self._load_aliases()
@@ -93,24 +131,24 @@ class TeamResolutionService:
         self._learned_corrections: Dict[str, str] = {}
         self._confidence_cache: Dict[str, ResolutionResult] = {}
 
-        # Performance optimization
-        self._normalize_cache = {}
-
         # Set up cached methods
         self.resolve = lru_cache(maxsize=cache_size)(self._resolve_uncached)
 
     def _load_aliases(self) -> Dict[str, str]:
         """Load team aliases from file."""
-        if not self.aliases_file.exists():
-            print(f"WARNING: Aliases file not found: {self.aliases_file}")
-            return {}
-
         try:
-            with open(self.aliases_file) as f:
-                return json.load(f)
+            raw_aliases = _load_aliases_from_azure()
+            normalized: Dict[str, str] = {}
+            for raw_key, canonical in raw_aliases.items():
+                key = self._normalize_team_name(str(raw_key))
+                if not key:
+                    continue
+                if key in normalized and normalized[key] != canonical:
+                    continue
+                normalized[key] = canonical
+            return normalized
         except Exception as e:
-            print(f"ERROR loading aliases: {e}")
-            return {}
+            raise RuntimeError(f"Failed to load aliases from Azure: {e}") from e
 
     def _build_canonical_set(self) -> Set[str]:
         """Build set of all canonical team names."""
@@ -185,10 +223,9 @@ class TeamResolutionService:
 
         Returns ResolutionResult with confidence score and method used.
         """
-        if pd.isna(name) or not name.strip():
-            return ResolutionResult("", 0.0, "empty", name)
-
-        original_name = str(name).strip()
+        original_name = "" if name is None else str(name).strip()
+        if not original_name:
+            return ResolutionResult("", 0.0, "empty", str(name))
         normalized = self._normalize_team_name(original_name)
 
         # 1. Check learned corrections first
@@ -201,8 +238,8 @@ class TeamResolutionService:
             canonical = self._aliases[normalized]
             return ResolutionResult(canonical, 100.0, "exact", original_name)
 
-        # 3. Fuzzy match against aliases
-        if self._aliases:
+        # 3. Fuzzy match (OPT-IN ONLY; not used by authoritative ingestion)
+        if self.enable_fuzzy and FUZZY_AVAILABLE and self._aliases:
             best_match, score = extractOne(
                 normalized,
                 list(self._aliases.keys()),
@@ -220,8 +257,8 @@ class TeamResolutionService:
                 alternatives = [(self._aliases[k], float(s)) for k, s in alternatives_data]
                 return ResolutionResult(canonical, float(score), "fuzzy", original_name, alternatives)
 
-        # 4. Fuzzy match against canonical names directly
-        if self._canonical_teams:
+        # 4. Fuzzy match against canonical names directly (OPT-IN ONLY)
+        if self.enable_fuzzy and FUZZY_AVAILABLE and self._canonical_teams:
             best_match, score = extractOne(
                 normalized,
                 list(self._canonical_teams),
@@ -273,17 +310,10 @@ def get_team_resolver() -> TeamResolutionService:
     """Get the global team resolution service instance."""
     global _team_resolver
     if _team_resolver is None:
-        _team_resolver = TeamResolutionService()
+        _team_resolver = TeamResolutionService(enable_fuzzy=False, learn_corrections=False)
     return _team_resolver
 
 
 def resolve_team_name(name: str) -> str:
     """Convenience function to resolve a single team name."""
     return get_team_resolver().resolve(name).canonical_name
-
-
-# Add pandas import for this module
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
