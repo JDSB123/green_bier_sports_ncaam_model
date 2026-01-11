@@ -4,8 +4,8 @@
 -- This ensures consistent name handling across ALL services without code changes.
 --
 -- Previously, each service had its own normalization:
---   - Go (ratings-sync): State→St., Saint→St., Northern→N., etc.
---   - Rust (odds-ingestion): State→St., quote normalization
+--   - Go (ratings-sync): State->St., Saint->St., Northern->N., etc.
+--   - Rust (odds-ingestion): State->St., quote normalization
 --   - Python (odds_sync): TEAM_NAME_ALIASES dict
 --
 -- Now: resolve_team_name() applies these rules automatically.
@@ -51,12 +51,12 @@ BEGIN
     normalized := REGEXP_REPLACE(normalized, '^University of ', '', 'i');
 
     -- Normalize quotes and dashes (from Rust)
-    normalized := REPLACE(normalized, ''', '''');
-    normalized := REPLACE(normalized, '"', '"');
-    normalized := REPLACE(normalized, '"', '"');
-    normalized := REPLACE(normalized, '–', '-');
-    normalized := REPLACE(normalized, '—', '-');
-
+    normalized := REPLACE(normalized, CHR(8217), ''''); -- right single quote
+    normalized := REPLACE(normalized, CHR(8216), ''''); -- left single quote
+    normalized := REPLACE(normalized, CHR(8221), '"'); -- right double quote
+    normalized := REPLACE(normalized, CHR(8220), '"'); -- left double quote
+    normalized := REPLACE(normalized, CHR(8211), '-'); -- en dash
+    normalized := REPLACE(normalized, CHR(8212), '-'); -- em dash
     -- Collapse multiple spaces (use E'' for escape sequences)
     normalized := REGEXP_REPLACE(normalized, E'\\s+', ' ', 'g');
 
@@ -65,7 +65,7 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 COMMENT ON FUNCTION normalize_team_name_input IS
-    'Applies standard team name normalizations (State→St., Saint→St., etc.) centralized from Go/Rust code';
+    'Applies standard team name normalizations (State->St., Saint->St., etc.) centralized from Go/Rust code';
 
 
 -- Step 2: Update resolve_team_name to use normalization
@@ -141,7 +141,7 @@ BEGIN
         '', 'i');
 
     IF v_normalized IS DISTINCT FROM TRIM(input_name) THEN
-        -- Apply State→St. normalization to mascot-stripped name too
+        -- Apply State->St. normalization to mascot-stripped name too
         v_normalized := normalize_team_name_input(v_normalized);
 
         SELECT t.canonical_name INTO v_result
@@ -162,7 +162,7 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 
 COMMENT ON FUNCTION resolve_team_name IS
-    'Resolves team name variants to canonical names. Applies centralized normalization (State→St., etc.) and checks aliases. Prefers teams with ratings.';
+    'Resolves team name variants to canonical names. Applies centralized normalization (State->St., etc.) and checks aliases. Prefers teams with ratings.';
 
 
 -- Step 3: Add test cases
@@ -193,13 +193,9 @@ BEGIN
         ELSIF actual != expected THEN
             RAISE NOTICE 'Test %: resolve_team_name(%) = % (expected: %)', i, test_input, actual, expected;
         ELSE
-            RAISE NOTICE 'Test %: ✓ resolve_team_name(%) = %', i, test_input, actual;
+            RAISE NOTICE 'Test %: OK resolve_team_name(%) = %', i, test_input, actual;
         END IF;
     END LOOP;
 END $$;
 
-
--- Record migration
-INSERT INTO schema_migrations (version, name, applied_at)
-VALUES (23, '023_centralized_normalization.sql', NOW())
-ON CONFLICT (version) DO NOTHING;
+-- Migration tracking is handled by run_migrations.py
