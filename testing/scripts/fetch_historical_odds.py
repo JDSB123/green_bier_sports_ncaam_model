@@ -64,16 +64,30 @@ UNRESOLVED_THRESHOLD = 0.10
 
 
 def get_api_key() -> str:
-    """Get Odds API key using unified secrets manager.
+    """Get Odds API key.
     
     Priority order (first found wins):
     1. THE_ODDS_API_KEY environment variable
-    2. Docker secret at /run/secrets/odds_api_key
-    3. Local file at secrets/odds_api_key.txt
+    2. ODDS_API_KEY environment variable
+    3. Docker secret at /run/secrets/odds_api_key
+    4. Local file at secrets/odds_api_key.txt
     """
-    sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
-    from secrets_manager import get_api_key as get_secret_api_key
-    return get_secret_api_key("odds")
+    # Check environment variables
+    key = os.environ.get("THE_ODDS_API_KEY") or os.environ.get("ODDS_API_KEY")
+    if key:
+        return key.strip()
+    
+    # Check Docker secret
+    docker_secret = Path("/run/secrets/odds_api_key")
+    if docker_secret.exists():
+        return docker_secret.read_text().strip()
+    
+    # Check local secrets file
+    local_secret = ROOT_DIR / "secrets" / "odds_api_key.txt"
+    if local_secret.exists():
+        return local_secret.read_text().strip()
+    
+    raise ValueError("No API key found. Set THE_ODDS_API_KEY env var or create secrets/odds_api_key.txt")
 
 
 def fetch_with_retry(url: str, params: dict, max_retries: int = 3) -> requests.Response:
