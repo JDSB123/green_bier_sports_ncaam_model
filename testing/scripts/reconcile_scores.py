@@ -15,7 +15,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import sys
 from datetime import datetime
@@ -30,15 +29,18 @@ sys.path.insert(0, str(ROOT_DIR))
 sys.path.insert(0, str(ROOT_DIR / "testing"))
 
 from testing.data_paths import DATA_PATHS
+from testing.azure_io import read_csv, write_csv, blob_exists
 
 
 def load_espn_canonical() -> pd.DataFrame:
     """Load ESPN canonical scores as source of truth."""
-    fg_path = DATA_PATHS.root / "canonicalized" / "scores" / "fg" / "games_all_canonical.csv"
-    h1_path = DATA_PATHS.root / "canonicalized" / "scores" / "h1" / "h1_games_all_canonical.csv"
+    fg_path = str(DATA_PATHS.scores_fg_canonical / "games_all_canonical.csv")
+    h1_path = str(DATA_PATHS.scores_h1_canonical / "h1_games_all_canonical.csv")
 
     # Load full game scores
-    fg = pd.read_csv(fg_path)
+    if not blob_exists(fg_path):
+        raise FileNotFoundError(f"Azure blob not found: {fg_path}")
+    fg = read_csv(fg_path)
     fg['game_key'] = (
         fg['date'] + '|' +
         fg['home_canonical'].str.lower() + '|' +
@@ -46,8 +48,8 @@ def load_espn_canonical() -> pd.DataFrame:
     )
 
     # Load H1 scores
-    if h1_path.exists():
-        h1 = pd.read_csv(h1_path)
+    if blob_exists(h1_path):
+        h1 = read_csv(h1_path)
         h1['game_key'] = (
             h1['date'] + '|' +
             h1['home_canonical'].str.lower() + '|' +
@@ -68,15 +70,16 @@ def reconcile_backtest_ready(
     dry_run: bool = True,
 ) -> Dict:
     """Reconcile backtest_ready.csv with ESPN canonical scores."""
-    br_path = ROOT_DIR / "testing" / "data" / "backtest_ready.csv"
+    br_path = str(DATA_PATHS.backtest_datasets / "backtest_ready.csv")
 
-    if not br_path.exists():
-        print(f"  [SKIP] {br_path} not found")
+    if not blob_exists(br_path):
+        print(f"  [SKIP] {br_path} not found in Azure")
         return {"status": "skipped", "reason": "file not found"}
 
     # Load backtest_ready
-    br = pd.read_csv(br_path)
+    br = read_csv(br_path)
     original_len = len(br)
+    original_br = br.copy()
 
     # Create game key for matching
     br['game_key'] = (
@@ -191,15 +194,17 @@ def reconcile_backtest_ready(
     }
 
     if not dry_run and changes:
+        stamp = datetime.utcnow().strftime("%Y-%m-%d")
         # Backup original
-        backup_path = br_path.with_suffix('.csv.bak')
-        if not backup_path.exists():
-            import shutil
-            shutil.copy(br_path, backup_path)
-            result['backup'] = str(backup_path)
+        backup_path = f"{br_path}.bak"
+        if not blob_exists(backup_path):
+            backup_tags = {"dataset": "backtest_ready", "source": "reconcile_scores", "scope": "backup", "updated": stamp}
+            write_csv(backup_path, original_br, tags=backup_tags)
+            result['backup'] = backup_path
 
         # Write updated file
-        br.to_csv(br_path, index=False)
+        update_tags = {"dataset": "backtest_ready", "source": "reconcile_scores", "scope": "canonicalized", "updated": stamp}
+        write_csv(br_path, br, tags=update_tags)
         result['status'] = 'updated'
     else:
         result['status'] = 'dry_run' if dry_run else 'no_changes'
@@ -212,15 +217,16 @@ def reconcile_backtest_complete(
     dry_run: bool = True,
 ) -> Dict:
     """Reconcile backtest_complete.csv with ESPN canonical scores."""
-    bc_path = ROOT_DIR / "testing" / "data" / "backtest_complete.csv"
+    bc_path = str(DATA_PATHS.backtest_datasets / "backtest_complete.csv")
 
-    if not bc_path.exists():
-        print(f"  [SKIP] {bc_path} not found")
+    if not blob_exists(bc_path):
+        print(f"  [SKIP] {bc_path} not found in Azure")
         return {"status": "skipped", "reason": "file not found"}
 
     # Load backtest_complete
-    bc = pd.read_csv(bc_path)
+    bc = read_csv(bc_path)
     original_len = len(bc)
+    original_bc = bc.copy()
 
     # Create game key for matching
     bc['game_key'] = (
@@ -289,13 +295,15 @@ def reconcile_backtest_complete(
     }
 
     if not dry_run and changes:
-        backup_path = bc_path.with_suffix('.csv.bak')
-        if not backup_path.exists():
-            import shutil
-            shutil.copy(bc_path, backup_path)
-            result['backup'] = str(backup_path)
+        stamp = datetime.utcnow().strftime("%Y-%m-%d")
+        backup_path = f"{bc_path}.bak"
+        if not blob_exists(backup_path):
+            backup_tags = {"dataset": "backtest_complete", "source": "reconcile_scores", "scope": "backup", "updated": stamp}
+            write_csv(backup_path, original_bc, tags=backup_tags)
+            result['backup'] = backup_path
 
-        bc.to_csv(bc_path, index=False)
+        update_tags = {"dataset": "backtest_complete", "source": "reconcile_scores", "scope": "canonicalized", "updated": stamp}
+        write_csv(bc_path, bc, tags=update_tags)
         result['status'] = 'updated'
     else:
         result['status'] = 'dry_run' if dry_run else 'no_changes'
@@ -349,7 +357,7 @@ def main():
 
     # Reconcile backtest_ready.csv
     print("-" * 72)
-    print("Reconciling: testing/data/backtest_ready.csv")
+    print(f"Reconciling: {DATA_PATHS.backtest_datasets / 'backtest_ready.csv'}")
     print("-" * 72)
     results['backtest_ready'] = reconcile_backtest_ready(espn, dry_run)
 
@@ -365,7 +373,7 @@ def main():
 
     # Reconcile backtest_complete.csv
     print("-" * 72)
-    print("Reconciling: testing/data/backtest_complete.csv")
+    print(f"Reconciling: {DATA_PATHS.backtest_datasets / 'backtest_complete.csv'}")
     print("-" * 72)
     results['backtest_complete'] = reconcile_backtest_complete(espn, dry_run)
 

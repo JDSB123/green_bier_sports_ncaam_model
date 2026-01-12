@@ -245,6 +245,9 @@ class TeamResolutionGate:
             r' Gaels$', r' Broncos$', r' Pilots$', r' Waves$', r' Lions$',
             r' Panthers$', r' Owls$', r' Rams$', r' Miners$', r' Aztecs$',
             r' Falcons$', r' Mean Green$', r' Roadrunners$', r' Mustangs$',
+            r' Dolphins$', r' Ospreys$', r' Lancers$', r' Rainbow Warriors$',
+            r' Great Danes$', r' Leathernecks$', r' Keelhaulers$',
+            r' Highlanders$', r' Vikings$', r' Seahawks$', r' Flames$',
             r' Golden$', r' Rattlers$', r' Hornets$', r' Blazers$',
         ]
         

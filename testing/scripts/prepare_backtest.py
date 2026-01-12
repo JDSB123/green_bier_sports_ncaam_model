@@ -17,6 +17,21 @@ SOURCE_BLOB = str(DATA_PATHS.backtest_datasets / "training_data_with_odds.csv")
 TARGET_DIR_BLOB = str(DATA_PATHS.odds_normalized)
 TARGET_GAMES_BLOB = str(DATA_PATHS.scores_fg / "games_all.csv")
 
+def build_tags(
+    dataset: str,
+    season: int | None = None,
+    source: str | None = None,
+    scope: str | None = None,
+) -> dict:
+    tags = {"dataset": dataset}
+    if season is not None:
+        tags["season"] = str(season)
+    if source:
+        tags["source"] = source
+    if scope:
+        tags["scope"] = scope
+    return tags
+
 def prepare_games_file():
     print(f"Reading {SOURCE_BLOB}...")
     df = read_csv(SOURCE_BLOB)
@@ -48,7 +63,8 @@ def prepare_games_file():
         
     # Save
     print(f"Saving to {TARGET_GAMES_BLOB}...")
-    write_csv(TARGET_GAMES_BLOB, df)
+    tags = build_tags("scores_fg", source="prepare_backtest", scope="all")
+    write_csv(TARGET_GAMES_BLOB, df, tags=tags)
     print("Games file prepared.")
 
 def fetch_ratings(seasons):
@@ -69,7 +85,8 @@ def fetch_ratings(seasons):
             resp.raise_for_status()
             data = resp.json()
             
-            write_json(target_blob, data)
+            tags = build_tags("barttorvik_ratings", season=season, source="barttorvik", scope="season")
+            write_json(target_blob, data, tags=tags)
             print(f"Saved {season} ratings.")
         except Exception as e:
             print(f"Failed to fetch {season}: {e}")

@@ -118,10 +118,15 @@ def main():
     results = {}
     all_passed = True
     
-    # 1. Score Integrity Audit
+    # 1. Canonical Scores Validation (Azure-only)
     passed = run_audit(
-        "Score Integrity Audit",
-        [sys.executable, str(scripts_dir / "score_integrity_audit.py")],
+        "Canonical Scores Validation",
+        [
+            sys.executable,
+            str(scripts_dir / "canonical_data_validator.py"),
+            "--data-type",
+            "scores",
+        ],
         args.verbose
     )
     results["score_integrity"] = passed

@@ -55,7 +55,7 @@ If game not found with (date, home, away), try (date, away, home) and swap score
 
 ## Files Modified
 - `testing/rebuild_backtest_data.py` - Fixed normalization logic
-- `services/prediction-service-python/training_data/team_aliases_db.json` - Added 653 mappings
+- `backtest_datasets/team_aliases_db.json` (Azure blob) - Added 653 mappings
 
 ## Files Created (cleanup scripts)
 - `testing/normalize_state_schools.py`

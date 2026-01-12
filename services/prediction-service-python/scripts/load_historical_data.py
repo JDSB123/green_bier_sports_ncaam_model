@@ -19,7 +19,6 @@ Usage:
 """
 
 import argparse
-import json
 import os
 import sys
 from datetime import datetime, date, timedelta
@@ -27,8 +26,17 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 import time
 
-# Add app to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add app and repo root to path
+APP_DIR = Path(__file__).parent.parent
+ROOT_DIR = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(APP_DIR))
+sys.path.insert(0, str(ROOT_DIR))
+
+from testing.azure_io import read_csv
+from testing.data_paths import DATA_PATHS
+
+DEFAULT_GAMES_BLOB = str(DATA_PATHS.backtest_datasets / "training_data_with_odds.csv")
+DEFAULT_RATINGS_BLOB = str(DATA_PATHS.backtest_datasets / "barttorvik_ratings.csv")
 
 try:
     import requests
@@ -159,101 +167,93 @@ def create_database_engine():
     return create_engine(db_url)
 
 
-def load_games_from_csv(csv_path: Path) -> List[Dict]:
+def load_games_from_blob(blob_path: str) -> List[Dict]:
     """
-    Load game data from CSV file.
-    
+    Load game data from Azure Blob Storage (CSV).
+
     Expected columns:
-    - game_date: YYYY-MM-DD
-    - home_team: Team name
-    - away_team: Team name
-    - home_score: Final score
-    - away_score: Final score
-    - spread_open: Opening spread (home perspective)
-    - total_open: Opening total
-    - home_h1_score: (optional) 1H score
-    - away_h1_score: (optional) 1H score
+    - game_date or date
+    - home_team / away_team
+    - home_score / away_score
+    - spread_open / total_open (optional)
+    - home_h1 / away_h1 (optional)
     """
-    import csv
-    
     games = []
-    with open(csv_path) as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            games.append({
-                "game_date": row.get("game_date") or row.get("date"),
-                "home_team": row.get("home_team") or row.get("home"),
-                "away_team": row.get("away_team") or row.get("away"),
-                "home_score": int(row.get("home_score") or row.get("home_fg") or 0),
-                "away_score": int(row.get("away_score") or row.get("away_fg") or 0),
-                "spread_open": float(row["spread_open"]) if row.get("spread_open") else None,
-                "total_open": float(row["total_open"]) if row.get("total_open") else None,
-                "home_h1_score": int(row["home_h1"]) if row.get("home_h1") else None,
-                "away_h1_score": int(row["away_h1"]) if row.get("away_h1") else None,
-            })
-    
+    df = read_csv(blob_path)
+    for row in df.to_dict(orient="records"):
+        games.append({
+            "game_date": row.get("game_date") or row.get("date"),
+            "home_team": row.get("home_team") or row.get("home"),
+            "away_team": row.get("away_team") or row.get("away"),
+            "home_score": int(row.get("home_score") or row.get("home_fg") or 0),
+            "away_score": int(row.get("away_score") or row.get("away_fg") or 0),
+            "spread_open": float(row["spread_open"]) if row.get("spread_open") else None,
+            "total_open": float(row["total_open"]) if row.get("total_open") else None,
+            "home_h1_score": int(row["home_h1"]) if row.get("home_h1") else None,
+            "away_h1_score": int(row["away_h1"]) if row.get("away_h1") else None,
+        })
     return games
 
 
-def load_ratings_from_csv(csv_path: Path) -> Dict[str, Dict]:
+def load_ratings_from_blob(blob_path: str) -> Dict[str, Dict]:
     """
-    Load team ratings from CSV file.
-    
+    Load team ratings from Azure Blob Storage (CSV).
+
     Expected columns:
-    - rating_date: YYYY-MM-DD
-    - team: Team name
+    - rating_date (optional)
+    - team
     - adj_o, adj_d, tempo, rank, efg, efgd, tor, tord, orb, drb, ftr, ftrd,
       two_pt_pct, two_pt_pct_d, three_pt_pct, three_pt_pct_d, three_pt_rate,
       three_pt_rate_d, barthag, wab
-    
-    Returns: Dict[date_team_key, ratings_dict]
     """
-    import csv
-    
     ratings = {}
-    with open(csv_path) as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            key = f"{row['rating_date']}_{row['team']}"
-            ratings[key] = {
-                "team": row["team"],
-                "rating_date": row["rating_date"],
-                "adj_o": float(row.get("adj_o", 100)),
-                "adj_d": float(row.get("adj_d", 100)),
-                "tempo": float(row.get("tempo", 67.6)),
-                "rank": int(row.get("rank", 200)),
-                "efg": float(row.get("efg", 50)),
-                "efgd": float(row.get("efgd", 50)),
-                "tor": float(row.get("tor", 18.5)),
-                "tord": float(row.get("tord", 18.5)),
-                "orb": float(row.get("orb", 28)),
-                "drb": float(row.get("drb", 72)),
-                "ftr": float(row.get("ftr", 33)),
-                "ftrd": float(row.get("ftrd", 33)),
-                "two_pt_pct": float(row.get("two_pt_pct", 50)),
-                "two_pt_pct_d": float(row.get("two_pt_pct_d", 50)),
-                "three_pt_pct": float(row.get("three_pt_pct", 35)),
-                "three_pt_pct_d": float(row.get("three_pt_pct_d", 35)),
-                "three_pt_rate": float(row.get("three_pt_rate", 35)),
-                "three_pt_rate_d": float(row.get("three_pt_rate_d", 35)),
-                "barthag": float(row.get("barthag", 0.5)),
-                "wab": float(row.get("wab", 0)),
-            }
-    
+    df = read_csv(blob_path)
+    for row in df.to_dict(orient="records"):
+        rating_date = row.get("rating_date") or row.get("date") or ""
+        team_name = row.get("team") or row.get("team_name")
+        if not team_name:
+            continue
+        key = f"{rating_date}_{team_name}"
+        ratings[key] = {
+            "team": team_name,
+            "rating_date": rating_date,
+            "adj_o": float(row.get("adj_o", 100)),
+            "adj_d": float(row.get("adj_d", 100)),
+            "tempo": float(row.get("tempo", 67.6)),
+            "rank": int(row.get("rank", 200)),
+            "efg": float(row.get("efg", 50)),
+            "efgd": float(row.get("efgd", 50)),
+            "tor": float(row.get("tor", 18.5)),
+            "tord": float(row.get("tord", 18.5)),
+            "orb": float(row.get("orb", 28)),
+            "drb": float(row.get("drb", 72)),
+            "ftr": float(row.get("ftr", 33)),
+            "ftrd": float(row.get("ftrd", 33)),
+            "two_pt_pct": float(row.get("two_pt_pct", 50)),
+            "two_pt_pct_d": float(row.get("two_pt_pct_d", 50)),
+            "three_pt_pct": float(row.get("three_pt_pct", 35)),
+            "three_pt_pct_d": float(row.get("three_pt_pct_d", 35)),
+            "three_pt_rate": float(row.get("three_pt_rate", 35)),
+            "three_pt_rate_d": float(row.get("three_pt_rate_d", 35)),
+            "barthag": float(row.get("barthag", 0.5)),
+            "wab": float(row.get("wab", 0)),
+        }
     return ratings
 
 
 def main():
     parser = argparse.ArgumentParser(description="Load historical NCAAM data")
     parser.add_argument(
-        "--games-csv",
-        type=Path,
-        help="CSV file with game results"
+        "--games-blob",
+        type=str,
+        default=DEFAULT_GAMES_BLOB,
+        help="Azure blob path with game results"
     )
     parser.add_argument(
-        "--ratings-csv",
-        type=Path,
-        help="CSV file with team ratings"
+        "--ratings-blob",
+        type=str,
+        default=DEFAULT_RATINGS_BLOB,
+        help="Azure blob path with team ratings"
     )
     parser.add_argument(
         "--seasons",
@@ -273,19 +273,19 @@ def main():
     print("NCAAM Historical Data Loader")
     print("=" * 60)
     
-    # Load from CSV if provided
-    if args.games_csv:
-        print(f"\n📂 Loading games from: {args.games_csv}")
-        games = load_games_from_csv(args.games_csv)
+    # Load from Azure if provided
+    if args.games_blob:
+        print(f"\nLoading games from Azure blob: {args.games_blob}")
+        games = load_games_from_blob(args.games_blob)
         print(f"   Loaded {len(games)} games")
         
         if not args.dry_run:
             # TODO: Insert into database
             print("   ⚠️ Database insert not yet implemented")
     
-    if args.ratings_csv:
-        print(f"\n📂 Loading ratings from: {args.ratings_csv}")
-        ratings = load_ratings_from_csv(args.ratings_csv)
+    if args.ratings_blob:
+        print(f"\nLoading ratings from Azure blob: {args.ratings_blob}")
+        ratings = load_ratings_from_blob(args.ratings_blob)
         print(f"   Loaded {len(ratings)} team-date ratings")
         
         if not args.dry_run:
@@ -315,16 +315,16 @@ def main():
             print(f"❌ API error: {e}")
             sys.exit(1)
     
-    if not any([args.games_csv, args.ratings_csv, args.seasons]):
-        print("\n⚠️ No data source specified!")
+    if not any([args.games_blob, args.ratings_blob, args.seasons]):
+        print("\nNo data source specified!")
         print("\nUsage examples:")
-        print("  # Load from CSV files")
-        print("  python scripts/load_historical_data.py --games-csv data/games.csv --ratings-csv data/ratings.csv")
+        print("  # Load from Azure blobs")
+        print("  python scripts/load_historical_data.py --games-blob backtest_datasets/training_data_with_odds.csv")
         print("")
         print("  # Fetch from Basketball API")
         print("  python scripts/load_historical_data.py --seasons 2023 2024")
         print("")
-        print("See testing/data/ for example CSV formats.")
+        print("Azure Blob Storage is the single source of truth.")
     
     print("\n✅ Done!")
 

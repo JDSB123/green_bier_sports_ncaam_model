@@ -230,10 +230,26 @@ def fetch_barttorvik_ratings(season: int) -> dict | None:
         return resp.json()
     except Exception as e:
         print(f"[WARN] Failed to fetch Barttorvik {season}: {e}")
-        return None
+    return None
 
 
-def save_games_csv(games: list[dict], blob_path: str) -> None:
+def build_tags(
+    dataset: str,
+    season: int | None = None,
+    source: str | None = None,
+    scope: str | None = None,
+) -> dict:
+    tags = {"dataset": dataset}
+    if season is not None:
+        tags["season"] = str(season)
+    if source:
+        tags["source"] = source
+    if scope:
+        tags["scope"] = scope
+    return tags
+
+
+def save_games_csv(games: list[dict], blob_path: str, tags: dict | None = None) -> None:
     """Save games to CSV format."""
     headers = [
         "game_id", "date", "home_team", "home_abbr", "away_team", "away_abbr",
@@ -244,13 +260,13 @@ def save_games_csv(games: list[dict], blob_path: str) -> None:
     for g in games:
         row = [str(g.get(h, "")).replace(",", ";") for h in headers]
         lines.append(",".join(row))
-    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv")
+    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv", tags=tags)
     print(f"[INFO] Saved {len(games)} games to {blob_path}")
 
 
-def save_games_json(games: list[dict], blob_path: str) -> None:
+def save_games_json(games: list[dict], blob_path: str, tags: dict | None = None) -> None:
     """Save games to JSON format."""
-    write_json(blob_path, games, indent=2)
+    write_json(blob_path, games, indent=2, tags=tags)
     print(f"[INFO] Saved {len(games)} games to {blob_path}")
 
 
@@ -308,26 +324,45 @@ def main(argv: list[str] | None = None) -> int:
         all_games.extend(games)
 
         # Save per-season files
+        score_tags = build_tags("scores_fg", season=season, source="espn", scope="season")
         if args.format in ("csv", "both"):
-            save_games_csv(games, f"{args.scores_prefix}/games_{season}.csv")
+            save_games_csv(
+                games,
+                f"{args.scores_prefix}/games_{season}.csv",
+                tags=score_tags,
+            )
         if args.format in ("json", "both"):
-            save_games_json(games, f"{args.scores_prefix}/games_{season}.json")
+            save_games_json(
+                games,
+                f"{args.scores_prefix}/games_{season}.json",
+                tags=score_tags,
+            )
 
         # Fetch Barttorvik ratings
         ratings = fetch_barttorvik_ratings(season)
         if ratings:
             ratings_path = f"{args.ratings_prefix}/barttorvik_{season}.json"
-            write_json(ratings_path, ratings, indent=2)
+            ratings_tags = build_tags("barttorvik_ratings", season=season, source="barttorvik", scope="season")
+            write_json(ratings_path, ratings, indent=2, tags=ratings_tags)
             print(f"[INFO] Saved Barttorvik ratings to {ratings_path}")
 
         print()
 
     # Save combined file if multiple seasons
     if len(seasons) > 1:
+        combined_tags = build_tags("scores_fg", source="espn", scope="all")
         if args.format in ("csv", "both"):
-            save_games_csv(all_games, f"{args.scores_prefix}/games_all.csv")
+            save_games_csv(
+                all_games,
+                f"{args.scores_prefix}/games_all.csv",
+                tags=combined_tags,
+            )
         if args.format in ("json", "both"):
-            save_games_json(all_games, f"{args.scores_prefix}/games_all.json")
+            save_games_json(
+                all_games,
+                f"{args.scores_prefix}/games_all.json",
+                tags=combined_tags,
+            )
 
     print("=" * 72)
     print(f" SUCCESS: Downloaded {len(all_games)} games across {len(seasons)} season(s)")

@@ -573,7 +573,15 @@ def fetch_date_range(
             if days_since_save >= save_interval and all_odds:
                 tag = f"_{checkpoint_tag}" if checkpoint_tag else ""
                 temp_blob = f"{output_prefix}/odds_partial{tag}_{start_date.replace('-', '')}_{date_str.replace('-', '')}.csv"
-                save_odds_csv(all_odds, temp_blob)
+                checkpoint_tags = build_odds_tags(
+                    markets=markets,
+                    start_date=start_date,
+                    end_date=date_str,
+                    scope="checkpoint",
+                    job_id=checkpoint_tag,
+                    bookmakers_mode=bookmakers_mode,
+                )
+                save_odds_csv(all_odds, temp_blob, tags=checkpoint_tags)
                 print(f"  [CHECKPOINT] Saved {len(all_odds)} records")
                 days_since_save = 0
 
@@ -642,7 +650,34 @@ def _build_headers(rows: Iterable[dict]) -> list[str]:
     return ordered
 
 
-def save_odds_csv(odds: list[dict], blob_path: str) -> None:
+def build_odds_tags(
+    markets: str,
+    start_date: str,
+    end_date: str,
+    season: int | None = None,
+    scope: str = "range",
+    job_id: str | None = None,
+    bookmakers_mode: str | None = None,
+) -> dict:
+    tags = {
+        "dataset": "odds_raw",
+        "source": "odds_api",
+        "scope": scope,
+        "start": start_date,
+        "end": end_date,
+    }
+    if markets:
+        tags["markets"] = markets.replace(",", "|")
+    if season is not None:
+        tags["season"] = str(season)
+    if job_id:
+        tags["job_id"] = job_id
+    if bookmakers_mode:
+        tags["bookmakers"] = bookmakers_mode
+    return tags
+
+
+def save_odds_csv(odds: list[dict], blob_path: str, tags: dict | None = None) -> None:
     """Save odds to CSV in Azure Blob Storage."""
 
     if not odds:
@@ -654,7 +689,7 @@ def save_odds_csv(odds: list[dict], blob_path: str) -> None:
     lines = [",".join(headers)]
     for row in odds:
         lines.append(",".join([str(row.get(h, "")).replace(",", ";") for h in headers]))
-    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv")
+    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv", tags=tags)
 
     print(f"[INFO] Saved {len(odds)} odds records to {blob_path}")
 
@@ -798,7 +833,16 @@ def main(argv: list[str] | None = None) -> int:
         else:
             output_blob = f"{ODDS_RAW_PREFIX}/odds{job_label}_{start_clean}_{end_clean}.csv"
 
-    save_odds_csv(odds, output_blob)
+    final_tags = build_odds_tags(
+        markets=args.markets,
+        start_date=start_date,
+        end_date=end_date,
+        season=args.season,
+        scope="range",
+        job_id=args.job_id,
+        bookmakers_mode=args.bookmakers,
+    )
+    save_odds_csv(odds, output_blob, tags=final_tags)
 
     print("\n" + "=" * 72)
     print(f" SUCCESS: Fetched {len(odds)} odds records")

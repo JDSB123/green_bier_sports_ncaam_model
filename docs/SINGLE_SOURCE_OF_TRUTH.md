@@ -317,7 +317,6 @@ python -c "from testing.canonical.team_resolution_service import get_team_resolv
 
 # LEGACY COMMANDS (deprecated - use canonical versions above)
 # python testing/scripts/build_backtest_dataset.py  # Use build_backtest_dataset_canonical.py
-# python testing/scripts/score_integrity_audit.py   # Use canonical_data_validator.py
 ```
 
 ---

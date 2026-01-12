@@ -1,6 +1,5 @@
 {
-  "generated_at": "2026-01-11T15:46:45Z",
-  "max_date": "2026-01-06",
+  "generated_at": "2026-01-11T20:31:52Z",
   "seasons": [
     2023,
     2024,
@@ -8,164 +7,27 @@
     2026
   ],
   "totals_by_source": {
-    "barttorvik_ratings": {
-      "resolved": 1447,
-      "seen": 1447,
+    "scores_fg": {
+      "seen": 23526,
+      "resolved": 23526,
       "unresolved": 0
     },
-    "ncaahoopr": {
-      "resolved": 40448,
-      "seen": 40448,
+    "scores_h1": {
+      "seen": 7060,
+      "resolved": 7060,
       "unresolved": 0
     },
     "odds_api": {
-      "resolved": 33922,
       "seen": 33922,
+      "resolved": 33922,
       "unresolved": 0
     },
-    "scores_fg": {
-      "resolved": 6961,
-      "seen": 7016,
-      "unresolved": 55
-    },
-    "scores_h1": {
-      "resolved": 6989,
-      "seen": 7044,
-      "unresolved": 55
+    "ncaahoopr": {
+      "seen": 80896,
+      "resolved": 80896,
+      "unresolved": 0
     }
   },
-  "unresolved_by_season_source": {
-    "2023": {
-      "scores_fg": {
-        "Antelope Valley": 1,
-        "Belhaven Blazers": 1,
-        "Brevard Tornados": 1,
-        "Calumet Crimson Wave": 1,
-        "Cardinal Stritch Wolves": 1,
-        "Davis & Elkins Senators": 1,
-        "District Of Columbia Firebirds": 1,
-        "East-West University Phantoms": 1,
-        "Eureka Red Devils": 1,
-        "Goshen Maple Leafs": 1,
-        "Immaculata Mighty Macs": 1,
-        "Life Pacific Warriors": 1,
-        "Lyon Scots": 1,
-        "Puget Sound Loggers": 1,
-        "Regent Royals": 1,
-        "Rochester University (MI) Warriors": 1,
-        "Rockford Regents": 1,
-        "Southern-New Orleans Knights": 1,
-        "St. Andrews Knights": 1,
-        "Westcliff Warriors": 1,
-        "Westmont Warriors": 1
-      },
-      "scores_h1": {
-        "Antelope Valley": 1,
-        "Belhaven Blazers": 1,
-        "Brevard Tornados": 1,
-        "Calumet Crimson Wave": 1,
-        "Cardinal Stritch Wolves": 1,
-        "Davis & Elkins Senators": 1,
-        "District Of Columbia Firebirds": 1,
-        "East-West University Phantoms": 1,
-        "Eureka Red Devils": 1,
-        "Goshen Maple Leafs": 1,
-        "Immaculata Mighty Macs": 1,
-        "Life Pacific Warriors": 1,
-        "Lyon Scots": 1,
-        "Puget Sound Loggers": 1,
-        "Regent Royals": 1,
-        "Rochester University (MI) Warriors": 1,
-        "Rockford Regents": 1,
-        "Southern-New Orleans Knights": 1,
-        "St. Andrews Knights": 1,
-        "Westcliff Warriors": 1,
-        "Westmont Warriors": 1
-      }
-    },
-    "2024": {
-      "scores_fg": {
-        "Arlington Baptist Patriots": 1,
-        "Calumet Crimson Wave": 1,
-        "Chaminade Silverswords": 1,
-        "Colby-Sawyer Chargers": 1,
-        "Ecclesia Royals": 1,
-        "Eureka Red Devils": 1,
-        "Keystone Giants": 1,
-        "Rust Bearcats": 1,
-        "Stanislaus State Warriors": 2,
-        "Virginia-Lynchburg Dragons": 1
-      },
-      "scores_h1": {
-        "Arlington Baptist Patriots": 1,
-        "Calumet Crimson Wave": 1,
-        "Chaminade Silverswords": 1,
-        "Colby-Sawyer Chargers": 1,
-        "Ecclesia Royals": 1,
-        "Eureka Red Devils": 1,
-        "Keystone Giants": 1,
-        "Rust Bearcats": 1,
-        "Stanislaus State Warriors": 2,
-        "Virginia-Lynchburg Dragons": 1
-      }
-    },
-    "2025": {
-      "scores_fg": {
-        "Arlington Baptist Patriots": 1,
-        "East-West University Phantoms": 1,
-        "Ecclesia Royals": 1,
-        "Lincoln University (CA) Oaklanders": 1,
-        "Milligan Buffaloes": 1,
-        "Oakwood Ambassadors": 1,
-        "SUNY-Canton Roos": 1,
-        "Sarah Lawrence Gryphons": 1,
-        "Tabor": 1,
-        "Virginia-Lynchburg Dragons": 1,
-        "Whittier Poets": 1,
-        "Willamette Bearcats": 1
-      },
-      "scores_h1": {
-        "Arlington Baptist Patriots": 1,
-        "East-West University Phantoms": 1,
-        "Ecclesia Royals": 1,
-        "Lincoln University (CA) Oaklanders": 1,
-        "Milligan Buffaloes": 1,
-        "Oakwood Ambassadors": 1,
-        "SUNY-Canton Roos": 1,
-        "Sarah Lawrence Gryphons": 1,
-        "Tabor": 1,
-        "Virginia-Lynchburg Dragons": 1,
-        "Whittier Poets": 1,
-        "Willamette Bearcats": 1
-      }
-    },
-    "2026": {
-      "scores_fg": {
-        "Apprentice School Builders": 1,
-        "Central State (OH) Marauders": 1,
-        "Coe Kohawks": 1,
-        "Columbia College (SC) Fighting Koalas": 1,
-        "Dominican (IL) Dominican": 1,
-        "Ecclesia Royals": 1,
-        "Elms College Blazers": 1,
-        "Lyon Scots": 1,
-        "Manor College Blue Jays": 1,
-        "Ozark Christian Ambassadors": 1,
-        "St. Xavier  (IL) Cougars": 1
-      },
-      "scores_h1": {
-        "Apprentice School Builders": 1,
-        "Central State (OH) Marauders": 1,
-        "Coe Kohawks": 1,
-        "Columbia College (SC) Fighting Koalas": 1,
-        "Dominican (IL) Dominican": 1,
-        "Ecclesia Royals": 1,
-        "Elms College Blazers": 1,
-        "Lyon Scots": 1,
-        "Manor College Blue Jays": 1,
-        "Ozark Christian Ambassadors": 1,
-        "St. Xavier  (IL) Cougars": 1
-      }
-    }
-  }
+  "unresolved_by_season_source": {},
+  "max_date": "2025-04-08"
 }

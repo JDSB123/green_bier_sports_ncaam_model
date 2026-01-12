@@ -12,7 +12,6 @@ Data Flow:
 from __future__ import annotations
 
 import argparse
-import csv
 import sys
 import time
 from datetime import datetime
@@ -196,7 +195,23 @@ def load_game_ids(blob_path: str) -> list[dict]:
     return games
 
 
-def save_h1_data(h1_games: list[dict], blob_path: str) -> None:
+def build_tags(
+    dataset: str,
+    source: str | None = None,
+    scope: str | None = None,
+    season: int | None = None,
+) -> dict:
+    tags = {"dataset": dataset}
+    if source:
+        tags["source"] = source
+    if scope:
+        tags["scope"] = scope
+    if season is not None:
+        tags["season"] = str(season)
+    return tags
+
+
+def save_h1_data(h1_games: list[dict], blob_path: str, tags: dict | None = None) -> None:
     """Save 1H data to CSV in Azure Blob Storage."""
 
     headers = [
@@ -208,7 +223,7 @@ def save_h1_data(h1_games: list[dict], blob_path: str) -> None:
     lines = [",".join(headers)]
     for g in h1_games:
         lines.append(",".join([str(g.get(h, "")).replace(",", ";") for h in headers]))
-    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv")
+    upload_text(blob_path, "\n".join(lines) + "\n", content_type="text/csv", tags=tags)
     print(f"[INFO] Saved {len(h1_games)} games with 1H data to {blob_path}")
 
 
@@ -249,6 +264,7 @@ def main() -> int:
 
     # Check for existing progress
     output_blob = args.output if args.output else SCORES_H1_BLOB
+    tags = build_tags("scores_h1", source="espn", scope="all")
     existing_ids = set()
     if blob_exists(output_blob):
         existing_df = read_csv(output_blob)
@@ -277,7 +293,7 @@ def main() -> int:
         if (i + 1) % 50 == 0:
             print(f"  Progress: {i + 1}/{len(games_to_fetch)} ({len(h1_games)} with 1H data)")
             # Save progress
-            save_h1_data(h1_games, output_blob)
+            save_h1_data(h1_games, output_blob, tags=tags)
 
         summary = fetch_game_summary(game_id)
         if not summary:
@@ -302,11 +318,11 @@ def main() -> int:
         time.sleep(0.02)  # Was 0.15
 
     # Final save
-    save_h1_data(h1_games, output_blob)
+    save_h1_data(h1_games, output_blob, tags=tags)
 
     # Also save as JSON
     json_blob = args.output_json if args.output_json else output_blob.replace(".csv", ".json")
-    write_json(json_blob, h1_games, indent=2)
+    write_json(json_blob, h1_games, indent=2, tags=tags)
     print(f"[INFO] Saved JSON to {json_blob}")
 
     # Check threshold for unresolved teams

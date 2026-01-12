@@ -1,16 +1,35 @@
 #!/usr/bin/env python3
 """Check team name matching between Basketball API and Barttorvik."""
-import pandas as pd
-import json
+from __future__ import annotations
+
+import sys
 from pathlib import Path
 
-# Load data
-games_path = Path(__file__).parent.parent / "training_data" / "games_2023_2025.csv"
-ratings_path = Path(__file__).parent.parent / "training_data" / "barttorvik_lookup.json"
+import pandas as pd
 
-df = pd.read_csv(games_path)
-with open(ratings_path) as f:
-    ratings = json.load(f)
+ROOT_DIR = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT_DIR))
+
+from testing.azure_io import read_csv, blob_exists
+from testing.data_paths import DATA_PATHS
+
+# Azure-only sources (single source of truth)
+GAMES_BLOB = str(DATA_PATHS.backtest_datasets / "training_data_with_odds.csv")
+RATINGS_BLOB = str(DATA_PATHS.backtest_datasets / "barttorvik_ratings.csv")
+H1_BLOB = str(DATA_PATHS.scores_h1 / "h1_games_all.csv")
+
+df = read_csv(GAMES_BLOB)
+ratings_df = read_csv(RATINGS_BLOB)
+
+team_col = "team"
+if team_col not in ratings_df.columns:
+    if "team_name" in ratings_df.columns:
+        team_col = "team_name"
+    else:
+        raise ValueError("Barttorvik ratings missing team column")
+
+ratings = {str(name) for name in ratings_df[team_col].dropna().astype(str)}
+ratings_normalized = {normalize(name) for name in ratings}
 
 def normalize(name):
     if not name:
@@ -26,10 +45,11 @@ def normalize(name):
 
 def is_d1(team):
     norm = normalize(team)
-    if norm in ratings:
+    if norm in ratings_normalized:
         return True
     for key in ratings:
-        if norm in key or key in norm:
+        key_norm = normalize(key)
+        if norm in key_norm or key_norm in norm:
             return True
     return False
 
@@ -94,12 +114,11 @@ else:
     print("No 1H score columns in Basketball API data")
 
 # Check the H1 historical file
-h1_path = Path(__file__).parent.parent.parent.parent / "testing" / "data" / "h1_historical" / "h1_games_all.csv"
-if h1_path.exists():
-    h1_df = pd.read_csv(h1_path)
+if blob_exists(H1_BLOB):
+    h1_df = read_csv(H1_BLOB)
     print(f"\nH1 Historical CSV found: {len(h1_df)} games")
     print(f"Columns: {list(h1_df.columns)}")
     if len(h1_df) > 0:
         print(f"Sample: {h1_df.iloc[0].to_dict()}")
 else:
-    print(f"\nH1 Historical CSV not found at {h1_path}")
+    print(f"\nH1 Historical CSV not found at {H1_BLOB}")

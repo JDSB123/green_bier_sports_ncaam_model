@@ -7,51 +7,62 @@ Uses grid search and regression to minimize MAE and eliminate biases.
 """
 from __future__ import annotations
 
-import json
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from scipy import optimize
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-HISTORICAL_DIR = ROOT_DIR / "testing" / "data" / "historical"
-KAGGLE_DIR = ROOT_DIR / "testing" / "data" / "kaggle"
+from testing.azure_data_reader import get_azure_reader, read_barttorvik_ratings
 
 LEAGUE_AVG_EFFICIENCY = 100.0
 
 
 def load_all_data():
-    """Load all seasons of game data and ratings."""
+    """Load all seasons of game data and ratings from Azure."""
     all_games = []
     all_ratings = {}
+    reader = get_azure_reader()
 
-    for season in range(2020, 2025):
-        # Load games
-        games_path = HISTORICAL_DIR / f"games_{season}.csv"
-        if games_path.exists():
-            df = pd.read_csv(games_path)
-            df['season'] = season
-            all_games.append(df)
-
-        # Load ratings
-        ratings_path = HISTORICAL_DIR / f"barttorvik_{season}.json"
-        if ratings_path.exists():
-            with open(ratings_path, 'r') as f:
-                data = json.load(f)
-            ratings = {}
-            for team_data in data:
+    def parse_barttorvik_payload(payload):
+        ratings = {}
+        if isinstance(payload, list):
+            for team_data in payload:
                 if isinstance(team_data, list) and len(team_data) > 10:
-                    name = team_data[1].lower()
+                    name = str(team_data[1]).lower()
                     ratings[name] = {
                         'adj_o': float(team_data[4]),
                         'adj_d': float(team_data[6]),
                         'adj_t': float(team_data[44]) if len(team_data) > 44 else 68.0,
                     }
-            all_ratings[season] = ratings
+        elif isinstance(payload, dict):
+            for name, row in payload.items():
+                if not isinstance(row, dict):
+                    continue
+                ratings[str(name).lower()] = {
+                    'adj_o': float(row.get('adj_o', 100)),
+                    'adj_d': float(row.get('adj_d', 100)),
+                    'adj_t': float(row.get('tempo', 68)),
+                }
+        return ratings
 
-    games_df = pd.concat(all_games, ignore_index=True)
+    for season in range(2020, 2025):
+        try:
+            df = reader.read_canonical_scores(season)
+            df['season'] = season
+            all_games.append(df)
+        except Exception as e:
+            print(f"[WARN] Missing Azure games for season {season}: {e}")
+
+        try:
+            payload = read_barttorvik_ratings(season)
+            ratings = parse_barttorvik_payload(payload)
+            if ratings:
+                all_ratings[season] = ratings
+        except Exception as e:
+            print(f"[WARN] Missing Azure ratings for season {season}: {e}")
+
+    games_df = pd.concat(all_games, ignore_index=True) if all_games else pd.DataFrame()
     return games_df, all_ratings
 
 

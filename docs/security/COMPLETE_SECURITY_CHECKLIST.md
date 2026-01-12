@@ -195,7 +195,7 @@ docker-compose.yml @yourname
 services/prediction-service-python/** @yourname
 
 # Data quality
-testing/scripts/score_integrity_audit.py @yourname
+testing/scripts/canonical_data_validator.py @yourname
 testing/scripts/dual_canonicalization_audit.py @yourname
 ```
 

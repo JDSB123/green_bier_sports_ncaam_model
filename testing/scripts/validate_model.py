@@ -13,13 +13,11 @@ Key Features:
 
 Usage:
     python testing/scripts/validate_model.py --season 2024
-    python testing/scripts/validate_model.py --seasons 2020-2024 --output results.csv
+    python testing/scripts/validate_model.py --seasons 2020-2024 --output backtest_datasets/validation_results.csv
 """
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -29,13 +27,13 @@ import numpy as np
 import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-HISTORICAL_DIR = ROOT_DIR / "testing" / "data" / "historical"
-KAGGLE_DIR = ROOT_DIR / "testing" / "data" / "kaggle"
-RESULTS_DIR = ROOT_DIR / "testing" / "data" / "validation_results"
 
 # Add scripts to path for team_utils (single source of truth)
 sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
 from team_utils import resolve_team_name
+from testing.azure_data_reader import get_azure_reader, read_barttorvik_ratings
+from testing.data_paths import DATA_PATHS
+from testing.azure_io import write_csv as azure_write_csv
 
 
 # ==================== Model Constants ====================
@@ -107,13 +105,15 @@ class ValidationResult:
 def load_barttorvik_ratings(season: int) -> dict[str, TeamRatings]:
     """Load Barttorvik ratings for a season."""
     ratings = {}
+    reader = get_azure_reader()
 
-    # Try historical JSON first
-    json_path = HISTORICAL_DIR / f"barttorvik_{season}.json"
-    if json_path.exists():
-        with json_path.open("r", encoding="utf-8") as f:
-            data = json.load(f)
+    try:
+        data = read_barttorvik_ratings(season)
+    except Exception as e:
+        data = None
+        print(f"[WARN] Barttorvik JSON not found in Azure for {season}: {e}")
 
+    if isinstance(data, list):
         for team_data in data:
             if not isinstance(team_data, list) or len(team_data) < 10:
                 continue
@@ -127,43 +127,79 @@ def load_barttorvik_ratings(season: int) -> dict[str, TeamRatings]:
                 orb=float(team_data[21]) if len(team_data) > 21 else 30.0,
                 drb=float(team_data[22]) if len(team_data) > 22 else 70.0,
             )
-        print(f"[INFO] Loaded {len(ratings)} teams from Barttorvik JSON")
+        print(f"[INFO] Loaded {len(ratings)} teams from Barttorvik Azure JSON")
         return ratings
 
-    # Fallback to Kaggle CSV
-    csv_path = KAGGLE_DIR / f"cbb{str(season)[-2:]}.csv"
-    if csv_path.exists():
-        df = pd.read_csv(csv_path)
+    if isinstance(data, dict):
+        for name, row in data.items():
+            if not isinstance(row, dict):
+                continue
+            ratings[str(name).lower()] = TeamRatings(
+                name=str(name),
+                adj_o=float(row.get("adj_o", 100)),
+                adj_d=float(row.get("adj_d", 100)),
+                adj_t=float(row.get("tempo", 68)),
+                orb=float(row.get("orb", 30)),
+                drb=float(row.get("drb", 70)),
+                tor=float(row.get("tor", 17)),
+                tord=float(row.get("tord", 17)),
+                ftr=float(row.get("ftr", 30)),
+            )
+        print(f"[INFO] Loaded {len(ratings)} teams from Barttorvik Azure dict")
+        return ratings
+
+    # Fallback to canonical CSV in Azure
+    try:
+        df = reader.read_csv(str(DATA_PATHS.barttorvik_ratings), data_type="ratings")
+        if "season" in df.columns:
+            df = df[df["season"] == season]
         for _, row in df.iterrows():
-            name = str(row.get("TEAM", "")).strip()
+            name = str(row.get("team", "")).strip()
             if not name:
                 continue
             ratings[name.lower()] = TeamRatings(
                 name=name,
-                adj_o=float(row.get("ADJOE", 100)),
-                adj_d=float(row.get("ADJDE", 100)),
-                adj_t=float(row.get("ADJ_T", 68)),
-                orb=float(row.get("ORB", 30)),
-                drb=float(row.get("DRB", 70)),
-                tor=float(row.get("TOR", 17)),
-                tord=float(row.get("TORD", 17)),
-                ftr=float(row.get("FTR", 30)),
+                adj_o=float(row.get("adj_o", 100)),
+                adj_d=float(row.get("adj_d", 100)),
+                adj_t=float(row.get("tempo", 68)),
+                orb=float(row.get("orb", 30)),
+                drb=float(row.get("drb", 70)),
+                tor=float(row.get("tor", 17)),
+                tord=float(row.get("tord", 17)),
+                ftr=float(row.get("ftr", 30)),
             )
-        print(f"[INFO] Loaded {len(ratings)} teams from Kaggle CSV")
+        print(f"[INFO] Loaded {len(ratings)} teams from Azure barttorvik_ratings.csv")
         return ratings
-
-    print(f"[WARN] No ratings found for season {season}")
-    return ratings
+    except Exception as e:
+        print(f"[WARN] No ratings found in Azure for season {season}: {e}")
+        return ratings
 
 
 def load_game_results(season: int) -> pd.DataFrame:
-    """Load game results from ESPN data."""
-    csv_path = HISTORICAL_DIR / f"games_{season}.csv"
-    if not csv_path.exists():
-        print(f"[ERROR] No game data for season {season}. Run fetch_historical_data.py first.")
+    """Load game results from Azure ESPN data."""
+    reader = get_azure_reader()
+    try:
+        df = reader.read_canonical_scores(season)
+    except Exception as e:
+        print(f"[WARN] Season file missing in Azure for {season}: {e}")
+        try:
+            df = reader.read_canonical_scores()
+        except Exception as err:
+            print(f"[ERROR] No game data available in Azure: {err}")
+            return pd.DataFrame()
+
+    if "date" not in df.columns and "game_date" in df.columns:
+        df = df.rename(columns={"game_date": "date"})
+
+    if "date" not in df.columns:
+        print("[ERROR] Azure scores data missing date column")
         return pd.DataFrame()
 
-    df = pd.read_csv(csv_path)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
+    df["season"] = df["date"].apply(lambda d: d.year + 1 if d.month >= 11 else d.year)
+    df = df[df["season"] == season].copy()
+
     print(f"[INFO] Loaded {len(df)} games for season {season}")
     return df
 
@@ -351,19 +387,22 @@ def calculate_metrics(results: list[ValidationResult]) -> dict:
     }
 
 
-def save_results_csv(results: list[ValidationResult], filepath: Path) -> None:
-    """Save validation results to CSV."""
+def save_results_csv(results: list[ValidationResult], filepath: Path | str) -> None:
+    """Save validation results to CSV (Azure blob or local path)."""
+    if not results:
+        return
+
+    rows = [r.__dict__ for r in results]
+    df = pd.DataFrame(rows)
+
+    if isinstance(filepath, str):
+        tags = {"dataset": "validation_results", "source": "validate_model"}
+        azure_write_csv(filepath, df, tags=tags)
+        print(f"[INFO] Saved {len(results)} results to Azure blob {filepath}")
+        return
+
     filepath.parent.mkdir(parents=True, exist_ok=True)
-
-    with filepath.open("w", newline="", encoding="utf-8") as f:
-        if not results:
-            return
-
-        writer = csv.DictWriter(f, fieldnames=results[0].__dict__.keys())
-        writer.writeheader()
-        for r in results:
-            writer.writerow(r.__dict__)
-
+    df.to_csv(filepath, index=False)
     print(f"[INFO] Saved {len(results)} results to {filepath}")
 
 
@@ -385,7 +424,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--output",
         type=str,
-        help="Output CSV file for detailed results"
+        help="Azure blob path for detailed results CSV"
     )
     parser.add_argument(
         "--verbose",
@@ -495,12 +534,10 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print("  [GOOD] Direction > 55% = potentially profitable edge")
 
-    # Save detailed results
-    if args.output:
-        save_results_csv(all_results, Path(args.output))
-    else:
-        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        save_results_csv(all_results, RESULTS_DIR / "validation_results.csv")
+    # Save detailed results (Azure-only)
+    default_blob = str(DATA_PATHS.backtest_datasets / "validation_results.csv")
+    output_blob = args.output or default_blob
+    save_results_csv(all_results, output_blob)
 
     print("\n" + "=" * 72)
     print(" VALIDATION COMPLETE")
