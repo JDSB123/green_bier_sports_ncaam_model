@@ -292,7 +292,7 @@ def build_canonical_backtest_dataset(
         # Step 6: Final canonicalization and validation
         print("\nStep 6: Final canonicalization and validation...")
 
-        # Apply final canonical ingestion
+        # Apply final canonical ingestion (scores-like validation)
         final_result = ingestion_pipeline.ingest_scores_data(
             backtest_df,
             DataSource.ESPN_SCORES
@@ -302,7 +302,13 @@ def build_canonical_backtest_dataset(
             raise ValueError(f"Final canonical ingestion failed: {final_result.errors}")
 
         stats["canonicalization_issues"] = len(final_result.errors) + len(final_result.warnings)
-        backtest_df = backtest_df  # Pipeline modifies in-place
+
+        # Ensure both date and game_date exist and are consistent for
+        # downstream consumers and quality gates.
+        if "game_date" in backtest_df.columns and "date" not in backtest_df.columns:
+            backtest_df["date"] = backtest_df["game_date"]
+        elif "date" in backtest_df.columns and "game_date" not in backtest_df.columns:
+            backtest_df["game_date"] = backtest_df["date"]
 
         # Final quality check
         final_validation = quality_gate.validate(backtest_df, "backtest")
@@ -316,7 +322,10 @@ def build_canonical_backtest_dataset(
         print("BUILD COMPLETE")
         print("=" * 80)
         print(f"Final dataset: {len(backtest_df)} records, {len(backtest_df.columns)} columns")
-        print(f"Date range: {backtest_df['game_date'].min()} to {backtest_df['game_date'].max()}")
+        if "game_date" in backtest_df.columns:
+            print(f"Date range: {backtest_df['game_date'].min()} to {backtest_df['game_date'].max()}")
+        elif "date" in backtest_df.columns:
+            print(f"Date range: {backtest_df['date'].min()} to {backtest_df['date'].max()}")
         print(f"Stats: {stats}")
 
         if final_result.warnings:
@@ -334,18 +343,41 @@ def build_canonical_backtest_dataset(
 
 
 def save_canonical_dataset(df: pd.DataFrame, output_blob: Optional[str] = None):
-    """Save the canonical dataset with metadata."""
+    """Save the canonical backtest dataset with metadata.
+
+    By default this overwrites the primary backtest master used
+    throughout the codebase and in Azure:
+        backtest_datasets/backtest_master.csv
+    """
     if output_blob is None:
-        output_blob = "backtest_datasets/backtest_master_canonical.csv"
+        # Align with AzureDataReader.read_backtest_master and docs
+        output_blob = "backtest_datasets/backtest_master.csv"
 
     # Add metadata
+    # Helper to safely serialize date-like values
+    def _to_iso(val):
+        if val is None:
+            return None
+        if hasattr(val, "isoformat"):
+            return val.isoformat()
+        return str(val)
+
+    start_val = None
+    end_val = None
+    if "game_date" in df.columns:
+        start_val = df["game_date"].min()
+        end_val = df["game_date"].max()
+    elif "date" in df.columns:
+        start_val = df["date"].min()
+        end_val = df["date"].max()
+
     metadata = {
         "build_timestamp": datetime.now().isoformat(),
         "records": len(df),
         "columns": len(df.columns),
         "date_range": {
-            "start": df["game_date"].min().isoformat() if "game_date" in df.columns else None,
-            "end": df["game_date"].max().isoformat() if "game_date" in df.columns else None
+            "start": _to_iso(start_val),
+            "end": _to_iso(end_val),
         },
         "canonical_version": "3.0"
     }

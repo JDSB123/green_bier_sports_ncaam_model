@@ -15,10 +15,15 @@ import argparse
 import json
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Dict
 
 import pandas as pd
 import numpy as np
+import pytz
+
+# Ensure project root is on sys.path so `testing` package imports work
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from testing.azure_io import read_csv, read_json, write_csv, write_json
 
@@ -72,6 +77,18 @@ def load_ncaahoopR_features() -> pd.DataFrame:
         return pd.DataFrame()
     df["game_date"] = pd.to_datetime(df["game_date"])
     
+    # Standardize dates to CST/CDT as per governance
+    if df["game_date"].dt.tz is None:
+        # Assume naive dates are already in CST (not UTC)
+        df["game_date"] = df["game_date"].dt.tz_localize('America/Chicago')
+    else:
+        # If already timezone-aware, ensure it's in CST
+        df["game_date"] = df["game_date"].dt.tz_convert('America/Chicago')
+    
+    # Convert back to date for consistency with master
+    df["game_date"] = df["game_date"].dt.date
+    df["game_date"] = pd.to_datetime(df["game_date"])
+    
     print(f"[OK] Loaded ncaahoopR features: {len(df):,} team-game records")
     print(f"   Columns: {len(df.columns)}")
     print(f"   Date range: {df['game_date'].min().date()} to {df['game_date'].max().date()}")
@@ -112,6 +129,14 @@ def merge_all_sources(master_df: pd.DataFrame, ncaahoopR_df: pd.DataFrame, alias
     if ncaahoopR_df.empty:
         print("[WARN] No ncaahoopR features to merge")
         return master_df
+
+    # Ensure ncaahoopR team names are fully canonical before any merge
+    # This guarantees the consolidated master never introduces alternate
+    # representations that could conflict with canonical team columns.
+    if "team" in ncaahoopR_df.columns:
+        ncaahoopR_df["team"] = ncaahoopR_df["team"].apply(lambda x: resolve_team_name(x, aliases))
+    if "opponent" in ncaahoopR_df.columns:
+        ncaahoopR_df["opponent"] = ncaahoopR_df["opponent"].apply(lambda x: resolve_team_name(x, aliases))
     
     # Create team features lookup
     print("\nCreating team features lookup...")
@@ -124,34 +149,70 @@ def merge_all_sources(master_df: pd.DataFrame, ncaahoopR_df: pd.DataFrame, alias
     # Get feature columns (exclude game_date and team)
     feature_cols = [c for c in lookup.columns if c not in ["game_date", "team"]]
     
-    # Merge HOME team features
+    # Merge HOME team features with ±1 day tolerance
     print("\nMerging HOME team ncaahoopR features...")
-    home_lookup = lookup.copy()
-    home_rename = {col: f"home_box_{col}" for col in feature_cols}
-    home_rename["team"] = "home_team_canonical"
-    home_lookup = home_lookup.rename(columns=home_rename)
+    home_features_list = []
     
-    merged = master_df.merge(
-        home_lookup,
-        on=["game_date", "home_team_canonical"],
-        how="left"
-    )
+    for idx, row in master_df.iterrows():
+        game_date = row["game_date"]
+        home_team = row["home_team"]
+        
+        # Try exact match first
+        home_match = lookup[(lookup["game_date"] == game_date) & (lookup["team"] == home_team)]
+        
+        # If no exact match, try ±1 day
+        if home_match.empty:
+            date_minus_1 = game_date - pd.Timedelta(days=1)
+            home_match = lookup[(lookup["game_date"] == date_minus_1) & (lookup["team"] == home_team)]
+            
+        if home_match.empty:
+            date_plus_1 = game_date + pd.Timedelta(days=1)
+            home_match = lookup[(lookup["game_date"] == date_plus_1) & (lookup["team"] == home_team)]
+        
+        if not home_match.empty:
+            # Take the first match if multiple
+            features = home_match.iloc[0][feature_cols].to_dict()
+            home_features_list.append({f"home_box_{k}": v for k, v in features.items()})
+        else:
+            home_features_list.append({f"home_box_{col}": None for col in feature_cols})
+    
+    # Add home features to master
+    home_features_df = pd.DataFrame(home_features_list)
+    merged = pd.concat([master_df.reset_index(drop=True), home_features_df], axis=1)
     
     home_matched = merged["home_box_efg"].notna().sum() if "home_box_efg" in merged.columns else 0
     print(f"   Home team matches: {home_matched:,}/{len(merged):,} ({home_matched/len(merged)*100:.1f}%)")
     
-    # Merge AWAY team features
+    # Merge AWAY team features with ±1 day tolerance
     print("Merging AWAY team ncaahoopR features...")
-    away_lookup = lookup.copy()
-    away_rename = {col: f"away_box_{col}" for col in feature_cols}
-    away_rename["team"] = "away_team_canonical"
-    away_lookup = away_lookup.rename(columns=away_rename)
+    away_features_list = []
     
-    merged = merged.merge(
-        away_lookup,
-        on=["game_date", "away_team_canonical"],
-        how="left"
-    )
+    for idx, row in merged.iterrows():
+        game_date = row["game_date"]
+        away_team = row["away_team"]
+        
+        # Try exact match first
+        away_match = lookup[(lookup["game_date"] == game_date) & (lookup["team"] == away_team)]
+        
+        # If no exact match, try ±1 day
+        if away_match.empty:
+            date_minus_1 = game_date - pd.Timedelta(days=1)
+            away_match = lookup[(lookup["game_date"] == date_minus_1) & (lookup["team"] == away_team)]
+            
+        if away_match.empty:
+            date_plus_1 = game_date + pd.Timedelta(days=1)
+            away_match = lookup[(lookup["game_date"] == date_plus_1) & (lookup["team"] == away_team)]
+        
+        if not away_match.empty:
+            # Take the first match if multiple
+            features = away_match.iloc[0][feature_cols].to_dict()
+            away_features_list.append({f"away_box_{k}": v for k, v in features.items()})
+        else:
+            away_features_list.append({f"away_box_{col}": None for col in feature_cols})
+    
+    # Add away features to merged
+    away_features_df = pd.DataFrame(away_features_list)
+    merged = pd.concat([merged, away_features_df], axis=1)
     
     away_matched = merged["away_box_efg"].notna().sum() if "away_box_efg" in merged.columns else 0
     print(f"   Away team matches: {away_matched:,}/{len(merged):,} ({away_matched/len(merged)*100:.1f}%)")
