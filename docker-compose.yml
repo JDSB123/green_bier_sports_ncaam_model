@@ -167,7 +167,7 @@ services:
       # Team matching guardrail defaults (adjust per env)
       TEAM_MATCHING_LOOKBACK_DAYS: "7"
       MIN_TEAM_RESOLUTION_RATE: "0.95"
-      MAX_UNRESOLVED_TEAM_VARIANTS: "0"  # Stricter: no unresolved variants allowed
+      MAX_UNMATCHED_TEAMS: "0"  # Stricter: no unmatched teams allowed
       # Azure Blob Storage (canonical historical data - required)
       AZURE_CANONICAL_CONNECTION_STRING: ${AZURE_CANONICAL_CONNECTION_STRING:-}
       AZURE_CANONICAL_CONTAINER: ${AZURE_CANONICAL_CONTAINER:-ncaam-historical-data}

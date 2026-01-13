@@ -17,7 +17,7 @@
 // - Added Azure Key Vault for secure secrets management
 // - All API keys and passwords stored in Key Vault
 // - Container Apps reference Key Vault secrets
-// - Removed legacy cleanup references
+// - Completed cleanup
 // ═══════════════════════════════════════════════════════════════════════════════
 
 targetScope = 'resourceGroup'
