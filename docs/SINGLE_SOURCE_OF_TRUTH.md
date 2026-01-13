@@ -249,9 +249,9 @@ python testing/scripts/build_backtest_dataset_canonical.py
 ### Updating Team Resolution
 
 1. **Edit aliases** in the Team Registry (Postgres) and export to Azure
-2. **Run team resolution gate**:
+2. **Run team resolution service**:
    ```powershell
-   python testing/scripts/team_resolution_gate.py --verify
+   python -c "from testing.canonical.team_resolution_service import get_team_resolver; resolver = get_team_resolver(); print('Team resolution service ready')"
    ```
 3. **Rebuild backtest master** and sync to Azure
 
@@ -337,7 +337,6 @@ python -c "from testing.canonical.team_resolution_service import get_team_resolv
 3. **Reactive validation** - Use preventive `DataQualityGate` validation
 4. **Ignoring schema evolution** - Check data vintage with `SchemaEvolutionManager`
 5. **Direct Azure access** - Use `AzureDataReader` with canonicalization enabled
-6. **Legacy scripts** - Use canonical versions: `python testing/scripts/cleanup_legacy_scripts.py`
 
 ---
 

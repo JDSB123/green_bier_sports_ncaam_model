@@ -26,8 +26,8 @@ This document defines the **single source of truth** for all data paths in the N
        │                             │                              │
        ▼                             ▼                              ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       TEAM RESOLUTION GATE                                   │
-│            testing/scripts/team_resolution_gate.py                           │
+│                     TEAM RESOLUTION SERVICE                                  │
+│            testing/canonical/team_resolution_service.py                      │
 │            Uses: backtest_datasets/              │
 │                  team_aliases_db.json (1,679 aliases)                        │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -100,7 +100,7 @@ This document defines the **single source of truth** for all data paths in the N
 |------|---------|-------------|
 | `backtest_datasets/team_aliases_db.json` | **MASTER** alias file for ingestion | 1,679 |
 | PostgreSQL `team_aliases` table | Production alias table | ~950+ (sync via migrations) |
-| `testing/scripts/team_resolution_gate.py` | Python gate for canonicalization | Uses JSON file |
+| `testing/canonical/team_resolution_service.py` | Python service for canonicalization | Uses JSON file |
 
 ### Backtesting Scripts
 
@@ -176,7 +176,7 @@ NCAAM_main/
 │   ├── fetch_historical_data.py     # Scores + ratings ingestion (Azure)
 │   ├── fetch_historical_odds.py     # Odds ingestion (Azure)
 │   ├── fetch_h1_data.py             # H1 extraction (Azure)
-│   ├── team_resolution_gate.py      # Central canonicalization
+│   ├── team_resolution_service.py   # Central canonicalization (in canonical/)
 │   ├── team_utils.py                # Helper wrapper
 │   ├── run_historical_backtest.py   # Historical backtest engine
 │   ├── run_clv_backtest.py          # CLV backtest engine

@@ -142,9 +142,9 @@ Azure Blob: backtest_datasets/team_aliases_db.json
 - 362 canonical team names
 - 1,679 aliases
 - Version: 2026.01.09
-- Used by: `team_resolution_gate.py` for ingestion, PostgreSQL `resolve_team_name()` for production
+- Used by: `testing/canonical/team_resolution_service.py` for ingestion, PostgreSQL `resolve_team_name()` for production
 
-All ingestion scripts must use `team_resolution_gate.py` for team name resolution to ensure consistency across all data sources.
+All ingestion scripts must use the canonical team resolution service for team name resolution to ensure consistency across all data sources.
 
 ---
 
