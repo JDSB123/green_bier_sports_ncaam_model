@@ -297,6 +297,10 @@ class AzureDataReader:
         if not self._ingestion_pipeline or not self._quality_gate or not self._schema_manager:
             return df
 
+        # Skip canonical ingestion if data_type is None (explicitly disabled)
+        if data_type is None:
+            return df
+
         try:
             # Auto-detect data type if not specified
             if data_type == "auto":
@@ -319,7 +323,7 @@ class AzureDataReader:
                 # Unknown data type, apply basic quality check
                 validation_result = self._quality_gate.validate(df, "unknown")
                 if not validation_result.passed and self.strict_mode:
-                    raise ValueError(f"Data quality validation failed: {validation_result.errors}")
+                    raise ValueError(f"Data quality validation failed: {validation_result.issues}")
                 return df
 
             # Check ingestion result

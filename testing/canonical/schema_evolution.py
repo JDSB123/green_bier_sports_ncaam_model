@@ -189,6 +189,15 @@ class SchemaEvolutionManager:
             safe_to_automigrate=True
         )
 
+        # v1.0 -> v3.0 (direct path, chains v1->v2->v3)
+        migrations["v1.0->v3.0"] = SchemaMigration(
+            from_version="v1.0",
+            to_version="v3.0",
+            migration_function=self._migrate_v1_to_v3,
+            description="Full migration from legacy to canonical",
+            safe_to_automigrate=True
+        )
+
         return migrations
 
     def detect_schema_version(self, df: pd.DataFrame, data_type: str = "scores") -> str:
@@ -387,6 +396,14 @@ class SchemaEvolutionManager:
         if "season" in df.columns:
             df["season"] = pd.to_numeric(df["season"], errors='coerce').astype('Int64')
 
+        return df
+
+    def _migrate_v1_to_v3(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Migrate from v1.0 directly to v3.0 schema (chains v1->v2->v3)."""
+        # Apply v1 -> v2 migration
+        df = self._migrate_v1_to_v2(df)
+        # Apply v2 -> v3 migration
+        df = self._migrate_v2_to_v3(df)
         return df
 
     def create_custom_migration(

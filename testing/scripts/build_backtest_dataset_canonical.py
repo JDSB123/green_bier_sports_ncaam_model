@@ -186,8 +186,18 @@ def build_canonical_backtest_dataset(
             if odds_df is None or len(odds_df) == 0:
                 return base_df
 
+            # Odds data uses 'game_date', scores use 'date' - normalize
+            if "game_date" in odds_df.columns and "date" not in odds_df.columns:
+                odds_df = odds_df.rename(columns={"game_date": "date"})
+            
             # Ensure consistent column names
-            odds_cols = [col for col in odds_df.columns if col not in ["home_team", "away_team", "date"]]
+            odds_cols = [col for col in odds_df.columns if col not in ["home_team", "away_team", "date", "home_team_canonical", "away_team_canonical"]]
+            
+            # Use canonical team names if available
+            if "home_team_canonical" in odds_df.columns:
+                odds_df["home_team"] = odds_df["home_team_canonical"]
+                odds_df["away_team"] = odds_df["away_team_canonical"]
+            
             odds_df = odds_df[["home_team", "away_team", "date"] + odds_cols].copy()
 
             # Merge on home team odds

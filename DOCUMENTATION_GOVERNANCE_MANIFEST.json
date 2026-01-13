@@ -1,0 +1,216 @@
+{
+  "timestamp": "2026-01-12T18:20:00Z",
+  "version": "1.0",
+  "document_governance": "AUTHORITATIVE RECORD",
+  
+  "purpose": "Single source of truth for documentation governance: what docs exist, why they exist, and what conflicts exist",
+  
+  "authoritative_documents": {
+    "Data Ingestion & Sources": [
+      {
+        "file": "DATA_SOURCES.md",
+        "purpose": "Definitive guide to all data sources, Azure containers, and how to read data",
+        "status": "active",
+        "conflicts_with": ["DATA_ENDPOINT_STATUS.md", "ODDS_API_USAGE.md"],
+        "last_updated": "2026-01-10"
+      },
+      {
+        "file": "INGESTION_ARCHITECTURE.md",
+        "purpose": "How data flows from sources through ingestion to Azure blob storage",
+        "status": "active",
+        "conflicts_with": ["INTEGRATION_ARCHITECTURE.md"],
+        "last_updated": "2026-01-09"
+      },
+      {
+        "file": "HISTORICAL_DATA_AVAILABILITY.md",
+        "purpose": "What historical data is available by season, coverage, and gaps",
+        "status": "active",
+        "conflicts_with": ["HISTORICAL_DATA_GAPS.md", "HISTORICAL_DATA_SYNC.md"],
+        "last_updated": "2026-01-08"
+      }
+    ],
+    
+    "Architecture & Design": [
+      {
+        "file": "SINGLE_SOURCE_OF_TRUTH.md",
+        "purpose": "Azure blob storage as canonical architecture and data governance",
+        "status": "active",
+        "conflicts_with": ["CONFIGURATION.md", "AZURE_BLOB_STORAGE_ARCHITECTURE.md"],
+        "last_updated": "2026-01-10"
+      },
+      {
+        "file": "FULL_STACK_ARCHITECTURE.md",
+        "purpose": "Complete system architecture (frontend, backend, data, models)",
+        "status": "active",
+        "conflicts_with": [],
+        "last_updated": "2026-01-05"
+      }
+    ],
+    
+    "Team & Data Standardization": [
+      {
+        "file": "TEAM_NAME_CONVENTIONS.md",
+        "purpose": "Canonical team naming standards and canonicalization",
+        "status": "active",
+        "conflicts_with": ["STANDARDIZED_TEAM_MAPPINGS.md", "TEAM_MATCHING_ACCURACY.md"],
+        "last_updated": "2026-01-08"
+      },
+      {
+        "file": "STANDARDIZED_TEAM_MAPPINGS.md",
+        "purpose": "Available team mapping resources (ncaahoopR, hoopR, etc.)",
+        "status": "supplementary",
+        "conflicts_with": ["TEAM_NAME_CONVENTIONS.md"],
+        "last_updated": "2026-01-06"
+      },
+      {
+        "file": "NAMING_STANDARDS.md",
+        "purpose": "General naming conventions for files, variables, and data",
+        "status": "active",
+        "conflicts_with": [],
+        "last_updated": "2025-12-15"
+      }
+    ],
+    
+    "Backtesting & Models": [
+      {
+        "file": "BACKTESTING_METHODOLOGY.md",
+        "purpose": "How backtesting works, methodology, and validation",
+        "status": "active",
+        "conflicts_with": [],
+        "last_updated": "2026-01-04"
+      },
+      {
+        "file": "MODEL_IMPROVEMENT_ROADMAP.md",
+        "purpose": "Forward-looking model improvements and development plan",
+        "status": "active",
+        "conflicts_with": ["MODEL_IMPROVEMENT_ANALYSIS.md"],
+        "last_updated": "2026-01-07"
+      }
+    ],
+    
+    "Operations & Deployment": [
+      {
+        "file": "PRODUCTION_RUNBOOK.md",
+        "purpose": "How to operate the system in production",
+        "status": "active",
+        "conflicts_with": ["DEPLOYMENT_STATUS_v34.1.0.md"],
+        "last_updated": "2026-01-08"
+      },
+      {
+        "file": "DEVELOPMENT_WORKFLOW.md",
+        "purpose": "Development workflow, branching, PRs, deployment",
+        "status": "active",
+        "conflicts_with": ["PR_WORKFLOW.md"],
+        "last_updated": "2025-12-20"
+      }
+    ]
+  },
+  
+  "documents_marked_for_deletion": {
+    "high_priority": [
+      {
+        "file": "DATA_ENDPOINT_STATUS.md",
+        "reason": "Superseded by DATA_SOURCES.md",
+        "keep_instead": "DATA_SOURCES.md",
+        "status": "pending_deletion"
+      },
+      {
+        "file": "ODDS_API_USAGE.md",
+        "reason": "Superseded by DATA_SOURCES.md + INGESTION_ARCHITECTURE.md",
+        "keep_instead": "DATA_SOURCES.md + INGESTION_ARCHITECTURE.md",
+        "status": "pending_deletion"
+      },
+      {
+        "file": "HISTORICAL_DATA_GAPS.md",
+        "reason": "Superseded by HISTORICAL_DATA_AVAILABILITY.md",
+        "keep_instead": "HISTORICAL_DATA_AVAILABILITY.md",
+        "status": "pending_deletion"
+      },
+      {
+        "file": "HISTORICAL_DATA_SYNC.md",
+        "reason": "Superseded by HISTORICAL_DATA_AVAILABILITY.md + INGESTION_ARCHITECTURE.md",
+        "keep_instead": "HISTORICAL_DATA_AVAILABILITY.md + INGESTION_ARCHITECTURE.md",
+        "status": "pending_deletion"
+      },
+      {
+        "file": "MODEL_IMPROVEMENT_ANALYSIS.md",
+        "reason": "One-off analysis; forward plan in MODEL_IMPROVEMENT_ROADMAP.md",
+        "keep_instead": "MODEL_IMPROVEMENT_ROADMAP.md",
+        "status": "pending_deletion"
+      },
+      {
+        "file": "DEPLOYMENT_STATUS_v34.1.0.md",
+        "reason": "Version-specific status (outdated); use PRODUCTION_RUNBOOK.md",
+        "keep_instead": "PRODUCTION_RUNBOOK.md",
+        "status": "pending_deletion"
+      }
+    ],
+    "medium_priority_review": [
+      {
+        "file": "AZURE_BLOB_STORAGE_ARCHITECTURE.md",
+        "reason": "Likely superseded by SINGLE_SOURCE_OF_TRUTH.md - requires verification",
+        "status": "requires_review"
+      },
+      {
+        "file": "AZURE_RESOURCE_CLEANUP.md",
+        "reason": "One-off cleanup task - verify not needed",
+        "status": "requires_review"
+      },
+      {
+        "file": "AZURE_RESOURCE_GROUP_REVIEW.md",
+        "reason": "One-off review - verify not needed",
+        "status": "requires_review"
+      },
+      {
+        "file": "EARLY_SEASON_BETTING_GUIDANCE.md",
+        "reason": "2024 specific - verify still relevant or archive",
+        "status": "requires_review"
+      },
+      {
+        "file": "FILES_SUMMARY.md",
+        "reason": "File listing becomes stale - verify no external references",
+        "status": "requires_review"
+      },
+      {
+        "file": "TEAM_MATCHING_ACCURACY.md",
+        "reason": "May be analysis only - verify if needed beyond TEAM_NAME_CONVENTIONS.md",
+        "status": "requires_review"
+      }
+    ]
+  },
+  
+  "deletion_execution_log": [
+    {
+      "timestamp": "2026-01-12T18:20:00Z",
+      "action": "audit_created",
+      "deletions_identified": 6,
+      "items_for_review": 6,
+      "status": "pending_execution"
+    }
+  ],
+  
+  "governance_rules": {
+    "rule_1": "Each document must have a clear PURPOSE and AUDIENCE",
+    "rule_2": "Conflicting documents must be merged or one explicitly deleted",
+    "rule_3": "All deletions logged in this manifest with reason and timestamp",
+    "rule_4": "No documents left in 'limbo' - each is either ACTIVE, ARCHIVED, or DELETED",
+    "rule_5": "Stale documents must be explicitly marked with deprecation date or deleted",
+    "rule_6": "This manifest IS the definitive record - if it says deleted, document is deleted"
+  },
+  
+  "how_to_ensure_no_confusion": {
+    "step_1": "Run audit: python docs/audit_documentation.py",
+    "step_2": "Review high-priority deletions listed above",
+    "step_3": "Execute: python docs/cleanup_documentation.py --execute",
+    "step_4": "ALL deletions logged here with timestamp and reason",
+    "step_5": "This manifest serves as proof of deletion",
+    "step_6": "Never recreate deleted docs without updating this manifest"
+  },
+  
+  "verification_commands": {
+    "audit_docs": "python docs/audit_documentation.py",
+    "cleanup_preview": "python docs/cleanup_documentation.py --dry-run",
+    "cleanup_execute": "python docs/cleanup_documentation.py --execute",
+    "check_audit_trail": "cat DOCUMENTATION_DELETION_AUDIT.json"
+  }
+}
