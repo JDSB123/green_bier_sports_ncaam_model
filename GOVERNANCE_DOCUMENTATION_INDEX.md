@@ -70,15 +70,8 @@
 - 6-point compliance audit
 - Checks for violations
 - Generates reports
-- **Run:** `python testing/scripts/data_governance_validator.py`
+- **Run:** `python testing/scripts/data_governance_compliance_check.py`
 - **Usage:** Verify compliance, catch violations
-
-#### 9. **testing/scripts/robust_cleanup.py**
-- Cleanup execution script
-- Dry-run capability
-- Removes redundant scripts
-- **Run:** `python testing/scripts/robust_cleanup.py --execute`
-- **Usage:** (Already executed, kept for reference)
 
 ---
 

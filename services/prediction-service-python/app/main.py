@@ -816,7 +816,7 @@ def _check_recent_team_resolution(engine) -> dict:
     # Keep this aligned with `run_today.py` defaults so behavior is consistent.
     lookback_days = int(os.getenv("TEAM_MATCHING_LOOKBACK_DAYS", "7"))
     min_rate = float(os.getenv("MIN_TEAM_RESOLUTION_RATE", "0.98"))
-    max_unresolved = int(os.getenv("MAX_UNRESOLVED_TEAM_VARIANTS", "1"))
+    max_unresolved = int(os.getenv("MAX_UNRESOLVED_TEAM_VARIANTS", "0"))  # Stricter: no unresolved
     now_utc = datetime.now(timezone.utc)
     lookback_start = now_utc - timedelta(days=lookback_days)
 

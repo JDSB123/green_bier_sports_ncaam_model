@@ -21,11 +21,11 @@ from __future__ import annotations
 
 from typing import Optional
 
-# Import from the new Team Resolution Gate
-from team_resolution_gate import (
-    TeamResolutionGate,
+# Import from the canonical Team Resolution Service
+from testing.canonical.team_resolution_service import (
+    TeamResolutionService,
     ResolutionResult,
-    get_gate,
+    get_team_resolver,
     resolve_team_name as _resolve,
 )
 

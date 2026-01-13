@@ -10,7 +10,7 @@ on:
     paths:
       - 'testing/scripts/run_backtest.py'
       - 'testing/scripts/backtest_*.py'
-      - 'testing/scripts/team_resolution_gate.py'
+      - 'testing/canonical/team_resolution_service.py'
       - 'ncaam_historical_data_local/**'
   
   # Run on pushes to main that touch data files
