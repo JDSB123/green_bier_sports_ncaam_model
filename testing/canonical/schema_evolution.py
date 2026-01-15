@@ -131,13 +131,24 @@ class SchemaEvolutionManager:
         schemas["v3.0"] = SchemaVersion(
             version="v3.0",
             vintage=DataVintage.MODERN,
-            description="Modern canonical schema: High quality with comprehensive data",
-            required_fields=["home_team", "away_team", "date", "season", "home_score", "away_score"],
-            optional_fields=[
-                "spread", "total", "moneyline_home", "moneyline_away",
-                "home_h1", "away_h1", "ratings_home", "ratings_away",
-                "data_source", "canonicalized_at"
+            description="Modern canonical schema: High quality with comprehensive data (all odds markets, ncaahoopR features, no placeholders)",
+            required_fields=[
+                # Core identifiers and results
+                "game_id", "date", "home_team_x", "home_abbr", "away_team_x", "away_abbr", "home_score", "away_score", "actual_total", "actual_margin", "venue", "neutral",
+                "home_canonical", "away_canonical", "game_date", "season", "home_team_original", "away_team_original", "home_team_canonical_x", "away_team_canonical_x",
+                "home_team_id", "away_team_id", "team_pair_id", "canonical_game_id", "event_id", "commence_time", "bookmaker", "bookmaker_title", "bookmaker_last_update",
+                # Odds markets (FG and H1, all prices)
+                "fg_spread", "spread_price", "fg_spread_home_price", "fg_spread_away_price", "fg_total", "fg_total_over_price", "fg_total_under_price",
+                "moneyline_home_price", "moneyline_away_price", "h1_spread", "h1_spread_price", "h1_spread_home_price", "h1_spread_away_price", "h1_total", "h1_total_over_price", "h1_total_under_price",
+                # Canonicalization/metadata
+                "is_march_madness", "timestamp", "season_odds", "home_team_canonical_odds", "away_team_canonical_odds",
+                # H1 results
+                "home_h1", "away_h1", "h1_actual_total", "h1_actual_margin",
+                # Ratings/seasonal
+                "ratings_season", "home_team_y", "home_conf", "home_games", "home_wins", "home_losses", "home_adj_o", "home_adj_d", "home_barthag", "home_efg", "home_efgd", "home_tor", "home_tord", "home_orb", "home_drb", "home_ftr", "home_ftrd", "home_two_pt_pct", "home_two_pt_pct_d", "home_three_pt_pct", "home_three_pt_pct_d", "home_three_pt_rate", "home_three_pt_rate_d", "home_tempo", "home_wab", "home_rank", "home_season", "home_team_canonical_y",
+                "away_team_y", "away_conf", "away_games", "away_wins", "away_losses", "away_adj_o", "away_adj_d", "away_barthag", "away_efg", "away_efgd", "away_tor", "away_tord", "away_orb", "away_drb", "away_ftr", "away_ftrd", "away_two_pt_pct", "away_two_pt_pct_d", "away_three_pt_pct", "away_three_pt_pct_d", "away_three_pt_rate", "away_three_pt_rate_d", "away_tempo", "away_wab", "away_rank", "away_season", "away_team_canonical_y"
             ],
+            optional_fields=[],
             quality_standards={
                 "null_threshold": 0.02,  # 2% nulls acceptable
                 "duplicate_threshold": 0.01,  # 1% duplicates acceptable
