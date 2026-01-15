@@ -53,6 +53,11 @@ sys.path.insert(0, str(ROOT_DIR))
 from testing.azure_io import read_csv, read_json, blob_exists, list_files
 from testing.azure_data_reader import get_azure_reader
 from testing.data_paths import DATA_PATHS
+from testing.data_window import (
+    current_season,
+    default_backtest_seasons,
+    enforce_min_season,
+)
 
 
 # ============================================================================
@@ -63,11 +68,11 @@ from testing.data_paths import DATA_PATHS
 # Season 2024 = Nov 2023 - Apr 2024
 # Season 2025 = Nov 2024 - Apr 2025  
 # Season 2026 = Nov 2025 - Apr 2026 (current season, YTD through today-3)
-# All three seasons are now included for backtest auditing
-BACKTEST_SEASONS = [2024, 2025, 2026]  # All seasons including current
+# Canonical backtest seasons (2023-24 season onward).
+BACKTEST_SEASONS = default_backtest_seasons()
 
 # Current season (allows special handling for incomplete data)
-CURRENT_SEASON = 2026
+CURRENT_SEASON = current_season()
 
 # Expected game counts per season (D1 teams play ~30 games, ~360 teams)
 # Regular season + conference tourneys + NCAA = ~5500-6500 games
@@ -89,7 +94,7 @@ MIN_ODDS_COVERAGE_PCT_CURRENT = 75.0  # At least 75% for current season
 MIN_RATINGS_COVERAGE_PCT = 75.0  # At least 75% of D1 matchups have both ratings
 
 # Use the pre-merged backtest master for coverage checks (already has joins done)
-BACKTEST_MASTER_ENHANCED = "backtest_datasets/backtest_master_enhanced.csv"
+BACKTEST_MASTER = "backtest_datasets/backtest_master.csv"
 
 # Critical columns that must never be null (actual schema uses 'date' not 'game_date')
 CRITICAL_SCORE_COLUMNS = ["date", "home_team", "away_team", "home_score", "away_score"]
@@ -179,11 +184,8 @@ def audit_data_existence(result: AuditResult, verbose: bool = False) -> None:
         "scores_fg_all": "scores/fg/games_all.csv",
         "scores_h1_all": "scores/h1/h1_games_all.csv",
         
-        # Odds (canonical)
-        "odds_spreads_fg": "odds/canonical/spreads/fg/spreads_fg_all.csv",
-        "odds_totals_fg": "odds/canonical/totals/fg/totals_fg_all.csv",
-        "odds_spreads_h1": "odds/canonical/spreads/h1/spreads_h1_all.csv",
-        "odds_totals_h1": "odds/canonical/totals/h1/totals_h1_all.csv",
+        # Odds (canonical, consolidated)
+        "odds_consolidated": "odds/normalized/odds_consolidated_canonical.csv",
         
         # Team aliases (CRITICAL)
         "team_aliases": "backtest_datasets/team_aliases_db.json",
@@ -297,10 +299,10 @@ def audit_season_coverage(result: AuditResult, verbose: bool = False) -> None:
     print_header("AUDIT 2: SEASON COVERAGE")
     
     try:
-        # Use backtest_master_enhanced as the single source of truth
+        # Use backtest_master.csv as the single source of truth
         reader = get_azure_reader()
-        if blob_exists(BACKTEST_MASTER_ENHANCED):
-            games_df = reader.read_csv(BACKTEST_MASTER_ENHANCED, data_type=None)
+        if blob_exists(BACKTEST_MASTER):
+            games_df = reader.read_csv(BACKTEST_MASTER, data_type=None)
         else:
             games_df = reader.read_csv("scores/fg/games_all.csv", data_type=None)
         games_df = _normalize_date_column(games_df)
@@ -396,21 +398,24 @@ def audit_schema_consistency(result: AuditResult, verbose: bool = False) -> None
             "required": ["game_id", "home_h1", "away_h1"],
             "optional": ["game_date", "date", "home_team", "away_team"]
         },
-        "odds_spreads": {
-            "required": ["game_date", "home_team", "away_team", "spread"],
-            "optional": ["bookmaker", "timestamp", "event_id", "spread_price", "home_team_canonical", "away_team_canonical"]
-        },
-        "odds_totals": {
-            "required": ["game_date", "home_team", "away_team", "total"],
-            "optional": ["bookmaker", "timestamp", "event_id", "over_price", "under_price"]
+        "odds_consolidated": {
+            "required": ["game_date", "home_team", "away_team", "spread", "total"],
+            "optional": [
+                "spread_home_price", "spread_away_price",
+                "total_over_price", "total_under_price",
+                "h1_spread", "h1_total",
+                "h1_spread_home_price", "h1_spread_away_price",
+                "h1_total_over_price", "h1_total_under_price",
+                "bookmaker", "timestamp", "event_id",
+                "home_team_canonical", "away_team_canonical",
+            ]
         }
     }
     
     files_to_check = {
         "scores_fg": "scores/fg/games_all.csv",
         "scores_h1": "scores/h1/h1_games_all.csv",
-        "odds_spreads": "odds/canonical/spreads/fg/spreads_fg_all.csv",
-        "odds_totals": "odds/canonical/totals/fg/totals_fg_all.csv",
+        "odds_consolidated": "odds/normalized/odds_consolidated_canonical.csv",
     }
     
     reader = get_azure_reader()
@@ -488,8 +493,8 @@ def audit_h1_coverage(result: AuditResult, verbose: bool = False) -> None:
         reader = get_azure_reader()
         
         # Use pre-merged backtest master which has H1 already joined
-        if blob_exists(BACKTEST_MASTER_ENHANCED):
-            df = reader.read_csv(BACKTEST_MASTER_ENHANCED, data_type=None)
+        if blob_exists(BACKTEST_MASTER):
+            df = reader.read_csv(BACKTEST_MASTER, data_type=None)
             df["game_date"] = pd.to_datetime(df["game_date"], errors="coerce")
             df["season_calc"] = df["game_date"].apply(_get_season)
             
@@ -525,12 +530,12 @@ def audit_h1_coverage(result: AuditResult, verbose: bool = False) -> None:
                 else:
                     print_pass(f"Season {season}: {coverage_pct:.1f}% H1 coverage ({h1_count}/{len(season_games)})")
         else:
-            print_warn(f"Pre-merged backtest master not found: {BACKTEST_MASTER_ENHANCED}")
+            print_warn(f"Backtest master not found: {BACKTEST_MASTER}")
             result.add_issue(AuditIssue(
                 category="h1_coverage",
                 severity="warning",
-                message=f"Pre-merged backtest master not found",
-                details={"path": BACKTEST_MASTER_ENHANCED}
+                message=f"Backtest master not found",
+                details={"path": BACKTEST_MASTER}
             ))
     
     except Exception as e:
@@ -560,8 +565,8 @@ def audit_odds_coverage(result: AuditResult, verbose: bool = False) -> None:
         reader = get_azure_reader()
         
         # Use pre-merged backtest master which has odds already joined
-        if blob_exists(BACKTEST_MASTER_ENHANCED):
-            df = reader.read_csv(BACKTEST_MASTER_ENHANCED, data_type=None)
+        if blob_exists(BACKTEST_MASTER):
+            df = reader.read_csv(BACKTEST_MASTER, data_type=None)
             df["game_date"] = pd.to_datetime(df["game_date"], errors="coerce")
             df["season_calc"] = df["game_date"].apply(_get_season)
             
@@ -622,12 +627,12 @@ def audit_odds_coverage(result: AuditResult, verbose: bool = False) -> None:
                 else:
                     print_pass(f"Season {season}: H1 BETTING ODDS {h1_pct:.1f}% ({h1_count}/{n})")
         else:
-            print_warn(f"Pre-merged backtest master not found: {BACKTEST_MASTER_ENHANCED}")
+            print_warn(f"Backtest master not found: {BACKTEST_MASTER}")
             result.add_issue(AuditIssue(
                 category="odds_coverage",
                 severity="warning",
-                message=f"Pre-merged backtest master not found",
-                details={"path": BACKTEST_MASTER_ENHANCED}
+                message=f"Backtest master not found",
+                details={"path": BACKTEST_MASTER}
             ))
     
     except Exception as e:
@@ -654,8 +659,8 @@ def audit_ratings_coverage(result: AuditResult, verbose: bool = False) -> None:
         reader = get_azure_reader()
         
         # Use pre-merged backtest master which has ratings already joined
-        if blob_exists(BACKTEST_MASTER_ENHANCED):
-            df = reader.read_csv(BACKTEST_MASTER_ENHANCED, data_type=None)
+        if blob_exists(BACKTEST_MASTER):
+            df = reader.read_csv(BACKTEST_MASTER, data_type=None)
             df["game_date"] = pd.to_datetime(df["game_date"], errors="coerce")
             df["season_calc"] = df["game_date"].apply(_get_season)
             
@@ -687,12 +692,12 @@ def audit_ratings_coverage(result: AuditResult, verbose: bool = False) -> None:
                 else:
                     print_pass(f"Season {season}: {coverage_pct:.1f}% ratings coverage ({both_ratings}/{len(season_games)} D1 matchups)")
         else:
-            print_warn(f"Pre-merged backtest master not found: {BACKTEST_MASTER_ENHANCED}")
+            print_warn(f"Backtest master not found: {BACKTEST_MASTER}")
             result.add_issue(AuditIssue(
                 category="ratings_coverage",
                 severity="warning",
-                message=f"Pre-merged backtest master not found",
-                details={"path": BACKTEST_MASTER_ENHANCED}
+                message=f"Backtest master not found",
+                details={"path": BACKTEST_MASTER}
             ))
     
     except Exception as e:
@@ -872,7 +877,7 @@ def audit_ingestion_recency(result: AuditResult, verbose: bool = False) -> None:
         critical_blobs = [
             "scores/fg/games_all.csv",
             "scores/h1/h1_games_all.csv",
-            "odds/canonical/spreads/fg/spreads_fg_all.csv",
+            "odds/normalized/odds_consolidated_canonical.csv",
             "backtest_datasets/team_aliases_db.json",
         ]
         
@@ -967,13 +972,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", "-o", type=str,
                         help="Save audit results to JSON file")
     parser.add_argument("--seasons", type=str,
-                        help="Comma-separated seasons to audit (default: 2024,2025,2026)")
+                        help="Comma-separated seasons to audit (default: canonical window)")
     args = parser.parse_args(argv)
     
     # Override seasons if specified
     global BACKTEST_SEASONS
     if args.seasons:
-        BACKTEST_SEASONS = [int(s.strip()) for s in args.seasons.split(",")]
+        BACKTEST_SEASONS = enforce_min_season([int(s.strip()) for s in args.seasons.split(",")])
     
     print(f"\n{Colors.BOLD}{'='*72}{Colors.END}")
     print(f"{Colors.BOLD}COMPREHENSIVE INGESTION AUDIT{Colors.END}")

@@ -25,13 +25,13 @@ scores/  odds/  ratings/  backtest_datasets/
 
 ```bash
 # Scores + Barttorvik ratings
-python testing/scripts/fetch_historical_data.py --seasons 2019-2026 --format both
+python testing/scripts/fetch_historical_data.py --seasons 2024-2026 --format both
 
 # First-half scores
 python testing/scripts/fetch_h1_data.py
 
 # Historical odds
-python testing/scripts/fetch_historical_odds.py --start 2019-11-01 --end 2020-04-15
+python testing/scripts/fetch_historical_odds.py --start 2023-11-01 --end 2024-04-15
 
 # Export team aliases to Azure
 python scripts/export_team_registry.py --write-aliases

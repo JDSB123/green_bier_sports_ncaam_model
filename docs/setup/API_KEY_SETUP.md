@@ -1,6 +1,6 @@
 # API Key & Secrets Setup Guide
 
-**Status:** All environments now use unified secret management  
+**Status:** All environments now use unified secret management
 **Last Updated:** January 9, 2026
 
 This guide covers setting up secrets for local development, Docker containers, and Azure Cloud deployments.
@@ -64,11 +64,11 @@ All secrets use **the same 3-tier priority system**:
 1. ✅ ENVIRONMENT VARIABLE (wins if set)
    └─ Used by: All environments (local, Docker, Azure)
    └─ Set with: $env:VARIABLE=value (PowerShell)
-   
+
 2. 🐳 DOCKER SECRET FILE (if no env var)
    └─ Location: /run/secrets/odds_api_key
    └─ Used by: Docker containers only
-   
+
 3. 📄 LOCAL SECRETS FILE (if no env var or Docker secret)
   └─ Location: secrets/odds_api_key.txt
   └─ Used by: Local development only (secrets only, never data)
@@ -218,7 +218,7 @@ $env:THE_ODDS_API_KEY = "your_key_from_https://the-odds-api.com"
 
 **Cause:** Running Docker but secret file missing.
 
-**Fix:** 
+**Fix:**
 - Local: Create `secrets/odds_api_key.txt`
 - Or set env var: `$env:THE_ODDS_API_KEY = "your_key"`
 

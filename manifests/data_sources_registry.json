@@ -307,8 +307,7 @@
       "raw_container": null,
       "canonical_container": null,
       "raw_paths": [
-        "testing/data/kaggle/MarchMadnessData-2023-2025.csv",
-        "testing/data/kaggle/MarchMadnessData-2000-2022.csv"
+        "testing/data/kaggle/MarchMadnessData-2023-2025.csv"
       ],
       "canonical_paths": [],
       "guard_rails": [

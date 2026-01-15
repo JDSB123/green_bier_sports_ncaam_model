@@ -48,7 +48,7 @@ class StatisticalConfidenceCalculator:
     - Statistical significance testing
     """
 
-    # Backtest results from v33.11 recalibration (3,222 games, 2020-2025)
+    # Backtest results from v33.11 recalibration (3,222 games)
     BACKTEST_STATS = {
         BetType.SPREAD: BacktestStats(
             sample_size=3318,

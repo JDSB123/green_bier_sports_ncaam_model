@@ -1,7 +1,7 @@
 """
 First Half Spread Model v33.10.0
 
-BACKTESTED on 904 real 1H games from ESPN (2019-2024).
+BACKTESTED on 904 real 1H games from ESPN.
 HCA calibration derived from actual 1H home margins.
 
 Backtest Results:
@@ -35,7 +35,7 @@ class H1SpreadModel(BasePredictor):
     """
     First Half Spread Prediction Model - TRULY INDEPENDENT.
 
-    BACKTESTED on 904 real 1H games (2019-2024) from ESPN.
+    BACKTESTED on 904 real 1H games from ESPN.
 
     Backtest Results (v33.10.0):
     - MAE: 8.25 points
@@ -72,7 +72,7 @@ class H1SpreadModel(BasePredictor):
     # 1H-specific variance (higher than FG)
     BASE_VARIANCE: float = 12.65  # ~15% higher than FG spread variance
 
-    # CALIBRATION - from 2,233 game anti-leakage backtest (2022-2025)
+    # CALIBRATION - from 2,233 game anti-leakage backtest
     # Observed bias: -1.3 (model over-predicts home team strength)
     # Fix: Add +1.3 to spread to center predictions
     CALIBRATION: float = 1.3

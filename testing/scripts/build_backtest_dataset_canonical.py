@@ -17,8 +17,8 @@ Output: backtest_datasets/backtest_master.csv (canonical)
 
 Usage:
     python testing/scripts/build_backtest_dataset_canonical.py
-    python testing/scripts/build_backtest_dataset_canonical.py --enhanced  # Include ncaahoopR features
     python testing/scripts/build_backtest_dataset_canonical.py --validate-only  # Just validate, don't build
+    python testing/scripts/build_backtest_dataset_canonical.py --force  # Rebuild even if output exists
 """
 
 import argparse
@@ -34,16 +34,89 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from testing.azure_data_reader import (
     get_azure_reader, read_canonical_scores, read_canonical_odds,
-    read_backtest_master
 )
-from testing.azure_io import write_csv, write_json
+from testing.data_window import (
+    CANONICAL_START_SEASON,
+    CANONICAL_START_DATE,
+    default_backtest_seasons,
+    enforce_min_season,
+    season_from_date,
+)
+from testing.azure_io import write_csv, write_json, blob_exists
 from testing.canonical.ingestion_pipeline import CanonicalIngestionPipeline, DataSource
 from testing.canonical.quality_gates import DataQualityGate
 from testing.canonical.schema_evolution import SchemaEvolutionManager
+from testing.canonical.team_resolution_service import get_team_resolver
+
+
+def _canonicalize_team_series(series: pd.Series, resolver) -> pd.Series:
+    """Resolve team names using the canonical alias database."""
+    if series is None or series.empty:
+        return series
+
+    unique_names = series.dropna().unique()
+    mapping = {}
+    for name in unique_names:
+        result = resolver.resolve(str(name))
+        mapping[name] = result.canonical_name if result.canonical_name else str(name)
+    return series.map(mapping)
+
+
+def _parse_barttorvik_payload(payload, season: int, resolver) -> pd.DataFrame:
+    """Parse Barttorvik ratings payload into a normalized DataFrame."""
+    records = []
+
+    def to_float(value):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    if isinstance(payload, list):
+        for row in payload:
+            if not isinstance(row, list) or len(row) < 7:
+                continue
+            team_raw = str(row[1]).strip()
+            canonical = resolver.resolve(team_raw).canonical_name or team_raw
+            adj_t = to_float(row[44]) if len(row) > 44 else None
+            records.append({
+                "team": canonical,
+                "adj_o": to_float(row[4]),
+                "adj_d": to_float(row[6]),
+                "adj_t": adj_t,
+                "tempo": adj_t,
+                "season": season,
+            })
+    elif isinstance(payload, dict):
+        for team_raw, row in payload.items():
+            canonical = resolver.resolve(str(team_raw)).canonical_name or str(team_raw)
+            if isinstance(row, dict):
+                adj_t = row.get("adj_t") if "adj_t" in row else row.get("tempo")
+                records.append({
+                    "team": canonical,
+                    "adj_o": to_float(row.get("adj_o")),
+                    "adj_d": to_float(row.get("adj_d")),
+                    "adj_t": to_float(adj_t),
+                    "tempo": to_float(adj_t),
+                    "season": season,
+                })
+            elif isinstance(row, list) and len(row) >= 7:
+                adj_t = to_float(row[44]) if len(row) > 44 else None
+                records.append({
+                    "team": canonical,
+                    "adj_o": to_float(row[4]),
+                    "adj_d": to_float(row[6]),
+                    "adj_t": adj_t,
+                    "tempo": adj_t,
+                    "season": season,
+                })
+    else:
+        raise ValueError("Unsupported ratings payload type")
+
+    return pd.DataFrame(records)
 
 
 def build_canonical_backtest_dataset(
-    include_enhanced: bool = False,
     validate_only: bool = False,
     seasons: Optional[List[int]] = None,
     strict_mode: bool = True
@@ -52,7 +125,6 @@ def build_canonical_backtest_dataset(
     Build canonical backtest dataset using ingestion pipeline.
 
     Args:
-        include_enhanced: Include ncaahoopR features if available
         validate_only: Only validate data, don't build dataset
         seasons: Specific seasons to include (None = all)
         strict_mode: Fail on any quality issues
@@ -65,21 +137,28 @@ def build_canonical_backtest_dataset(
     print("CANONICAL BACKTEST DATASET BUILDER")
     print("=" * 80)
     print(f"Timestamp: {datetime.now().isoformat()}")
-    print(f"Enhanced features: {'YES' if include_enhanced else 'NO'}")
     print(f"Strict mode: {'YES' if strict_mode else 'NO'}")
     print(f"Validate only: {'YES' if validate_only else 'NO'}")
     print()
+
+    # Enforce canonical data window (2023-24 season onward).
+    if seasons is None:
+        seasons = default_backtest_seasons()
+    else:
+        seasons = enforce_min_season(seasons)
 
     # Initialize canonical components
     azure_reader = get_azure_reader()
     ingestion_pipeline = CanonicalIngestionPipeline(strict_mode=strict_mode)
     quality_gate = DataQualityGate(strict_mode=strict_mode)
     schema_manager = SchemaEvolutionManager()
+    resolver = get_team_resolver()
 
     # Track statistics
     stats = {
         "scores_loaded": 0,
         "odds_loaded": 0,
+        "h1_loaded": 0,
         "ratings_loaded": 0,
         "canonicalization_issues": 0,
         "quality_issues": 0,
@@ -89,29 +168,23 @@ def build_canonical_backtest_dataset(
     try:
         # Step 1: Load canonical scores data
         print("Step 1: Loading canonical scores data...")
-        if seasons:
-            # Load specific seasons
-            scores_dfs = []
-            for season in seasons:
-                try:
-                    season_df = read_canonical_scores(season)
-                    scores_dfs.append(season_df)
-                    stats["scores_loaded"] += len(season_df)
-                    print(f"  Loaded {len(season_df)} games from {season} season")
-                except Exception as e:
-                    print(f"  Warning: Failed to load season {season}: {e}")
-                    if strict_mode:
-                        raise
+        # Load specific seasons
+        scores_dfs = []
+        for season in seasons:
+            try:
+                season_df = read_canonical_scores(season)
+                scores_dfs.append(season_df)
+                stats["scores_loaded"] += len(season_df)
+                print(f"  Loaded {len(season_df)} games from {season} season")
+            except Exception as e:
+                print(f"  Warning: Failed to load season {season}: {e}")
+                if strict_mode:
+                    raise
 
-            if scores_dfs:
-                games = pd.concat(scores_dfs, ignore_index=True)
-            else:
-                raise ValueError("No season data loaded")
+        if scores_dfs:
+            games = pd.concat(scores_dfs, ignore_index=True)
         else:
-            # Load all games
-            games = read_canonical_scores()
-            stats["scores_loaded"] = len(games)
-            print(f"  Loaded {len(games)} total games")
+            raise ValueError("No season data loaded")
 
         # Validate scores data
         validation_result = quality_gate.validate(games, "scores")
@@ -121,6 +194,75 @@ def build_canonical_backtest_dataset(
                 raise ValueError(f"Scores validation failed: {[issue.message for issue in validation_result.issues[:5]]}")
 
         print(f"  Scores validation: {len(validation_result.issues)} issues found")
+
+        # Ensure canonical team name columns for downstream merges
+        if "home_canonical" not in games.columns:
+            games["home_canonical"] = _canonicalize_team_series(games["home_team"], resolver)
+        if "away_canonical" not in games.columns:
+            games["away_canonical"] = _canonicalize_team_series(games["away_team"], resolver)
+
+        # Step 1b: Load canonical H1 scores if available
+        print("\nStep 1b: Loading canonical H1 scores...")
+        h1_df = None
+        try:
+            h1_df = azure_reader.read_csv("scores/h1/h1_games_all.csv", data_type="scores")
+        except Exception as e:
+            print(f"  Warning: Failed to load H1 scores: {e}")
+
+        if h1_df is not None and not h1_df.empty:
+            if "date" not in h1_df.columns and "game_date" in h1_df.columns:
+                h1_df["date"] = h1_df["game_date"]
+            if "date" in h1_df.columns:
+                h1_df["date"] = pd.to_datetime(h1_df["date"], errors="coerce")
+                h1_df = h1_df[h1_df["date"] >= pd.Timestamp(CANONICAL_START_DATE)]
+            if "season" in h1_df.columns:
+                h1_df = h1_df[h1_df["season"] >= CANONICAL_START_SEASON]
+
+            if seasons:
+                if "season" in h1_df.columns:
+                    h1_df = h1_df[h1_df["season"].isin(seasons)].copy()
+                elif "date" in h1_df.columns:
+                    h1_df["_season"] = h1_df["date"].apply(
+                        lambda d: season_from_date(d.date()) if pd.notna(d) else None
+                    )
+                    h1_df = h1_df[h1_df["_season"].isin(seasons)].drop(columns=["_season"])
+
+            h1_cols = [col for col in ["home_h1", "away_h1", "h1_total"] if col in h1_df.columns]
+            merge_cols = []
+
+            if "game_id" in games.columns and "game_id" in h1_df.columns:
+                games["game_id"] = games["game_id"].astype(str)
+                h1_df["game_id"] = h1_df["game_id"].astype(str)
+                merge_cols = ["game_id"]
+            else:
+                h1_df["home_canonical"] = _canonicalize_team_series(h1_df["home_team"], resolver)
+                h1_df["away_canonical"] = _canonicalize_team_series(h1_df["away_team"], resolver)
+                if "date" not in games.columns and "game_date" in games.columns:
+                    games["date"] = games["game_date"]
+                if "date" in games.columns:
+                    games["date"] = pd.to_datetime(games["date"], errors="coerce").dt.normalize()
+                if "date" in h1_df.columns:
+                    h1_df["date"] = pd.to_datetime(h1_df["date"], errors="coerce").dt.normalize()
+                merge_cols = ["home_canonical", "away_canonical", "date"]
+
+            if merge_cols and h1_cols:
+                h1_df = h1_df[merge_cols + h1_cols].drop_duplicates(subset=merge_cols, keep="first")
+                games = games.merge(h1_df, on=merge_cols, how="left", suffixes=("", "_h1"))
+                for col in h1_cols:
+                    h1_col = f"{col}_h1"
+                    if h1_col in games.columns:
+                        if col in games.columns:
+                            games[col] = games[col].fillna(games[h1_col])
+                        else:
+                            games[col] = games[h1_col]
+                games = games.drop(columns=[f"{col}_h1" for col in h1_cols], errors="ignore")
+                stats["h1_loaded"] = len(h1_df)
+                h1_coverage = games[h1_cols[0]].notna().sum() if h1_cols else 0
+                print(f"  Merged H1 scores: {h1_coverage:,} games with data")
+            else:
+                print("  Warning: H1 scores missing merge keys or columns")
+        else:
+            print("  Warning: H1 scores dataset is empty")
 
         # Step 2: Load canonical odds data
         print("\nStep 2: Loading canonical odds data...")
@@ -178,32 +320,75 @@ def build_canonical_backtest_dataset(
 
         # Start with games as base
         backtest_df = games.copy()
+        same_team = backtest_df["home_team"] == backtest_df["away_team"]
+        if same_team.any():
+            print(f"  Dropping {int(same_team.sum())} games with identical home/away teams")
+            backtest_df = backtest_df.loc[~same_team].copy()
+        if "home_score" in backtest_df.columns and "away_score" in backtest_df.columns:
+            if "actual_margin" not in backtest_df.columns:
+                backtest_df["actual_margin"] = backtest_df["home_score"] - backtest_df["away_score"]
+            if "actual_total" not in backtest_df.columns:
+                backtest_df["actual_total"] = backtest_df["home_score"] + backtest_df["away_score"]
+        if "home_h1" in backtest_df.columns and "away_h1" in backtest_df.columns:
+            if "h1_actual_margin" not in backtest_df.columns:
+                backtest_df["h1_actual_margin"] = backtest_df["home_h1"] - backtest_df["away_h1"]
+            if "h1_actual_total" not in backtest_df.columns:
+                backtest_df["h1_actual_total"] = backtest_df["home_h1"] + backtest_df["away_h1"]
 
         # Merge function for odds data
         def merge_odds_data(base_df: pd.DataFrame, odds_df: pd.DataFrame,
                           odds_type: str, team_col: str = "home_team") -> pd.DataFrame:
-            """Merge odds data with proper canonicalization."""
+            """Merge odds data with proper canonicalization.
+            
+            Uses canonical team names for matching:
+            - scores: home_canonical, away_canonical
+            - odds: home_team_canonical, away_team_canonical
+            """
             if odds_df is None or len(odds_df) == 0:
                 return base_df
 
+            odds_df = odds_df.copy()
+            
             # Odds data uses 'game_date', scores use 'date' - normalize
             if "game_date" in odds_df.columns and "date" not in odds_df.columns:
                 odds_df = odds_df.rename(columns={"game_date": "date"})
-            
-            # Ensure consistent column names
-            odds_cols = [col for col in odds_df.columns if col not in ["home_team", "away_team", "date", "home_team_canonical", "away_team_canonical"]]
-            
-            # Use canonical team names if available
-            if "home_team_canonical" in odds_df.columns:
-                odds_df["home_team"] = odds_df["home_team_canonical"]
-                odds_df["away_team"] = odds_df["away_team_canonical"]
-            
-            odds_df = odds_df[["home_team", "away_team", "date"] + odds_cols].copy()
 
-            # Merge on home team odds
-            merge_cols = ["home_team", "away_team", "date"]
-            if team_col == "home":
-                merge_cols = ["home_team", "date"]
+            # Normalize date column type for reliable merges
+            if "date" in odds_df.columns:
+                odds_df["date"] = pd.to_datetime(odds_df["date"], errors="coerce")
+                if odds_df["date"].isna().all() and "commence_time" in odds_df.columns:
+                    odds_df["date"] = pd.to_datetime(odds_df["commence_time"], errors="coerce").dt.normalize()
+            elif "commence_time" in odds_df.columns:
+                odds_df["date"] = pd.to_datetime(odds_df["commence_time"], errors="coerce").dt.normalize()
+
+            # Normalize base dates to date-only (no time component) for matching
+            base_df["date"] = pd.to_datetime(base_df["date"], errors="coerce").dt.normalize()
+            odds_df["date"] = odds_df["date"].dt.normalize()
+
+            # Create merge keys using canonical team names resolved from the alias DB.
+            if "home_canonical" not in base_df.columns or "away_canonical" not in base_df.columns:
+                base_df = base_df.copy()
+                base_df["home_canonical"] = _canonicalize_team_series(base_df["home_team"], resolver)
+                base_df["away_canonical"] = _canonicalize_team_series(base_df["away_team"], resolver)
+
+            home_source = "home_team_canonical" if "home_team_canonical" in odds_df.columns else "home_team"
+            away_source = "away_team_canonical" if "away_team_canonical" in odds_df.columns else "away_team"
+            odds_df["home_canonical"] = _canonicalize_team_series(odds_df[home_source], resolver)
+            odds_df["away_canonical"] = _canonicalize_team_series(odds_df[away_source], resolver)
+            merge_cols = ["home_canonical", "away_canonical", "date"]
+
+            # Get odds-specific columns to keep
+            odds_cols = [col for col in odds_df.columns 
+                        if col not in ["home_team", "away_team", "date",
+                                       "home_team_canonical", "away_team_canonical",
+                                       "home_canonical", "away_canonical",
+                                       "game_date", "commence_time"]]
+
+            cols_to_keep = merge_cols + odds_cols
+            odds_df = odds_df[cols_to_keep].copy()
+            
+            # Drop duplicates - keep first occurrence per game
+            odds_df = odds_df.drop_duplicates(subset=merge_cols, keep="first")
 
             try:
                 merged = base_df.merge(
@@ -212,10 +397,18 @@ def build_canonical_backtest_dataset(
                     how="left",
                     suffixes=("", f"_{odds_type}")
                 )
+                matched = merged[odds_cols[0] if odds_cols else merge_cols[0]].notna().sum() if odds_cols else 0
+                print(f"    Matched {matched:,} records")
                 return merged
             except Exception as e:
                 print(f"  Warning: Failed to merge {odds_type} odds: {e}")
                 return base_df
+
+        # Normalize base date columns to datetime for consistent merges
+        if "date" in backtest_df.columns:
+            backtest_df["date"] = pd.to_datetime(backtest_df["date"], errors="coerce")
+        if "game_date" in backtest_df.columns:
+            backtest_df["game_date"] = pd.to_datetime(backtest_df["game_date"], errors="coerce")
 
         # Merge each odds type
         for odds_type, odds_df in odds_data.items():
@@ -227,70 +420,68 @@ def build_canonical_backtest_dataset(
         # Step 4: Add ratings data (if available)
         print("\nStep 4: Adding ratings data...")
         try:
-            # Get unique seasons
-            seasons_in_data = backtest_df["season"].dropna().unique().astype(int)
+            # Use prior-season ratings to prevent leakage (season N games use N-1 ratings).
+            if "ratings_season" not in backtest_df.columns:
+                backtest_df["ratings_season"] = pd.to_numeric(
+                    backtest_df["season"], errors="coerce"
+                ).astype("Int64") - 1
+
+            ratings_seasons = sorted(
+                backtest_df["ratings_season"].dropna().unique().astype(int)
+            )
+            min_ratings_season = CANONICAL_START_SEASON - 1
 
             ratings_data = []
-            for season in seasons_in_data:
-                if season >= 2020:  # Barttorvik data starts around here
+            for season in ratings_seasons:
+                if season >= min_ratings_season:
                     try:
                         season_ratings = azure_reader.read_canonical_ratings(season)
-                        # Convert to DataFrame format for merging
-                        ratings_df = pd.DataFrame.from_dict(season_ratings, orient="index")
-                        ratings_df["season"] = season
-                        ratings_df["team"] = ratings_df.index
-                        ratings_data.append(ratings_df)
-                        stats["ratings_loaded"] += len(ratings_df)
+                        ratings_df = _parse_barttorvik_payload(season_ratings, season, resolver)
+                        if not ratings_df.empty:
+                            ratings_data.append(ratings_df)
+                            stats["ratings_loaded"] += len(ratings_df)
                     except Exception as e:
                         print(f"  Warning: Failed to load ratings for {season}: {e}")
 
             if ratings_data:
                 all_ratings = pd.concat(ratings_data, ignore_index=True)
+                if "team" in all_ratings.columns:
+                    all_ratings = all_ratings.rename(columns={"team": "team_canonical"})
+                if "season" in all_ratings.columns:
+                    all_ratings["season"] = pd.to_numeric(
+                        all_ratings["season"], errors="coerce"
+                    ).astype("Int64")
 
                 # Merge ratings for home and away teams
                 backtest_df = backtest_df.merge(
                     all_ratings.add_prefix("home_"),
-                    left_on=["home_team", "season"],
-                    right_on=["home_team", "home_season"],
+                    left_on=["home_canonical", "ratings_season"],
+                    right_on=["home_team_canonical", "home_season"],
                     how="left"
                 )
 
                 backtest_df = backtest_df.merge(
                     all_ratings.add_prefix("away_"),
-                    left_on=["away_team", "season"],
-                    right_on=["away_team", "away_season"],
+                    left_on=["away_canonical", "ratings_season"],
+                    right_on=["away_team_canonical", "away_season"],
                     how="left"
                 )
 
                 print(f"  Added ratings for {len(all_ratings)} team-seasons")
+                if "home_team_canonical" in backtest_df.columns and "home_canonical" in backtest_df.columns:
+                    backtest_df["home_team_canonical"] = backtest_df["home_team_canonical"].fillna(
+                        backtest_df["home_canonical"]
+                    )
+                if "away_team_canonical" in backtest_df.columns and "away_canonical" in backtest_df.columns:
+                    backtest_df["away_team_canonical"] = backtest_df["away_team_canonical"].fillna(
+                        backtest_df["away_canonical"]
+                    )
 
         except Exception as e:
             print(f"  Warning: Failed to add ratings: {e}")
 
-        # Step 5: Add enhanced features (ncaahoopR)
-        if include_enhanced:
-            print("\nStep 5: Adding enhanced features...")
-            try:
-                enhanced_df = read_backtest_master(enhanced=True)
-                if len(enhanced_df) > len(backtest_df) * 0.8:  # Has most of our games
-                    # Merge enhanced features
-                    enhanced_cols = [col for col in enhanced_df.columns
-                                   if col not in backtest_df.columns and
-                                   col not in ["home_team", "away_team", "date"]]
-
-                    backtest_df = backtest_df.merge(
-                        enhanced_df[["home_team", "away_team", "date"] + enhanced_cols],
-                        on=["home_team", "away_team", "date"],
-                        how="left"
-                    )
-
-                    print(f"  Added {len(enhanced_cols)} enhanced features")
-
-            except Exception as e:
-                print(f"  Warning: Failed to add enhanced features: {e}")
-
-        # Step 6: Final canonicalization and validation
-        print("\nStep 6: Final canonicalization and validation...")
+        # Step 5: Final canonicalization and validation
+        print("\nStep 5: Final canonicalization and validation...")
 
         # Apply final canonical ingestion (scores-like validation)
         final_result = ingestion_pipeline.ingest_scores_data(
@@ -398,8 +589,6 @@ def save_canonical_dataset(df: pd.DataFrame, output_blob: Optional[str] = None):
 
 def main():
     parser = argparse.ArgumentParser(description="Build canonical backtest dataset")
-    parser.add_argument("--enhanced", action="store_true",
-                       help="Include ncaahoopR enhanced features")
     parser.add_argument("--validate-only", action="store_true",
                        help="Only validate data, don't build dataset")
     parser.add_argument("--seasons", type=int, nargs="+",
@@ -408,20 +597,32 @@ def main():
                        help="Use lenient validation (warnings instead of errors)")
     parser.add_argument("--output", type=str,
                        help="Output blob path for dataset")
+    parser.add_argument("--force", action="store_true",
+                       help="Rebuild even if the output already exists")
 
     args = parser.parse_args()
 
     strict_mode = not args.lenient
 
+    output_blob = args.output or "backtest_datasets/backtest_master.csv"
+    if not args.validate_only and not args.force:
+        try:
+            if blob_exists(output_blob):
+                print(f"[SKIP] Output already exists: {output_blob}")
+                print("       Use --force to rebuild.")
+                return
+        except Exception as exc:
+            print(f"[WARN] Could not check output existence: {exc}")
+            print("       Proceeding with rebuild.")
+
     result_df = build_canonical_backtest_dataset(
-        include_enhanced=args.enhanced,
         validate_only=args.validate_only,
         seasons=args.seasons,
         strict_mode=strict_mode
     )
 
     if result_df is not None and not args.validate_only:
-        save_canonical_dataset(result_df, args.output)
+        save_canonical_dataset(result_df, output_blob)
 
 
 if __name__ == "__main__":

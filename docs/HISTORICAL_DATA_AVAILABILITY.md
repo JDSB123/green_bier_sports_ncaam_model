@@ -1,4 +1,5 @@
 # Historical Data Availability Matrix
+**Canonical window:** 2023-24 season onward (season 2024+). Pre-2023 data is out of scope.
 
 **Last Updated:** January 9, 2026  
 **Purpose:** Document what historical data is available for backtesting by season
@@ -11,15 +12,10 @@
 
 **The Odds API does NOT provide historical H1 data before May 3, 2023.**
 
-This is a **hard API limitation** - H1 historical data cannot be obtained retroactively for seasons 2022 and 2023.
+This is a **hard API limitation** - H1 historical data is only available after 2023-05-03, so coverage begins with season 2024.
 
 | Season | H1 Available | Reason |
 |--------|:------------:|--------|
-| 2019   | ❌ No | Before API availability |
-| 2020   | ❌ No | Before API availability |
-| 2021   | ❌ No | Before API availability |
-| 2022   | ❌ No | Before API availability (May 2023 cutoff) |
-| 2023   | ❌ No | Before API availability (May 2023 cutoff) |
 | 2024   | ✅ Yes | Season started Nov 2023 (after cutoff) |
 | 2025   | ✅ Yes | Full coverage |
 | 2026   | ✅ Yes | Ongoing collection |
@@ -35,11 +31,6 @@ This is a **hard API limitation** - H1 historical data cannot be obtained retroa
 
 | Season | Games | FG Odds | Barttorvik | H1 Scores | Status |
 |--------|------:|:-------:|:----------:|:---------:|--------|
-| 2019   | 1,154 | ❌ 0%   | ✅ 94%     | ✅ 94%    | Out of scope |
-| 2020   | 856   | ❌ 0%   | ✅ 97%     | ✅ 97%    | Out of scope |
-| 2021   | 879   | ✅ 94%  | ✅ 98%     | ✅ 98%    | ✅ FG Ready |
-| 2022   | 1,095 | ✅ 91%  | ✅ 98%     | ✅ 98%    | ✅ FG Ready |
-| 2023   | 1,172 | ✅ 90%  | ✅ 93%     | ✅ 93%    | ✅ FG Ready |
 | 2024   | 928   | ✅ 96%  | ✅ 97%     | ✅ 97%    | ✅ FG + H1 Ready |
 | 2025   | 967   | ✅ 96%  | ✅ 96%     | ✅ 96%    | ✅ FG + H1 Ready |
 | 2026   | 449+  | ✅ 94%  | ✅ 94%     | ✅ 94%    | 🔄 In Progress |
@@ -48,11 +39,6 @@ This is a **hard API limitation** - H1 historical data cannot be obtained retroa
 
 | Season | H1 Odds | H1 Spread Rows | Unique Games | Status |
 |--------|:-------:|---------------:|-------------:|--------|
-| 2019   | ❌ N/A  | 0              | 0            | Not available |
-| 2020   | ❌ N/A  | 0              | 0            | Not available |
-| 2021   | ❌ N/A  | 0              | 0            | Not available |
-| 2022   | ❌ N/A  | 0              | 0            | Not available |
-| 2023   | ❌ N/A  | 0              | 0            | Not available |
 | 2024   | ✅ 96%  | 44,264         | ~5,533       | ✅ Ready |
 | 2025   | ✅ 96%  | 38,393         | ~4,799       | ✅ Ready |
 | 2026   | ✅ 90%  | 2,296          | ~287         | 🔄 In Progress |
@@ -82,7 +68,7 @@ All data sources use the same season classification:
 ## Backtest Scope
 
 ### For FG (Full-Game) Spread Model
-- **Recommended:** Seasons 2021-2025 (~5,000 games with full coverage)
+- **Recommended:** Seasons 2024-2026 (canonical window)
 - **Statistically significant:** ≥2,500 games recommended for reliable CLV/win-rate analysis
 
 ### For H1 (First-Half) Spread Model
@@ -95,9 +81,9 @@ All data sources use the same season classification:
 
 | Source | Type | Seasons | Notes |
 |--------|------|---------|-------|
-| The Odds API | FG/H1 Odds | 2021+ | H1 only after May 2023 |
-| ESPN/FlashScore | Scores, H1 Scores | 2015+ | Via ncaahoopR package |
-| Barttorvik | Team Ratings | 2008+ | Efficiency metrics |
+| The Odds API | FG/H1 Odds | 2024+ | H1 only after May 2023 |
+| ESPN/FlashScore | Scores, H1 Scores | 2024+ | Via ncaahoopR package |
+| Barttorvik | Team Ratings | 2024+ | Efficiency metrics |
 
 ---
 
@@ -105,29 +91,20 @@ All data sources use the same season classification:
 
 ### Odds (Canonical)
 ```
-ncaam-historical-data/odds/canonical/
-├── spreads/
-│   ├── fg/spreads_fg_all.csv      # Full-game spreads
-│   └── h1/spreads_h1_all.csv      # First-half spreads
-└── totals/
-    ├── fg/totals_fg_all.csv       # Full-game totals
-    └── h1/totals_h1_all.csv       # First-half totals
+ncaam-historical-data/odds/normalized/odds_consolidated_canonical.csv
 ```
 
 ### Scores (Canonical)
 ```
-ncaam-historical-data/scores/
-├── fg/games_all.csv               # Full-game scores
-└── h1/h1_games_all.csv            # First-half scores
+ncaam-historical-data/scores/fg/games_all.csv
+ncaam-historical-data/scores/h1/h1_games_all.csv
 ```
 
 ### Ratings
 ```
-ncaam-historical-data/ratings/barttorvik/
-├── barttorvik_2021.json           # Per-season team ratings
-├── barttorvik_2022.json
-├── ...
-└── barttorvik_2026.json
+ncaam-historical-data/ratings/barttorvik/barttorvik_2024.json
+ncaam-historical-data/ratings/barttorvik/barttorvik_2025.json
+ncaam-historical-data/ratings/barttorvik/barttorvik_2026.json
 ```
 
 ---
@@ -151,7 +128,7 @@ All ingestion scripts must use the canonical team resolution service for team na
 ## Known Gaps
 
 ### Expected (API Limitations)
-- H1 odds for seasons 2019-2023 (not available from API)
+- H1 odds prior to 2024 are not available from the API (out of scope)
 - Some early-season exhibition games not tracked by Odds API
 
 ### Unexpected (Single Game)

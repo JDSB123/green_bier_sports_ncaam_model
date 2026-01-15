@@ -10,6 +10,8 @@
 
 **ALL historical data lives in Azure Blob Storage with canonical ingestion processing.**
 
+**Canonical Window:** 2023-24 season onward (season 2024+). Pre-2023 data is out of scope.
+
 ### Canonical Ingestion Architecture
 
 The new canonical ingestion framework ensures data quality and consistency:
@@ -52,7 +54,7 @@ clean_df = gate.validate_and_raise(df, "scores")
 from testing.azure_data_reader import read_backtest_master, AzureDataReader
 
 # Quick access to backtest data
-df = read_backtest_master(enhanced=True)
+df = read_backtest_master()
 
 # Full reader for any file
 reader = AzureDataReader()
@@ -74,7 +76,6 @@ aliases = reader.read_json("backtest_datasets/team_aliases_db.json")
 - All Barttorvik endpoints integrated (22 fields)
 - ncaahoopR box score features (23,891 game-level)
 - Conference strength analysis
-- Enhanced backtest_master_enhanced.csv (83 columns)
 - **Azure Blob Storage as single source of truth**
 
 ### Versioning Strategy
@@ -141,8 +142,8 @@ This document establishes the **canonical sources** for all NCAAM data, ensuring
                     ├── backtest_datasets/          ├── ncaahoopR_data-master/
                     ├── scores/fg/, h1/             ├── odds/raw/archive/
                     ├── ratings/barttorvik/         │
-                    ├── odds/canonical/             │
-                    └── canonicalized/              │
+                    ├── odds/normalized/             │
+                    └── canonicalized/ (legacy)              │
                                                     │
             ┌───────────────────────────────────────┘
             │
@@ -165,13 +166,14 @@ This document establishes the **canonical sources** for all NCAAM data, ensuring
 
 | Blob Path | Contents | Source |
 |-----------|----------|--------|
-| `scores/fg/games_all.csv` | Full-game scores (11,763 games) | ESPN |
-| `scores/h1/h1_games_all.csv` | First-half scores (10,261 games) | ESPN |
+| `scores/fg/games_all.csv` | Full-game scores (2023-24+ season) | ESPN |
+| `scores/h1/h1_games_all.csv` | First-half scores (2023-24+ season) | ESPN |
 | `odds/normalized/odds_consolidated_canonical.csv` | All odds data (217,151 rows) | The Odds API |
 | `ratings/barttorvik/` | Team efficiency ratings by season | Barttorvik |
 | `backtest_datasets/team_aliases_db.json` | Team name canonicalization (2,361 aliases) | Manual |
-| `backtest_datasets/backtest_master.csv` | Merged backtest dataset | Derived |
-| `backtest_datasets/backtest_master_enhanced.csv` | With advanced features | Derived |
+| `backtest_datasets/backtest_master.csv` | Merged backtest dataset (scores + odds + ratings + optional ncaahoopR) | Derived |
+
+Note: canonical odds snapshots are filtered to pregame only. The latest snapshot at or before commence_time is retained per event to prevent leakage.
 
 ### Container: `ncaam-historical-raw` (LARGE FILES)
 
@@ -231,7 +233,7 @@ python testing/scripts/build_backtest_dataset_canonical.py
    ```
 3. **Rebuild backtest master** (with canonical pipeline):
    ```powershell
-   python testing/scripts/build_backtest_dataset_canonical.py --enhanced
+   python testing/scripts/build_backtest_dataset_canonical.py
    ```
 4. **Validate canonical data quality**:
    ```powershell
@@ -304,9 +306,9 @@ See `.github/workflows/pre-backtest-validation.yml`
 python testing/scripts/canonical_data_validator.py --comprehensive
 
 # Rebuild backtest dataset (canonical pipeline)
-python testing/scripts/build_backtest_dataset_canonical.py --enhanced
+python testing/scripts/build_backtest_dataset_canonical.py
 
-# Run backtest (all seasons)
+# Run backtest (canonical window)
 python testing/scripts/run_historical_backtest.py --market fg_spread
 
 # Sync to Azure with canonicalization
@@ -316,7 +318,7 @@ python scripts/sync_raw_data_to_azure.py --canonical --canonicalize
 python -c "from testing.canonical.team_resolution_service import get_team_resolver; r = get_team_resolver(); print(r.resolve('cal state northridge'))"
 
 # LEGACY COMMANDS (deprecated - use canonical versions above)
-# python testing/scripts/build_backtest_dataset.py  # Use build_backtest_dataset_canonical.py
+# python testing/scripts/build_backtest_dataset_canonical.py
 ```
 
 ---

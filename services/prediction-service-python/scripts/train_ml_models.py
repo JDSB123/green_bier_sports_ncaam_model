@@ -10,7 +10,7 @@ Usage:
     $env:PYTHONPATH = "."; python scripts/train_ml_models.py
     
     # With custom date range:
-    $env:PYTHONPATH = "."; python scripts/train_ml_models.py --start 2020-11-01 --end 2024-03-31
+    $env:PYTHONPATH = "."; python scripts/train_ml_models.py --start 2023-11-01 --end 2024-03-31
     
     # From Docker:
     docker-compose exec prediction-service python scripts/train_ml_models.py
@@ -34,12 +34,12 @@ def main():
     parser = argparse.ArgumentParser(description="Train NCAAM ML models")
     parser.add_argument(
         "--start", 
-        default="2019-11-01",
+        default=None,
         help="Training start date (YYYY-MM-DD)"
     )
     parser.add_argument(
         "--end",
-        default="2024-03-31",
+        default=None,
         help="Training end date (YYYY-MM-DD)"
     )
     parser.add_argument(
@@ -60,6 +60,11 @@ def main():
     )
     
     args = parser.parse_args()
+
+    if args.start is None:
+        args.start = "2023-11-01"
+    if args.end is None:
+        args.end = datetime.today().strftime("%Y-%m-%d")
     
     print("=" * 70)
     print("NCAAM ML Model Training")
@@ -125,12 +130,16 @@ def main():
     print()
     
     # Configure training
-    config = TrainingConfig(
-        start_date=args.start,
-        end_date=args.end,
-        n_splits=5,
-        min_train_size=500,
-    )
+    try:
+        config = TrainingConfig(
+            start_date=args.start,
+            end_date=args.end,
+            n_splits=5,
+            min_train_size=500,
+        )
+    except ValueError as e:
+        print(f"? Invalid date window: {e}")
+        sys.exit(1)
     
     output_dir = Path(args.output) if args.output else None
     pipeline = TrainingPipeline(engine, config, output_dir)

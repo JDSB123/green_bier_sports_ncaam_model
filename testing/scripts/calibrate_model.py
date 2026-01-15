@@ -14,12 +14,13 @@ import pandas as pd
 from scipy import optimize
 
 from testing.azure_data_reader import get_azure_reader, read_barttorvik_ratings
+from testing.data_window import default_backtest_seasons
 
 LEAGUE_AVG_EFFICIENCY = 100.0
 
 
 def load_all_data():
-    """Load all seasons of game data and ratings from Azure."""
+    """Load canonical seasons of game data and ratings from Azure."""
     all_games = []
     all_ratings = {}
     reader = get_azure_reader()
@@ -46,7 +47,7 @@ def load_all_data():
                 }
         return ratings
 
-    for season in range(2020, 2025):
+    for season in default_backtest_seasons():
         try:
             df = reader.read_canonical_scores(season)
             df['season'] = season

@@ -1,3 +1,4 @@
+**Canonical window:** 2023-24 season onward (season 2024+). Pre-2023 data is out of scope.
 <!-- Purpose: document current historical coverage, season rules, gaps, and how to fetch missing data. -->
 # Historical Data Coverage, Season Rules, and Gaps
 
@@ -29,23 +30,22 @@ All scripts read/write directly to Azure Blob Storage. No local cache is used.
 - Barttorvik: season key equals championship year (e.g., 2024 file = 2023-24 season).
 - Use this rule everywhere to align joins: **season = date.year if month >= 11 else date.year + 1**.
 
-## Current Azure Coverage (as of Jan 2026 snapshot)
-- Full-game scores: seasons 2023-2026 counts = {2023: 2,518, 2024: 2,573, 2025: 3,329, 2026: 3,343}.
-- 1H scores: seasons 2019-2022 counts = {2019: 292, 2020: 175, 2021: 563, 2022: 16}. No 2023-2026 1H data present.
-- FG odds sample: mirrors FG counts above but many rows have empty openers.
-- 1H odds sample: only 194 rows in season 2025; no breadth or prior seasons.
-- Barttorvik ratings: only 2024-2025 seasons.
+## Current Azure Coverage (canonical window)
+- Full-game scores: seasons 2024+ (see `backtest_datasets/backtest_master.csv` metadata for counts).
+- 1H scores: partial coverage in the canonical window; verify `scores/h1/h1_games_all.csv` before use.
+- FG odds: consolidated in `odds/normalized/odds_consolidated_canonical.csv` (check metadata for opener completeness).
+- 1H odds: limited coverage; validate market availability per season.
+- Barttorvik ratings: seasons 2024+.
 
 ## Gaps to Fill
-- **FG scores:** Missing seasons 2019-2022 (and any 2026 games beyond current snapshot).
-- **1H scores:** Missing most of 2022 and all of 2023-2026.
-- **Odds:** No historical spreads/totals for 2019-2024; no broad 1H odds history.
-- **Ratings:** Missing Barttorvik 2019-2023 to match backtest window.
+- **1H scores:** Coverage is incomplete within the canonical window.
+- **Odds:** Ensure spreads/totals are complete for 2024+ and document any market gaps.
+- **Ratings:** Ensure Barttorvik ratings exist for each canonical season.
 - **Aliases:** Normalize new source spellings against `backtest_datasets/team_aliases_db.json` in Azure.
 
 ## Ingestion Steps (Azure-only scripts)
 1) **Full-game scores + Barttorvik ratings (ESPN + Barttorvik)**
-   - `python testing/scripts/fetch_historical_data.py --seasons 2019-2026 --format both`
+   - `python testing/scripts/fetch_historical_data.py --seasons 2024-2026 --format both`
    - Writes to Azure Blob `scores/fg/` and `ratings/barttorvik/`.
 
 2) **1H scores (ESPN boxscores)**
@@ -54,8 +54,8 @@ All scripts read/write directly to Azure Blob Storage. No local cache is used.
 
 3) **Odds (The Odds API)**
    - Requires `ODDS_API_KEY`. Fetch in chunks to respect quota/rate limits, e.g.:
-     - `python testing/scripts/fetch_historical_odds.py --start 2019-11-01 --end 2020-04-15`
-       - Repeat per season through 2025-04-15; outputs under `odds/raw/`.
+     - `python testing/scripts/fetch_historical_odds.py --start 2023-11-01 --end 2024-04-15`
+       - Repeat per season within the canonical window; outputs under `odds/raw/`.
    - Note: API may not expose 1H markets historically; document any missing markets after fetch.
 
 4) **Aliases & Standardization**
@@ -68,6 +68,6 @@ All scripts read/write directly to Azure Blob Storage. No local cache is used.
    - Document any missing odds markets or seasons not provided by the source.
 
 ## Quick Commands Summary
-- FG scores: `python testing/scripts/fetch_historical_data.py --seasons 2019-2026 --format both`
+- FG scores: `python testing/scripts/fetch_historical_data.py --seasons 2024-2026 --format both`
 - 1H scores: `python testing/scripts/fetch_h1_data.py`
 - Odds: `python testing/scripts/fetch_historical_odds.py --start <YYYY-MM-DD> --end <YYYY-MM-DD>`

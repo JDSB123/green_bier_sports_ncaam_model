@@ -9,6 +9,8 @@
 
 **ALL historical data lives in Azure Blob Storage.** No local downloads required.
 
+**Canonical Window:** 2023-24 season onward (season 2024+). Pre-2023 data is out of scope.
+
 | Container | Purpose | Size |
 |-----------|---------|------|
 | `ncaam-historical-data` | **Primary** - Canonical data for backtesting | ~500 MB |
@@ -25,7 +27,7 @@
 from testing.azure_data_reader import read_backtest_master, AzureDataReader
 
 # Quick access to backtest data
-df = read_backtest_master(enhanced=True)
+df = read_backtest_master()
 
 # Read any file
 reader = AzureDataReader()
@@ -48,7 +50,7 @@ for chunk in reader_raw.read_csv_chunks("ncaahoopR_data-master/box_scores/2025.c
 
 This is the **only file** you should use for odds data. It contains:
 - 217,151 rows (27,623 unique games)
-- Date range: 2020-11-25 to 2026-01-07
+- Date range: 2023-11-01 onward (see metadata)
 - ALL markets with **ACTUAL prices** (not hardcoded -110)
 
 **Key Columns:**
@@ -71,13 +73,15 @@ This is the **only file** you should use for odds data. It contains:
 | `h1_moneyline_home_price` | H1 moneyline home (NOT AVAILABLE - derive from H1 spread) |
 | `h1_moneyline_away_price` | H1 moneyline away (NOT AVAILABLE - derive from H1 spread) |
 
+Note: canonical odds are filtered to pregame snapshots only. The latest snapshot at or before commence_time is retained per event to prevent leakage.
+
 ### Scores Files
 
 | File | Games | Description |
 |------|------:|-------------|
 | `scores/fg/games_all.csv` | 11,763 | Full-game scores (PRIMARY) |
-| `canonicalized/scores/fg/games_all_canonical.csv` | 7,197 | Full-game scores (legacy) |
-| `canonicalized/scores/h1/h1_games_all_canonical.csv` | 7,221 | First-half scores |
+| `canonicalized/scores/fg/games_all_canonical.csv` | 7,197 | Legacy (do not use) |
+| `canonicalized/scores/h1/h1_games_all_canonical.csv` | 7,221 | Legacy (do not use) |
 
 ### Backtest Master (SINGLE SOURCE FOR BACKTESTING)
 
@@ -92,7 +96,7 @@ This is the **only file** you should use for odds data. It contains:
 | H1 Total | 10,261 (87.2%) | With actual prices |
 | Ratings | 9,389 (79.8%) | Barttorvik |
 
-**Build Command:** `python testing/scripts/build_backtest_dataset.py`
+**Build Command:** `python testing/scripts/build_backtest_dataset_canonical.py`
 
 ### Barttorvik Ratings
 
@@ -100,7 +104,7 @@ This is the **only file** you should use for odds data. It contains:
 
 | Seasons | Teams | Note |
 |---------|------:|------|
-| 2023, 2024, 2025 | ~1,089 | Auto-fetched during build |
+| 2024, 2025, 2026 | ~1,089 | Auto-fetched during build |
 
 ---
 
@@ -165,7 +169,7 @@ For a complete inventory of available data, see:
 
 | Script | Purpose |
 |--------|---------|
-| `testing/scripts/build_backtest_dataset.py` | **Build master dataset** - Merges scores, odds, ratings |
+| `testing/scripts/build_backtest_dataset_canonical.py` | **Build master dataset** - Merges scores, odds, ratings |
 | `testing/scripts/run_historical_backtest.py` | **Run backtests** - Against actual outcomes |
 | `testing/scripts/backtest_all_markets.py` | Legacy backtest - All 6 markets with ACTUAL prices |
 | `testing/scripts/audit_data_sources.py` | Quick data availability audit |
@@ -180,7 +184,7 @@ For a complete inventory of available data, see:
 2. sync_raw_data_to_azure.py uploads to Azure (SINGLE SOURCE OF TRUTH)
                 |
                 v
-3. build_backtest_dataset.py creates backtest_master.csv
+3. build_backtest_dataset_canonical.py creates backtest_master.csv
                 |
                 v
 4. run_historical_backtest.py reads from Azure, runs backtests

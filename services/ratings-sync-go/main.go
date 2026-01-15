@@ -836,7 +836,7 @@ func main() {
 	// Create sync service
 	sync := NewRatingsSync(db, logger, config)
 
-	// Optional backfill range: BACKFILL_SEASONS="2015-2025" or "2018"
+	// Optional backfill range: BACKFILL_SEASONS="2024-2026" or "2024"
 	if bf := os.Getenv("BACKFILL_SEASONS"); bf != "" {
 		parts := strings.Split(bf, "-")
 		if len(parts) == 2 {

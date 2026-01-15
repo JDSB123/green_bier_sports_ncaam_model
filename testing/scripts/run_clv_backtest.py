@@ -10,6 +10,7 @@ CRITICAL REQUIREMENTS:
 - Actual odds: No -110 assumptions
 - Point-in-time ratings: No leakage
 - No placeholders: Missing data = skip
+- Pregame-only odds: latest snapshot at or before commence_time
 
 CLV = Closing Line - Opening Line (adjusted for bet side)
 Positive CLV = Sharp betting (beating the closing line)
@@ -32,6 +33,7 @@ from typing import Dict, List, Optional, Tuple
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from testing.azure_data_reader import get_azure_reader
+from testing.data_window import CANONICAL_START_SEASON, default_backtest_seasons, enforce_min_season
 
 try:
     import pandas as pd
@@ -58,7 +60,7 @@ class BetOutcome(str, Enum):
 class CLVBacktestConfig:
     """Configuration for CLV-enhanced backtesting."""
     market: MarketType
-    seasons: List[int] = field(default_factory=lambda: [2023, 2024, 2025])
+    seasons: List[int] = field(default_factory=default_backtest_seasons)
     
     # Betting thresholds
     min_edge: float = 2.0  # Minimum edge (points) to place bet
@@ -199,20 +201,25 @@ class CLVBacktestEngine:
     def load_backtest_data(self) -> pd.DataFrame:
         """Load backtest dataset."""
         reader = get_azure_reader()
-        candidates = [
-            "backtest_datasets/backtest_master_enhanced.csv",
-            "backtest_datasets/backtest_master_consolidated.csv",
-            "backtest_datasets/backtest_master.csv",
-        ]
+        blob_path = "backtest_datasets/backtest_master.csv"
+        if not reader.blob_exists(blob_path):
+            raise FileNotFoundError("Backtest master not found: backtest_master.csv")
 
-        for blob_path in candidates:
-            if reader.blob_exists(blob_path):
-                print(f"Loading: {Path(blob_path).name}")
-                df = reader.read_csv(blob_path)
-                df["game_date"] = pd.to_datetime(df["game_date"])
-                return df
-        
-        raise FileNotFoundError("Backtest data not found")
+        print(f"Loading: {Path(blob_path).name}")
+        df = reader.read_csv(blob_path)
+
+        date_col = "game_date" if "game_date" in df.columns else "date" if "date" in df.columns else None
+        if date_col:
+            df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+            if date_col != "game_date":
+                df["game_date"] = df[date_col]
+
+        if "season" in df.columns:
+            df = df[df["season"] >= CANONICAL_START_SEASON]
+        if df.empty:
+            raise ValueError("Backtest master has no canonical-window data")
+
+        return df
     
     def generate_prediction(self, row: pd.Series) -> float:
         """
@@ -236,12 +243,15 @@ class CLVBacktestEngine:
             return proba  # Return probability for now
         
         # Formula-based prediction
-        home_adj_o = row.get("home_adj_o", 105)
-        home_adj_d = row.get("home_adj_d", 105)
-        away_adj_o = row.get("away_adj_o", 105)
-        away_adj_d = row.get("away_adj_d", 105)
-        home_tempo = row.get("home_tempo", 67.5)
-        away_tempo = row.get("away_tempo", 67.5)
+        def _val(value, default):
+            return default if pd.isna(value) else value
+
+        home_adj_o = _val(row.get("home_adj_o", 105), 105)
+        home_adj_d = _val(row.get("home_adj_d", 105), 105)
+        away_adj_o = _val(row.get("away_adj_o", 105), 105)
+        away_adj_d = _val(row.get("away_adj_d", 105), 105)
+        home_tempo = _val(row.get("home_tempo", 67.5), 67.5)
+        away_tempo = _val(row.get("away_tempo", 67.5), 67.5)
         
         market = self.config.market
         
@@ -678,8 +688,8 @@ def main():
     parser.add_argument(
         "--seasons",
         type=str,
-        default="2023,2024,2025",
-        help="Comma-separated list of seasons"
+        default=None,
+        help="Comma-separated list of seasons (default: canonical window)"
     )
     parser.add_argument(
         "--min-edge",
@@ -695,7 +705,11 @@ def main():
     
     args = parser.parse_args()
     
-    seasons = [int(s.strip()) for s in args.seasons.split(",")]
+    if args.seasons:
+        seasons = [int(s.strip()) for s in args.seasons.split(",")]
+    else:
+        seasons = default_backtest_seasons()
+    seasons = enforce_min_season(seasons)
     
     markets = (
         [MarketType.FG_SPREAD, MarketType.FG_TOTAL, MarketType.H1_SPREAD, MarketType.H1_TOTAL]

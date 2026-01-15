@@ -42,16 +42,14 @@ If game not found with (date, home, away), try (date, away, home) and swap score
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|
 | **Overall Match Rate** | 17% | 69% | +52 points |
-| 2020-21 Season | 14.7% | 99% | +84 points |
 | 2023-24 Season | 52% | 88% | +36 points |
 | 2024-25 Season | 52% | 88% | +36 points |
 | Resolver Mappings | 1,046 | 1,699 | +653 mappings |
 | Games with odds | ~9,000 | 11,786 | +2,700 games |
 
 ## Remaining Gaps (Cannot be fixed)
-- **2020-21**: ~2,500 games in odds without score data (incomplete season)
 - **2025-26**: ~2,000 future games without scores yet
-- **2023-25**: ~700 games in odds but not in training data (coverage gap)
+- **2024-26**: ~700 games in odds but not in training data (coverage gap)
 
 ## Files Modified
 - `testing/rebuild_backtest_data.py` - Fixed normalization logic

@@ -157,13 +157,9 @@ ncaam-historical-data/
 │       └── ratings_pre_standardization/ # Historical versions before standardization
 │
 ├── backtest_datasets/                  # BACKTEST-READY DATA
-│   ├── backtest_master.csv             # PRIMARY: Merged scores + odds + ratings
+│   ├── backtest_master.csv             # SINGLE SOURCE: merged scores + odds + ratings (+ optional ncaahoopR)
 │   │   # 11,763 rows (all seasons)
 │   │   # 87% odds coverage, 79% ratings coverage
-│   ├── backtest_master_enhanced.csv    # ENHANCED: Includes ncaahoopR features
-│   │   # 11,763 rows with rolling statistics
-│   ├── backtest_master_consolidated.csv # CONSOLIDATED: All sources merged
-│   │   # Includes game-by-game features
 │   │
 │   ├── barttorvik_ratings.csv          # Cached ratings snapshot
 │   ├── team_aliases_db.json            # MASTER: Team name resolution

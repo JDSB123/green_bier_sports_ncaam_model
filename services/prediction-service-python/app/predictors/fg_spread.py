@@ -1,7 +1,7 @@
 """
 Full Game Spread Model v33.10.0
 
-BACKTESTED on 3,318 games (2019-2024) with ESPN real scores.
+BACKTESTED on 3,318 games with ESPN real scores.
 HCA calibration derived from actual home margins.
 
 Backtest Results:
@@ -36,7 +36,7 @@ class FGSpreadModel(BasePredictor):
     """
     Full Game Spread Prediction Model - TRULY INDEPENDENT.
 
-    BACKTESTED on 3,318 games (2019-2024) with ESPN real scores.
+    BACKTESTED on 3,318 games with ESPN real scores.
 
     Backtest Results (v33.10.0):
     - MAE: 10.57 points
@@ -63,7 +63,7 @@ class FGSpreadModel(BasePredictor):
     # Actual avg home margin: +7.50, Non-neutral bias: -1.08 -> Optimal: 5.8
     HCA: float = 5.8
 
-    # CALIBRATION - from 2,233 game anti-leakage backtest (2022-2025)
+    # CALIBRATION - from 2,233 game anti-leakage backtest
     # Observed bias: -2.1 (model over-predicts home team strength)
     # Fix: Add +2.1 to spread to center predictions
     CALIBRATION: float = 2.1

@@ -8,6 +8,8 @@ Data Sources:
 This script downloads historical data needed to properly validate
 the prediction model against real outcomes.
 
+Canonical window: 2023-24 season onward (season 2024+).
+
 Team Canonicalization:
 - All team names are canonicalized at ingestion using team_utils.resolve_team_name()
 - If >10% of a day's games have unresolved teams, the script aborts
@@ -36,6 +38,7 @@ except ImportError:
     sys.exit(1)
 
 from testing.azure_io import upload_text, write_json
+from testing.data_window import CANONICAL_START_SEASON, enforce_min_season
 
 SCORES_FG_PREFIX = "scores/fg"
 RATINGS_PREFIX = "ratings/barttorvik"
@@ -277,8 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--seasons",
         type=str,
-        default="2024",
-        help="Seasons to fetch (e.g., '2024' or '2020-2024')"
+        default=str(CANONICAL_START_SEASON),
+        help="Seasons to fetch (e.g., '2024' or '2024-2026')"
     )
     parser.add_argument(
         "--format",
@@ -307,6 +310,7 @@ def main(argv: list[str] | None = None) -> int:
         seasons = list(range(int(start), int(end) + 1))
     else:
         seasons = [int(args.seasons)]
+    seasons = enforce_min_season(seasons)
 
     print("=" * 72)
     print(" Historical NCAAM Data Fetcher")

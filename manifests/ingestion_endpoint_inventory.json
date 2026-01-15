@@ -233,7 +233,7 @@
         {
           "excerpt": "url = f\"https://barttorvik.com/{season}_team_results.json\"",
           "line": 506,
-          "path": "testing\\scripts\\build_backtest_dataset.py"
+          "path": "testing\\scripts\\build_backtest_dataset_canonical.py"
         },
         {
           "excerpt": "url = f\"https://barttorvik.com/{season}_team_results.json\"",

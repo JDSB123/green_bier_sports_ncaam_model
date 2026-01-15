@@ -9,7 +9,6 @@
       ".gitignore",
       "DATA_MANIFEST.json",
       "README.md",
-      "backtest_datasets/backtest_master_consolidated.csv.pre_fix_backup",
       "backtest_datasets/backtest_master_ids.csv",
       "backtest_datasets/backtest_master_ids.manifest.json",
       "canonicalization_audit/audit_20260107_183136.json",
@@ -215,7 +214,7 @@
       "canonical_size": 78713,
       "size_match": false
     },
-    "training_data_with_odds.csv": {
+    "backtest_master.csv": {
       "local_size": 604712,
       "canonical_size": 604712,
       "size_match": true,

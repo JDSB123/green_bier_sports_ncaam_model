@@ -5,8 +5,7 @@ Creates a single, canonical table with one row per team per game,
 using ONLY canonical team names from the canonical backtest dataset.
 
 Input (from Azure via AzureDataReader):
-  - backtest_datasets/backtest_master_enhanced.csv (if available)
-    else backtest_datasets/backtest_master.csv
+  - backtest_datasets/backtest_master.csv
 
 Output:
   - backtest_datasets/team_game_master.csv
@@ -37,15 +36,11 @@ from testing.azure_io import write_csv
 
 def build_team_game_master(
     output_blob: str = "backtest_datasets/team_game_master.csv",
-    use_enhanced: bool = True,
 ) -> pd.DataFrame:
     """Build and save the team-game master dataset.
 
     Args:
         output_blob: Azure blob path for the output CSV.
-        use_enhanced: If True, prefer the enhanced backtest master
-            (with NCAAR-derived features) when available.
-
     Returns:
         The constructed team-game DataFrame.
     """
@@ -57,7 +52,7 @@ def build_team_game_master(
 
     # Load canonical backtest master from Azure
     print("Step 1: Loading canonical backtest master...")
-    df = reader.read_backtest_master(enhanced=use_enhanced)
+    df = reader.read_backtest_master()
     print(f"  Loaded {len(df):,} games, {len(df.columns)} columns")
 
     # Determine game date column
@@ -136,16 +131,8 @@ def main():
         default="backtest_datasets/team_game_master.csv",
         help="Output blob path for team-game master CSV",
     )
-    parser.add_argument(
-        "--no-enhanced",
-        action="store_true",
-        help="Use base backtest master (no enhanced features)",
-    )
-
     args = parser.parse_args()
-    use_enhanced = not args.no_enhanced
-
-    build_team_game_master(output_blob=args.output, use_enhanced=use_enhanced)
+    build_team_game_master(output_blob=args.output)
 
 
 if __name__ == "__main__":

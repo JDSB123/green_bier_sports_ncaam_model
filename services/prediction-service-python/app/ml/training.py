@@ -17,7 +17,7 @@ Training Process:
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any, Iterator
@@ -28,6 +28,10 @@ from app.ml.features import FeatureEngineer, GameFeatures
 from app.ml.models import BetPredictionModel, ModelMetadata
 
 logger = structlog.get_logger(__name__)
+
+# Canonical training window (2023-24 season onward).
+CANONICAL_START_DATE = date(2023, 11, 1)
+CANONICAL_START_DATE_STR = CANONICAL_START_DATE.isoformat()
 
 # Optional imports
 try:
@@ -49,13 +53,17 @@ except ImportError:
     HAS_SQLALCHEMY = False
 
 
+def _parse_date(value: str) -> date:
+    return datetime.strptime(value, "%Y-%m-%d").date()
+
+
 @dataclass
 class TrainingConfig:
     """Configuration for model training."""
     
     # Date range
-    start_date: str = "2019-11-01"  # Start of 2019-20 season
-    end_date: str = "2024-03-31"   # End of 2023-24 season
+    start_date: str = CANONICAL_START_DATE_STR  # Start of 2023-24 season
+    end_date: str = field(default_factory=lambda: date.today().isoformat())  # Defaults to today
     
     # Validation
     n_splits: int = 5              # Number of time-series folds
@@ -70,6 +78,16 @@ class TrainingConfig:
     # Feature selection
     use_market_features: bool = True
     use_public_betting: bool = False  # Often not available historically
+
+    def __post_init__(self) -> None:
+        start = _parse_date(self.start_date)
+        end = _parse_date(self.end_date)
+        if start < CANONICAL_START_DATE:
+            raise ValueError(
+                f"start_date must be on/after {CANONICAL_START_DATE_STR}"
+            )
+        if end < start:
+            raise ValueError("end_date must be on/after start_date")
 
 
 class TrainingDataLoader:
@@ -545,8 +563,8 @@ class TrainingPipeline:
 
 def train_models_from_database(
     database_url: str,
-    start_date: str = "2019-11-01",
-    end_date: str = "2024-03-31",
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     output_dir: Optional[str] = None,
 ) -> Dict[str, BetPredictionModel]:
     """
@@ -556,7 +574,7 @@ def train_models_from_database(
         from app.ml.training import train_models_from_database
         models = train_models_from_database(
             "postgresql://user:pass@localhost/ncaam",
-            "2019-11-01",
+            "2023-11-01",
             "2024-03-31",
         )
     """
@@ -564,7 +582,11 @@ def train_models_from_database(
         raise ImportError("SQLAlchemy is required")
     
     engine = create_engine(database_url)
-    config = TrainingConfig(start_date=start_date, end_date=end_date)
+    defaults = TrainingConfig()
+    config = TrainingConfig(
+        start_date=start_date or defaults.start_date,
+        end_date=end_date or defaults.end_date,
+    )
     
     output_path = Path(output_dir) if output_dir else None
     pipeline = TrainingPipeline(engine, config, output_path)

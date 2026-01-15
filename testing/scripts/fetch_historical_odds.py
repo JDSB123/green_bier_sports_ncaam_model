@@ -4,7 +4,7 @@ Fetch Historical Betting Lines from The Odds API
 
 This script fetches historical NCAAB betting lines for backtesting, covering both full-game and first-half markets.
 Outputs include an is_march_madness flag based on the game date (override with --tourney-start/--tourney-end).
-Data available from late 2020.
+Canonical window: 2023-11-01 onward (season 2024+).
 
 API Documentation: https://the-odds-api.com/liveapi/guides/v4/
 
@@ -39,6 +39,7 @@ except ImportError:
     sys.exit(1)
 
 from testing.azure_io import upload_text
+from testing.data_window import CANONICAL_START_DATE, CANONICAL_START_SEASON
 
 ODDS_RAW_PREFIX = "odds/raw"
 
@@ -769,6 +770,8 @@ def main(argv: list[str] | None = None) -> int:
 
     season_range = None
     if args.season:
+        if args.season < CANONICAL_START_SEASON:
+            parser.error(f"Season {args.season} is out of scope (min {CANONICAL_START_SEASON}).")
         season_range = _season_date_range(args.season)
 
     start_date = args.start or (season_range[0] if season_range else None)
@@ -776,6 +779,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if not start_date or not end_date:
         parser.error("Please provide both --start and --end, or use --season to auto-populate them.")
+
+    start_dt = _parse_date_arg(start_date)
+    if start_dt < CANONICAL_START_DATE:
+        parser.error(f"Start date {start_date} is out of scope (min {CANONICAL_START_DATE}).")
 
     tourney_window = None
     if args.tourney_start or args.tourney_end:

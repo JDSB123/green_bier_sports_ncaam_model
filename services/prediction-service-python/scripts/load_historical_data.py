@@ -11,8 +11,8 @@ Data Sources:
 3. The Odds API (historical odds if available)
 
 Usage:
-    # Load 2023-24 and 2024-25 seasons
-    python scripts/load_historical_data.py --seasons 2023 2024
+    # Load 2023-24 and 2024-25 seasons (season 2024+)
+    python scripts/load_historical_data.py --seasons 2024 2025
     
     # Load specific date range
     python scripts/load_historical_data.py --start 2023-11-01 --end 2024-03-31
@@ -34,8 +34,9 @@ sys.path.insert(0, str(ROOT_DIR))
 
 from testing.azure_io import read_csv
 from testing.data_paths import DATA_PATHS
+from testing.data_window import enforce_min_season
 
-DEFAULT_GAMES_BLOB = str(DATA_PATHS.backtest_datasets / "training_data_with_odds.csv")
+DEFAULT_GAMES_BLOB = str(DATA_PATHS.backtest_datasets / "backtest_master.csv")
 DEFAULT_RATINGS_BLOB = str(DATA_PATHS.backtest_datasets / "barttorvik_ratings.csv")
 
 try:
@@ -259,7 +260,7 @@ def main():
         "--seasons",
         nargs="+",
         type=int,
-        help="Seasons to fetch from API (e.g., 2023 2024)"
+        help="Seasons to fetch from API (e.g., 2024 2025)"
     )
     parser.add_argument(
         "--dry-run",
@@ -297,6 +298,7 @@ def main():
         if not HAS_REQUESTS:
             print("❌ requests library required for API access")
             sys.exit(1)
+        args.seasons = enforce_min_season(args.seasons)
         
         try:
             client = BasketballAPIClient()
@@ -319,10 +321,10 @@ def main():
         print("\nNo data source specified!")
         print("\nUsage examples:")
         print("  # Load from Azure blobs")
-        print("  python scripts/load_historical_data.py --games-blob backtest_datasets/training_data_with_odds.csv")
+        print("  python scripts/load_historical_data.py --games-blob backtest_datasets/backtest_master.csv")
         print("")
         print("  # Fetch from Basketball API")
-        print("  python scripts/load_historical_data.py --seasons 2023 2024")
+        print("  python scripts/load_historical_data.py --seasons 2024 2025")
         print("")
         print("Azure Blob Storage is the single source of truth.")
     

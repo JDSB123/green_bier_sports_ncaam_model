@@ -26,13 +26,14 @@ from typing import Dict, List, Optional, Any, Callable, Union
 from enum import Enum
 
 import pandas as pd
+from testing.data_window import CANONICAL_START_SEASON
 
 
 class DataVintage(Enum):
     """Data quality vintages by historical period."""
-    LEGACY = "legacy"         # Pre-2020: Poor quality, incomplete
-    TRANSITIONAL = "transitional"  # 2020-2022: Improving quality
-    MODERN = "modern"         # 2023+: High quality, comprehensive
+    LEGACY = "legacy"         # Pre-canonical data (out of scope)
+    TRANSITIONAL = "transitional"  # Pre-canonical data (out of scope)
+    MODERN = "modern"         # Canonical-era data
     CANONICAL = "canonical"   # Post-standardization
 
 
@@ -377,9 +378,27 @@ class SchemaEvolutionManager:
             # Try to infer dates from other fields or use placeholder
             df["date"] = pd.NaT  # Will be filled later
 
-        # Add season field if missing
+        # Add season field if missing - derive from date
         if "season" not in df.columns:
-            df["season"] = df.get("year", pd.Series([2020] * len(df)))
+            if "year" in df.columns:
+                df["season"] = df["year"]
+            elif "date" in df.columns:
+                # Derive season from date: NCAA season spans Nov-Apr
+                # A game in Jan-Apr belongs to the season that started in the prior Nov
+                # e.g., Jan 2024 = 2024 season, Nov 2024 = 2025 season
+                dates = pd.to_datetime(df["date"], errors="coerce")
+                # Season year = year of the game if month >= 11, else year of the game
+                # Actually, NCAA season naming: 2024-25 season = games from Nov 2024 to Apr 2025
+                # But we store as single year (the ending year), so:
+                # Nov-Dec game -> season = year + 1 (it's the start of next year's season)
+                # Jan-Apr game -> season = year (it's the end of that year's season)
+                months = dates.dt.month
+                years = dates.dt.year
+                # If month >= 11 (Nov, Dec), season = year + 1; else season = year
+                df["season"] = years.where(months < 11, years + 1)
+            else:
+                # Fallback if no date info available
+                df["season"] = CANONICAL_START_SEASON
 
         return df
 

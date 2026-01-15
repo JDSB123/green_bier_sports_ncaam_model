@@ -96,7 +96,7 @@ class FGTotalModel(BasePredictor):
     LEAGUE_AVG_TEMPO: float = 67.6        # FG tempo from Barttorvik
     LEAGUE_AVG_EFFICIENCY: float = 105.5  # FG efficiency from Barttorvik
 
-    # Calibration - RECALIBRATED on 3,222 games (2020-2025) with anti-leakage
+    # Calibration - RECALIBRATED on 3,222 games with anti-leakage
     # Original +7.0 had +16.5 bias; corrected to -9.5
     CALIBRATION: float = -9.5
     HCA: float = 0.0  # Totals don't use HCA (zero-sum)

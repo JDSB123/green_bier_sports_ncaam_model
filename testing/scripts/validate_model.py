@@ -13,7 +13,7 @@ Key Features:
 
 Usage:
     python testing/scripts/validate_model.py --season 2024
-    python testing/scripts/validate_model.py --seasons 2020-2024 --output backtest_datasets/validation_results.csv
+    python testing/scripts/validate_model.py --seasons 2024-2026 --output backtest_datasets/validation_results.csv
 """
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
 from team_utils import resolve_team_name
 from testing.azure_data_reader import get_azure_reader, read_barttorvik_ratings
+from testing.data_window import CANONICAL_START_SEASON, enforce_min_season
 from testing.data_paths import DATA_PATHS
 from testing.azure_io import write_csv as azure_write_csv
 
@@ -419,7 +420,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--seasons",
         type=str,
-        help="Range of seasons (e.g., '2020-2024')"
+        help="Range of seasons (e.g., '2024-2026')"
     )
     parser.add_argument(
         "--output",
@@ -441,6 +442,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         seasons = [args.season]
 
+    seasons = enforce_min_season(seasons)
+
     print("=" * 72)
     print(" NCAAM Model Validation - Real Data")
     print("=" * 72)
@@ -453,7 +456,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Pre-load all ratings to enable prior-season lookup
     all_ratings = {}
-    for s in range(min(seasons) - 1, max(seasons) + 1):
+    for s in range(max(CANONICAL_START_SEASON - 1, min(seasons) - 1), max(seasons) + 1):
         r = load_barttorvik_ratings(s)
         if r:
             all_ratings[s] = r

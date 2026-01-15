@@ -47,14 +47,14 @@ class DataPaths:
     def scores_h1(self) -> PurePosixPath:
         return self.root / "scores" / "h1"
 
-    # ---- Canonicalized scores ----
+    # ---- Legacy canonicalized scores (deprecated; alias to canonical) ----
     @property
     def scores_fg_canonical(self) -> PurePosixPath:
-        return self.root / "canonicalized" / "scores" / "fg"
+        return self.scores_fg
 
     @property
     def scores_h1_canonical(self) -> PurePosixPath:
-        return self.root / "canonicalized" / "scores" / "h1"
+        return self.scores_h1
 
     # ---- Odds ----
     @property
@@ -65,22 +65,22 @@ class DataPaths:
     def odds_normalized(self) -> PurePosixPath:
         return self.root / "odds" / "normalized"
 
-    # ---- Canonicalized odds ----
+    # ---- Legacy canonicalized odds (deprecated; alias to canonical) ----
     @property
     def odds_canonical_spreads_fg(self) -> PurePosixPath:
-        return self.root / "canonicalized" / "odds" / "spreads"
+        return self.odds_normalized
 
     @property
     def odds_canonical_spreads_h1(self) -> PurePosixPath:
-        return self.root / "canonicalized" / "odds" / "spreads"
+        return self.odds_normalized
 
     @property
     def odds_canonical_totals_fg(self) -> PurePosixPath:
-        return self.root / "canonicalized" / "odds" / "totals"
+        return self.odds_normalized
 
     @property
     def odds_canonical_totals_h1(self) -> PurePosixPath:
-        return self.root / "canonicalized" / "odds" / "totals"
+        return self.odds_normalized
 
     # ---- Ratings ----
     @property

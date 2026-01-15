@@ -21,9 +21,9 @@
 ### Scores
 | File | Usage | Fields in Backtest |
 |------|-------|-------------------|
-| `scores/fg/games_2019.csv` - `games_2026.csv` | Primary FG scores | `home_score`, `away_score` |
+| `scores/fg/games_all.csv` | Primary FG scores | `home_score`, `away_score` |
 | `scores/h1/h1_games_all.csv` | H1 scores | `home_h1`, `away_h1` |
-| `canonicalized/scores/h1/h1_games_all_canonical.csv` | Canonical H1 | (same) |
+| `canonicalized/scores/h1/h1_games_all_canonical.csv` | Legacy (do not use) | (same) |
 
 ### Odds  
 | File | Usage | Fields in Backtest |
@@ -34,7 +34,7 @@
 ### Ratings
 | File | Usage | Fields in Backtest |
 |------|-------|-------------------|
-| `ratings/barttorvik/ratings_2019.json` - `ratings_2026.json` | Barttorvik ratings | `adj_o`, `adj_d`, `barthag`, `efg`, `tor`, `orb`, `ftr`, `wab`, `three_pt_rate` |
+| `ratings/barttorvik/ratings_2024.json` - `ratings_2026.json` | Barttorvik ratings | `adj_o`, `adj_d`, `barthag`, `efg`, `tor`, `orb`, `ftr`, `wab`, `three_pt_rate` |
 
 ### Supporting
 | File | Usage |
@@ -126,7 +126,7 @@ The ncaahoopR dataset contains 332,357 files of granular game data that could si
 | H1 Total | 1,981 | 1,567 | 20.9% |
 | Ratings | - | 5,443 | 72.6% |
 
-**Total games**: 7,500 (2019-2026)
+**Total games**: see backtest_master metadata (2023-24+ window)
 
 ---
 

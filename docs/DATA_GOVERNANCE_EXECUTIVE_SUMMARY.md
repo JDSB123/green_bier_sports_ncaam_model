@@ -444,7 +444,7 @@ from testing.azure_data_reader import AzureDataReader
 
 # Load backtest data
 reader = AzureDataReader()
-df = reader.read_csv('backtest_datasets/backtest_master_enhanced.csv')
+df = reader.read_csv('backtest_datasets/backtest_master.csv')
 
 # Check: ratings_season should always equal game_season - 1
 leakage = (df['ratings_season'] != df['game_season'] - 1).sum()
@@ -626,3 +626,4 @@ Use this to verify EVERYTHING is working:
 **Timeline:** Framework → Implementation (1-2 weeks) → NCAAR Activation (3-4 weeks)
 
 **Questions?** See [DATA_GOVERNANCE_FRAMEWORK.md](DATA_GOVERNANCE_FRAMEWORK.md) or [DATA_GOVERNANCE_IMPLEMENTATION.md](DATA_GOVERNANCE_IMPLEMENTATION.md)
+

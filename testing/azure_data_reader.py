@@ -56,6 +56,13 @@ except ImportError:
     CANONICAL_AVAILABLE = False
     warnings.warn("Canonical ingestion components not available. Data will not be canonicalized.")
 
+from .data_window import (
+    CANONICAL_START_DATE,
+    CANONICAL_START_SEASON,
+    enforce_min_season,
+    season_from_date,
+)
+
 
 # Azure configuration
 STORAGE_ACCOUNT = "metricstrackersgbsv"
@@ -486,28 +493,139 @@ class AzureDataReader:
             tags=tags,
         )
     def read_canonical_scores(self, season: Optional[int] = None) -> "pd.DataFrame":
-        """Read canonical scores data from Azure."""
+        """Read canonical scores data from Azure (2023-24 season onward)."""
         if season:
-            return self.read_csv(f"scores/fg/games_{season}.csv", data_type="scores")
-        return self.read_csv("scores/fg/games_all.csv", data_type="scores")
+            enforce_min_season([season])
+            df = self.read_csv(f"scores/fg/games_{season}.csv", data_type="scores")
+        else:
+            df = self.read_csv("scores/fg/games_all.csv", data_type="scores")
+
+        # Filter to canonical window in case older rows are present.
+        date_col = "date" if "date" in df.columns else "game_date" if "game_date" in df.columns else None
+        if date_col:
+            df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+            df = df[df[date_col] >= pd.Timestamp(CANONICAL_START_DATE)]
+        if "season" in df.columns:
+            df = df[df["season"] >= CANONICAL_START_SEASON]
+        if "season" in df.columns:
+            df = df[df["season"] >= CANONICAL_START_SEASON]
+
+        return df
+
+    def _select_latest_pregame_lines(self, df: "pd.DataFrame") -> "pd.DataFrame":
+        """Drop postgame lines and keep the latest pregame line per event."""
+        if df is None or df.empty:
+            return df
+
+        df = df.copy()
+
+        commence_col = "commence_time" if "commence_time" in df.columns else None
+        line_time_col = None
+        for col in ["bookmaker_last_update", "timestamp", "last_update", "updated_at"]:
+            if col in df.columns:
+                line_time_col = col
+                break
+
+        if commence_col:
+            df["_commence_time"] = pd.to_datetime(df[commence_col], errors="coerce", utc=True)
+        if line_time_col:
+            df["_line_time"] = pd.to_datetime(df[line_time_col], errors="coerce", utc=True)
+            if "line_timestamp" not in df.columns:
+                df["line_timestamp"] = df["_line_time"]
+            if "line_timestamp_source" not in df.columns:
+                df["line_timestamp_source"] = line_time_col
+
+        if "_commence_time" in df.columns and "_line_time" in df.columns:
+            pregame_mask = (
+                df["_line_time"].isna()
+                | df["_commence_time"].isna()
+                | (df["_line_time"] <= df["_commence_time"])
+            )
+            df = df.loc[pregame_mask].copy()
+
+        group_cols = []
+        for key in ["event_id", "game_id"]:
+            if key in df.columns:
+                group_cols = [key]
+                break
+        if not group_cols:
+            for key in ["home_team", "away_team", "_commence_time"]:
+                if key in df.columns:
+                    group_cols.append(key)
+
+        if group_cols:
+            if "_line_time" in df.columns:
+                df = df.sort_values("_line_time").drop_duplicates(subset=group_cols, keep="last")
+            else:
+                df = df.drop_duplicates(subset=group_cols, keep="first")
+
+        return df.drop(columns=["_commence_time", "_line_time"], errors="ignore")
 
     def read_canonical_odds(self, market: str = "fg_spread", season: Optional[int] = None) -> "pd.DataFrame":
-        """Read canonical odds data from Azure."""
+        """Read canonical odds data from Azure (2023-24 season onward, pregame only)."""
+        valid_markets = ["fg_spread", "fg_total", "h1_spread", "h1_total"]
+        if market not in valid_markets:
+            raise ValueError(f"Unknown market '{market}'. Valid: {valid_markets}")
+
         if season:
-            try:
-                df = self.read_csv(
-                    f"odds/canonical/spreads/fg/spreads_fg_{season}.csv",
-                    data_type="odds",
-                )
-            except FileNotFoundError:
-                df = self.read_csv(
-                    "odds/canonical/spreads/fg/spreads_fg_all.csv",
-                    data_type="odds",
-                )
+            enforce_min_season([season])
+
+        # Single source of truth for odds across markets.
+        df = self.read_csv("odds/normalized/odds_consolidated_canonical.csv", data_type="odds")
+
+        date_col = "game_date" if "game_date" in df.columns else "date" if "date" in df.columns else None
+        if date_col:
+            df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+            df = df[df[date_col] >= pd.Timestamp(CANONICAL_START_DATE)]
+
+        if season:
             if "season" in df.columns:
-                return df[df["season"] == season].copy()
-            return df
-        return self.read_csv("odds/normalized/odds_consolidated_canonical.csv", data_type="odds")
+                df = df[df["season"] == season].copy()
+            elif date_col:
+                df = df.copy()
+                df["_season"] = df[date_col].apply(
+                    lambda d: season_from_date(d.date()) if pd.notna(d) else None
+                )
+                df = df[df["_season"] == season].drop(columns=["_season"])
+
+        df = self._select_latest_pregame_lines(df)
+
+        # Normalize column names to backtest expectations while retaining raw fields.
+        df = df.copy()
+        if market == "fg_spread":
+            if "spread" in df.columns and "fg_spread" not in df.columns:
+                df["fg_spread"] = df["spread"]
+            if "spread_home_price" in df.columns and "fg_spread_home_price" not in df.columns:
+                df["fg_spread_home_price"] = df["spread_home_price"]
+            if "spread_away_price" in df.columns and "fg_spread_away_price" not in df.columns:
+                df["fg_spread_away_price"] = df["spread_away_price"]
+            if "spread_price" in df.columns and "fg_spread_home_price" not in df.columns:
+                df["fg_spread_home_price"] = df["spread_price"]
+        elif market == "fg_total":
+            if "total" in df.columns and "fg_total" not in df.columns:
+                df["fg_total"] = df["total"]
+            if "total_over_price" in df.columns and "fg_total_over_price" not in df.columns:
+                df["fg_total_over_price"] = df["total_over_price"]
+            if "total_under_price" in df.columns and "fg_total_under_price" not in df.columns:
+                df["fg_total_under_price"] = df["total_under_price"]
+        elif market == "h1_spread":
+            if "h1_spread_price" in df.columns and "h1_spread_home_price" not in df.columns:
+                df["h1_spread_home_price"] = df["h1_spread_price"]
+        elif market == "h1_total":
+            pass
+
+        if "date" in df.columns:
+            if df["date"].isna().all():
+                if "game_date" in df.columns:
+                    df["date"] = df["game_date"]
+                elif "commence_time" in df.columns:
+                    df["date"] = df["commence_time"]
+        elif "game_date" in df.columns:
+            df["date"] = df["game_date"]
+        elif "commence_time" in df.columns:
+            df["date"] = df["commence_time"]
+
+        return df
 
     def read_canonical_ratings(self, season: int) -> Dict:
         """Read canonical ratings data from Azure."""
@@ -515,20 +633,31 @@ class AzureDataReader:
 
     def read_backtest_master(self, enhanced: bool = True) -> "pd.DataFrame":
         """
-        Read the backtest master dataset from Azure with canonicalization.
+        Read the canonical backtest master dataset from Azure.
 
         Args:
-            enhanced: If True, prefer the enhanced version with box score features
+            enhanced: Deprecated. Ignored in favor of backtest_master.csv.
 
         Returns:
             pandas DataFrame
         """
         if enhanced:
-            try:
-                return self.read_csv("backtest_datasets/backtest_master_enhanced.csv", data_type="backtest")
-            except FileNotFoundError:
-                pass
-        return self.read_csv("backtest_datasets/backtest_master.csv", data_type="backtest")
+            warnings.warn(
+                "Enhanced backtest master deprecated; using backtest_master.csv.",
+                RuntimeWarning,
+            )
+
+        df = self.read_csv("backtest_datasets/backtest_master.csv", data_type="backtest")
+
+        # Enforce canonical window.
+        if "season" in df.columns:
+            df = df[df["season"] >= CANONICAL_START_SEASON]
+        elif "game_date" in df.columns or "date" in df.columns:
+            date_col = "game_date" if "game_date" in df.columns else "date"
+            df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+            df = df[df[date_col] >= pd.Timestamp(CANONICAL_START_DATE)]
+
+        return df
 
 
 # Singleton instances
@@ -551,7 +680,7 @@ def read_backtest_master(enhanced: bool = True) -> "pd.DataFrame":
     Read the backtest master dataset from Azure with canonical ingestion.
 
     Args:
-        enhanced: If True, prefer the enhanced version with box score features
+        enhanced: Deprecated. Ignored in favor of backtest_master.csv.
 
     Returns:
         pandas DataFrame

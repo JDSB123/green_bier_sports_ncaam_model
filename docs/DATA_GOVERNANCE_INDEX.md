@@ -256,7 +256,7 @@ Every ingestion generates immutable record:
    df = AzureDataReader().read_csv('odds/normalized/odds_consolidated_canonical.csv'); \
    pct = (df['spread_home_price']==-110).sum()/len(df)*100; \
    print(f'Hardcoded: {pct:.1f}%'); print('❌ FAIL' if pct>10 else '✅ PASS')"
-   
+
    # Check: All teams resolve
    python -c "import pandas as pd; from testing.azure_data_reader import AzureDataReader; \
    from testing.canonical.team_resolution_service import get_team_resolver; \
@@ -271,7 +271,7 @@ Every ingestion generates immutable record:
    ```bash
    # Show latest validation
    jq '.[-1]' manifests/data_validation_audit.json
-   
+
    # Find any failures
    jq '.[] | select(.status=="FAIL")' manifests/data_validation_audit.json
    ```
@@ -393,7 +393,7 @@ def ingest_odds():
     # If prices missing, silently use -110
     if price is None:
         price = -110  # 🚫 NOBODY KNOWS THIS HAPPENED
-    
+
     write_to_azure(df)  # Bad data, no audit trail
 ```
 
@@ -405,14 +405,14 @@ def ingest_odds():
     # Guard rail: prices must come from source
     if price is None:
         raise ValueError("Missing prices!")  # ✅ EXPLICIT ERROR
-    
+
     # Guard rail: no hardcoded -110
     if (df['spread_home_price'] == -110).any():
         raise ValueError("Hardcoded prices detected!")
-    
+
     # Guard rail passes? Audit trail created
     audit_log.record("odds_api", "PASS", 19 records, 5/5 guard rails)
-    
+
     write_to_azure(df)  # Good data + audit trail
 ```
 
@@ -503,6 +503,6 @@ You asked for a framework with:
 
 ---
 
-**Date:** January 12, 2026  
-**Owner:** Data Engineering Team  
+**Date:** January 12, 2026
+**Owner:** Data Engineering Team
 **Next Review:** January 19, 2026 (after initial implementation)

@@ -27,19 +27,19 @@
         "exists": true
       },
       "odds_spreads_fg": {
-        "path": "odds/canonical/spreads/fg/spreads_fg_all.csv",
+        "path": "odds/normalized/odds_consolidated_canonical.csv",
         "exists": true
       },
       "odds_totals_fg": {
-        "path": "odds/canonical/totals/fg/totals_fg_all.csv",
+        "path": "odds/normalized/odds_consolidated_canonical.csv",
         "exists": true
       },
       "odds_spreads_h1": {
-        "path": "odds/canonical/spreads/h1/spreads_h1_all.csv",
+        "path": "odds/normalized/odds_consolidated_canonical.csv",
         "exists": true
       },
       "odds_totals_h1": {
-        "path": "odds/canonical/totals/h1/totals_h1_all.csv",
+        "path": "odds/normalized/odds_consolidated_canonical.csv",
         "exists": true
       },
       "team_aliases": {

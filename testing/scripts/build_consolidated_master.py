@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
-Build CONSOLIDATED SINGLE SOURCE OF TRUTH backtest master.
+Augment canonical backtest master with ncaahoopR features.
 
-Merges ALL data sources:
-1. Game scores (FG + H1)
-2. Odds with ACTUAL prices (FG + H1)
-3. Barttorvik season ratings
-4. ncaahoopR game-by-game features (rolling Four Factors, depth, splits)
+Merges:
+1. Canonical backtest master (scores + odds + ratings)
+2. ncaahoopR game-by-game features (rolling Four Factors, depth, splits)
 
-Output: backtest_master_consolidated.csv - THE SINGLE SOURCE OF TRUTH
+Output: backtest_master.csv (single source of truth)
 """
 
 import argparse
@@ -32,8 +30,8 @@ ALIASES_BLOB = "backtest_datasets/team_aliases_db.json"
 # Input files
 BACKTEST_MASTER = "backtest_datasets/backtest_master.csv"
 NCAAHOOPR_FEATURES = "backtest_datasets/ncaahoopR_features.csv"
-OUTPUT_BLOB = "backtest_datasets/backtest_master_consolidated.csv"
-SUMMARY_BLOB = "backtest_datasets/backtest_master_consolidated_summary.json"
+OUTPUT_BLOB = BACKTEST_MASTER
+SUMMARY_BLOB = "backtest_datasets/backtest_master_summary.json"
 
 
 def load_team_aliases() -> Dict[str, str]:
@@ -124,14 +122,14 @@ def create_team_features_lookup(features_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def merge_all_sources(master_df: pd.DataFrame, ncaahoopR_df: pd.DataFrame, aliases: Dict[str, str]) -> pd.DataFrame:
-    """Merge all data sources into consolidated master."""
+    """Merge ncaahoopR features into the backtest master."""
     
     if ncaahoopR_df.empty:
         print("[WARN] No ncaahoopR features to merge")
         return master_df
 
     # Ensure ncaahoopR team names are fully canonical before any merge
-    # This guarantees the consolidated master never introduces alternate
+    # This guarantees the backtest master never introduces alternate
     # representations that could conflict with canonical team columns.
     if "team" in ncaahoopR_df.columns:
         ncaahoopR_df["team"] = ncaahoopR_df["team"].apply(lambda x: resolve_team_name(x, aliases))
@@ -149,7 +147,7 @@ def merge_all_sources(master_df: pd.DataFrame, ncaahoopR_df: pd.DataFrame, alias
     # Get feature columns (exclude game_date and team)
     feature_cols = [c for c in lookup.columns if c not in ["game_date", "team"]]
     
-    # Merge HOME team features with ±1 day tolerance
+    # Merge HOME team features with +/-1 day tolerance
     print("\nMerging HOME team ncaahoopR features...")
     home_features_list = []
     
@@ -160,7 +158,7 @@ def merge_all_sources(master_df: pd.DataFrame, ncaahoopR_df: pd.DataFrame, alias
         # Try exact match first
         home_match = lookup[(lookup["game_date"] == game_date) & (lookup["team"] == home_team)]
         
-        # If no exact match, try ±1 day
+        # If no exact match, try +/-1 day
         if home_match.empty:
             date_minus_1 = game_date - pd.Timedelta(days=1)
             home_match = lookup[(lookup["game_date"] == date_minus_1) & (lookup["team"] == home_team)]
@@ -183,7 +181,7 @@ def merge_all_sources(master_df: pd.DataFrame, ncaahoopR_df: pd.DataFrame, alias
     home_matched = merged["home_box_efg"].notna().sum() if "home_box_efg" in merged.columns else 0
     print(f"   Home team matches: {home_matched:,}/{len(merged):,} ({home_matched/len(merged)*100:.1f}%)")
     
-    # Merge AWAY team features with ±1 day tolerance
+    # Merge AWAY team features with +/-1 day tolerance
     print("Merging AWAY team ncaahoopR features...")
     away_features_list = []
     
@@ -194,7 +192,7 @@ def merge_all_sources(master_df: pd.DataFrame, ncaahoopR_df: pd.DataFrame, alias
         # Try exact match first
         away_match = lookup[(lookup["game_date"] == game_date) & (lookup["team"] == away_team)]
         
-        # If no exact match, try ±1 day
+        # If no exact match, try +/-1 day
         if away_match.empty:
             date_minus_1 = game_date - pd.Timedelta(days=1)
             away_match = lookup[(lookup["game_date"] == date_minus_1) & (lookup["team"] == away_team)]
@@ -245,8 +243,22 @@ def calculate_differential_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Augment backtest master with ncaahoopR features")
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=OUTPUT_BLOB,
+        help="Output blob path (default: backtest_datasets/backtest_master.csv)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Rebuild even if ncaahoopR features already exist in the master",
+    )
+    args = parser.parse_args()
+
     print("=" * 70)
-    print("BUILDING CONSOLIDATED SINGLE SOURCE OF TRUTH")
+    print("AUGMENTING BACKTEST MASTER WITH NCAAHOOPR")
     print("=" * 70)
     
     # Load aliases
@@ -258,6 +270,12 @@ def main():
     master_df = load_backtest_master()
     ncaahoopR_df = load_ncaahoopR_features()
     
+    # Skip if already enriched unless forced
+    if not args.force and any(col.startswith("home_box_") for col in master_df.columns):
+        print("[SKIP] backtest_master.csv already includes ncaahoopR features")
+        print("       Use --force to rebuild.")
+        return
+
     # Merge all sources
     print("\n--- Merging All Sources ---")
     consolidated = merge_all_sources(master_df, ncaahoopR_df, aliases)
@@ -266,14 +284,18 @@ def main():
     print("\n--- Calculating Differential Features ---")
     consolidated = calculate_differential_features(consolidated)
     
+    # Ensure both game_date and date are available for downstream validation.
+    if "game_date" in consolidated.columns and "date" not in consolidated.columns:
+        consolidated["date"] = consolidated["game_date"]
+
     # Save output
-    print("\n--- Saving Consolidated Master ---")
-    write_csv(OUTPUT_BLOB, consolidated)
-    print(f"[OK] Saved {len(consolidated):,} games to {OUTPUT_BLOB}")
+    print("\n--- Saving Backtest Master ---")
+    write_csv(args.output, consolidated)
+    print(f"[OK] Saved {len(consolidated):,} games to {args.output}")
     
     # Summary
     print("\n" + "=" * 70)
-    print("CONSOLIDATED MASTER SUMMARY")
+    print("BACKTEST MASTER SUMMARY")
     print("=" * 70)
     print(f"Total games: {len(consolidated):,}")
     print(f"Total columns: {len(consolidated.columns)}")
@@ -328,7 +350,7 @@ def main():
     print(f"\n[OK] Saved summary to {SUMMARY_BLOB}")
     
     print("\n" + "=" * 70)
-    print("[DONE] SINGLE SOURCE OF TRUTH CREATED")
+    print("[DONE] BACKTEST MASTER UPDATED")
     print("=" * 70)
 
 

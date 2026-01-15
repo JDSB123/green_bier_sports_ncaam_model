@@ -12,8 +12,8 @@ service tree.
 2. Ensure Azure Blob access is configured.
 3. Run the backtest suite:
    ```bash
-   python testing/run_backtest_suite.py calibration --seasons 2022 2023 2024 2025
-   python testing/run_backtest_suite.py roi --seasons 2021
+   python testing/run_backtest_suite.py calibration --seasons 2024 2025
+   python testing/run_backtest_suite.py roi --seasons 2024
    ```
 
 ## ESPN schedule reference (optional)

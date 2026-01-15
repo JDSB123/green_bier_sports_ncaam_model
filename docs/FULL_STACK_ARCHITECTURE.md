@@ -73,7 +73,7 @@ This system is **fully containerized** with **ZERO fallbacks** to local data fil
 - **Container:** `ncaam_v33_model_prediction`
 - **Image:** `ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v<VERSION>` (no `latest` tag)
 - **Port:** `8092:8082`
-- **Secrets:** 
+- **Secrets:**
   - `db_password` → `/run/secrets/db_password`
   - `redis_password` → `/run/secrets/redis_password`
   - `odds_api_key` → `/run/secrets/odds_api_key`
@@ -108,9 +108,9 @@ secrets/
 - ✅ **Go:** `readSecretFile()` - calls `log.Fatal()` if missing
 - ✅ **Python:** `_read_required_secret()` - raises `FileNotFoundError` if missing
 
-**NO** `.env` file loading  
-**NO** `localhost` fallbacks  
-**NO** default passwords  
+**NO** `.env` file loading
+**NO** `localhost` fallbacks
+**NO** default passwords
 **NO** hidden fallbacks (Azure uses explicit environment variables instead of `/run/secrets` mounts)
 
 ---
@@ -375,7 +375,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 5. Done.
 # External Dependencies - NCAA Basketball v6.0
 
-**Date:** December 19, 2025  
+**Date:** December 19, 2025
 **Purpose:** Document all external dependencies required for the system
 
 ---
@@ -401,12 +401,12 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 
 ### 1. Barttorvik API
 
-**Purpose:** Team efficiency ratings (AdjO, AdjD, Tempo + Four Factors)  
-**URL:** `https://barttorvik.com/{season}_team_results.json`  
-**Frequency:** **On-demand only** (manual-only mode; triggered via `predict.bat` / `run_today.py`)  
-**Authentication:** None (public API)  
-**Rate Limits:** Not documented (assumed reasonable)  
-**Data Format:** JSON array-of-arrays  
+**Purpose:** Team efficiency ratings (AdjO, AdjD, Tempo + Four Factors)
+**URL:** `https://barttorvik.com/{season}_team_results.json`
+**Frequency:** **On-demand only** (manual-only mode; triggered via `predict.bat` / `run_today.py`)
+**Authentication:** None (public API)
+**Rate Limits:** Not documented (assumed reasonable)
+**Data Format:** JSON array-of-arrays
 **Required:** ✅ **YES** - System cannot generate predictions without ratings
 
 **Fields Pulled:** 25+ fields per team including:
@@ -424,12 +424,12 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 
 ### 2. The Odds API
 
-**Purpose:** Betting odds (spreads and totals)  
-**URL:** `https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds`  
-**Frequency:** **On-demand only** (manual-only mode; one-shot sync when you run predictions)  
-**Authentication:** API key required (stored in Docker secret)  
-**Rate Limits:** 45 requests/minute (enforced in code)  
-**Data Format:** JSON  
+**Purpose:** Betting odds (spreads and totals)
+**URL:** `https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds`
+**Frequency:** **On-demand only** (manual-only mode; one-shot sync when you run predictions)
+**Authentication:** API key required (stored in Docker secret)
+**Rate Limits:** 45 requests/minute (enforced in code)
+**Data Format:** JSON
 **Required:** ✅ **YES** - System cannot compare model vs market without odds
 
 **Usage:**
@@ -440,7 +440,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 **API Key:**
 - Stored in `secrets/odds_api_key.txt`
 - Mounted as Docker secret at `/run/secrets/odds_api_key`
-- **Docker:** fails if missing secret file  
+- **Docker:** fails if missing secret file
 - **Azure:** provided via environment variable `THE_ODDS_API_KEY`
 
 ---
@@ -690,6 +690,5 @@ Before deployment, ensure:
 
 ---
 
-**Last Updated:** December 19, 2025  
+**Last Updated:** December 19, 2025
 **Version:** v6.0 FINAL
-

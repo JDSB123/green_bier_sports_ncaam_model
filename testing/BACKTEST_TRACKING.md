@@ -53,14 +53,14 @@ Production code is NOT modified until backtests validate changes.
 
 ### Test A: ROI Simulation with Historical Odds
 - **Status:** NOT STARTED
-- **Data Available:** 2020-2021 season odds
+- **Data Available:** 2024+ season odds
 - **Purpose:** Determine if model edge translates to profit
 - **Thresholds to Test:** 1.0, 1.5, 2.0, 2.5, 3.0+
 
 ### Test B: Calibration Validation with New Values
 - **Status:** NOT STARTED  
 - **Purpose:** Verify -9.5/-11.8 calibrations produce ~0 bias
-- **Seasons:** 2021-2025 (using prior season ratings)
+- **Seasons:** 2024-2026 (using prior season ratings)
 
 ### Test C: Edge Threshold Optimization
 - **Status:** NOT STARTED

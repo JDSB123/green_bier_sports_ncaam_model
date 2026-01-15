@@ -1,7 +1,7 @@
 # NCAAM Backtesting Methodology
 
-**Version:** 1.0  
-**Date:** January 2026  
+**Version:** 1.0
+**Date:** January 2026
 **Status:** Production-Ready
 
 ---
@@ -96,9 +96,8 @@ ratings = end_of_season_ratings[team]
 Training data is always from BEFORE test data:
 
 ```
-Train: Seasons 2020-2022 -> Test: Season 2023
-Train: Seasons 2020-2023 -> Test: Season 2024
-Train: Seasons 2020-2024 -> Test: Season 2025
+Train: Season 2024 -> Test: Season 2025
+Train: Seasons 2024-2025 -> Test: Season 2026
 ```
 
 ---

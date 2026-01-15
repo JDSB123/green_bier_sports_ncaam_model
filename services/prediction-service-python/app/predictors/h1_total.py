@@ -42,7 +42,7 @@ class H1TotalConfig:
     All values derived from actual 1H game analysis (ESPN data).
     Backtest results: MAE=8.9, avg actual 1H=65.6, avg 1H/FG ratio=0.469
     """
-    # 1H calibration - RECALIBRATED on 3,222 games (2020-2025)
+    # 1H calibration - RECALIBRATED on 3,222 games
     # Original +2.7 had +14.5 bias; corrected to -11.8
     calibration: float = -11.8
 
@@ -98,7 +98,7 @@ class H1TotalModel(BasePredictor):
     LEAGUE_AVG_TEMPO: float = 67.6        # Same as FG (used for possession calc)
     LEAGUE_AVG_H1_EFFICIENCY: float = 105.5  # 1H-specific efficiency
 
-    # Calibration - RECALIBRATED on 3,222 games (2020-2025) with anti-leakage
+    # Calibration - RECALIBRATED on 3,222 games with anti-leakage
     # Original +2.7 had +14.5 bias; corrected to -11.8
     CALIBRATION: float = -11.8
     HCA: float = 0.0  # Totals don't use HCA

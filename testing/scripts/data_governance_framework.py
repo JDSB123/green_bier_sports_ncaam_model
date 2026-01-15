@@ -415,8 +415,7 @@ REGISTRY = DataSourceRegistry(
             raw_container=None,  # Local only
             canonical_container=None,  # Not in Azure
             raw_paths=[
-                "testing/data/kaggle/MarchMadnessData-2023-2025.csv",
-                "testing/data/kaggle/MarchMadnessData-2000-2022.csv"
+                "testing/data/kaggle/MarchMadnessData-2023-2025.csv"
             ],
             canonical_paths=[],
             api_docs_url="https://www.kaggle.com/datasets/",

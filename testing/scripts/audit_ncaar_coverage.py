@@ -21,7 +21,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from testing.azure_data_reader import get_azure_reader
-from testing.azure_io import read_json, read_csv
+from testing.azure_io import read_json
 
 
 def load_data():
@@ -29,7 +29,7 @@ def load_data():
     reader = get_azure_reader()
 
     print("Loading canonical backtest master...")
-    master_df = reader.read_backtest_master(enhanced=False)
+    master_df = reader.read_backtest_master()
     master_df["game_date"] = pd.to_datetime(master_df["game_date"])
     print(f"  {len(master_df):,} games")
 
@@ -69,7 +69,7 @@ def audit_matches(master_df: pd.DataFrame, ncaar_df: pd.DataFrame, aliases: dict
     # Stats
     total_games = len(master_df)
     exact_matches = 0
-    near_misses = 0  # ±1 day
+    near_misses = 0  # +/- 1 day
     unmatched = 0
     unresolved_teams = Counter()
     date_mismatches = []
@@ -87,7 +87,7 @@ def audit_matches(master_df: pd.DataFrame, ncaar_df: pd.DataFrame, aliases: dict
             exact_matches += 1
             continue
 
-        # Check near misses (±1 day)
+        # Check near misses (+/- 1 day)
         near_match = False
         for delta in [-1, 1]:
             check_date = game_date + pd.Timedelta(days=delta)
@@ -137,7 +137,7 @@ def main():
 
     print(f"Total games in master: {total:,}")
     print(f"Exact matches (same date): {exact:,} ({exact/total*100:.1f}%)")
-    print(f"Near misses (±1 day): {near:,} ({near/total*100:.1f}%)")
+    print(f"Near misses (+/- 1 day): {near:,} ({near/total*100:.1f}%)")
     print(f"Total potential matches: {exact + near:,} ({(exact + near)/total*100:.1f}%)")
     print(f"Completely unmatched: {unmatched:,} ({unmatched/total*100:.1f}%)")
 
@@ -157,15 +157,13 @@ def main():
     unmatched_rate = unmatched / total
     near_rate = near / total
 
-    # Check consolidated master coverage
-    try:
-        consolidated_df = read_csv("backtest_datasets/backtest_master_consolidated.csv")
-        ncaar_cols = [c for c in consolidated_df.columns if c.startswith("home_box_") or c.startswith("away_box_")]
-        if ncaar_cols and "home_box_efg" in consolidated_df.columns:
-            ncaar_coverage = consolidated_df["home_box_efg"].notna().sum() / len(consolidated_df) * 100
-            print(f"✅ CONSOLIDATED MASTER COVERAGE: {ncaar_coverage:.1f}% (with ±1 day tolerance)")
-    except FileNotFoundError:
-        print("ℹ️  CONSOLIDATED MASTER: Not built yet - run build_consolidated_master.py")
+    # Check master coverage (ncaahoopR features)
+    ncaar_cols = [c for c in master_df.columns if c.startswith("home_box_") or c.startswith("away_box_")]
+    if ncaar_cols and "home_box_efg" in master_df.columns:
+        ncaar_coverage = master_df["home_box_efg"].notna().sum() / len(master_df) * 100
+        print(f"? BACKTEST MASTER COVERAGE: {ncaar_coverage:.1f}% (with +/- 1 day tolerance)")
+    else:
+        print("??  BACKTEST MASTER: ncaahoopR features not merged - run build_consolidated_master.py")
 
     if unmatched_rate > 0.5:
         print("❌ HIGH UNMATCHED RATE: Likely NCAAR data coverage issue, not canonicalization.")

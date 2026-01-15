@@ -1,8 +1,8 @@
 # DATA GOVERNANCE FRAMEWORK
 ## NO Placeholders | NO Silent Fallbacks | Guard Rails | Clear QA/QC
 
-**Last Updated:** January 12, 2026  
-**Status:** Implementation Ready  
+**Last Updated:** January 12, 2026
+**Status:** Implementation Ready
 **Owner:** Data Engineering Team
 
 ---
@@ -229,19 +229,19 @@ Kaggle (inactive)| 68 tournament only (no odds)
 ```
 ✓ No Hardcoded Prices
   └─ FAIL: Any spread_home_price = -110 (hardcoded)
-  
-✓ Sign Consistency  
+
+✓ Sign Consistency
   └─ FAIL: Negative spread but home_price positive (mismatch)
-  
+
 ✓ Price Ranges
   └─ FAIL: Any price < -500 or > +500
-  
+
 ✓ Game Uniqueness
   └─ FAIL: Duplicate games by (game_id, home_team, away_team, market, game_date)
-  
+
 ✓ Freshness (Current Season)
   └─ FAIL: Data older than 48 hours (for 2026)
-  
+
 ✓ Market Consistency
   └─ WARN: If spread exists but total doesn't (should have both)
 ```
@@ -251,19 +251,19 @@ Kaggle (inactive)| 68 tournament only (no odds)
 ```
 ✓ Complete Pair
   └─ FAIL: home_score without away_score (or vice versa)
-  
+
 ✓ Reasonable Ranges
   └─ WARN: Any score < 1 or > 200 for completed game
-  
+
 ✓ Team Resolution
   └─ FAIL: Any team name not in CANONICAL_TEAMS list
-  
+
 ✓ Date Format
   └─ FAIL: Any date not representing Central Time (CST/CDT, America/Chicago) in ISO 8601 form
-  
+
 ✓ Unique Games
   └─ FAIL: Duplicate games by (date, home_team, away_team)
-  
+
 ✓ Score Finality
   └─ WARN: Game marked as final but scores < 30 total (possible error)
 ```
@@ -273,19 +273,19 @@ Kaggle (inactive)| 68 tournament only (no odds)
 ```
 ✓ Prior Season Only
   └─ FAIL: ratings_season != game_season - 1
-  
+
 ✓ Coverage Threshold
   └─ WARN: < 90% of D1 teams have ratings for season
-  
+
 ✓ Value Ranges
   └─ WARN: Any rating < 50 or > 150 (adj_o, adj_d)
-  
+
 ✓ Tempo Ranges
   └─ WARN: Any tempo < 60 or > 80 (adj_t)
-  
+
 ✓ Team Resolution
   └─ FAIL: Any team not in CANONICAL_TEAMS
-  
+
 ✓ Temporal Consistency
   └─ WARN: If team's rating jumped >10 points in one update
 ```
@@ -380,7 +380,7 @@ from testing.canonical.guard_rails_engine import DataGovernanceValidator
 
 def fetch_and_store(season):
     df = fetch_from_api(season)
-    
+
     # 1. VALIDATE against guard rails (NO silent fallbacks)
     validator = DataGovernanceValidator(strict_mode=True)
     result = validator.validate_data_source(
@@ -389,19 +389,19 @@ def fetch_and_store(season):
         data_type="odds",
         season=season
     )
-    
+
     # 2. BLOCK if errors (not optional)
     if result["status"] == "FAIL":
         print(f"❌ Guard rail violations:\n{result['errors']}")
         raise ValueError("Data failed validation. Check guard_rail_audit.json")
-    
+
     # 3. LOG warnings (informational)
     if result["warnings"]:
         print(f"⚠️  Warnings (continuing):\n{result['warnings']}")
-    
+
     # 4. STORE audit trail (immutable proof)
     validator.save_audit_trail()
-    
+
     # 5. Finally, write to Azure
     write_to_azure(df)
     return True
@@ -653,28 +653,28 @@ Use this to verify EVERY data source meets standards:
 
 ## 📞 Questions & Answers
 
-**Q: What happens if data fails a guard rail?**  
+**Q: What happens if data fails a guard rail?**
 A: Ingestion BLOCKS with error. No silent fallbacks. You must:
 1. Review audit trail to see which rule failed
 2. Fix source data or adjust guard rail
 3. Re-run ingestion
 
-**Q: What if a source has data gaps?**  
+**Q: What if a source has data gaps?**
 A: Covered by coverage % validation. If below `minimum_viable_coverage_pct`, ingestion warns but continues (only if warnings allowed). If below required, ingestion blocks.
 
-**Q: How do we know NCAAR data is correct when we activate it?**  
+**Q: How do we know NCAAR data is correct when we activate it?**
 A: Guard rails #2 (game matching) validates each box score matches exactly one ESPN game. If any unmatched, ingestion fails.
 
-**Q: What about Kaggle tournament games - how do we ensure they don't leak into regular season model?**  
+**Q: What about Kaggle tournament games - how do we ensure they don't leak into regular season model?**
 A: Guard rail #1 enforces dates are March-April only. If tournament dates appear in regular season data, ingestion fails.
 
-**Q: Can we make assumptions about missing data?**  
+**Q: Can we make assumptions about missing data?**
 A: NO. Missing data must be explicitly handled:
 - If odds are missing: Skip game or fill with explicit strategy (documented)
 - If ratings are missing: Skip game or use league average (documented)
 - If scores are missing: Skip game (never infer)
 
-**Q: Who maintains the registry?**  
+**Q: Who maintains the registry?**
 A: Data engineering team. Registry lives in `data_governance_framework.py`. Changes:
 1. Update `REGISTRY.sources[]`
 2. Re-run `data_governance_framework.py` to regenerate manifest
@@ -693,7 +693,7 @@ A: Data engineering team. Registry lives in `data_governance_framework.py`. Chan
 
 ---
 
-**Version:** 1.0  
-**Last Updated:** January 12, 2026  
-**Status:** Implementation Ready  
+**Version:** 1.0
+**Last Updated:** January 12, 2026
+**Status:** Implementation Ready
 **Next Review:** January 19, 2026

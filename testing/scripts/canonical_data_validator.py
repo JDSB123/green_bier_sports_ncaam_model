@@ -29,6 +29,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from testing.azure_data_reader import get_azure_reader
+from testing.data_window import default_backtest_seasons, enforce_min_season
 from testing.canonical.quality_gates import DataQualityGate, ValidationSeverity
 from testing.canonical.schema_evolution import SchemaEvolutionManager, detect_data_vintage
 from testing.canonical.team_resolution_service import get_team_resolver
@@ -94,6 +95,8 @@ class CanonicalDataValidator:
                 raise ValueError("Only Azure is supported for canonical validation.")
 
             reader = self.azure_reader
+            if seasons:
+                seasons = enforce_min_season(seasons)
 
             # Load and validate data
             if data_type == "scores":
@@ -225,14 +228,12 @@ class CanonicalDataValidator:
     def _load_scores_data(self, reader, seasons: Optional[List[int]] = None) -> Optional[pd.DataFrame]:
         """Load scores data for validation."""
         try:
-            if seasons:
-                dfs = []
-                for season in seasons:
-                    df = reader.read_canonical_scores(season)
-                    dfs.append(df)
-                return pd.concat(dfs, ignore_index=True) if dfs else None
-            else:
-                return reader.read_canonical_scores()
+            seasons = seasons or default_backtest_seasons()
+            dfs = []
+            for season in seasons:
+                df = reader.read_canonical_scores(season)
+                dfs.append(df)
+            return pd.concat(dfs, ignore_index=True) if dfs else None
         except Exception as e:
             print(f"Failed to load scores data: {e}")
             return None
@@ -240,13 +241,12 @@ class CanonicalDataValidator:
     def _load_odds_data(self, reader, seasons: Optional[List[int]] = None) -> Optional[pd.DataFrame]:
         """Load odds data for validation."""
         try:
-            if seasons:
-                dfs = []
-                for season in seasons:
-                    df = reader.read_canonical_odds(season=season)
-                    dfs.append(df)
-                return pd.concat(dfs, ignore_index=True) if dfs else None
-            return reader.read_canonical_odds()
+            seasons = seasons or default_backtest_seasons()
+            dfs = []
+            for season in seasons:
+                df = reader.read_canonical_odds(season=season)
+                dfs.append(df)
+            return pd.concat(dfs, ignore_index=True) if dfs else None
         except Exception as e:
             print(f"Failed to load odds data: {e}")
             return None
@@ -254,42 +254,22 @@ class CanonicalDataValidator:
     def _load_ratings_data(self, reader, seasons: Optional[List[int]] = None) -> Optional[pd.DataFrame]:
         """Load ratings data for validation."""
         try:
-            if seasons:
-                dfs = []
-                for season in seasons:
-                    ratings_payload = reader.read_canonical_ratings(season)
-                    if isinstance(ratings_payload, list):
-                        df = pd.DataFrame(ratings_payload)
-                        if "season" not in df.columns:
-                            df["season"] = season
-                    elif isinstance(ratings_payload, dict):
-                        df = pd.DataFrame.from_dict(ratings_payload, orient="index")
+            seasons = seasons or default_backtest_seasons()
+            dfs = []
+            for season in seasons:
+                ratings_payload = reader.read_canonical_ratings(season)
+                if isinstance(ratings_payload, list):
+                    df = pd.DataFrame(ratings_payload)
+                    if "season" not in df.columns:
                         df["season"] = season
-                        df["team"] = df.index
-                    else:
-                        raise ValueError("Unsupported ratings payload format")
-                    dfs.append(df)
-                return pd.concat(dfs, ignore_index=True) if dfs else None
-            else:
-                # Load ratings for recent seasons
-                dfs = []
-                for season in range(2020, 2026):
-                    try:
-                        ratings_payload = reader.read_canonical_ratings(season)
-                        if isinstance(ratings_payload, list):
-                            df = pd.DataFrame(ratings_payload)
-                            if "season" not in df.columns:
-                                df["season"] = season
-                        elif isinstance(ratings_payload, dict):
-                            df = pd.DataFrame.from_dict(ratings_payload, orient="index")
-                            df["season"] = season
-                            df["team"] = df.index
-                        else:
-                            raise ValueError("Unsupported ratings payload format")
-                        dfs.append(df)
-                    except:
-                        pass
-                return pd.concat(dfs, ignore_index=True) if dfs else None
+                elif isinstance(ratings_payload, dict):
+                    df = pd.DataFrame.from_dict(ratings_payload, orient="index")
+                    df["season"] = season
+                    df["team"] = df.index
+                else:
+                    raise ValueError("Unsupported ratings payload format")
+                dfs.append(df)
+            return pd.concat(dfs, ignore_index=True) if dfs else None
         except Exception as e:
             print(f"Failed to load ratings data: {e}")
             return None

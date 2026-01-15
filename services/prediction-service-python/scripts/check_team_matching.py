@@ -12,11 +12,24 @@ sys.path.insert(0, str(ROOT_DIR))
 
 from testing.azure_io import read_csv, blob_exists
 from testing.data_paths import DATA_PATHS
+from testing.data_window import CANONICAL_START_SEASON
 
 # Azure-only sources (single source of truth)
-GAMES_BLOB = str(DATA_PATHS.backtest_datasets / "training_data_with_odds.csv")
+GAMES_BLOB = str(DATA_PATHS.backtest_datasets / "backtest_master.csv")
 RATINGS_BLOB = str(DATA_PATHS.backtest_datasets / "barttorvik_ratings.csv")
 H1_BLOB = str(DATA_PATHS.scores_h1 / "h1_games_all.csv")
+
+def normalize(name):
+    if not name:
+        return ''
+    name = str(name).lower().strip()
+    name = name.replace('state', 'st')
+    name = name.replace('university', '')
+    name = name.replace('college', '')
+    name = name.replace("'", '')
+    name = name.replace('.', '')
+    name = name.replace('-', ' ')
+    return ' '.join(name.split())
 
 df = read_csv(GAMES_BLOB)
 ratings_df = read_csv(RATINGS_BLOB)
@@ -30,18 +43,6 @@ if team_col not in ratings_df.columns:
 
 ratings = {str(name) for name in ratings_df[team_col].dropna().astype(str)}
 ratings_normalized = {normalize(name) for name in ratings}
-
-def normalize(name):
-    if not name:
-        return ''
-    name = str(name).lower().strip()
-    name = name.replace('state', 'st')
-    name = name.replace('university', '')
-    name = name.replace('college', '')
-    name = name.replace("'", '')
-    name = name.replace('.', '')
-    name = name.replace('-', ' ')
-    return ' '.join(name.split())
 
 def is_d1(team):
     norm = normalize(team)
@@ -69,8 +70,11 @@ print(f"  At least one D1: {(df['home_d1'] | df['away_d1']).sum()}")
 print(f"  Neither D1: {(~df['home_d1'] & ~df['away_d1']).sum()}")
 
 # D1 vs D1 breakdown by season
+if 'game_date' not in df.columns and 'date' in df.columns:
+    df['game_date'] = df['date']
 df['game_date'] = pd.to_datetime(df['game_date'])
 df['season'] = df['game_date'].apply(lambda d: d.year + 1 if d.month >= 11 else d.year)
+df = df[df['season'] >= CANONICAL_START_SEASON]
 
 print("\nD1 vs D1 games by season:")
 for season in sorted(df['season'].unique()):
