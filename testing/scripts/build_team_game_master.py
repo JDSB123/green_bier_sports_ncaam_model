@@ -4,11 +4,12 @@
 Creates a single, canonical table with one row per team per game,
 using ONLY canonical team names from the canonical backtest dataset.
 
+
 Input (from Azure via AzureDataReader):
-  - backtest_datasets/backtest_master.csv
+    - manifests/canonical_training_data_master.csv (canonical master)
 
 Output:
-  - backtest_datasets/team_game_master.csv
+    - backtest_datasets/team_game_master.csv (derived, not canonical)
 
 Each game produces two rows:
   - side = "home"  (team = home_team,  opponent = away_team, is_home = True)

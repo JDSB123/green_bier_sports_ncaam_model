@@ -56,17 +56,10 @@ This document describes all validation gates in the prediction pipeline that ens
 ### Alias Sources
 | Source | Location | Aliases Count |
 |--------|----------|---------------|
-| Primary JSON | Azure Blob `backtest_datasets/team_aliases_db.json` | 1,706 |
-| PostgreSQL | `team_aliases` table + `resolve_team_name()` function | 950+ |
-| Legacy dict | `odds_sync.py` → `TEAM_NAME_ALIASES` | ~90 (redundant) |
+| Canonical Master | `manifests/canonical_training_data_master.csv` (Azure) | All canonical aliases |
 
 ### Audit Table
-```sql
--- All resolution attempts logged for monitoring
-SELECT * FROM team_resolution_audit 
-WHERE resolved_name IS NULL 
-ORDER BY created_at DESC;
-```
+All team resolution and validation is now governed by the canonical master and the canonical pipeline. Legacy audit tables and dicts are deprecated and must not be used.
 
 ---
 
@@ -89,9 +82,13 @@ game_date = cst_time.date()  # Date in CST, not UTC
 - [ingestion_gate.py](../testing/scripts/ingestion_gate.py): `_validate_commence_time()` converts to CST
 - [validation_gate.py](../services/prediction-service-python/app/validation_gate.py): `_validate_game_time()` converts to CST
 
+
 ### Date Assignment Rules
 Games starting after midnight UTC but before midnight CST belong to the **previous day's slate**:
 - Game at `2025-01-10T02:00:00Z` (10pm EST) → CST date: `2025-01-09`
+
+---
+**NOTE:** All legacy, archived, or duplicate data files (including team_aliases_db.json, legacy dicts, and any local/archived CSV/JSON) are deprecated and must not be used. The only authoritative source is manifests/canonical_training_data_master.csv in Azure. All workflows, scripts, and documentation must reference only the canonical master and the current canonical pipeline.
 
 ---
 

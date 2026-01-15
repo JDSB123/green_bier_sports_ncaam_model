@@ -184,19 +184,22 @@ The Odds API always provides:
 
 ## Troubleshooting
 
+
 ### Issue: "Home and away teams are the same"
 **Cause**: Team name resolution failed, both resolved to same team
-**Fix**: Check `team_aliases` table, add missing alias
+**Fix**: Update canonical master via the canonical pipeline if new aliases are needed
 
 ### Issue: "Team not found"
 **Cause**: Team name from API doesn't match any alias
-**Fix**: Add alias to `team_aliases` table or update `resolve_team_name()` logic
+**Fix**: Update canonical master via the canonical pipeline if new aliases are needed
 
 ### Issue: "Missing ratings"
 **Cause**: Team exists but no Barttorvik ratings
 **Fix**: Normal for small schools - game will be skipped in predictions
 
-## Verification Commands
+
+---
+**NOTE:** All legacy, archived, or duplicate data files (including team_aliases_db.json, legacy dicts, audit tables, and any local/archived CSV/JSON) are deprecated and must not be used. The only authoritative source is manifests/canonical_training_data_master.csv in Azure. All workflows, scripts, and documentation must reference only the canonical master and the current canonical pipeline.
 
 ```sql
 -- Check team resolution for a specific name

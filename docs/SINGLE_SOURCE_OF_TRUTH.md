@@ -1,5 +1,16 @@
 # SINGLE SOURCE OF TRUTH - NCAAM Data & Configuration
 
+## Canonical Master Policy (Backtesting)
+
+**manifests/canonical_training_data_master.csv** is the single, authoritative source of truth for all backtesting. This file is:
+- **Mirrored in Azure Blob Storage** (canonical/canonical_training_data_master.csv)
+- **Present in the local workspace** (manifests/canonical_training_data_master.csv)
+- **NEVER tracked by Git** (enforced by .gitignore)
+
+All scripts, audits, and documentation must reference this file only. The Azure and local copies are always kept in sync. Any update to the canonical master must be reflected in both locations.
+
+**No other file, location, or data source is valid for backtesting.**
+
 **Last Updated:** January 10, 2026
 **Document Version:** 3.0 - CANONICAL INGESTION ARCHITECTURE
 **Application Version:** v34.1.0
@@ -51,15 +62,13 @@ clean_df = gate.validate_and_raise(df, "scores")
 ### Reading Data from Azure (No Download Required)
 
 ```python
-from testing.azure_data_reader import read_backtest_master, AzureDataReader
+from testing.azure_data_reader import AzureDataReader
 
-# Quick access to backtest data
-df = read_backtest_master()
-
-# Full reader for any file
+# Quick access to canonical backtest data
 reader = AzureDataReader()
+df = reader.read_csv("manifests/canonical_training_data_master.csv")
+# Full reader for any file
 ratings = reader.read_json("ratings/barttorvik/ratings_2025.json")
-aliases = reader.read_json("backtest_datasets/team_aliases_db.json")
 ```
 
 ## Version Control
@@ -170,8 +179,7 @@ This document establishes the **canonical sources** for all NCAAM data, ensuring
 | `scores/h1/h1_games_all.csv` | First-half scores (2023-24+ season) | ESPN |
 | `odds/normalized/odds_consolidated_canonical.csv` | All odds data (217,151 rows) | The Odds API |
 | `ratings/barttorvik/` | Team efficiency ratings by season | Barttorvik |
-| `backtest_datasets/team_aliases_db.json` | Team name canonicalization (2,361 aliases) | Manual |
-| `backtest_datasets/backtest_master.csv` | Merged backtest dataset (scores + odds + ratings + optional ncaahoopR) | Derived |
+| `manifests/canonical_training_data_master.csv` | Canonical backtest dataset (scores + odds + ratings, 2023-24+ only) | Derived |
 
 Note: canonical odds snapshots are filtered to pregame only. The latest snapshot at or before commence_time is retained per event to prevent leakage.
 
@@ -210,7 +218,7 @@ python testing/scripts/build_backtest_dataset_canonical.py
 | H1 scores | `scores/h1/h1_games_all.csv` | Canonical subdirectory |
 | Odds data | `odds/normalized/odds_consolidated_canonical.csv` | Raw archive files |
 | Ratings | `ratings/barttorvik/ratings_*.csv` (Azure canonical) | Individual season files |
-| Full backtest | `backtest_datasets/backtest_master.csv` | Building from scratch each time |
+| Full backtest | `manifests/canonical_training_data_master.csv` | Built by canonical pipeline only |
 
 ### For Production Predictions
 
@@ -231,7 +239,7 @@ python testing/scripts/build_backtest_dataset_canonical.py
    ```powershell
    python testing/scripts/canonical_data_validator.py --data-type scores --source local
    ```
-3. **Rebuild backtest master** (with canonical pipeline):
+3. **Rebuild canonical master** (with canonical pipeline):
    ```powershell
    python testing/scripts/build_backtest_dataset_canonical.py
    ```
@@ -317,8 +325,8 @@ python scripts/sync_raw_data_to_azure.py --canonical --canonicalize
 # Test team resolution service
 python -c "from testing.canonical.team_resolution_service import get_team_resolver; r = get_team_resolver(); print(r.resolve('cal state northridge'))"
 
-# LEGACY COMMANDS (deprecated - use canonical versions above)
-# python testing/scripts/build_backtest_dataset_canonical.py
+
+# All legacy/archived/duplicate data files (including backtest_master.csv, team_aliases_db.json, and any local/archived CSV/JSON) are deprecated and must not be used. The only authoritative source is manifests/canonical_training_data_master.csv in Azure. All workflows, scripts, and documentation must reference only the canonical master and the current canonical pipeline.
 ```
 
 ---

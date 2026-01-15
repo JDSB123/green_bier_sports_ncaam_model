@@ -60,8 +60,7 @@
 │  ├─ scores/h1/h1_games_all.csv          [H1 scores]            │
 │  ├─ odds/normalized/odds_consolidated_canonical.csv [217K rows]│
 │  ├─ ratings/barttorvik/ratings_*.csv    [Canonicalized]        │
-│  ├─ backtest_datasets/backtest_master.csv [BACKTEST READY]     │
-│  ├─ backtest_datasets/team_aliases_db.json [2,361 aliases]     │
+│  ├─ manifests/canonical_training_data_master.csv [CANONICAL MASTER] │
 │  └─ DATA_GOVERNANCE_MANIFEST.json [Structure definition]       │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -127,7 +126,7 @@ Checks:
 ```python
 from testing.azure_data_reader import AzureDataReader
 reader = AzureDataReader()
-df = reader.read_csv("backtest_datasets/backtest_master.csv")
+df = reader.read_csv("manifests/canonical_training_data_master.csv")
 # Scripts crash if trying local file reads
 ```
 **Effect:** All reads must go through Azure API
@@ -255,18 +254,13 @@ Status: ✅ GOVERNANCE ENFORCED
 
 ### For Data Scientists/Analysts
 ```python
-# ✅ CORRECT: Read from Azure
 from testing.azure_data_reader import AzureDataReader
-
 reader = AzureDataReader()
-df = reader.read_csv("backtest_datasets/backtest_master.csv")
-
+df = reader.read_csv("manifests/canonical_training_data_master.csv")
 # Run analysis, store results in memory
 # Upload to Azure if needed
 reader.write_csv(results, "analysis_results/my_analysis.csv")
-
-# ❌ WRONG: Don't do this
-df = pd.read_csv("testing/data/backtest_master.csv")  # Local read
+# ❌ WRONG: Never read from local or legacy files
 ```
 
 ### For Ingestion Pipeline
@@ -292,8 +286,7 @@ result = pipeline.ingest_odds_data(raw_df, source="odds_api")
 # ✅ CORRECT: Read canonical data from Azure
 from testing.azure_data_reader import read_backtest_master
 
-# Always use canonical backtest master
-df = read_backtest_master(enhanced=True)
+df = reader.read_csv("manifests/canonical_training_data_master.csv")
 
 # Run backtest
 backtest_results = run_backtest(df)
@@ -336,7 +329,7 @@ backtest_results = run_backtest(df)
 ### Analysis Workflow
 ```
 1. AzureDataReader.read_csv() from canonical Azure location
-2. Load backtest_master.csv (single source)
+2. Load manifests/canonical_training_data_master.csv (single source)
 3. Run analysis (all in memory)
 4. Results uploaded to Azure if needed
 5. NEVER stored locally permanently
@@ -391,7 +384,7 @@ backtest_results = run_backtest(df)
 3. ✅ Upload to Azure: `azure_reader.write_csv(df, "my_location/")`
 
 ### "I want to read some data"
-1. ✅ Use AzureDataReader: `reader.read_csv("path/in/azure")`
+1. ✅ Use AzureDataReader: `reader.read_csv("manifests/canonical_training_data_master.csv")`
 2. ❌ Don't read from local files
 3. ❌ Don't read from Git
 
@@ -449,7 +442,7 @@ This comprehensive cleanup and data governance framework:
 | [GITIGNORE_ENFORCEMENT.md](docs/GITIGNORE_ENFORCEMENT.md) | Git protection mechanisms |
 | [CLEANUP_COMPLETION_GOVERNANCE_SIGN_OFF.md](CLEANUP_COMPLETION_GOVERNANCE_SIGN_OFF.md) | Formal sign-off document |
 | [CLEANUP_COMPLETION_SUMMARY.md](CLEANUP_COMPLETION_SUMMARY.md) | Cleanup details |
-| [SINGLE_SOURCE_OF_TRUTH.md](docs/SINGLE_SOURCE_OF_TRUTH.md) | Original principles (still valid) |
+| [SINGLE_SOURCE_OF_TRUTH.md](docs/SINGLE_SOURCE_OF_TRUTH.md) | Canonicalization principles |
 | [data_governance_validator.py](testing/scripts/data_governance_validator.py) | Compliance checking script |
 
 ---
@@ -461,3 +454,6 @@ This comprehensive cleanup and data governance framework:
 
 **Date:** January 12, 2026, 18:14 UTC  
 **Status:** 🟢 PRODUCTION READY
+
+---
+**NOTE:** All legacy, archived, or duplicate data files (including backtest_master.csv, team_aliases_db.json, and any local/archived CSV/JSON) are deprecated and must not be used. The only authoritative source is manifests/canonical_training_data_master.csv in Azure. All workflows, scripts, and documentation must reference only the canonical master and the current canonical pipeline.

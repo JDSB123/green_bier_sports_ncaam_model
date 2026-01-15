@@ -2,7 +2,7 @@
 """
 NCAAM Historical Backtesting Engine
 
-Runs backtests using ACTUAL historical game outcomes from backtest_master.csv.
+Runs backtests using ACTUAL historical game outcomes from the canonical master (manifests/canonical_training_data_master.csv).
 Unlike run_backtest.py which simulates games, this uses real results.
 
 Usage:

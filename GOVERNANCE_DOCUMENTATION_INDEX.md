@@ -164,36 +164,17 @@ Testing Scripts:
 Configuration:
 ├─ .gitignore                               ← Git protection (active)
 │
-Data Reference:
-├─ manifests/comprehensive_ingestion_audit.json  ← Current audit state
-├─ backtest_datasets/team_aliases_db.json  ← Team resolution
-│
-Azure (blob storage):
 ├─ ncaam-historical-raw/                    ← Raw data (immutable)
 └─ ncaam-historical-data/                   ← Canonical data (production)
-```
 
----
-
-## 🚀 GETTING STARTED
-
-### New Team Member Onboarding
 1. Read: **GOVERNANCE_COMPLETION_FINAL_SUMMARY.md** (15 min)
 2. Read: **AZURE_BLOB_STORAGE_ARCHITECTURE.md** (20 min)
 3. Read: **GITIGNORE_ENFORCEMENT.md** (10 min)
 4. Run: `python testing/scripts/data_governance_validator.py` (verify it passes)
-5. Ask questions about workflows in **GOVERNANCE_COMPLETION_FINAL_SUMMARY.md**
-
-### Ingestion Workflow Developer
-1. Read: **AZURE_BLOB_STORAGE_ARCHITECTURE.md** (Data Flow section)
-2. Reference: Example code in **GOVERNANCE_COMPLETION_FINAL_SUMMARY.md** (Section: How to Use)
 3. Use: `testing.azure_data_reader.AzureDataReader` for reads
 4. Use: `testing.canonical.ingestion_pipeline.CanonicalIngestionPipeline` for transforms
-5. Verify: Run `data_governance_validator.py` to ensure compliance
-
 ### Data Scientist / Analyst
 1. Read: **GOVERNANCE_COMPLETION_FINAL_SUMMARY.md** (Workflows section)
-2. Use: `AzureDataReader` to read canonical data
 3. Never: Store data locally permanently
 4. Always: Upload results to Azure if keeping them
 5. Check: Your scripts with `data_governance_validator.py`
@@ -205,7 +186,6 @@ Azure (blob storage):
 4. Configure: CI/CD to run `data_governance_validator.py`
 5. Maintain: Immutability of audit trails
 
----
 
 ## 📊 GOVERNANCE METRICS
 
@@ -217,7 +197,6 @@ Azure (blob storage):
 | Team aliases | 2,361 | ✅ Complete |
 | Backtest games | 11,763 | ✅ Ready |
 | Audit status | PASS | ✅ All clear |
-| Data in Git | 0 files | ✅ Clean |
 | Governance docs | 14 documents | ✅ Complete |
 | Compliance level | STRICT | ✅ Enforced |
 
@@ -229,7 +208,6 @@ Azure (blob storage):
 | Pre-commit | `.git/hooks/pre-commit` | ⚙️ Ready (enable) |
 | Runtime | `AzureDataReader` | ✅ Active |
 | Quality | `DataQualityGate` | ✅ Active |
-| Audit | `CanonicalIngestionPipeline` | ✅ Active |
 | Validation | `data_governance_validator.py` | ✅ Active |
 
 ---

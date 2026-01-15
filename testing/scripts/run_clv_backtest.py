@@ -199,14 +199,10 @@ class CLVBacktestEngine:
             self.ml_model = None
     
     def load_backtest_data(self) -> pd.DataFrame:
-        """Load backtest dataset."""
+        """Load canonical backtest master dataset."""
         reader = get_azure_reader()
-        blob_path = "backtest_datasets/backtest_master.csv"
-        if not reader.blob_exists(blob_path):
-            raise FileNotFoundError("Backtest master not found: backtest_master.csv")
-
-        print(f"Loading: {Path(blob_path).name}")
-        df = reader.read_csv(blob_path)
+        print("[INFO] Loading canonical backtest master")
+        df = reader.read_backtest_master()
 
         date_col = "game_date" if "game_date" in df.columns else "date" if "date" in df.columns else None
         if date_col:
@@ -217,7 +213,7 @@ class CLVBacktestEngine:
         if "season" in df.columns:
             df = df[df["season"] >= CANONICAL_START_SEASON]
         if df.empty:
-            raise ValueError("Backtest master has no canonical-window data")
+            raise ValueError("Canonical master has no canonical-window data")
 
         return df
     

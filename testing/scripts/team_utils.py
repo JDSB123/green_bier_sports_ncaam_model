@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
+
 Centralized team name canonicalization utility.
 
-SINGLE SOURCE OF TRUTH: Azure Blob backtest_datasets/team_aliases_db.json
+SINGLE SOURCE OF TRUTH: Canonical master (manifests/canonical_training_data_master.csv)
 
 All scripts should use this module for team name resolution to ensure
 consistent canonicalization across all ingestion, backtesting, and
@@ -34,7 +35,7 @@ def resolve_team_name(name: str, source: str = "unknown") -> str:
     """
     Resolve a team name to its canonical form.
     
-    Uses the SINGLE SOURCE OF TRUTH: team_aliases_db.json
+    Uses the SINGLE SOURCE OF TRUTH: canonical master (manifests/canonical_training_data_master.csv)
     
     Args:
         name: Raw team name from any source (ESPN, Odds API, etc.)

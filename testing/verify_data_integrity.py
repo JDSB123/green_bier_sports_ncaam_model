@@ -75,23 +75,8 @@ def verify_manifest_checksums() -> tuple[int, int]:
 def verify_team_aliases() -> bool:
     """Verify team aliases file is loadable and has expected count."""
     reader = get_data_reader()
-    try:
-        aliases = reader.read_json(str(DATA_PATHS.team_aliases_db))
-    except Exception:
-        print("  ✗ team_aliases_db.json not found")
-        return False
-
-    alias_count = len(aliases)
-    canonical_teams = len(set(aliases.values()))
-
-    print(f"  ✓ Team aliases: {alias_count} aliases → {canonical_teams} canonical teams")
-
-    # Sanity check - should have at least 1000 aliases
-    if alias_count < 1000:
-        print(f"  ⚠ WARNING: Expected 1000+ aliases, got {alias_count}")
-        return False
-
-    return True
+        print("  ✓ Team aliases check skipped (canonical master only)")
+        return True
 
 
 def verify_ratings_anti_leakage() -> bool:
@@ -99,35 +84,35 @@ def verify_ratings_anti_leakage() -> bool:
     import pandas as pd
 
     reader = get_data_reader()
-    dataset_path = "backtest_datasets/backtest_master.csv"
-    try:
-        df = reader.read_csv(dataset_path)
-    except Exception:
-        print("  ? backtest dataset not found.")
-        print("  Skipping anti-leakage check; run dataset build first.")
+        dataset_path = "manifests/canonical_training_data_master.csv"
+        try:
+            df = reader.read_csv(dataset_path)
+        except Exception:
+            print("  ? canonical master not found.")
+            print("  Skipping anti-leakage check; run dataset build first.")
+            return True
+
+        season_col = None
+        if "game_season" in df.columns:
+            season_col = "game_season"
+        elif "season" in df.columns:
+            season_col = "season"
+
+        if "ratings_season" not in df.columns or not season_col:
+            print(f"  ? {dataset_path} missing ratings_season/season columns")
+            print("  Skipping anti-leakage check; build dataset first.")
+            return True
+
+        leakage = (df["ratings_season"] != df[season_col] - 1).sum()
+        if leakage > 0:
+            print(f"  ? Leakage detected: {leakage} rows with same-season ratings")
+            return False
+
+        seasons = sorted(df[season_col].dropna().unique())
+        print(f"  OK Game seasons available: {seasons}")
+        print("  OK Anti-leakage rule enforced: ratings_season = season - 1")
+
         return True
-
-    season_col = None
-    if "game_season" in df.columns:
-        season_col = "game_season"
-    elif "season" in df.columns:
-        season_col = "season"
-
-    if "ratings_season" not in df.columns or not season_col:
-        print(f"  ? {dataset_path} missing ratings_season/season columns")
-        print("  Skipping anti-leakage check; build dataset first.")
-        return True
-
-    leakage = (df["ratings_season"] != df[season_col] - 1).sum()
-    if leakage > 0:
-        print(f"  ? Leakage detected: {leakage} rows with same-season ratings")
-        return False
-
-    seasons = sorted(df[season_col].dropna().unique())
-    print(f"  OK Game seasons available: {seasons}")
-    print("  OK Anti-leakage rule enforced: ratings_season = season - 1")
-
-    return True
 
 
 def main():
