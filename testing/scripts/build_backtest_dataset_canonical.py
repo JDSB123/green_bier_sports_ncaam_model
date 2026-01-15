@@ -349,6 +349,22 @@ def build_canonical_backtest_dataset(
                 return base_df
 
             odds_df = odds_df.copy()
+
+            line_cols = [
+                col for col in odds_df.columns
+                if col.startswith("line_timestamp") and "source" not in col
+            ]
+            if line_cols and "commence_time" in odds_df.columns:
+                commence_time = pd.to_datetime(odds_df["commence_time"], errors="coerce", utc=True)
+                for col in line_cols:
+                    line_time = pd.to_datetime(odds_df[col], errors="coerce", utc=True)
+                    violations = line_time.notna() & commence_time.notna() & (line_time > commence_time)
+                    if violations.any():
+                        raise ValueError(
+                            f"{odds_type} odds contain {int(violations.sum())} line timestamps after commence_time"
+                        )
+            elif line_cols:
+                raise ValueError(f"{odds_type} odds missing commence_time for pregame validation")
             
             # Odds data uses 'game_date', scores use 'date' - normalize
             if "game_date" in odds_df.columns and "date" not in odds_df.columns:
