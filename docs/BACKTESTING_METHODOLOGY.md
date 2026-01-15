@@ -222,59 +222,60 @@ Default XGBoost settings optimized for betting:
 
 ---
 
-## Scripts Reference
+## Scripts Reference (Current)
 
-### Point-in-Time Ratings
+### Data Integrity Gate (Required)
 
 ```bash
-# Test the ratings lookup
-python testing/scripts/point_in_time_ratings.py
+# Verify checksums, team aliases, anti-leakage rule
+python testing/verify_data_integrity.py
 ```
 
-### Walk-Forward Validation
+### Canonical Backtest Dataset Build
 
 ```bash
-# Run walk-forward for FG spread
-python testing/scripts/walk_forward_backtest.py --market fg_spread
-
-# Run all markets
-python testing/scripts/walk_forward_backtest.py --all-markets
+# Build canonical backtest dataset (Azure)
+python testing/scripts/build_backtest_dataset_canonical.py
 ```
 
-### Independent Model Training
+### Historical Backtest
 
 ```bash
-# Train FG spread model
-python testing/scripts/train_independent_models.py --market fg_spread
-
-# Train all models
-python testing/scripts/train_independent_models.py --all-markets
+# Run historical backtest (all or single market)
+python testing/scripts/run_historical_backtest.py --market fg_spread
 ```
 
 ### CLV Backtest
 
 ```bash
-# Run CLV backtest for FG spread
+# Run CLV backtest
 python testing/scripts/run_clv_backtest.py --market fg_spread
 
-# Use trained ML model
+# Use trained ML model (optional)
 python testing/scripts/run_clv_backtest.py --market fg_spread --use-ml-model
 ```
+
+### ML Training (Optional)
+
+```bash
+# Train ML probability models (optional)
+python services/prediction-service-python/scripts/train_ml_models.py
+```
+
+**Note:** Walk-forward and point-in-time lookup scripts are planned; until then, rely on the anti-leakage rule enforced in the canonical datasets and the integrity gate above.
 
 ---
 
 ## Production Integration
 
-### Loading Trained Models
+### Loading Trained Models (Optional)
 
 ```python
-from testing.scripts.train_independent_models import load_model
+from app.ml.model_loader import ProductionModelLoader
 
-model, feature_names, metadata = load_model("fg_spread")
-
-# Make prediction
-features = extract_features(game_data)
-proba = model.predict_proba([features])[0][1]
+loader = ProductionModelLoader()
+model_info = loader.get_model("fg_spread")
+proba = model_info.model.predict_proba([features])[0][1]
 ```
 
 ### CLV Capture in Production
