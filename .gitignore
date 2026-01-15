@@ -38,6 +38,10 @@ secrets/*.secret
 Thumbs.db
 
 # Rust
+# Canonical training data: only keep the master file
+manifests/*.csv
+manifests/*.json
+!manifests/backtest_master_ids.csv
 target/
 Cargo.lock
 
