@@ -163,7 +163,7 @@ def main():
         ncaar_coverage = master_df["home_box_efg"].notna().sum() / len(master_df) * 100
         print(f"? BACKTEST MASTER COVERAGE: {ncaar_coverage:.1f}% (with +/- 1 day tolerance)")
     else:
-        print("??  BACKTEST MASTER: ncaahoopR features not merged - run build_consolidated_master.py")
+        print("??  BACKTEST MASTER: ncaahoopR features not merged - run augment_backtest_master.py")
 
     if unmatched_rate > 0.5:
         print("❌ HIGH UNMATCHED RATE: Likely NCAAR data coverage issue, not canonicalization.")

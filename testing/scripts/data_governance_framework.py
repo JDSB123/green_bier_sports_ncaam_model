@@ -404,7 +404,7 @@ REGISTRY = DataSourceRegistry(
             ],
             expected_coverage_pct={"2024": 100.0, "2025": 100.0},
             minimum_viable_coverage_pct={"2024": 95.0, "2025": 95.0},
-            notes="Rich box-score data (player stats, minutes). Currently used for feature engineering only (build_consolidated_master.py). NOT actively ingested."
+            notes="Rich box-score data (player stats, minutes). Currently used for feature engineering only (augment_backtest_master.py). NOT actively ingested."
         ),
         
         DataSource(

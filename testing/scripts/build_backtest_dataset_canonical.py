@@ -205,7 +205,8 @@ def build_canonical_backtest_dataset(
         print("\nStep 1b: Loading canonical H1 scores...")
         h1_df = None
         try:
-            h1_df = azure_reader.read_csv("scores/h1/h1_games_all.csv", data_type="scores")
+            # Load without canonical ingestion to avoid failing on unresolved teams.
+            h1_df = azure_reader.read_csv("scores/h1/h1_games_all.csv", data_type=None)
         except Exception as e:
             print(f"  Warning: Failed to load H1 scores: {e}")
 

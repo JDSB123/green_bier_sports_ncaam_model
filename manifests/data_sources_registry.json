@@ -295,7 +295,7 @@
       "api_docs_url": "https://github.com/ethanfuerst/ncaahoopR",
       "ingestion_script": null,
       "last_updated": null,
-      "notes": "Rich box-score data (player stats, minutes). Currently used for feature engineering only (build_consolidated_master.py). NOT actively ingested."
+      "notes": "Rich box-score data (player stats, minutes). Currently used for feature engineering only (augment_backtest_master.py). NOT actively ingested."
     },
     {
       "name": "Kaggle NCAA Dataset",

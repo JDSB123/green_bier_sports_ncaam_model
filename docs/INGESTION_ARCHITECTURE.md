@@ -109,7 +109,7 @@ This document defines the **single source of truth** for all data paths in the N
 | `testing/scripts/run_historical_backtest.py` | Historical results backtest | Azure backtest_datasets |
 | `testing/scripts/run_clv_backtest.py` | CLV-enhanced backtest | Azure backtest_datasets |
 | `testing/scripts/build_backtest_dataset_canonical.py` | Build canonical backtest dataset | Azure scores/odds/ratings |
-| `testing/scripts/build_consolidated_master.py` | Merge box-score features | Azure backtest_datasets |
+| `testing/scripts/augment_backtest_master.py` | Merge box-score features | Azure backtest_datasets |
 
 ---
 
@@ -181,7 +181,7 @@ NCAAM_main/
 │   ├── run_historical_backtest.py   # Historical backtest engine
 │   ├── run_clv_backtest.py          # CLV backtest engine
 │   ├── build_backtest_dataset_canonical.py
-│   └── build_consolidated_master.py
+│   └── augment_backtest_master.py
 ├── services/prediction-service-python/  # Production prediction service
 │   └── app/main.py                  # Uses PostgreSQL for team resolution
 └── database/migrations/             # PostgreSQL migrations
