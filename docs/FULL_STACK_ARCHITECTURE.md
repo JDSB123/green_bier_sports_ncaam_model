@@ -2,7 +2,7 @@
 
 ## ✅ **100% Self-Contained - NO Local Dependencies**
 
-This system is **fully containerized** with **ZERO fallbacks** to local files, environment variables, or localhost connections.
+This system is **fully containerized** with **ZERO fallbacks** to local data files or localhost connections (secrets/config via env or Docker secrets).
 
 ---
 
@@ -599,8 +599,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 ## 🚫 What's NOT Required
 
 ### Local Files
-- ❌ `.env` files
-- ❌ Configuration files (except secrets)
+- ❌ Local data files
 - ❌ Local databases
 - ❌ Local Redis instances
 
@@ -618,7 +617,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 
 ## ✅ True "Self-Contained" Aspects
 
-1. **Secrets Management:** All secrets in Docker secrets, no local files
+1. **Secrets Management:** All secrets in Docker secrets (or env vars), no local data files
 2. **Database Schema:** All migrations auto-run on first init
 3. **Team Data:** 800+ aliases from migrations, no manual entry
 4. **Code:** All binaries built into container, no external tools needed

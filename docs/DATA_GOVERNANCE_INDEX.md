@@ -252,13 +252,17 @@ Every ingestion generates immutable record:
 1. **Verify data quality:**
    ```bash
    # Check: No hardcoded -110 odds
-   python -c "import pandas as pd; df = pd.read_csv('odds.csv'); \
+   python -c "import pandas as pd; from testing.azure_data_reader import AzureDataReader; \
+   df = AzureDataReader().read_csv('odds/normalized/odds_consolidated_canonical.csv'); \
    pct = (df['spread_home_price']==-110).sum()/len(df)*100; \
    print(f'Hardcoded: {pct:.1f}%'); print('❌ FAIL' if pct>10 else '✅ PASS')"
    
    # Check: All teams resolve
-   python -c "import pandas as pd; df = pd.read_csv('scores.csv'); \
-   unresolved = df[~df['home_team'].isin(CANONICAL_TEAMS)]; \
+   python -c "import pandas as pd; from testing.azure_data_reader import AzureDataReader; \
+   from testing.canonical.team_resolution_service import get_team_resolver; \
+   df = AzureDataReader().read_csv('scores/fg/games_all.csv'); \
+   canonical = get_team_resolver().get_canonical_names(); \
+   unresolved = df[~df['home_team'].isin(canonical)]; \
    print(f'Unresolved: {len(unresolved)}'); \
    print('❌ FAIL' if len(unresolved)>0 else '✅ PASS')"
    ```

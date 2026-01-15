@@ -17,7 +17,7 @@ Provides a single, consistent way to load secrets across all environments:
 from secrets_manager import get_api_key, get_db_password
 
 # Works in local dev, Docker, and Azure
-api_key = get_api_key("odds")      # Tries env var → Docker secret → local file
+api_key = get_api_key("odds")      # Tries env var → Docker secret → local secrets file
 db_pass = get_db_password()         # Same 3-tier priority
 
 # With clear error messages if missing
@@ -27,7 +27,7 @@ db_pass = get_db_password()         # Same 3-tier priority
 **Priority order (what gets used):**
 1. ✅ Environment variable (all platforms)
 2. 🐳 Docker secret at `/run/secrets/` (containers)
-3. 📄 Local file at `secrets/*.txt` (local dev)
+3. 📄 Local secrets file at `secrets/*.txt` (local dev)
 
 ---
 
@@ -98,7 +98,7 @@ Script C:
 ALL Scripts:
   1. Check env var: THE_ODDS_API_KEY
   2. Check Docker: /run/secrets/odds_api_key
-  3. Check file: secrets/odds_api_key.txt
+  3. Check file: secrets/odds_api_key.txt (local secrets)
   4. If nothing found: FAIL with helpful error message
      "Here are 3 ways to fix this..."
 ```
@@ -110,7 +110,7 @@ ALL Scripts:
 ### Setup (One-Time)
 
 ```powershell
-# Option 1: Local file (easiest for local dev)
+# Option 1: Local secrets file (easiest for local dev)
 python ensure_secrets.py  # Creates DB/Redis passwords
 "your_key_here" | Out-File -Path secrets/odds_api_key.txt -NoNewline
 
@@ -133,21 +133,21 @@ python testing/scripts/fetch_historical_odds.py --season 2025
 # Please set using ONE of these methods:
 # 1) $env:THE_ODDS_API_KEY = "your_key"
 # 2) /run/secrets/odds_api_key (Docker)
-# 3) secrets/odds_api_key.txt (local file)
+# 3) secrets/odds_api_key.txt (local secrets file)
 ```
 
 ---
 
 ## 📊 Matrix: What Works Where
 
-|Environment|Env Var|Docker Secret|Local File|
+|Environment|Env Var|Docker Secret|Local Secrets File|
 |-----------|:-----:|:----------:|:--------:|
 |Local Dev|✅|❌|✅|
 |Docker Container|✅|✅|✅ (mounted)|
 |Azure Container Apps|✅|❌|❌|
 |GitHub Actions|✅|❌|❌|
 
-**All use same priority order:** Env var > Docker secret > Local file
+**All use same priority order:** Env var > Docker secret > Local secrets file
 
 ---
 
@@ -230,7 +230,7 @@ python testing/scripts/debug_odds_api.py
 ## 🎓 Key Takeaways
 
 1. **One Way to Load Secrets** - All scripts use `secrets_manager.py`
-2. **Same Priority Everywhere** - Env var > Docker secret > Local file
+2. **Same Priority Everywhere** - Env var > Docker secret > Local secrets file
 3. **Clear Error Messages** - Tells you exactly what's wrong and how to fix
 4. **No More Hardcoded Defaults** - Fails fast instead of silently using wrong values
 5. **Works Across All Environments** - Local dev, Docker, Azure, CI/CD

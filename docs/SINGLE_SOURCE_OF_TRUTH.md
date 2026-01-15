@@ -169,7 +169,7 @@ This document establishes the **canonical sources** for all NCAAM data, ensuring
 | `scores/h1/h1_games_all.csv` | First-half scores (10,261 games) | ESPN |
 | `odds/normalized/odds_consolidated_canonical.csv` | All odds data (217,151 rows) | The Odds API |
 | `ratings/barttorvik/` | Team efficiency ratings by season | Barttorvik |
-| `backtest_datasets/team_aliases_db.json` | Team name canonicalization (1,679 aliases) | Manual |
+| `backtest_datasets/team_aliases_db.json` | Team name canonicalization (2,361 aliases) | Manual |
 | `backtest_datasets/backtest_master.csv` | Merged backtest dataset | Derived |
 | `backtest_datasets/backtest_master_enhanced.csv` | With advanced features | Derived |
 
@@ -207,7 +207,7 @@ python testing/scripts/build_backtest_dataset_canonical.py
 | Game scores | `scores/fg/games_all.csv` | Individual season files |
 | H1 scores | `scores/h1/h1_games_all.csv` | Canonical subdirectory |
 | Odds data | `odds/normalized/odds_consolidated_canonical.csv` | Raw archive files |
-| Ratings | `backtest_datasets/barttorvik_ratings.csv` (cached) | Individual season files |
+| Ratings | `ratings/barttorvik/ratings_*.csv` (Azure canonical) | Individual season files |
 | Full backtest | `backtest_datasets/backtest_master.csv` | Building from scratch each time |
 
 ### For Production Predictions

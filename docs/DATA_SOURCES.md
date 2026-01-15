@@ -169,7 +169,7 @@ For a complete inventory of available data, see:
 | `testing/scripts/run_historical_backtest.py` | **Run backtests** - Against actual outcomes |
 | `testing/scripts/backtest_all_markets.py` | Legacy backtest - All 6 markets with ACTUAL prices |
 | `testing/scripts/audit_data_sources.py` | Quick data availability audit |
-| `scripts/sync_raw_data_to_azure.py` | Sync local data to Azure |
+| `scripts/sync_raw_data_to_azure.py` | Sync staged data to Azure |
 
 ## Data Workflow
 

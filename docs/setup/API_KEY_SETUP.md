@@ -15,7 +15,7 @@ This guide covers setting up secrets for local development, Docker containers, a
 # Set The Odds API key as environment variable
 $env:THE_ODDS_API_KEY = "your_actual_key_here"
 
-# Or create local file (recommended for local dev)
+# Or create local secrets file (recommended for local dev)
 $key = "your_actual_key_here"
 $key | Out-File -FilePath secrets/odds_api_key.txt -NoNewline -Encoding utf8
 ```
@@ -70,11 +70,11 @@ All secrets use **the same 3-tier priority system**:
    └─ Used by: Docker containers only
    
 3. 📄 LOCAL SECRETS FILE (if no env var or Docker secret)
-   └─ Location: secrets/odds_api_key.txt
-   └─ Used by: Local development only
+  └─ Location: secrets/odds_api_key.txt
+  └─ Used by: Local development only (secrets only, never data)
 ```
 
-**Example:** If you set `THE_ODDS_API_KEY` environment variable, it will be used everywhere (local, Docker, Azure) even if the local file exists.
+**Example:** If you set `THE_ODDS_API_KEY` environment variable, it will be used everywhere (local, Docker, Azure) even if the local secrets file exists.
 
 ---
 
@@ -123,8 +123,7 @@ export REDIS_PASSWORD="your_password_here"
 ---
 
 ### Method 3: Docker Secrets (For docker-compose)
-
-The `docker-compose.yml` reads from local files and mounts them as Docker secrets:
+The `docker-compose.yml` reads from local secrets files and mounts them as Docker secrets:
 
 ```yaml
 services:
@@ -172,8 +171,6 @@ az containerapp create \
 
 ---
 
-## 🔍 Verification
-
 ### Check which secret is being used:
 
 The system logs which source provided the secret (when debug logging enabled):
@@ -192,7 +189,7 @@ api_key = get_api_key("odds")  # Tells you which source was used
 dir env: | Where-Object Name -Match "^(DB_|REDIS_|THE_ODDS)" | Select-Object Name, Value
 ```
 
-### Check local files exist:
+### Check local secrets files exist:
 
 ```powershell
 # Show which secrets files exist locally
@@ -213,7 +210,7 @@ Get-ChildItem secrets/*.txt -ErrorAction SilentlyContinue | Select-Object Name
 # Option 1: Environment variable (quickest for testing)
 $env:THE_ODDS_API_KEY = "your_key_from_https://the-odds-api.com"
 
-# Option 2: Local file (for persistent local dev)
+# Option 2: Local secrets file (for persistent local dev)
 "your_key_from_https://the-odds-api.com" | Out-File -Path secrets/odds_api_key.txt -NoNewline -Encoding utf8
 ```
 
@@ -301,7 +298,7 @@ jobs:
 - Store API keys in GitHub Secrets for CI/CD
 - Use Azure Key Vault for production
 - Rotate keys every 90 days
-- Keep local files in `secrets/` (already in .gitignore)
+- Keep local secrets files in `secrets/` (already in .gitignore)
 - Use environment variables for short-lived processes
 
 ❌ **DON'T:**
@@ -317,8 +314,8 @@ jobs:
 
 1. **Check [ERROR] message** - it tells you exactly what's missing
 2. **Verify source** - use troubleshooting section above
-3. **Check priority** - remember: env var > Docker secret > local file
-4. **File location** - must be `secrets/odd_api_key.txt` (no path needed)
+3. **Check priority** - remember: env var > Docker secret > local secrets file
+4. **File location** - must be `secrets/odds_api_key.txt` (no path needed)
 
 ---
 

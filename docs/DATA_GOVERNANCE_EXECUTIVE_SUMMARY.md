@@ -59,7 +59,7 @@
       "identifier": "kaggle",
       "status": "inactive",
       "data_types": ["scores"],
-      "notes": "Tournament only (68 games). NOT regular season. Local CSV files.",
+      "notes": "Tournament only (68 games). NOT regular season. Staged CSV only; Azure is authoritative.",
       "guard_rails": 3
     },
     {
@@ -308,7 +308,7 @@ Coverage Compliance:
 
 ### Kaggle Activation (⬜ Optional, Q1 2026)
 
-1. ⬜ Sync local CSV to Azure
+1. ⬜ Sync staged CSV to Azure (Azure is the source of truth)
 2. ⬜ Create ingest script
 3. ⬜ Implement tournament-only validation
 4. ⬜ Merge with external odds
@@ -325,10 +325,10 @@ def ingest_odds(df):
     # Assumptions (silent):
     if 'spread_home_price' not in df.columns:
         df['spread_home_price'] = -110  # 🚫 HARDCODED
-    
+
     if df['spread_home_price'].isnull().any():
         df['spread_home_price'].fillna(-110)  # 🚫 SILENT FALLBACK
-    
+
     # Nobody knows this happened!
     write_to_azure(df)
     return True
@@ -356,7 +356,7 @@ def ingest_odds(df):
     except ValueError as e:
         print(f"❌ Validation failed:\n{e}")
         raise  # BLOCKS HERE - no silent fallback
-    
+
     # 2. IMMUTABLE AUDIT TRAIL
     logger = AuditLogger()
     logger.log_validation(
@@ -367,7 +367,7 @@ def ingest_odds(df):
         errors=[],
         warnings=[]
     )
-    
+
     # 3. WRITE TO AZURE (only if validation passed)
     write_to_azure(df)
     return True
@@ -390,7 +390,9 @@ def ingest_odds(df):
 # Method 1: Check raw data
 python -c "
 import pandas as pd
-df = pd.read_csv('manifests/odds_consolidated_canonical.csv')
+from testing.azure_data_reader import AzureDataReader
+reader = AzureDataReader()
+df = reader.read_csv('odds/normalized/odds_consolidated_canonical.csv')
 pct_neg110 = (df['spread_home_price'] == -110).sum() / len(df) * 100
 print(f'Hardcoded -110: {pct_neg110:.1f}%')
 if pct_neg110 > 10:
@@ -410,9 +412,11 @@ jq '.[] | select(.source=="odds_api") | .validation_details.no_hardcoded_odds' m
 # Method 1: Check scores data
 python -c "
 import pandas as pd
+from testing.azure_data_reader import AzureDataReader
 from testing.canonical.team_resolution_service import get_team_resolver
 
-df = pd.read_csv('manifests/scores_fg_games_all.csv')
+reader = AzureDataReader()
+df = reader.read_csv('scores/fg/games_all.csv')
 resolver = get_team_resolver()
 canonical = resolver.get_canonical_names()
 
@@ -436,9 +440,11 @@ jq '.[] | select(.source=="espn_api") | .validation_details.team_resolution_mand
 # Check: Barttorvik ratings are prior season only
 python -c "
 import pandas as pd
+from testing.azure_data_reader import AzureDataReader
 
 # Load backtest data
-df = pd.read_csv('manifests/backtest_datasets/backtest_master_enhanced.csv')
+reader = AzureDataReader()
+df = reader.read_csv('backtest_datasets/backtest_master_enhanced.csv')
 
 # Check: ratings_season should always equal game_season - 1
 leakage = (df['ratings_season'] != df['game_season'] - 1).sum()
@@ -456,9 +462,11 @@ else:
 # (After NCAAR integration)
 python -c "
 import pandas as pd
+from testing.azure_data_reader import AzureDataReader
 
-ncaamr = pd.read_csv('manifests/box_scores/ncaamr_canonical_2025.csv')
-espn = pd.read_csv('manifests/scores_fg_games_all.csv')
+reader = AzureDataReader(container_name='ncaam-historical-raw')
+ncaamr = reader.read_csv('ncaahoopR_data-master/box_scores/ncaamr_canonical_2025.csv')
+espn = AzureDataReader().read_csv('scores/fg/games_all.csv')
 
 # Check: Every NCAAR game matched to ESPN
 unmatched = ncaamr[ncaamr['espn_game_id'].isnull()]

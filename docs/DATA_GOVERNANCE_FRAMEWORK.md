@@ -34,7 +34,7 @@ Your question: *"How do we confirm we are implementing/incorporating into a sing
 | Source | Data Type | Status | Why Inactive | Next Steps |
 |--------|-----------|--------|-------------|-----------|
 | **NCAAR** | Box Scores, Play-by-Play | ⏸️ INACTIVE | Used for features only (build_consolidated_master.py) | Integrate through canonical pipeline |
-| **Kaggle** | Tournament Scores | ⏸️ INACTIVE | Local CSV, tournament-only (68 games), no odds | Sync to Azure, implement merging logic |
+| **Kaggle** | Tournament Scores | ⏸️ INACTIVE | Staged CSV only (tournament-only, 68 games, no odds); Azure is authoritative | Sync to Azure, implement merging logic |
 
 ### PLANNED (Scheduled)
 

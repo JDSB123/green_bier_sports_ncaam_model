@@ -21,7 +21,7 @@
 
 1. **`testing/scripts/secrets_manager.py`**
    - Unified secrets module with 3-tier priority
-   - Priority: Env var > Docker secret > Local file
+   - Priority: Env var > Docker secret > Local secrets file
    - Clear error messages for missing secrets
 
 2. **`API_KEY_SETUP.md`** (14 sections, 300+ lines)
