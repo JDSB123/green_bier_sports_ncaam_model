@@ -42,6 +42,12 @@ try:
 except ImportError:
     PANDAS_AVAILABLE = False
 
+def _first_present(df: "pd.DataFrame", candidates: List[str]) -> Optional[str]:
+    for col in candidates:
+        if col in df.columns:
+            return col
+    return None
+
 
 class MarketType(str, Enum):
     FG_SPREAD = "fg_spread"
@@ -183,6 +189,8 @@ class CLVBacktestEngine:
         # Load ML model if requested
         self.ml_model = None
         self.ml_feature_names = None
+        self.ml_target_mode = "raw"
+        self.ml_model_type = None
         if config.use_ml_model:
             self._load_ml_model()
     
@@ -191,18 +199,42 @@ class CLVBacktestEngine:
         try:
             from testing.scripts.train_independent_models import load_model
             market = self.config.market.value
-            self.ml_model, self.ml_feature_names, _ = load_model(market)
+            self.ml_model, self.ml_feature_names, metadata = load_model(market, allow_linear=True)
+            if self.ml_model is None or not self.ml_feature_names:
+                raise ValueError("No usable model found")
+            self.ml_target_mode = (metadata or {}).get("target_mode", "raw")
+            self.ml_model_type = (metadata or {}).get("model_type")
+            if self.ml_model_type == "logistic":
+                raise ValueError("Logistic models are not supported for CLV spreads/totals")
             print(f"Loaded ML model for {market}")
         except Exception as e:
             print(f"Warning: Could not load ML model: {e}")
             print("Falling back to formula-based predictions")
             self.ml_model = None
+            self.ml_feature_names = None
+            self.ml_target_mode = "raw"
+            self.ml_model_type = None
     
     def load_backtest_data(self) -> pd.DataFrame:
         """Load canonical backtest master dataset."""
         reader = get_azure_reader()
-        print("[INFO] Loading canonical backtest master")
-        df = reader.read_backtest_master()
+        local_master = self.root_dir / "manifests" / "canonical_training_data_master.csv"
+        if local_master.exists():
+            print("[INFO] Loading canonical training master (local)")
+            df = pd.read_csv(local_master)
+        else:
+            print("[INFO] Loading canonical training master (Azure)")
+            try:
+                df = reader.read_csv("manifests/canonical_training_data_master.csv")
+            except Exception as exc:
+                raise FileNotFoundError(
+                    "Canonical master not found in Azure. "
+                    "Sync manifests/canonical_training_data_master.csv locally."
+                ) from exc
+
+        # Ensure canonical team columns are used
+        if "home_canonical" not in df.columns or "away_canonical" not in df.columns:
+            raise ValueError("Canonical master missing home_canonical/away_canonical columns")
 
         date_col = "game_date" if "game_date" in df.columns else "date" if "date" in df.columns else None
         if date_col:
@@ -217,7 +249,19 @@ class CLVBacktestEngine:
 
         return df
     
-    def generate_prediction(self, row: pd.Series) -> float:
+    def _line_column(self) -> Optional[str]:
+        market = self.config.market
+        if market == MarketType.FG_SPREAD:
+            return "fg_spread"
+        if market == MarketType.FG_TOTAL:
+            return "fg_total"
+        if market == MarketType.H1_SPREAD:
+            return "h1_spread"
+        if market == MarketType.H1_TOTAL:
+            return "h1_total"
+        return None
+
+    def generate_prediction(self, row: pd.Series) -> Optional[float]:
         """
         Generate prediction for a game.
         
@@ -227,16 +271,23 @@ class CLVBacktestEngine:
             # Use ML model
             features = []
             for feat in self.ml_feature_names:
-                val = row.get(feat, 0)
-                features.append(0 if pd.isna(val) else val)
-            
-            proba = self.ml_model.predict_proba([features])[0][1]
-            
-            # Convert probability to line adjustment
-            # This is market-specific
-            # For spreads: proba > 0.5 means home more likely to cover
-            # Adjust prediction accordingly
-            return proba  # Return probability for now
+                val = row.get(feat)
+                if pd.isna(val):
+                    return None
+                features.append(val)
+
+            predicted_raw = float(self.ml_model.predict([features])[0])
+            if self.ml_target_mode == "residual":
+                line_col = self._line_column()
+                if line_col is None:
+                    return None
+                market_line = row.get(line_col)
+                if pd.isna(market_line):
+                    return None
+                if "spread" in self.config.market.value:
+                    return market_line - predicted_raw
+                return market_line + predicted_raw
+            return predicted_raw
         
         # Formula-based prediction
         def _val(value, default):
@@ -252,29 +303,75 @@ class CLVBacktestEngine:
         market = self.config.market
         
         if market == MarketType.FG_SPREAD:
+            CALIBRATION_FG = 2.1
             home_net = home_adj_o - home_adj_d
             away_net = away_adj_o - away_adj_d
             raw_margin = (home_net - away_net) / 2.0
-            return -(raw_margin + self.config.hca_spread)
+            return -(raw_margin + self.config.hca_spread) + CALIBRATION_FG
             
         elif market == MarketType.FG_TOTAL:
+            LEAGUE_AVG_EFFICIENCY = 105.5
+            CALIBRATION_FG_TOTAL = -9.5
             avg_tempo = (home_tempo + away_tempo) / 2.0
-            home_pts = home_adj_o * avg_tempo / 100.0
-            away_pts = away_adj_o * avg_tempo / 100.0
-            return home_pts + away_pts + 7.0
+            home_eff = home_adj_o + away_adj_d - LEAGUE_AVG_EFFICIENCY
+            away_eff = away_adj_o + home_adj_d - LEAGUE_AVG_EFFICIENCY
+            home_pts = home_eff * avg_tempo / 100.0
+            away_pts = away_eff * avg_tempo / 100.0
+            return home_pts + away_pts + CALIBRATION_FG_TOTAL
             
         elif market == MarketType.H1_SPREAD:
+            CALIBRATION_H1 = 1.3
             home_net = home_adj_o - home_adj_d
             away_net = away_adj_o - away_adj_d
             raw_margin = (home_net - away_net) / 2.0
-            return -(raw_margin * 0.50 + self.config.hca_h1_spread)
+            return -(raw_margin * 0.50 + self.config.hca_h1_spread) + CALIBRATION_H1
             
         elif market == MarketType.H1_TOTAL:
-            avg_tempo = (home_tempo + away_tempo) / 2.0
-            home_pts = home_adj_o * avg_tempo / 100.0
-            away_pts = away_adj_o * avg_tempo / 100.0
-            fg_total = home_pts + away_pts
-            return fg_total * 0.469 + 2.7
+            CALIBRATION_H1_TOTAL = -11.8
+            LEAGUE_AVG_EFFICIENCY = 105.5
+            LEAGUE_AVG_TEMPO = 67.6
+            H1_POSSESSIONS_BASE = 33.0
+            H1_EFFICIENCY_DISCOUNT = 0.97
+
+            avg_fg_tempo = (home_tempo + away_tempo) / 2.0
+            tempo_deviation = (avg_fg_tempo - LEAGUE_AVG_TEMPO) / LEAGUE_AVG_TEMPO
+            h1_possessions = H1_POSSESSIONS_BASE * (1 + tempo_deviation * 0.85)
+            h1_possessions *= 1.02
+
+            home_matchup_eff = home_adj_o + away_adj_d - LEAGUE_AVG_EFFICIENCY
+            away_matchup_eff = away_adj_o + home_adj_d - LEAGUE_AVG_EFFICIENCY
+
+            home_h1_eff = home_matchup_eff * H1_EFFICIENCY_DISCOUNT / 1.03
+            away_h1_eff = away_matchup_eff * H1_EFFICIENCY_DISCOUNT / 1.03
+
+            home_score = home_h1_eff * h1_possessions / 100.0
+            away_score = away_h1_eff * h1_possessions / 100.0
+            base_total = home_score + away_score
+
+            adjustment = 0.0
+
+            if avg_fg_tempo > 71.0:
+                adjustment += (avg_fg_tempo - 71.0) * 0.20
+            elif avg_fg_tempo < 65.0:
+                adjustment += (avg_fg_tempo - 65.0) * 0.20
+
+            home_barthag = row.get("home_barthag")
+            away_barthag = row.get("away_barthag")
+            if home_barthag is not None and away_barthag is not None:
+                quality_diff = abs(home_barthag - away_barthag)
+                if quality_diff > 0.20:
+                    adjustment -= quality_diff * 1.5
+
+            home_3pr = row.get("home_three_pt_rate")
+            away_3pr = row.get("away_three_pt_rate")
+            if home_3pr is not None and away_3pr is not None:
+                avg_3pr = (home_3pr + away_3pr) / 2.0
+                if avg_3pr > 2.0:
+                    avg_3pr = avg_3pr / 100.0
+                if avg_3pr > 0.36:
+                    adjustment += (avg_3pr - 0.36) * 2.0
+
+            return base_total + adjustment + CALIBRATION_H1_TOTAL
         
         return 0.0
     
@@ -385,13 +482,15 @@ class CLVBacktestEngine:
         df = df[df["season"].isin(self.config.seasons)]
         print(f"Total games in selected seasons: {len(df)}")
         
+        h1_total_line_col = "h1_total_h1_total" if "h1_total_h1_total" in df.columns else "h1_total"
+
         # Get column mappings
         market = self.config.market.value
         line_col_map = {
             "fg_spread": ("fg_spread", "fg_spread_home_price", "fg_spread_away_price", "actual_margin"),
             "fg_total": ("fg_total", "fg_total_over_price", "fg_total_under_price", "actual_total"),
             "h1_spread": ("h1_spread", "h1_spread_home_price", "h1_spread_away_price", "h1_actual_margin"),
-            "h1_total": ("h1_total", "h1_total_over_price", "h1_total_under_price", "h1_actual_total"),
+            "h1_total": (h1_total_line_col, "h1_total_over_price", "h1_total_under_price", "h1_actual_total"),
         }
         
         line_col, price_col1, price_col2, result_col = line_col_map[market]
@@ -425,6 +524,8 @@ class CLVBacktestEngine:
             
             # Generate prediction
             predicted = self.generate_prediction(row)
+            if predicted is None or pd.isna(predicted):
+                continue
             
             # Calculate edge vs opening (for bet decision)
             edge = abs(predicted - opening_line)
@@ -464,8 +565,8 @@ class CLVBacktestEngine:
             bet_results.append(CLVBetResult(
                 game_id=str(row.get("game_id", idx)),
                 game_date=str(row["game_date"].date()),
-                home_team=row["home_team"],
-                away_team=row["away_team"],
+                home_team=row["home_canonical"],
+                away_team=row["away_canonical"],
                 season=int(row["season"]),
                 market=market,
                 predicted_line=round(predicted, 2),

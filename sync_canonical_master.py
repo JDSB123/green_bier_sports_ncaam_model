@@ -15,20 +15,20 @@ LOCAL_PATH = "manifests/canonical_training_data_master.csv"
 AZURE_PATH = "canonical/canonical_training_data_master.csv"
 
 def validate_master(df):
-    required_cols = ["season", "game_id", "market", "home_team", "away_team", "spread", "total", "odds_source"]
+    # Updated validation for cleaned canonical master
+    required_cols = ["season", "game_id", "home_canonical", "away_canonical", "fg_spread", "fg_total"]
     missing = [col for col in required_cols if col not in df.columns]
     if missing:
         print(f"ERROR: Missing required columns: {missing}")
         return False
-    # Market coverage check
-    markets = df["market"].unique()
-    print(f"Markets present: {markets}")
-    for m in ["fg_spread", "fg_total", "h1_spread", "h1_total"]:
-        count = (df["market"] == m).sum()
-        print(f"{m}: {count} rows")
-        if count == 0:
-            print(f"WARNING: No coverage for {m}")
+
+    # Coverage check
     print(f"Total rows: {len(df)}")
+    print(f"Seasons: {sorted(df['season'].unique().tolist())}")
+    print(f"FG Spread coverage: {df['fg_spread'].notna().sum()} ({df['fg_spread'].notna().sum()/len(df)*100:.1f}%)")
+    print(f"FG Total coverage: {df['fg_total'].notna().sum()} ({df['fg_total'].notna().sum()/len(df)*100:.1f}%)")
+    print(f"H1 Spread coverage: {df['h1_spread'].notna().sum()} ({df['h1_spread'].notna().sum()/len(df)*100:.1f}%)")
+    print(f"Teams: {len(set(df['home_canonical']) | set(df['away_canonical']))} unique")
     return True
 
 def download_from_azure():

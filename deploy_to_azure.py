@@ -19,6 +19,7 @@ def deploy_canonical_master():
         print(f"  ✗ {local_path}: {e}")
         return 0
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 DEPLOY TO AZURE: Sync governance files and cleanup artifacts
 
@@ -31,6 +32,10 @@ Syncs to Azure blob storage:
 
 import sys
 from pathlib import Path
+
+# Fix encoding for Windows console
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 ROOT = Path(__file__).resolve().parents[2]
 

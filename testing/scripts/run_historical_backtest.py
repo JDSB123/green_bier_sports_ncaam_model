@@ -8,12 +8,14 @@ Unlike run_backtest.py which simulates games, this uses real results.
 Usage:
     python testing/scripts/run_historical_backtest.py --market fg_spread
     python testing/scripts/run_historical_backtest.py --market h1_total --seasons 2024,2025,2026
+    python testing/scripts/run_historical_backtest.py --market fg_moneyline --seasons 2025
     python testing/scripts/run_historical_backtest.py --all-markets
 """
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -34,13 +36,70 @@ from testing.data_window import CANONICAL_START_SEASON, default_backtest_seasons
 # Paths
 RESULTS_DIR = ROOT_DIR / "testing" / "results" / "historical"
 
+def _first_present(df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
+    for col in candidates:
+        if col in df.columns:
+            return col
+    return None
+
+
+def _add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add derived features used by retrained models."""
+    df = df.copy()
+
+    def _col(name: str) -> pd.Series:
+        if name in df.columns:
+            return df[name]
+        return pd.Series(np.nan, index=df.index)
+
+    home_adj_o = _col("home_adj_o")
+    home_adj_d = _col("home_adj_d")
+    away_adj_o = _col("away_adj_o")
+    away_adj_d = _col("away_adj_d")
+
+    df["net_diff"] = (home_adj_o - home_adj_d) - (away_adj_o - away_adj_d)
+    df["barthag_diff"] = _col("home_barthag") - _col("away_barthag")
+    df["efg_diff"] = (_col("home_efg") - _col("away_efgd")) - (_col("away_efg") - _col("home_efgd"))
+    df["tor_diff"] = _col("away_tor") - _col("home_tor")
+    df["orb_diff"] = (_col("home_orb") - _col("away_drb")) - (_col("away_orb") - _col("home_drb"))
+    df["ftr_diff"] = _col("home_ftr") - _col("away_ftr")
+    df["rank_diff"] = _col("away_rank") - _col("home_rank")
+    df["wab_diff"] = _col("home_wab") - _col("away_wab")
+
+    df["tempo_avg"] = (_col("home_tempo") + _col("away_tempo")) / 2.0
+    df["home_eff"] = home_adj_o + away_adj_d
+    df["away_eff"] = away_adj_o + home_adj_d
+    three_pt_rate_avg = (_col("home_three_pt_rate") + _col("away_three_pt_rate")) / 2.0
+    three_pt_rate_avg = three_pt_rate_avg.where(three_pt_rate_avg <= 2.0, three_pt_rate_avg / 100.0)
+    df["three_pt_rate_avg"] = three_pt_rate_avg
+    df["two_pt_pct_avg"] = (_col("home_two_pt_pct") + _col("away_two_pt_pct")) / 2.0
+
+    def _odds_to_prob(series: pd.Series) -> pd.Series:
+        def _calc(value: float) -> Optional[float]:
+            if pd.isna(value):
+                return None
+            if value >= 100:
+                return 100.0 / (value + 100.0)
+            return abs(value) / (abs(value) + 100.0)
+
+        return series.apply(_calc)
+
+    if "moneyline_home_price" in df.columns:
+        df["ml_implied_home"] = _odds_to_prob(df["moneyline_home_price"])
+    if "moneyline_away_price" in df.columns:
+        df["ml_implied_away"] = _odds_to_prob(df["moneyline_away_price"])
+
+    return df
+
 
 class MarketType(str, Enum):
-    """Four betting markets."""
+    """Betting markets."""
     FG_SPREAD = "fg_spread"
     FG_TOTAL = "fg_total"
+    FG_MONEYLINE = "fg_moneyline"
     H1_SPREAD = "h1_spread"
     H1_TOTAL = "h1_total"
+    H1_MONEYLINE = "h1_moneyline"
 
 
 class BetOutcome(str, Enum):
@@ -54,7 +113,11 @@ class BacktestConfig:
     """Configuration for backtest run."""
     market: MarketType
     seasons: List[int]
-    min_edge: float = 1.5  # Minimum edge (%) to place bet
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    min_edge: float = 1.5  # Minimum edge (pts or probability points) to place bet
+    use_trained_models: bool = False
+    use_model_min_edge: bool = False
     kelly_fraction: float = 0.25  # Fractional Kelly
     base_unit: float = 100.0  # Base bet size
     max_kelly: float = 0.10  # Max Kelly fraction
@@ -212,6 +275,9 @@ class NCAAMPredictor:
         away_ast_to_ratio_rolling: float = None,
     ) -> float:
         """Predict spread (home perspective, negative = home favored)."""
+        # Calibration from production FG spread model
+        CALIBRATION_FG = 2.1
+
         home_net = home_adj_o - home_adj_d
         away_net = away_adj_o - away_adj_d
         raw_margin = (home_net - away_net) / 2.0
@@ -231,7 +297,7 @@ class NCAAMPredictor:
             home_ast_to_ratio_rolling, away_ast_to_ratio_rolling
         )
 
-        return -(raw_margin + hca + ff_adj + adv_adj)  # Negative = home favored
+        return -(raw_margin + hca + ff_adj + adv_adj) + CALIBRATION_FG  # Negative = home favored
 
     def predict_total(
         self,
@@ -247,9 +313,15 @@ class NCAAMPredictor:
         away_three_pt_rate: float = None
     ) -> float:
         """Predict total points."""
+        # Production-aligned baseline (includes defensive efficiency + calibration)
+        LEAGUE_AVG_EFFICIENCY = 105.5
+        CALIBRATION_FG_TOTAL = -9.5
+
         avg_tempo = (home_tempo + away_tempo) / 2.0
-        home_score = home_adj_o * avg_tempo / 100.0
-        away_score = away_adj_o * avg_tempo / 100.0
+        home_eff = home_adj_o + away_adj_d - LEAGUE_AVG_EFFICIENCY
+        away_eff = away_adj_o + home_adj_d - LEAGUE_AVG_EFFICIENCY
+        home_score = home_eff * avg_tempo / 100.0
+        away_score = away_eff * avg_tempo / 100.0
 
         hca = 0.0 if is_neutral else self.config.hca_total
 
@@ -258,11 +330,14 @@ class NCAAMPredictor:
         three_pt_adj = 0.0
         if home_three_pt_rate is not None and away_three_pt_rate is not None:
             avg_3pt_rate = (home_three_pt_rate + away_three_pt_rate) / 2.0
+            # Normalize if stored as a percentage (e.g., 35-120 instead of 0.35-0.45)
+            if avg_3pt_rate > 2.0:
+                avg_3pt_rate = avg_3pt_rate / 100.0
             # If both teams shoot a lot of 3s, slightly increase total prediction
-            if avg_3pt_rate > 1.0:  # Above average 3PT rate
-                three_pt_adj = (avg_3pt_rate - 1.0) * 2.0  # Small adjustment
+            if avg_3pt_rate > 0.36:
+                three_pt_adj = (avg_3pt_rate - 0.36) * 2.0  # Small adjustment
 
-        return home_score + away_score + hca + three_pt_adj
+        return home_score + away_score + hca + three_pt_adj + CALIBRATION_FG_TOTAL
 
     def predict_h1_spread(
         self,
@@ -388,11 +463,22 @@ class NCAAMPredictor:
 
         # 3PT rate adjustment
         if home_three_pt_rate is not None and away_three_pt_rate is not None:
-            avg_3pr = (home_three_pt_rate + away_three_pt_rate) / 2
-            if avg_3pr > 36.0:
-                adjustment += (avg_3pr - 36.0) * 0.20
+            avg_3pr = (home_three_pt_rate + away_three_pt_rate) / 2.0
+            if avg_3pr > 2.0:
+                avg_3pr = avg_3pr / 100.0
+            if avg_3pr > 0.36:
+                adjustment += (avg_3pr - 0.36) * 2.0
 
         return base_total + adjustment + CALIBRATION_H1
+
+    def spread_to_win_prob(self, spread: float, sigma: float) -> float:
+        """Convert a predicted spread into home win probability."""
+        if sigma <= 0:
+            return 0.5
+        expected_margin = -spread  # Negative spread means home favored
+        z = expected_margin / sigma
+        prob = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+        return min(0.99, max(0.01, prob))
 
     def calculate_edge(self, predicted: float, market: float, market_type: MarketType) -> float:
         """
@@ -418,8 +504,31 @@ class NCAAMPredictor:
 def load_backtest_data() -> pd.DataFrame:
     """Load the canonical backtest master dataset."""
     reader = get_azure_reader()
-    print("[INFO] Loading canonical backtest master")
-    df = reader.read_backtest_master()
+    local_master = ROOT_DIR / "manifests" / "canonical_training_data_master.csv"
+    if local_master.exists():
+        print("[INFO] Loading canonical training master (local)")
+        df = pd.read_csv(local_master)
+    else:
+        print("[INFO] Loading canonical training master (Azure)")
+        try:
+            df = reader.read_csv("manifests/canonical_training_data_master.csv")
+        except Exception as exc:
+            raise FileNotFoundError(
+                "Canonical master not found in Azure. "
+                "Sync manifests/canonical_training_data_master.csv locally."
+            ) from exc
+
+    # Ensure canonical team columns are used
+    if "home_canonical" not in df.columns or "away_canonical" not in df.columns:
+        raise ValueError("Canonical master missing home_canonical/away_canonical columns")
+
+    # Check for invalid games (same team vs itself)
+    if "home_canonical" in df.columns and "away_canonical" in df.columns:
+        same_team = df["home_canonical"] == df["away_canonical"]
+        if same_team.any():
+            count_same = int(same_team.sum())
+            print(f"[WARN] Dropping {count_same} games with identical home/away team")
+            df = df[~same_team].copy()
 
     if "game_date" in df.columns:
         df["game_date"] = pd.to_datetime(df["game_date"], errors="coerce")
@@ -497,7 +606,7 @@ def validate_team_matching(df: pd.DataFrame) -> bool:
     print("-" * 40)
 
     # Check 1: No team in both positions for same game
-    same_team = df[df["home_team"] == df["away_team"]]
+    same_team = df[df["home_canonical"] == df["away_canonical"]]
     if len(same_team) > 0:
         print(f"   [ERROR] {len(same_team)} games with same home/away team!")
         return False
@@ -529,7 +638,7 @@ def validate_team_matching(df: pd.DataFrame) -> bool:
             print(f"   [OK] All games have canonical team names")
 
         # Check for duplicate team name issues
-        unique_teams = set(df["home_team_canonical"].dropna().unique()) | set(df["away_team_canonical"].dropna().unique())
+        unique_teams = set(df["home_canonical"].dropna().unique()) | set(df["away_canonical"].dropna().unique())
         print(f"   Unique teams in dataset: {len(unique_teams)}")
 
         # Look for potential duplicates (same team with different names)
@@ -641,6 +750,13 @@ def determine_outcome(
     market_type: MarketType
 ) -> BetOutcome:
     """Determine if a bet won, lost, or pushed."""
+    if "moneyline" in market_type.value:
+        if actual_result > 0:
+            return BetOutcome.WIN if bet_side == "home" else BetOutcome.LOSS
+        if actual_result < 0:
+            return BetOutcome.WIN if bet_side == "away" else BetOutcome.LOSS
+        return BetOutcome.PUSH
+
     if "spread" in market_type.value:
         # For spreads: actual_result is actual_margin (home - away)
         if bet_side == "home":
@@ -687,6 +803,15 @@ def american_odds_to_decimal(american_odds: float) -> Optional[float]:
     else:
         # Negative odds: -110 means bet $110 to win $100
         return (100 / abs(american_odds)) + 1
+
+
+def american_odds_to_prob(american_odds: float) -> Optional[float]:
+    """Convert American odds to implied probability (vig included)."""
+    if pd.isna(american_odds):
+        return None
+    if american_odds >= 100:
+        return 100.0 / (american_odds + 100.0)
+    return abs(american_odds) / (abs(american_odds) + 100.0)
 
 
 def calculate_profit(outcome: BetOutcome, wager: float, odds: float) -> Optional[float]:
@@ -750,10 +875,28 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
 
     # Filter to requested seasons
     df = df[df["season"].isin(config.seasons)]
+
+    if config.start_date:
+        start_dt = pd.to_datetime(config.start_date, errors="coerce")
+        if not pd.isna(start_dt):
+            df = df[df["game_date"] >= start_dt]
+    if config.end_date:
+        end_dt = pd.to_datetime(config.end_date, errors="coerce")
+        if not pd.isna(end_dt):
+            df = df[df["game_date"] <= end_dt]
     total_games = len(df)
+
+    if config.use_trained_models:
+        df = _add_derived_features(df)
+
+    h1_total_line_col = "h1_total_h1_total" if "h1_total_h1_total" in df.columns else "h1_total"
 
     # Determine which columns we need - NO APPROXIMATIONS
     # CRITICAL: Use ACTUAL H1 scores for H1 markets, not FG * 0.5
+    line_col = None
+    price_col = None
+    alt_price_col = None
+
     if config.market == MarketType.FG_SPREAD:
         line_col = "fg_spread"
         result_col = "actual_margin"
@@ -764,19 +907,49 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
         result_col = "actual_total"
         price_col = "fg_total_over_price"  # For over bet
         alt_price_col = "fg_total_under_price"  # For under bet
+    elif config.market == MarketType.FG_MONEYLINE:
+        result_col = "actual_margin"
+        price_col = "moneyline_home_price"
+        alt_price_col = "moneyline_away_price"
     elif config.market == MarketType.H1_SPREAD:
         line_col = "h1_spread"
         result_col = "h1_actual_margin"  # ACTUAL H1 margin, NOT FG * 0.5
         price_col = "h1_spread_home_price"
         alt_price_col = "h1_spread_away_price"
-    else:  # H1_TOTAL
-        line_col = "h1_total"
+    elif config.market == MarketType.H1_TOTAL:
+        line_col = h1_total_line_col
         result_col = "h1_actual_total"  # ACTUAL H1 total, NOT FG * 0.5
         price_col = "h1_total_over_price"
         alt_price_col = "h1_total_under_price"
+    else:  # H1_MONEYLINE
+        result_col = "h1_actual_margin"
+        price_col = _first_present(
+            df,
+            ["h1_moneyline_home_price", "moneyline_home_price_1h", "h1_ml_home_price"],
+        )
+        alt_price_col = _first_present(
+            df,
+            ["h1_moneyline_away_price", "moneyline_away_price_1h", "h1_ml_away_price"],
+        )
 
     # Filter to games with required data
-    has_odds = df[line_col].notna()
+    if config.market in (MarketType.FG_MONEYLINE, MarketType.H1_MONEYLINE):
+        if (
+            not price_col
+            or not alt_price_col
+            or price_col not in df.columns
+            or alt_price_col not in df.columns
+        ):
+            print("[WARN] Moneyline odds not found in canonical master; skipping market.")
+            has_odds = pd.Series(False, index=df.index)
+        else:
+            has_odds = df[price_col].notna() & df[alt_price_col].notna()
+    else:
+        if not line_col or line_col not in df.columns:
+            print(f"[WARN] Missing line column {line_col}; skipping market.")
+            has_odds = pd.Series(False, index=df.index)
+        else:
+            has_odds = df[line_col].notna()
     has_ratings = df["home_adj_o"].notna() & df["away_adj_o"].notna()
 
     games_with_odds = has_odds.sum()
@@ -788,13 +961,48 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
 
     print(f"\nData Summary:")
     print(f"  Total games in seasons: {total_games:,}")
-    print(f"  Games with {line_col}: {games_with_odds:,}")
+    line_label = line_col or (f"{price_col}/{alt_price_col}" if price_col and alt_price_col else "moneyline odds")
+    print(f"  Games with {line_label}: {games_with_odds:,}")
     print(f"  Games with ratings: {games_with_ratings:,}")
     print(f"  Games with both: {len(df_valid):,}")
 
     # Run predictions
     predictor = NCAAMPredictor(config)
+    trained_model = None
+    trained_features = None
+    trained_target_mode = "raw"
+    trained_model_type = None
+    trained_meta = None
+    if config.use_trained_models:
+        try:
+            from testing.scripts.train_independent_models import load_model
+            trained_model, trained_features, trained_meta = load_model(config.market.value, allow_linear=True)
+            if trained_model is None or not trained_features:
+                print(f"[WARN] Trained model not found for {config.market.value}; using formula.")
+            else:
+                trained_target_mode = (trained_meta or {}).get("target_mode", "raw")
+                trained_model_type = (trained_meta or {}).get("model_type")
+        except Exception as exc:
+            print(f"[WARN] Failed to load trained model for {config.market.value}: {exc}")
+    effective_min_edge = config.min_edge
+    if config.use_model_min_edge and trained_meta:
+        model_min_edge = trained_meta.get("min_edge")
+        if model_min_edge is not None:
+            effective_min_edge = float(model_min_edge)
+            print(f"[INFO] Using model min_edge: {effective_min_edge}")
+
     results: List[BetResult] = []
+
+    def _feature_vector(row: pd.Series) -> Optional[List[float]]:
+        if not trained_features:
+            return None
+        values: List[float] = []
+        for name in trained_features:
+            val = row.get(name)
+            if pd.isna(val):
+                return None
+            values.append(float(val))
+        return values
 
     for _, row in df_valid.iterrows():
         # Extract Four Factors (if available)
@@ -829,44 +1037,116 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
         }
 
         # Generate prediction with all features
-        if config.market == MarketType.FG_SPREAD:
-            predicted = predictor.predict_spread(
-                row["home_adj_o"], row["home_adj_d"],
-                row["away_adj_o"], row["away_adj_d"],
-                **four_factors, **advanced
-            )
-        elif config.market == MarketType.FG_TOTAL:
-            predicted = predictor.predict_total(
-                row["home_adj_o"], row["home_adj_d"], row.get("home_tempo", 68),
-                row["away_adj_o"], row["away_adj_d"], row.get("away_tempo", 68),
-                **shooting
-            )
-        elif config.market == MarketType.H1_SPREAD:
-            # H1 Spread - independent model (NOT FG/2)
-            predicted = predictor.predict_h1_spread(
-                row["home_adj_o"], row["home_adj_d"],
-                row["away_adj_o"], row["away_adj_d"],
-                **four_factors  # Uses EFG for dynamic margin scaling
-            )
-        else:  # H1_TOTAL
-            # H1 Total - independent model (NOT FG*0.48)
-            predicted = predictor.predict_h1_total(
-                row["home_adj_o"], row["home_adj_d"], row.get("home_tempo", 68),
-                row["away_adj_o"], row["away_adj_d"], row.get("away_tempo", 68),
-                home_barthag=row.get("home_barthag"),
-                away_barthag=row.get("away_barthag"),
-                home_three_pt_rate=row.get("home_three_pt_rate"),
-                away_three_pt_rate=row.get("away_three_pt_rate")
-            )
+        if config.market in (MarketType.FG_MONEYLINE, MarketType.H1_MONEYLINE):
+            if trained_model and trained_features:
+                features = _feature_vector(row)
+                if features is None:
+                    continue
+                pred_raw = float(trained_model.predict([features])[0])
+                if trained_model_type == "linear" and trained_target_mode != "win_prob":
+                    prob_home = predictor.spread_to_win_prob(-pred_raw, config.sigma_spread)
+                else:
+                    prob_home = pred_raw
+                prob_home = min(0.99, max(0.01, prob_home))
+            else:
+                if config.market == MarketType.FG_MONEYLINE:
+                    spread_pred = predictor.predict_spread(
+                        row["home_adj_o"], row["home_adj_d"],
+                        row["away_adj_o"], row["away_adj_d"],
+                        **four_factors, **advanced
+                    )
+                else:
+                    spread_pred = predictor.predict_h1_spread(
+                        row["home_adj_o"], row["home_adj_d"],
+                        row["away_adj_o"], row["away_adj_d"],
+                        **four_factors
+                    )
 
-        market_line = row[line_col]
-        edge = predictor.calculate_edge(predicted, market_line, config.market)
+                prob_home = predictor.spread_to_win_prob(spread_pred, config.sigma_spread)
+            home_price = row.get(price_col)
+            away_price = row.get(alt_price_col)
+            if pd.isna(home_price) or pd.isna(away_price):
+                continue
 
-        # Only bet if edge exceeds minimum
-        if edge < config.min_edge:
-            continue
+            implied_home = american_odds_to_prob(home_price)
+            implied_away = american_odds_to_prob(away_price)
+            if implied_home is None or implied_away is None:
+                continue
 
-        bet_side = predictor.get_bet_side(predicted, market_line, config.market)
+            dec_home = american_odds_to_decimal(home_price)
+            dec_away = american_odds_to_decimal(away_price)
+            if dec_home is None or dec_away is None:
+                continue
+
+            prob_away = 1.0 - prob_home
+            ev_home = prob_home * (dec_home - 1.0) - (1.0 - prob_home)
+            ev_away = prob_away * (dec_away - 1.0) - (1.0 - prob_away)
+            edge = max(ev_home, ev_away) * 100.0
+
+            if edge < effective_min_edge:
+                continue
+
+            if ev_home >= ev_away:
+                bet_side = "home"
+                predicted = prob_home
+                market_line = implied_home
+            else:
+                bet_side = "away"
+                predicted = 1.0 - prob_home
+                market_line = implied_away
+        else:
+            if trained_model and trained_features:
+                features = _feature_vector(row)
+                if features is None:
+                    continue
+                predicted_raw = float(trained_model.predict([features])[0])
+                if trained_target_mode == "residual":
+                    if line_col is None or pd.isna(row.get(line_col)):
+                        continue
+                    if config.market in (MarketType.FG_SPREAD, MarketType.H1_SPREAD):
+                        predicted = row[line_col] - predicted_raw
+                    else:
+                        predicted = row[line_col] + predicted_raw
+                else:
+                    predicted = predicted_raw
+            elif config.market == MarketType.FG_SPREAD:
+                predicted = predictor.predict_spread(
+                    row["home_adj_o"], row["home_adj_d"],
+                    row["away_adj_o"], row["away_adj_d"],
+                    **four_factors, **advanced
+                )
+            elif config.market == MarketType.FG_TOTAL:
+                predicted = predictor.predict_total(
+                    row["home_adj_o"], row["home_adj_d"], row.get("home_tempo", 68),
+                    row["away_adj_o"], row["away_adj_d"], row.get("away_tempo", 68),
+                    **shooting
+                )
+            elif config.market == MarketType.H1_SPREAD:
+                # H1 Spread - independent model (NOT FG/2)
+                predicted = predictor.predict_h1_spread(
+                    row["home_adj_o"], row["home_adj_d"],
+                    row["away_adj_o"], row["away_adj_d"],
+                    **four_factors  # Uses EFG for dynamic margin scaling
+                )
+            else:  # H1_TOTAL
+                # H1 Total - independent model (NOT FG*0.48)
+                predicted = predictor.predict_h1_total(
+                    row["home_adj_o"], row["home_adj_d"], row.get("home_tempo", 68),
+                    row["away_adj_o"], row["away_adj_d"], row.get("away_tempo", 68),
+                    home_barthag=row.get("home_barthag"),
+                    away_barthag=row.get("away_barthag"),
+                    home_three_pt_rate=row.get("home_three_pt_rate"),
+                    away_three_pt_rate=row.get("away_three_pt_rate")
+                )
+
+            market_line = row[line_col]
+            edge = predictor.calculate_edge(predicted, market_line, config.market)
+
+            # Only bet if edge exceeds minimum
+            if edge < effective_min_edge:
+                continue
+
+            bet_side = predictor.get_bet_side(predicted, market_line, config.market)
 
         # Get actual result - NO APPROXIMATIONS
         if result_col not in row or pd.isna(row.get(result_col)):
@@ -899,14 +1179,21 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
         if profit is None:
             continue
 
+        if config.market in (MarketType.FG_MONEYLINE, MarketType.H1_MONEYLINE):
+            predicted_line_value = round(predicted, 3)
+            market_line_value = round(market_line, 3)
+        else:
+            predicted_line_value = round(predicted, 2)
+            market_line_value = round(market_line, 2)
+
         results.append(BetResult(
             game_date=str(row["game_date"].date()),
-            home_team=row["home_team"],
-            away_team=row["away_team"],
+            home_team=row["home_canonical"],
+            away_team=row["away_canonical"],
             season=row["season"],
             market=config.market.value,
-            predicted_line=round(predicted, 2),
-            market_line=round(market_line, 2),
+            predicted_line=predicted_line_value,
+            market_line=market_line_value,
             edge=round(edge, 2),
             bet_side=bet_side,
             actual_result=round(actual, 2),
@@ -1046,7 +1333,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run historical NCAAM backtest")
     parser.add_argument(
         "--market",
-        choices=["fg_spread", "fg_total", "h1_spread", "h1_total"],
+        choices=["fg_spread", "fg_total", "fg_moneyline", "h1_spread", "h1_total", "h1_moneyline"],
         default="fg_spread",
         help="Market to backtest"
     )
@@ -1062,9 +1349,29 @@ def main():
         help="Minimum edge (percent) to place bet"
     )
     parser.add_argument(
+        "--start-date",
+        default=None,
+        help="Filter games on/after date (YYYY-MM-DD)"
+    )
+    parser.add_argument(
+        "--end-date",
+        default=None,
+        help="Filter games on/before date (YYYY-MM-DD)"
+    )
+    parser.add_argument(
         "--all-markets",
         action="store_true",
-        help="Run all four markets"
+        help="Run all markets"
+    )
+    parser.add_argument(
+        "--use-trained-models",
+        action="store_true",
+        help="Use retrained models from testing/models/"
+    )
+    parser.add_argument(
+        "--use-model-min-edge",
+        action="store_true",
+        help="Use min_edge saved with retrained model (if available)"
     )
 
     args = parser.parse_args()
@@ -1076,7 +1383,14 @@ def main():
     seasons = enforce_min_season(seasons)
 
     if args.all_markets:
-        markets = [MarketType.FG_SPREAD, MarketType.FG_TOTAL, MarketType.H1_SPREAD, MarketType.H1_TOTAL]
+        markets = [
+            MarketType.FG_SPREAD,
+            MarketType.FG_TOTAL,
+            MarketType.FG_MONEYLINE,
+            MarketType.H1_SPREAD,
+            MarketType.H1_TOTAL,
+            MarketType.H1_MONEYLINE,
+        ]
     else:
         markets = [MarketType(args.market)]
 
@@ -1086,13 +1400,23 @@ def main():
     print(f"Markets: {[m.value for m in markets]}")
     print(f"Seasons: {seasons}")
     print(f"Min Edge: {args.min_edge}%")
+    if args.use_trained_models:
+        print("Model: retrained (testing/models/)")
+    if args.use_model_min_edge:
+        print("Min Edge: model metadata (if available)")
+    if args.start_date or args.end_date:
+        print(f"Date Filter: {args.start_date or '...'} to {args.end_date or '...'}")
 
     summaries = []
     for market in markets:
         config = BacktestConfig(
             market=market,
             seasons=seasons,
-            min_edge=args.min_edge
+            start_date=args.start_date,
+            end_date=args.end_date,
+            min_edge=args.min_edge,
+            use_trained_models=args.use_trained_models,
+            use_model_min_edge=args.use_model_min_edge,
         )
         summary = run_backtest(config)
         summaries.append(summary)
