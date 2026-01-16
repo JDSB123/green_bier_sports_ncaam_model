@@ -61,7 +61,7 @@ def verify_manifest_checksums() -> tuple[int, int]:
 
         actual_sha = sha256_bytes(payload)
         if actual_sha == expected_sha:
-            print(f"  ✓ {name}: checksum OK")
+            print(f"  OK {name}: checksum OK")
             passed += 1
         else:
             print(f"  ✗ {name}: checksum MISMATCH")
@@ -75,8 +75,8 @@ def verify_manifest_checksums() -> tuple[int, int]:
 def verify_team_aliases() -> bool:
     """Verify team aliases file is loadable and has expected count."""
     reader = get_data_reader()
-        print("  ✓ Team aliases check skipped (canonical master only)")
-        return True
+    print("  OK Team aliases check skipped (canonical master only)")
+    return True
 
 
 def verify_ratings_anti_leakage() -> bool:
@@ -84,35 +84,35 @@ def verify_ratings_anti_leakage() -> bool:
     import pandas as pd
 
     reader = get_data_reader()
-        dataset_path = "manifests/canonical_training_data_master.csv"
-        try:
-            df = reader.read_csv(dataset_path)
-        except Exception:
-            print("  ? canonical master not found.")
-            print("  Skipping anti-leakage check; run dataset build first.")
-            return True
-
-        season_col = None
-        if "game_season" in df.columns:
-            season_col = "game_season"
-        elif "season" in df.columns:
-            season_col = "season"
-
-        if "ratings_season" not in df.columns or not season_col:
-            print(f"  ? {dataset_path} missing ratings_season/season columns")
-            print("  Skipping anti-leakage check; build dataset first.")
-            return True
-
-        leakage = (df["ratings_season"] != df[season_col] - 1).sum()
-        if leakage > 0:
-            print(f"  ? Leakage detected: {leakage} rows with same-season ratings")
-            return False
-
-        seasons = sorted(df[season_col].dropna().unique())
-        print(f"  OK Game seasons available: {seasons}")
-        print("  OK Anti-leakage rule enforced: ratings_season = season - 1")
-
+    dataset_path = "manifests/canonical_training_data_master.csv"
+    try:
+        df = reader.read_csv(dataset_path)
+    except Exception:
+        print("  ? canonical master not found.")
+        print("  Skipping anti-leakage check; run dataset build first.")
         return True
+
+    season_col = None
+    if "game_season" in df.columns:
+        season_col = "game_season"
+    elif "season" in df.columns:
+        season_col = "season"
+
+    if "ratings_season" not in df.columns or not season_col:
+        print(f"  ? {dataset_path} missing ratings_season/season columns")
+        print("  Skipping anti-leakage check; build dataset first.")
+        return True
+
+    leakage = (df["ratings_season"] != df[season_col] - 1).sum()
+    if leakage > 0:
+        print(f"  ? Leakage detected: {leakage} rows with same-season ratings")
+        return False
+
+    seasons = sorted(df[season_col].dropna().unique())
+    print(f"  OK Game seasons available: {seasons}")
+    print("  OK Anti-leakage rule enforced: ratings_season = season - 1")
+
+    return True
 
 
 def main():
@@ -127,7 +127,7 @@ def main():
     # 1. Check Azure access
     print("[1] Checking Azure canonical data access...")
     if verify_azure_data():
-        print("  ✓ Azure canonical data reachable")
+        print("  OK Azure canonical data reachable")
     else:
         print("  ⚠ Azure canonical data check failed")
     print()
@@ -155,7 +155,7 @@ def main():
     # Final summary
     print("=" * 60)
     if all_passed:
-        print("✓ ALL CHECKS PASSED - Data integrity verified")
+        print("OK ALL CHECKS PASSED - Data integrity verified")
         print("  Safe to proceed with backtesting")
         return 0
     else:

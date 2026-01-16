@@ -1,0 +1,36 @@
+{
+  "market": "fg_moneyline",
+  "model_type": "linear",
+  "target_mode": "raw",
+  "feature_names": [
+    "ml_implied_home",
+    "net_diff",
+    "barthag_diff"
+  ],
+  "weights": [
+    8.031162048894736,
+    1.8727345226747971,
+    0.6632833095693995
+  ],
+  "intercept": 6.506698187549247,
+  "means": [
+    0.6653830011950208,
+    3.335108990779934,
+    0.06217332864797743
+  ],
+  "stds": [
+    0.25785595405914125,
+    14.27649817556462,
+    0.25551909440043635
+  ],
+  "metadata": {
+    "min_edge": 1.0,
+    "roi": -10.82,
+    "total_bets": 67,
+    "win_rate": 62.69,
+    "mae": 9.07506958306959,
+    "log_loss": null,
+    "sigma": 11.0,
+    "saved_at": "2026-01-15T23:21:34.403771"
+  }
+}
