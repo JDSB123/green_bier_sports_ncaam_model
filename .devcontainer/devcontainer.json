@@ -1,0 +1,75 @@
+{
+  "name": "NCAAM Sports Model (Python + Go)",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/go:1.22": {},
+    "ghcr.io/devcontainers/features/postgres:latest": {},
+    "ghcr.io/devcontainers/features/redis:latest": {}
+  },
+
+  "forwardPorts": [
+    8000,
+    5432,
+    6379,
+    8081
+  ],
+  "portsAttributes": {
+    "8000": {
+      "label": "FastAPI",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    },
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "silent"
+    },
+    "8081": {
+      "label": "Redis Commander",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "golang.go",
+        "ms-vscode.makefile-tools",
+        "GitHub.copilot",
+        "ms-azuretools.vscode-azure-postgres",
+        "ms-azuretools.vscode-cosmosdb"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.linting.ruffEnabled": true,
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.python",
+          "editor.formatOnSave": true
+        },
+        "[go]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        },
+        "go.lintOnSave": "package",
+        "go.useLanguageServer": true
+      }
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  
+  "remoteUser": "codespace",
+  
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/codespace/.ssh,readonly"
+  ]
+}

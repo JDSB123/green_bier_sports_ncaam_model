@@ -1,5 +1,13 @@
 # NCAA Basketball v33.15.0
 
+## 🚀 **NEW USERS: START HERE**
+
+**First time setting up?** Read this first → [START_HERE.md](../START_HERE.md)
+
+**Having issues?** Run environment checker: `.\check-environment.bat`
+
+---
+
 ## Single Point of Entry
 
 ```powershell
@@ -11,7 +19,7 @@ That's it. One command. Everything runs inside the container.
 ## What This Does
 
 1. Syncs fresh ratings from Barttorvik (Go binary)
-2. Syncs fresh odds from The Odds API (Rust binary)  
+2. Syncs fresh odds from The Odds API (Rust binary)
 3. Runs predictions using the model (Python)
 4. Outputs betting recommendations with edge calculations
 
@@ -22,28 +30,28 @@ That's it. One command. Everything runs inside the container.
    python ensure_secrets.py
    ```
    This creates `db_password.txt` and `redis_password.txt` with secure random values.
-   
+
 2. **Create** `secrets/odds_api_key.txt` with your The Odds API key:
-   
+
    **Configuration locations (used by code):**
    - **Docker Compose:** File `secrets/odds_api_key.txt` → mounted at `/run/secrets/odds_api_key`
    - **Azure Container Apps:** Environment variable `THE_ODDS_API_KEY`
-   
+
    **Get your API key from:** https://the-odds-api.com/
-   
+
    **Create the file (replace `YOUR_ACTUAL_KEY` with your real key):**
    ```powershell
    # Windows PowerShell - replace YOUR_ACTUAL_KEY with your real API key
    $apiKey = "YOUR_ACTUAL_KEY"  # Get from https://the-odds-api.com/
    $apiKey | Out-File -FilePath secrets/odds_api_key.txt -NoNewline -Encoding utf8
    ```
-   
+
    **Or use environment variable (Azure only):**
    ```powershell
    # Set environment variable - code reads from THE_ODDS_API_KEY
    $env:THE_ODDS_API_KEY = "YOUR_ACTUAL_KEY"
    ```
-   
+
    Or use the helper script:
    ```powershell
    python ensure_secrets.py
@@ -133,4 +141,3 @@ This is the **FINAL** production container. Do not modify unless creating a new 
 1. Execute `.\predict.bat` manually when you want fresh data and recommendations
 2. System syncs ratings and odds once, runs predictions, and exits
 3. You have full control - nothing runs automatically
-

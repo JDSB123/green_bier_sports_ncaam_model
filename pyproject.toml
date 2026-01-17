@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ncaam-prediction-model"
+version = "34.0.0"
+description = "NCAA Basketball Prediction Model"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Green Bier Sport Ventures" }]
+license = { text = "Proprietary" }
+
+[project.urls]
+Homepage = "https://github.com/JDSB123/green_bier_sports_ncaam_model"
+Documentation = "https://github.com/JDSB123/green_bier_sports_ncaam_model/tree/main/docs"
+
+[tool.pytest.ini_options]
+testpaths = ["services/prediction-service-python/tests", "testing"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+  "--verbose",
+  "--strict-markers",
+  "--tb=short",
+  "--cov=services/prediction-service-python/app",
+  "--cov-report=term-missing",
+  "--cov-report=html",
+]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests as integration tests",
+  "unit: marks tests as unit tests",
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_calls = false
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["pandas.*", "numpy.*", "sklearn.*", "xgboost.*", "redis.*"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["services/prediction-service-python/app"]
+omit = ["*/tests/*", "*/test_*.py", "*/__pycache__/*", "*/migrations/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod",
+]
