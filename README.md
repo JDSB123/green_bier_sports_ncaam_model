@@ -23,6 +23,52 @@ That's it. One command. Everything runs inside the container.
 3. Runs predictions using the model (Python)
 4. Outputs betting recommendations with edge calculations
 
+## Codespaces quick-start notes
+
+- The Codespaces setup installs only the base Python dependencies for fast startup. Heavy data and ML packages (pandas, numpy, scikit-learn, xgboost, Azure blob clients) are optional and moved to `services/prediction-service-python/requirements-heavy.txt`.
+- To install heavy dependencies inside the Codespace (may take a while):
+
+```bash
+bash .devcontainer/install-heavy-requirements.sh
+```
+
+- A persistent pip cache is mounted at `/home/codespace/.cache/pip` to speed repeated starts.
+
+If you want the full environment baked into the image for instantaneous starts, consider creating a custom devcontainer image or enabling Codespaces prebuilds.
+
+### Publishing the devcontainer image to Azure Container Registry (optional)
+
+If you want the prebuilt devcontainer image available in Azure Container Registry (ACR) so your Azure Container Apps or other infra can reuse the same image, configure the following GitHub repository secrets and the CI workflow will push to ACR automatically when present:
+
+- `AZURE_CLIENT_ID` — Service principal client id
+- `AZURE_CLIENT_SECRET` — Service principal client secret
+- `AZURE_TENANT_ID` — Azure tenant id (used if you modify the workflow to login via `azure/login`)
+- `ACR_REGISTRY` — Your ACR login server (e.g. `myregistry.azurecr.io`)
+
+How it works:
+
+- The GitHub Actions workflow builds the devcontainer image and always pushes to GitHub Container Registry (GHCR).
+- If the ACR secrets above are set, the workflow additionally logs into ACR and pushes the same image to `ACR_REGISTRY/green_bier_sports_ncaam_model:latest`.
+
+To create a service principal and grant push access to ACR, run:
+
+```bash
+az ad sp create-for-rbac --name "gh-actions-acr-pusher" --role acrpush --scopes /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG>/providers/Microsoft.ContainerRegistry/registries/<ACR_NAME>
+```
+
+Then add the returned `appId` as `AZURE_CLIENT_ID`, `password` as `AZURE_CLIENT_SECRET`, and your `tenant` as `AZURE_TENANT_ID`. Set `ACR_REGISTRY` to `<ACR_NAME>.azurecr.io`.
+
+### Heavy devcontainer image
+
+The workflow now builds two devcontainer images:
+
+- `ghcr.io/<owner>/green_bier_sports_ncaam_model:latest` — base image with runtime packages.
+- `ghcr.io/<owner>/green_bier_sports_ncaam_model:heavy` — image that includes heavy ML/data packages (pandas, numpy, scikit-learn, xgboost).
+
+If ACR secrets are configured, both variants are also mirrored to your ACR as `ACR_REGISTRY/green_bier_sports_ncaam_model:latest` and `ACR_REGISTRY/green_bier_sports_ncaam_model:heavy`.
+
+Use the `:heavy` image in ACA if you want the ML deps preinstalled in production (note larger image size and longer build times).
+
 ## First-Time Setup
 
 1. **Create secrets files** (REQUIRED - NO .env fallbacks):

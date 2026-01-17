@@ -1,0 +1,10 @@
+# Heavy / optional packages that are slow to download or may build from source.
+# Install manually when needed with the helper script.
+
+pandas==2.2.3
+numpy>=1.26.4,<2.0
+scikit-learn==1.6.1
+xgboost==2.1.4
+azure-storage-blob==12.19.0
+fuzzywuzzy==0.18.0
+python-levenshtein==0.27.3

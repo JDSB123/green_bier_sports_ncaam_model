@@ -1,13 +1,10 @@
 {
   "name": "NCAAM Sports Model (Python + Go)",
-  "image": "mcr.microsoft.com/devcontainers/python:3.12",
-  
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
   "features": {
-    "ghcr.io/devcontainers/features/go:1.22": {},
-    "ghcr.io/devcontainers/features/postgres:latest": {},
-    "ghcr.io/devcontainers/features/redis:latest": {}
+    "ghcr.io/devcontainers/features/go:1": {},
+    "ghcr.io/devcontainers/features/azure-cli:1": {}
   },
-
   "forwardPorts": [
     8000,
     5432,
@@ -32,7 +29,6 @@
       "onAutoForward": "notify"
     }
   },
-
   "customizations": {
     "vscode": {
       "extensions": [
@@ -40,9 +36,7 @@
         "ms-python.vscode-pylance",
         "golang.go",
         "ms-vscode.makefile-tools",
-        "GitHub.copilot",
-        "ms-azuretools.vscode-azure-postgres",
-        "ms-azuretools.vscode-cosmosdb"
+        "ms-azuretools.vscode-azure-postgres"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
@@ -60,16 +54,31 @@
           }
         },
         "go.lintOnSave": "package",
-        "go.useLanguageServer": true
+        "go.useLanguageServer": true,
+        "github.copilot.enable": {
+          "*": true,
+          "plaintext": true,
+          "markdown": true
+        },
+        "github.copilot.autocomplete.enable": true,
+        "editor.inlineSuggest.enabled": true,
+        "github.copilot-chat.enable": {
+          "*": true
+        },
+        "github.copilot.autoApprove": {
+          "agents": true,
+          "webSearch": true,
+          "tools": true
+        },
+        "research.autoApproveAgents": true,
+        "research.webSearchEnabled": true
       }
     }
   },
-
   "postCreateCommand": "bash .devcontainer/post-create.sh",
-  
   "remoteUser": "codespace",
-  
   "mounts": [
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/codespace/.ssh,readonly"
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/codespace/.ssh,readonly",
+    "source=codespace-pip-cache,target=/home/codespace/.cache/pip"
   ]
 }

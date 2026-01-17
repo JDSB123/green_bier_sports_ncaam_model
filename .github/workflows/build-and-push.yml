@@ -29,6 +29,28 @@ jobs:
       contents: write
 
     steps:
+      - name: Validate required secrets and environment variables
+        run: |
+          echo "Checking required secrets and environment variables..."
+          missing=0
+          for secret in AZURE_CREDENTIALS GITHUB_TOKEN; do
+            if [ -z "${{ secrets[secret] }}" ]; then
+              echo "❌ Missing secret: $secret"
+              missing=1
+            fi
+          done
+          for envvar in ACR_NAME ACR_LOGIN_SERVER PRED_IMAGE WEB_IMAGE RESOURCE_GROUP; do
+            if [ -z "${{ env[envvar] }}" ]; then
+              echo "❌ Missing env: $envvar"
+              missing=1
+            fi
+          done
+          if [ $missing -eq 1 ]; then
+            echo "❌ One or more required secrets/env vars are missing. Workflow cannot continue."
+            exit 1
+          fi
+          echo "✅ All required secrets and env vars are present."
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -50,13 +72,13 @@ jobs:
       - name: Pre-build validation
         run: |
           echo "Validating build requirements..."
-          
+
           # Check VERSION file
           if [ ! -f VERSION ]; then
             echo "ERROR: VERSION file not found"
             exit 1
           fi
-          
+
           # Check required directories
           for dir in services/prediction-service-python services/ratings-sync-go services/odds-ingestion-rust database/migrations database/seeds; do
             if [ ! -d "$dir" ]; then
@@ -64,7 +86,7 @@ jobs:
               exit 1
             fi
           done
-          
+
           # Check critical files
           for file in services/prediction-service-python/Dockerfile services/prediction-service-python/requirements.txt; do
             if [ ! -f "$file" ]; then
@@ -72,7 +94,7 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "✅ All pre-build checks passed"
 
       - name: Set up Docker Buildx
@@ -91,6 +113,10 @@ jobs:
           az config set extension.use_dynamic_install=yes_without_prompt
           az extension add -n containerapp --yes || az extension update -n containerapp --yes
 
+      - name: Check Azure connectivity
+        run: |
+          bash scripts/check_azure_connectivity.sh
+
       - name: Build and push images
         run: |
           set -euo pipefail
@@ -105,7 +131,7 @@ jobs:
             -t $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.tag }} \
             -t $ACR_LOGIN_SERVER/$PRED_IMAGE:latest \
             . 2>&1 | tee build-prediction.log
-          
+
           if [ ${PIPESTATUS[0]} -ne 0 ]; then
             echo "❌ Prediction service build failed"
             tail -n 100 build-prediction.log
@@ -129,13 +155,13 @@ jobs:
 
           # NOTE (v33.12.0): Standalone ratings-sync and odds-ingestion builds REMOVED
           # These binaries are embedded in the prediction-service via multi-stage Docker build
-          
+
           echo "✅ All images built and pushed successfully (2 images: prediction + web)"
 
       - name: Deploy to Azure Container Apps (best-effort)
         run: |
           echo "🚀 Deploying to Azure Container Apps..."
-          
+
           # Prediction API
           echo "Updating prediction service..."
           az containerapp update \
@@ -154,7 +180,7 @@ jobs:
 
           # NOTE (v33.12.0): Standalone Container App Jobs REMOVED
           # ratings-sync and odds-ingestion binaries are embedded in prediction-service
-          
+
           echo "✅ Deployment phase complete (2 apps: prediction + web)"
 
       - name: Update docker-compose.yml with new prediction-service version
@@ -196,4 +222,3 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "*Build completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')*" >> $GITHUB_STEP_SUMMARY
-

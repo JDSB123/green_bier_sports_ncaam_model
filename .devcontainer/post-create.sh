@@ -8,9 +8,16 @@ echo "╚═══════════════════════�
 
 echo ""
 echo "[1] Installing Python dependencies..."
-pip install --upgrade pip setuptools wheel > /dev/null
-pip install -r services/prediction-service-python/requirements.txt > /dev/null
-pip install -r requirements-dev.txt > /dev/null
+pip install --upgrade pip setuptools wheel -q
+
+# Install all requirements (the image is Debian-based, so xgboost wheels work)
+pip install -r services/prediction-service-python/requirements.txt -q || \
+  pip install -r services/prediction-service-python/requirements.txt
+
+# Install dev requirements
+pip install -r requirements-dev.txt -q || true
+
+echo "  ✓ Python dependencies installed"
 
 echo "[2] Installing Go dependencies..."
 cd services/ratings-sync-go
@@ -50,4 +57,7 @@ echo "Next steps:"
 echo "  1. Add ODDS_API_KEY to .env.local"
 echo "  2. Run: python services/prediction-service-python/main.py"
 echo "  3. Visit: http://localhost:8000/docs (API docs)"
+echo ""
+echo "Optional: to install heavier data/ML dependencies (pandas/numpy/xgboost/etc), run:"
+echo "  bash .devcontainer/install-heavy-requirements.sh"
 echo ""
