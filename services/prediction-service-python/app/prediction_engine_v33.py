@@ -47,6 +47,7 @@ from app.predictors import (
     h1_spread_model,
     h1_total_model,
 )
+from app.totals_strategy import totals_strategy, TotalsSignalType
 
 HAS_ML_MODELS = True
 
@@ -338,6 +339,7 @@ class PredictionEngineV33:
         home_ratings: TeamRatings | None = None,
         away_ratings: TeamRatings | None = None,
         is_neutral: bool = False,
+        game_date: datetime | None = None,
     ) -> list[BettingRecommendation]:
         """
         Generate betting recommendations from predictions and market odds.
@@ -347,12 +349,16 @@ class PredictionEngineV33:
         v33.10: Optionally uses ML models for probability prediction when
         home_ratings and away_ratings are provided.
 
+        v33.11: Uses independent totals strategy based on sharp money tracking
+        and seasonal patterns instead of regression model (which has -6% ROI).
+
         Args:
             prediction: Prediction object from make_prediction()
             market_odds: Current market odds
             home_ratings: Home team ratings (for ML models)
             away_ratings: Away team ratings (for ML models)
             is_neutral: Neutral site flag
+            game_date: Game date for seasonal pattern detection
 
         Returns:
             List of BettingRecommendation objects
@@ -361,6 +367,7 @@ class PredictionEngineV33:
         self._current_home_ratings = home_ratings
         self._current_away_ratings = away_ratings
         self._current_is_neutral = is_neutral
+        self._current_game_date = game_date or datetime.now()
 
         recommendations = []
 
@@ -384,30 +391,66 @@ class PredictionEngineV33:
                     recommendations.append(rec)
 
         # ─────────────────────────────────────────────────────────────────────
-        # FG TOTAL RECOMMENDATIONS
+        # FG TOTAL RECOMMENDATIONS (v33.11 - Independent Totals Strategy)
         # ─────────────────────────────────────────────────────────────────────
-        # Skip extreme totals - model is unreliable at extremes (regression to mean)
-        fg_total_in_range = FG_TOTAL_MIN_RELIABLE <= prediction.predicted_total <= FG_TOTAL_MAX_RELIABLE
-        if not fg_total_in_range:
-            self.logger.info(
-                f"Skipping FG total bet - prediction {prediction.predicted_total:.1f} outside reliable range "
-                f"({FG_TOTAL_MIN_RELIABLE}-{FG_TOTAL_MAX_RELIABLE})"
+        # Traditional regression models have -6% ROI on totals because the market
+        # already incorporates tempo/efficiency data. Instead, we use:
+        # 1. Sharp money tracking (Action Network) - when pros disagree with public
+        # 2. Seasonal patterns - statistically significant edges in Nov/Dec/March
+
+        if market_odds.total is not None:
+            # Extract betting splits from market_odds if available
+            total_over_public = getattr(market_odds, 'public_bet_pct_over', None)
+            total_under_public = 100 - total_over_public if total_over_public is not None else None
+            total_over_money = getattr(market_odds, 'public_money_pct_over', None)
+            total_under_money = 100 - total_over_money if total_over_money is not None else None
+
+            # Convert from 0-1 to 0-100 if needed
+            if total_over_public is not None and total_over_public <= 1:
+                total_over_public *= 100
+                total_under_public = 100 - total_over_public
+            if total_over_money is not None and total_over_money <= 1:
+                total_over_money *= 100
+                total_under_money = 100 - total_over_money
+
+            # Get model's pick for reference (but don't use it as primary signal)
+            model_pick = "OVER" if prediction.predicted_total > market_odds.total else "UNDER"
+            model_edge = prediction.total_edge
+
+            # Check totals strategy for actionable signal
+            should_bet, totals_signal = totals_strategy.should_bet_total(
+                game_date=self._current_game_date,
+                total_over_public=total_over_public,
+                total_under_public=total_under_public,
+                total_over_money=total_over_money,
+                total_under_money=total_under_money,
+                model_pick=model_pick,
+                model_edge=model_edge,
             )
-        if market_odds.total is not None and prediction.total_edge >= self.fg_total_model.MIN_EDGE and fg_total_in_range:
-            if prediction.total_confidence >= self.config.min_confidence:
-                pick = Pick.OVER if prediction.predicted_total > market_odds.total else Pick.UNDER
+
+            if should_bet:
+                pick = Pick.OVER if totals_signal.pick == "OVER" else Pick.UNDER
+                # Use signal confidence instead of model confidence
                 rec = self._create_recommendation(
                     prediction,
                     BetType.TOTAL,
                     pick,
                     prediction.predicted_total,
                     market_odds.total,
-                    prediction.total_edge,
-                    prediction.total_confidence,
+                    totals_signal.expected_roi,  # Use expected ROI as "edge"
+                    totals_signal.confidence,
                     market_odds,
+                    signal_type=totals_signal.signal_type.value,
+                    signal_reasoning=totals_signal.reasoning,
                 )
                 if rec:
                     recommendations.append(rec)
+            else:
+                self.logger.debug(
+                    "fg_total_no_signal",
+                    reasoning=totals_signal.reasoning,
+                    signal_type=totals_signal.signal_type.value,
+                )
 
         # ─────────────────────────────────────────────────────────────────────
         # 1H SPREAD RECOMMENDATIONS
@@ -466,11 +509,17 @@ class PredictionEngineV33:
         edge: float,
         confidence: float,
         market_odds: MarketOdds,
+        signal_type: str | None = None,
+        signal_reasoning: str | None = None,
     ) -> BettingRecommendation | None:
         """
         Create a single BettingRecommendation.
 
         Handles conversion to Pick perspective (for AWAY picks, flip spread sign).
+
+        Args:
+            signal_type: Optional signal type for totals (e.g., "sharp_money", "seasonal")
+            signal_reasoning: Optional explanation of why this bet is recommended
         """
         # Store bet line from PICK perspective
         bet_line = market_line
