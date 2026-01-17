@@ -40,7 +40,7 @@ jobs:
           file: .devcontainer/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/green_bier_sports_ncaam_model:${{ matrix.install_heavy == 'true' && 'heavy' || 'latest' }}
+            ghcr.io/${{ github.repository_owner }}/green_bier_sports_ncaam_model-devcontainer:${{ matrix.install_heavy == 'true' && 'latest-heavy' || 'latest' }}
           build-args: |
             INSTALL_HEAVY=${{ matrix.install_heavy }}
 
