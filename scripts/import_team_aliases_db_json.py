@@ -17,7 +17,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Dict, Optional
 
 import psycopg2
 
@@ -40,7 +39,7 @@ def _normalize_db_url(url: str) -> str:
     return u
 
 
-def _read_secret(path: Path) -> Optional[str]:
+def _read_secret(path: Path) -> str | None:
     try:
         s = path.read_text(encoding="utf-8").strip()
         return s or None
@@ -75,7 +74,7 @@ def get_database_url() -> str:
     return f"postgresql://{db_user}:{pw}@{host}:{port}/{db_name}"
 
 
-def _load_aliases_from_azure(container: str, blob_path: str) -> Dict[str, str]:
+def _load_aliases_from_azure(container: str, blob_path: str) -> dict[str, str]:
     if not AZURE_AVAILABLE:
         raise ImportError("azure-storage-blob is required to load aliases from Azure.")
 
@@ -199,4 +198,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

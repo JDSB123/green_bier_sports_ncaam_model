@@ -1,11 +1,10 @@
-import os
-import sys
 import argparse
-from datetime import datetime
+import sys
 
 try:
-    from testing.azure_data_reader import AzureDataReader
     from testing.azure_data_writer import AzureDataWriter
+
+    from testing.azure_data_reader import AzureDataReader
 except ImportError:
     print("ERROR: AzureDataReader/AzureDataWriter not found. Activate your environment.")
     sys.exit(1)

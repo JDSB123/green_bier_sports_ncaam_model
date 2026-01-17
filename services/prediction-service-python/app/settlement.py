@@ -16,19 +16,17 @@ Important limitations:
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Tuple
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import requests
-from uuid import UUID
-
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from app.odds_api_client import OddsApiClient, OddsApiError
+from app.odds_api_client import OddsApiClient
 
 ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard"
 ESPN_SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary"
@@ -72,7 +70,7 @@ def _profit_per_unit(odds: int) -> float:
     return 100.0 / abs(odds)
 
 
-def sync_final_scores(engine: Engine, days_from: int = 3, sport_key: Optional[str] = None) -> ScoreSyncSummary:
+def sync_final_scores(engine: Engine, days_from: int = 3, sport_key: str | None = None) -> ScoreSyncSummary:
     """
     Pull recent scores from The Odds API and update `games` final scores/status.
     """
@@ -117,7 +115,7 @@ def sync_final_scores(engine: Engine, days_from: int = 3, sport_key: Optional[st
             if not home_team or not away_team:
                 continue
 
-            score_map: Dict[str, Optional[int]] = {}
+            score_map: dict[str, int | None] = {}
             for s in scores:
                 if not isinstance(s, dict):
                     continue
@@ -154,7 +152,7 @@ def sync_final_scores(engine: Engine, days_from: int = 3, sport_key: Optional[st
     )
 
 
-def _resolve_team_canonical(engine: Engine, name: str) -> Optional[str]:
+def _resolve_team_canonical(engine: Engine, name: str) -> str | None:
     if not name:
         return None
     stmt = text("SELECT resolve_team_name(:name)")
@@ -183,7 +181,7 @@ def _upsert_team_alias(engine: Engine, canonical: str, alias: str, source: str) 
         conn.execute(stmt, {"alias": alias, "source": source, "canonical": canonical})
 
 
-def _fetch_espn_scoreboard(target_date: date, group: Optional[str] = ESPN_DEFAULT_GROUP) -> list[dict]:
+def _fetch_espn_scoreboard(target_date: date, group: str | None = ESPN_DEFAULT_GROUP) -> list[dict]:
     params = {
         "dates": target_date.strftime("%Y%m%d"),
         "groups": group,
@@ -196,7 +194,7 @@ def _fetch_espn_scoreboard(target_date: date, group: Optional[str] = ESPN_DEFAUL
     data = resp.json()
     return data.get("events", []) or []
 
-def _fetch_espn_events(target_date: date, groups: tuple[Optional[str], ...] = ESPN_FALLBACK_GROUPS) -> list[dict]:
+def _fetch_espn_events(target_date: date, groups: tuple[str | None, ...] = ESPN_FALLBACK_GROUPS) -> list[dict]:
     events: dict[str, dict] = {}
     for group in groups:
         try:
@@ -214,13 +212,13 @@ def _fetch_espn_events(target_date: date, groups: tuple[Optional[str], ...] = ES
     return list(events.values())
 
 
-def _fetch_espn_summary(event_id: str) -> Optional[dict]:
+def _fetch_espn_summary(event_id: str) -> dict | None:
     resp = requests.get(ESPN_SUMMARY_URL, params={"event": event_id}, timeout=30)
     resp.raise_for_status()
     return resp.json()
 
 
-def _coerce_int(value: Optional[object]) -> Optional[int]:
+def _coerce_int(value: object | None) -> int | None:
     if value is None:
         return None
     try:
@@ -229,7 +227,7 @@ def _coerce_int(value: Optional[object]) -> Optional[int]:
         return None
 
 
-def _first_half_from_linescores(lines: list[dict]) -> Optional[int]:
+def _first_half_from_linescores(lines: list[dict]) -> int | None:
     if not lines:
         return None
     for ls in lines:
@@ -238,7 +236,7 @@ def _first_half_from_linescores(lines: list[dict]) -> Optional[int]:
     return _coerce_int(lines[0].get("value") or lines[0].get("displayValue"))
 
 
-def _extract_scores_from_competitors(competitors: list[dict]) -> tuple[Optional[str], Optional[str], Optional[int], Optional[int]]:
+def _extract_scores_from_competitors(competitors: list[dict]) -> tuple[str | None, str | None, int | None, int | None]:
     home = away = None
     home_1h = away_1h = None
     for team in competitors:
@@ -265,7 +263,7 @@ def _event_has_1h_scores(event: dict) -> bool:
     return bool(home and away and home_1h is not None and away_1h is not None)
 
 
-def _extract_espn_1h_scores(event: dict) -> Optional[dict]:
+def _extract_espn_1h_scores(event: dict) -> dict | None:
     comp = (event.get("competitions") or [{}])[0]
     competitors = comp.get("competitors") or []
     event_date = comp.get("date") or event.get("date")
@@ -401,7 +399,7 @@ def _closing_snapshot(
     market_type: str,
     period: str,
     commence_time: datetime,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Get the "closing" snapshot: latest odds <= commence_time, preferring Pinnacle then Bovada.
     """
@@ -444,7 +442,7 @@ def _closing_snapshot(
         return dict(row._mapping)
 
 
-def _market_mapping(bet_type: str) -> Tuple[str, str]:
+def _market_mapping(bet_type: str) -> tuple[str, str]:
     """
     Map betting_recommendations.bet_type -> (odds_snapshots.market_type, odds_snapshots.period)
     """
@@ -586,7 +584,7 @@ def settle_pending_bets(engine: Engine) -> SettlementSummary:
 
         closing_line = None
         clv_val = None
-        price_for_pnl: Optional[int] = None
+        price_for_pnl: int | None = None
 
         # Prefer the price that existed at recommendation time (what we can actually bet),
         # fall back to closing price if available, else assume -110.
@@ -680,7 +678,7 @@ def print_performance_report(engine: Engine, lookback_days: int = 30) -> None:
     """
     Print ROI/CLV report grouped by bet_type for last N days (by created_at).
     """
-    since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+    since = datetime.now(UTC) - timedelta(days=lookback_days)
     stmt = text(
         """
         SELECT
@@ -734,5 +732,3 @@ def print_performance_report(engine: Engine, lookback_days: int = 30) -> None:
 
     print("┗" + "━" * 98 + "┛")
     print()
-
-

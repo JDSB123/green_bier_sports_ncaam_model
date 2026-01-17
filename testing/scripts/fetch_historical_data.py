@@ -21,7 +21,6 @@ import argparse
 import sys
 import time
 from datetime import datetime, timedelta
-from typing import Any
 
 try:
     import requests
@@ -62,7 +61,7 @@ def fetch_espn_scoreboard(date: str) -> list[dict]:
 
 def parse_espn_game(event: dict) -> dict | None:
     """Extract relevant fields from ESPN event.
-    
+
     Team names are canonicalized at parse time using the central team resolver.
     Returns None if either team cannot be resolved (game is skipped).
     """
@@ -102,7 +101,7 @@ def parse_espn_game(event: dict) -> dict | None:
         # Canonicalize team names using central resolver
         home_team = resolve_team_name(home_team_raw)
         away_team = resolve_team_name(away_team_raw)
-        
+
         # Track resolution failures - return None with raw names preserved for logging
         unresolved = []
         if home_team == home_team_raw:
@@ -114,7 +113,7 @@ def parse_espn_game(event: dict) -> dict | None:
             canonical_check = resolve_team_name(away_team_raw.lower())
             if canonical_check == away_team_raw.lower():
                 unresolved.append(("away", away_team_raw))
-        
+
         if unresolved:
             # Return dict with _unresolved marker for threshold tracking
             return {
@@ -149,7 +148,7 @@ UNRESOLVED_THRESHOLD = 0.10
 
 def fetch_season_games(season: int, verbose: bool = True) -> list[dict]:
     """Fetch all games for a season (e.g., 2024 = 2023-24 season).
-    
+
     Raises:
         RuntimeError: If >10% of games on any day have unresolved team names
     """
@@ -173,7 +172,7 @@ def fetch_season_games(season: int, verbose: bool = True) -> list[dict]:
 
         day_games = []
         day_unresolved = []
-        
+
         for event in events:
             game = parse_espn_game(event)
             if game:
@@ -183,12 +182,12 @@ def fetch_season_games(season: int, verbose: bool = True) -> list[dict]:
                     all_unresolved.append(game)
                 else:
                     day_games.append(game)
-        
+
         # Check threshold for this day
         total_day = len(day_games) + len(day_unresolved)
         if total_day > 0 and len(day_unresolved) > 0:
             failure_rate = len(day_unresolved) / total_day
-            
+
             if failure_rate > UNRESOLVED_THRESHOLD:
                 # More than 10% failed - abort
                 msg = (f"[ERROR] {current.strftime('%Y-%m-%d')}: "
@@ -199,14 +198,13 @@ def fetch_season_games(season: int, verbose: bool = True) -> list[dict]:
                     for side, name in g["_unresolved"]:
                         print(f"  - UNRESOLVED {side}: '{name}'")
                 raise RuntimeError(msg)
-            else:
-                # Under threshold - log warning and skip
-                if verbose:
-                    print(f"  [WARN] {current.strftime('%Y-%m-%d')}: Skipping {len(day_unresolved)} games with unresolved teams")
-                    for g in day_unresolved:
-                        for side, name in g["_unresolved"]:
-                            print(f"    - UNRESOLVED {side}: '{name}'")
-        
+            # Under threshold - log warning and skip
+            if verbose:
+                print(f"  [WARN] {current.strftime('%Y-%m-%d')}: Skipping {len(day_unresolved)} games with unresolved teams")
+                for g in day_unresolved:
+                    for side, name in g["_unresolved"]:
+                        print(f"    - UNRESOLVED {side}: '{name}'")
+
         games.extend(day_games)
 
         day_count += 1

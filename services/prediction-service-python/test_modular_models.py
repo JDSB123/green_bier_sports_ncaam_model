@@ -21,7 +21,6 @@ from app.predictors import (
     fg_total_model,
     h1_spread_model,
     h1_total_model,
-    MarketPrediction,
 )
 
 
@@ -158,9 +157,8 @@ def test_total_predictions():
         for e in errors:
             print(f"  - {e}")
         return False
-    else:
-        print("PASSED: All total validation checks passed!")
-        return True
+    print("PASSED: All total validation checks passed!")
+    return True
 
 
 def test_spread_predictions():
@@ -282,7 +280,7 @@ def test_neutral_site():
     fg_spread = fg_spread_model.predict(home, away, is_neutral=True)
     h1_spread = h1_spread_model.predict(home, away, is_neutral=True)
 
-    print(f"Equal teams at neutral site:")
+    print("Equal teams at neutral site:")
     print(f"  FG Spread: {fg_spread.value:+.1f} (HCA: {fg_spread.hca_applied:.1f})")
     print(f"  1H Spread: {h1_spread.value:+.1f} (HCA: {h1_spread.hca_applied:.1f})")
 

@@ -19,13 +19,15 @@ Usage:
 """
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Union
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
+
 from testing.data_window import CANONICAL_START_SEASON
 
 
@@ -43,10 +45,10 @@ class SchemaVersion:
     version: str
     vintage: DataVintage
     description: str
-    required_fields: List[str]
-    optional_fields: List[str]
-    transformations: List[Dict[str, Any]] = field(default_factory=list)
-    quality_standards: Dict[str, Any] = field(default_factory=dict)
+    required_fields: list[str]
+    optional_fields: list[str]
+    transformations: list[dict[str, Any]] = field(default_factory=list)
+    quality_standards: dict[str, Any] = field(default_factory=dict)
     created_date: datetime = field(default_factory=datetime.now)
 
     def supports_field(self, field_name: str) -> bool:
@@ -77,7 +79,7 @@ class SchemaEvolutionManager:
     and provides migration paths between schema versions.
     """
 
-    def __init__(self, config_dir: Optional[Path] = None):
+    def __init__(self, config_dir: Path | None = None):
         """
         Initialize the schema evolution manager.
 
@@ -97,7 +99,7 @@ class SchemaEvolutionManager:
         # Current canonical schema
         self._canonical_version = "v3.0"
 
-    def _load_schemas(self) -> Dict[str, SchemaVersion]:
+    def _load_schemas(self) -> dict[str, SchemaVersion]:
         """Load schema definitions from config files."""
         schemas = {}
 
@@ -179,7 +181,7 @@ class SchemaEvolutionManager:
 
         return schemas
 
-    def _build_migrations(self) -> Dict[str, SchemaMigration]:
+    def _build_migrations(self) -> dict[str, SchemaMigration]:
         """Build migration paths between schema versions."""
         migrations = {}
 
@@ -234,7 +236,7 @@ class SchemaEvolutionManager:
         # Fallback to legacy if nothing matches
         return "v1.0"
 
-    def get_schema_for_vintage(self, vintage: DataVintage) -> Optional[SchemaVersion]:
+    def get_schema_for_vintage(self, vintage: DataVintage) -> SchemaVersion | None:
         """Get the schema version for a data vintage."""
         for schema in self._schemas.values():
             if schema.vintage == vintage:
@@ -244,7 +246,7 @@ class SchemaEvolutionManager:
     def upgrade_schema(
         self,
         df: pd.DataFrame,
-        target_version: Optional[str] = None,
+        target_version: str | None = None,
         data_type: str = "scores"
     ) -> pd.DataFrame:
         """
@@ -290,7 +292,7 @@ class SchemaEvolutionManager:
         df["_migration_missing"] = f"No path to {target_version}"
         return df
 
-    def get_quality_standards(self, vintage: Union[str, DataVintage]) -> Dict[str, Any]:
+    def get_quality_standards(self, vintage: str | DataVintage) -> dict[str, Any]:
         """
         Get quality standards for a data vintage.
 
@@ -335,17 +337,16 @@ class SchemaEvolutionManager:
 
         if version_num < 2.0:
             return DataVintage.LEGACY
-        elif version_num < 3.0:
+        if version_num < 3.0:
             return DataVintage.TRANSITIONAL
-        else:
-            return DataVintage.MODERN
+        return DataVintage.MODERN
 
     def validate_against_schema(
         self,
         df: pd.DataFrame,
         schema_version: str,
         strict: bool = False
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Validate DataFrame against a specific schema version.
 
@@ -478,11 +479,11 @@ class SchemaEvolutionManager:
         except Exception as e:
             print(f"Error saving schema: {e}")
 
-    def get_available_versions(self) -> List[str]:
+    def get_available_versions(self) -> list[str]:
         """Get list of available schema versions."""
         return list(self._schemas.keys())
 
-    def get_migration_paths(self) -> List[str]:
+    def get_migration_paths(self) -> list[str]:
         """Get list of available migration paths."""
         return list(self._migrations.keys())
 
@@ -494,7 +495,7 @@ def upgrade_to_canonical_schema(df: pd.DataFrame, data_type: str = "scores") -> 
     return manager.upgrade_schema(df, data_type=data_type)
 
 
-def get_quality_standards_for_vintage(vintage: Union[str, DataVintage]) -> Dict[str, Any]:
+def get_quality_standards_for_vintage(vintage: str | DataVintage) -> dict[str, Any]:
     """Get quality standards for a vintage."""
     manager = SchemaEvolutionManager()
     return manager.get_quality_standards(vintage)

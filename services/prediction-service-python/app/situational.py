@@ -3,10 +3,9 @@ Situational adjustments for NCAAM predictions.
 
 Computes rest day differentials and back-to-back penalties.
 """
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Optional, Dict, List
 import logging
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 def _ensure_tz_aware(dt: datetime) -> datetime:
     """Ensure datetime is timezone-aware (assume UTC if naive)."""
     if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
+        return dt.replace(tzinfo=UTC)
     return dt
 
 
@@ -24,7 +23,7 @@ class RestInfo:
     team_name: str
     days_rest: int  # Days since last game (0 = B2B, 1 = 1 day rest, etc.)
     is_back_to_back: bool
-    last_game_datetime: Optional[datetime] = None
+    last_game_datetime: datetime | None = None
 
     @property
     def days_since_game(self) -> int:
@@ -77,7 +76,7 @@ class SituationalAdjuster:
         self,
         team_name: str,
         game_datetime: datetime,
-        game_history: List[Dict],
+        game_history: list[dict],
     ) -> RestInfo:
         """
         Compute rest days for a team based on their game history.

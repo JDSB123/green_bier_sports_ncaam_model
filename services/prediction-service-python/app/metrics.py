@@ -4,10 +4,9 @@ Metrics collection for monitoring and observability.
 Provides simple metrics that can be exported to Prometheus or other systems.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Optional
-from collections import defaultdict
 import time
+from collections import defaultdict
+from dataclasses import dataclass, field
 from threading import Lock
 
 
@@ -16,17 +15,17 @@ class Counter:
     """Simple counter metric."""
     value: int = 0
     _lock: Lock = field(default_factory=Lock)
-    
+
     def inc(self, amount: int = 1) -> None:
         """Increment counter."""
         with self._lock:
             self.value += amount
-    
+
     def get(self) -> int:
         """Get current value."""
         with self._lock:
             return self.value
-    
+
     def reset(self) -> None:
         """Reset counter."""
         with self._lock:
@@ -37,7 +36,7 @@ class Counter:
 class Histogram:
     """
     Simple histogram metric with rolling window.
-    
+
     Tracks total observations separately from the rolling window to ensure
     accurate count/sum reporting even when values are truncated.
     """
@@ -46,29 +45,29 @@ class Histogram:
     _total_sum: float = 0.0  # Running sum of all observations
     _lock: Lock = field(default_factory=Lock)
     _max_window_size: int = 1000  # Maximum values to keep in memory
-    
+
     def observe(self, value: float) -> None:
         """
         Record a value.
-        
+
         Maintains a rolling window of recent values while tracking
         total count and sum across all observations.
         """
         with self._lock:
             self._total_count += 1
             self._total_sum += value
-            
+
             self.values.append(value)
             # Keep only last N values to prevent memory issues
             # But we still track total_count and total_sum accurately
             if len(self.values) > self._max_window_size:
                 # Remove oldest value from window (but count/sum already includes it)
                 self.values = self.values[-self._max_window_size:]
-    
-    def get_stats(self) -> Dict[str, float]:
+
+    def get_stats(self) -> dict[str, float]:
         """
         Get statistics.
-        
+
         Returns:
         - count: Total observations (including discarded from rolling window)
         - sum: Sum of all observations (including discarded)
@@ -87,10 +86,10 @@ class Histogram:
                     "p95": 0.0,
                     "p99": 0.0,
                 }
-            
+
             sorted_vals = sorted(self.values)
             window_size = len(self.values)
-            
+
             # Use consistent percentile calculation: (n-1) * percentile
             # This matches standard statistical definitions
             def percentile_index(n: int, p: float) -> int:
@@ -100,7 +99,7 @@ class Histogram:
                 if n == 1:
                     return 0
                 return min(int((n - 1) * p), n - 1)
-            
+
             return {
                 "count": self._total_count,  # Total observations (not just window)
                 "sum": self._total_sum,  # Sum of all observations (not just window)
@@ -111,7 +110,7 @@ class Histogram:
                 "p95": sorted_vals[percentile_index(window_size, 0.95)] if window_size > 0 else 0.0,
                 "p99": sorted_vals[percentile_index(window_size, 0.99)] if window_size > 0 else 0.0,
             }
-    
+
     def reset(self) -> None:
         """Reset histogram (clears both window and totals)."""
         with self._lock:
@@ -122,27 +121,27 @@ class Histogram:
 
 class MetricsCollector:
     """Central metrics collector."""
-    
+
     def __init__(self):
-        self._counters: Dict[str, Counter] = defaultdict(Counter)
-        self._histograms: Dict[str, Histogram] = defaultdict(Histogram)
+        self._counters: dict[str, Counter] = defaultdict(Counter)
+        self._histograms: dict[str, Histogram] = defaultdict(Histogram)
         self._lock = Lock()
-    
+
     def counter(self, name: str) -> Counter:
         """Get or create a counter."""
         with self._lock:
             if name not in self._counters:
                 self._counters[name] = Counter()
             return self._counters[name]
-    
+
     def histogram(self, name: str) -> Histogram:
         """Get or create a histogram."""
         with self._lock:
             if name not in self._histograms:
                 self._histograms[name] = Histogram()
             return self._histograms[name]
-    
-    def get_all_metrics(self) -> Dict:
+
+    def get_all_metrics(self) -> dict:
         """Get all metrics in a format suitable for export."""
         with self._lock:
             counters = {
@@ -157,7 +156,7 @@ class MetricsCollector:
                 "counters": counters,
                 "histograms": histograms,
             }
-    
+
     def reset_all(self) -> None:
         """Reset all metrics."""
         with self._lock:
@@ -184,17 +183,16 @@ def observe_histogram(name: str, value: float) -> None:
 
 class Timer:
     """Context manager for timing operations."""
-    
+
     def __init__(self, histogram_name: str):
         self.histogram_name = histogram_name
-        self.start_time: Optional[float] = None
-    
+        self.start_time: float | None = None
+
     def __enter__(self):
         self.start_time = time.time()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.start_time is not None:
             duration = time.time() - self.start_time
             observe_histogram(self.histogram_name, duration)
-

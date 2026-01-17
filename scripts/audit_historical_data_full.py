@@ -7,7 +7,6 @@ import argparse
 import json
 import re
 from datetime import date, timedelta
-from typing import Dict, List, Tuple
 
 import pandas as pd
 
@@ -20,7 +19,7 @@ def _normalize_alias(alias: str) -> str:
     return re.sub(r"\s+", " ", alias).strip()
 
 
-def _dup_stats(df: pd.DataFrame, subset: List[str]) -> Dict[str, object]:
+def _dup_stats(df: pd.DataFrame, subset: list[str]) -> dict[str, object]:
     dup_mask = df.duplicated(subset=subset, keep=False)
     dup_count = int(dup_mask.sum())
     sample = (
@@ -32,7 +31,7 @@ def _dup_stats(df: pd.DataFrame, subset: List[str]) -> Dict[str, object]:
     return {"count": dup_count, "sample": sample}
 
 
-def _date_range(df: pd.DataFrame, column: str) -> Tuple[str, str]:
+def _date_range(df: pd.DataFrame, column: str) -> tuple[str, str]:
     series = pd.to_datetime(df[column], errors="coerce").dropna()
     if series.empty:
         return ("", "")
@@ -60,7 +59,7 @@ def main() -> int:
     args = parser.parse_args()
 
     cutoff_date = date.today() - timedelta(days=args.cutoff_days)
-    report: Dict[str, object] = {"cutoff_date": str(cutoff_date)}
+    report: dict[str, object] = {"cutoff_date": str(cutoff_date)}
 
     reader = AzureDataReader(container_name=args.azure_container)
 
@@ -147,8 +146,8 @@ def main() -> int:
 
     # Alias collisions
     alias_data = reader.read_json("backtest_datasets/team_aliases_db.json")
-    norm_map: Dict[str, str] = {}
-    collisions: List[Dict[str, str]] = []
+    norm_map: dict[str, str] = {}
+    collisions: list[dict[str, str]] = []
     for alias, canonical in alias_data.items():
         norm = _normalize_alias(alias)
         if norm in norm_map and norm_map[norm] != canonical:

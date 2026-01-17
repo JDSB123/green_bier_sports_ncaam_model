@@ -8,10 +8,10 @@ It implements proper time-series cross-validation to prevent data leakage.
 Usage:
     # From services/prediction-service-python/
     $env:PYTHONPATH = "."; python scripts/train_ml_models.py
-    
+
     # With custom date range:
     $env:PYTHONPATH = "."; python scripts/train_ml_models.py --start 2023-11-01 --end 2024-03-31
-    
+
     # From Docker:
     docker-compose exec prediction-service python scripts/train_ml_models.py
 
@@ -33,7 +33,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 def main():
     parser = argparse.ArgumentParser(description="Train NCAAM ML models")
     parser.add_argument(
-        "--start", 
+        "--start",
         default=None,
         help="Training start date (YYYY-MM-DD)"
     )
@@ -58,28 +58,28 @@ def main():
         default=None,
         help="Database URL (default: from DATABASE_URL env var)"
     )
-    
+
     args = parser.parse_args()
 
     if args.start is None:
         args.start = "2023-11-01"
     if args.end is None:
         args.end = datetime.today().strftime("%Y-%m-%d")
-    
+
     print("=" * 70)
     print("NCAAM ML Model Training")
     print("=" * 70)
     print(f"\nDate range: {args.start} to {args.end}")
     print(f"Output dir: {args.output or 'app/ml/trained_models/'}")
     print()
-    
+
     # Get database URL
     database_url = args.database_url or os.environ.get("DATABASE_URL")
     if not database_url:
         print("❌ Error: DATABASE_URL not set")
         print("   Set DATABASE_URL environment variable or use --database-url")
         sys.exit(1)
-    
+
     # Check dependencies
     try:
         import xgboost
@@ -87,35 +87,35 @@ def main():
     except ImportError:
         print("❌ XGBoost not installed. Run: pip install xgboost")
         sys.exit(1)
-    
+
     try:
         import sklearn
         print(f"✓ scikit-learn version: {sklearn.__version__}")
     except ImportError:
         print("❌ scikit-learn not installed. Run: pip install scikit-learn")
         sys.exit(1)
-    
+
     try:
         from sqlalchemy import create_engine
         print("✓ SQLAlchemy available")
     except ImportError:
         print("❌ SQLAlchemy not installed")
         sys.exit(1)
-    
+
     print()
-    
+
     # Import training pipeline
     try:
-        from app.ml.training import TrainingPipeline, TrainingConfig
         from app.ml.models import BetPredictionModel
+        from app.ml.training import TrainingConfig, TrainingPipeline
     except ImportError as e:
         print(f"❌ Import error: {e}")
         sys.exit(1)
-    
+
     # Create engine
     from sqlalchemy import create_engine
     engine = create_engine(database_url)
-    
+
     # Test connection
     print("🔗 Connecting to database...")
     try:
@@ -126,9 +126,9 @@ def main():
     except Exception as e:
         print(f"❌ Database connection failed: {e}")
         sys.exit(1)
-    
+
     print()
-    
+
     # Configure training
     try:
         config = TrainingConfig(
@@ -140,10 +140,10 @@ def main():
     except ValueError as e:
         print(f"? Invalid date window: {e}")
         sys.exit(1)
-    
+
     output_dir = Path(args.output) if args.output else None
     pipeline = TrainingPipeline(engine, config, output_dir)
-    
+
     # Train models
     if args.bet_type:
         # Train single model
@@ -161,7 +161,7 @@ def main():
         # Train all models
         bet_types = ["fg_spread", "fg_total", "h1_spread", "h1_total"]
         results = {}
-        
+
         for bet_type in bet_types:
             print(f"\n📊 Training {bet_type} model...")
             print("-" * 70)
@@ -173,15 +173,15 @@ def main():
                 print(f"❌ {bet_type} training failed: {e}")
                 import traceback
                 traceback.print_exc()
-        
+
         # Print final summary
         print("\n" + "=" * 70)
         print("TRAINING COMPLETE")
         print("=" * 70)
-        
+
         print(f"\nSuccessfully trained: {len(results)}/{len(bet_types)} models")
         print(f"Models saved to: {pipeline.output_dir}")
-        
+
         if results:
             print("\nModel Performance Summary:")
             print("-" * 50)
@@ -195,7 +195,7 @@ def main():
                         f"{model.metadata.auc_roc:>10.3f} "
                         f"{model.metadata.brier_score:>10.4f}"
                     )
-    
+
     print("\n✅ Done!")
 
 
@@ -204,20 +204,20 @@ def _print_model_summary(model: "BetPredictionModel"):
     if not model.metadata:
         print("   (No metadata available)")
         return
-    
+
     m = model.metadata
-    
+
     print(f"\n   Training samples: {m.training_samples:,}")
     print(f"   Validation samples: {m.validation_samples:,}")
-    print(f"\n   Cross-validation metrics:")
+    print("\n   Cross-validation metrics:")
     print(f"     - Accuracy:    {m.accuracy:.3f}")
     print(f"     - AUC-ROC:     {m.auc_roc:.3f}")
     print(f"     - Log Loss:    {m.log_loss:.4f}")
     print(f"     - Brier Score: {m.brier_score:.4f}")
-    
+
     # Top features
     if m.feature_importance:
-        print(f"\n   Top 5 features:")
+        print("\n   Top 5 features:")
         sorted_features = sorted(
             m.feature_importance.items(),
             key=lambda x: x[1],

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Iterable
+from typing import Any
 
 from testing.azure_data_reader import get_azure_reader
 
@@ -30,9 +30,9 @@ def read_text(blob_path: str, encoding: str = "utf-8") -> str:
 def upload_bytes(
     blob_path: str,
     content: bytes,
-    content_type: Optional[str] = None,
+    content_type: str | None = None,
     overwrite: bool = True,
-    tags: Optional[dict[str, str]] = None,
+    tags: dict[str, str] | None = None,
 ) -> None:
     """Upload raw bytes to Azure Blob Storage."""
     return get_azure_reader().upload_bytes(
@@ -48,9 +48,9 @@ def upload_text(
     blob_path: str,
     text: str,
     encoding: str = "utf-8",
-    content_type: Optional[str] = None,
+    content_type: str | None = None,
     overwrite: bool = True,
-    tags: Optional[dict[str, str]] = None,
+    tags: dict[str, str] | None = None,
 ) -> None:
     """Upload text to Azure Blob Storage."""
     return get_azure_reader().upload_text(
@@ -69,7 +69,7 @@ def write_json(
     indent: int = 2,
     sort_keys: bool = False,
     overwrite: bool = True,
-    tags: Optional[dict[str, str]] = None,
+    tags: dict[str, str] | None = None,
 ) -> None:
     """Serialize and upload JSON to Azure Blob Storage."""
     return get_azure_reader().write_json(
@@ -86,7 +86,7 @@ def write_csv(
     blob_path: str,
     df,
     overwrite: bool = True,
-    tags: Optional[dict[str, str]] = None,
+    tags: dict[str, str] | None = None,
     **pandas_kwargs,
 ) -> None:
     """Serialize and upload a DataFrame as CSV to Azure Blob Storage."""
@@ -99,7 +99,7 @@ def write_csv(
     )
 
 
-def list_files(prefix: str = "", pattern: Optional[str] = None):
+def list_files(prefix: str = "", pattern: str | None = None):
     """List blob paths under a prefix."""
     return get_azure_reader().list_files(prefix, pattern=pattern)
 
@@ -109,6 +109,6 @@ def blob_exists(blob_path: str) -> bool:
     return get_azure_reader().blob_exists(blob_path)
 
 
-def set_blob_tags(blob_path: str, tags: Optional[dict[str, str]]) -> None:
+def set_blob_tags(blob_path: str, tags: dict[str, str] | None) -> None:
     """Set Azure Blob Storage tags for an existing blob."""
     return get_azure_reader().set_blob_tags(blob_path, tags)

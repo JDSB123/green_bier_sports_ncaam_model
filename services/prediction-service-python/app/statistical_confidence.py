@@ -8,11 +8,11 @@ Uses bootstrapped confidence intervals and proper uncertainty quantification.
 """
 
 import math
-from typing import Dict, Optional, Tuple, List
 from dataclasses import dataclass
+
 import numpy as np
 
-from app.models import TeamRatings, BetType
+from app.models import BetType, TeamRatings
 
 
 @dataclass
@@ -34,8 +34,8 @@ class BacktestStats:
     mae: float
     coverage_80pct: float  # 80th percentile of absolute errors
     coverage_90pct: float  # 90th percentile of absolute errors
-    win_rate: Optional[float] = None
-    edge_distribution: Optional[np.ndarray] = None
+    win_rate: float | None = None
+    edge_distribution: np.ndarray | None = None
 
 
 class StatisticalConfidenceCalculator:
@@ -201,7 +201,7 @@ class StatisticalConfidenceCalculator:
         self,
         bet_type: BetType,
         predicted_value: float
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Get prediction uncertainty bounds using statistical intervals.
 

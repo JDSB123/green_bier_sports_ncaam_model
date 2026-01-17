@@ -24,8 +24,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "services" / "prediction-service-python"))
 
 try:
-    from sqlalchemy import create_engine, text
     import psycopg2
+    from sqlalchemy import create_engine, text
     HAS_SQLALCHEMY = True
 except ImportError:
     HAS_SQLALCHEMY = False
@@ -47,7 +47,7 @@ def get_database_url():
     # Read password from Docker secret
     pw_file = os.environ.get("DB_PASSWORD_FILE", "/run/secrets/db_password")
     if Path(pw_file).exists():
-        with open(pw_file, "r") as f:
+        with open(pw_file) as f:
             password = f.read().strip()
         return f"postgresql://{db_user}:{password}@{db_host}:{db_port}/{db_name}"
 
@@ -100,9 +100,8 @@ def check_required_migrations(engine):
                 for mig in missing:
                     print(f"   - {mig}")
                 return False, f"Missing migrations: {missing}"
-            else:
-                print(f"✅ All {len(required_migrations)} required migrations applied")
-                return True, None
+            print(f"✅ All {len(required_migrations)} required migrations applied")
+            return True, None
 
     except Exception as e:
         print(f"❌ Migration check failed: {e}")
@@ -203,9 +202,8 @@ def check_service_dependencies():
         for issue in issues:
             print(f"   - {issue}")
         return False, f"Service dependencies: {issues}"
-    else:
-        print("✅ Service dependencies verified")
-        return True, None
+    print("✅ Service dependencies verified")
+    return True, None
 
 
 def main():
@@ -284,13 +282,12 @@ def main():
         print("🎉 DEPLOYMENT HEALTH CHECK PASSED")
         print("✅ Environment is ready for deployment")
         return 0
-    else:
-        print("❌ DEPLOYMENT HEALTH CHECK FAILED")
-        print(f"⚠️  {len(issues)} issues found:")
-        for issue in issues:
-            print(f"   - {issue}")
-        print("\n🔧 Fix these issues before deploying!")
-        return 1
+    print("❌ DEPLOYMENT HEALTH CHECK FAILED")
+    print(f"⚠️  {len(issues)} issues found:")
+    for issue in issues:
+        print(f"   - {issue}")
+    print("\n🔧 Fix these issues before deploying!")
+    return 1
 
 
 if __name__ == "__main__":

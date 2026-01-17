@@ -11,11 +11,11 @@ v33.11.0: Part of unified orchestrator architecture.
 """
 
 import os
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import datetime, date, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import date, datetime
+from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -39,25 +39,25 @@ class ScheduledGame:
     away_team_raw: str
 
     # Resolved names (populated after team matching)
-    home_team: Optional[str] = None
-    away_team: Optional[str] = None
+    home_team: str | None = None
+    away_team: str | None = None
 
     # Game info
     game_date: date = field(default_factory=date.today)
-    game_time: Optional[datetime] = None
-    venue: Optional[str] = None
+    game_time: datetime | None = None
+    venue: str | None = None
     is_neutral: bool = False
 
     # Status
     status: str = 'scheduled'  # scheduled, in_progress, final, postponed, cancelled
 
     # Scores (if final)
-    home_score: Optional[int] = None
-    away_score: Optional[int] = None
+    home_score: int | None = None
+    away_score: int | None = None
 
     # Conference info
-    home_conference: Optional[str] = None
-    away_conference: Optional[str] = None
+    home_conference: str | None = None
+    away_conference: str | None = None
 
 
 class ESPNScheduleClient:
@@ -79,7 +79,7 @@ class ESPNScheduleClient:
             "Accept": "application/json",
         })
 
-    def get_schedule_for_date(self, target_date: date) -> List[ScheduledGame]:
+    def get_schedule_for_date(self, target_date: date) -> list[ScheduledGame]:
         """Fetch schedule for a specific date."""
         date_str = target_date.strftime("%Y%m%d")
         url = f"{self.BASE_URL}/scoreboard"
@@ -93,7 +93,7 @@ class ESPNScheduleClient:
             logger.warning("espn_schedule_fetch_failed", date=date_str, error=str(e))
             return []
 
-    def get_season_schedule(self, season_year: int = 2025) -> List[ScheduledGame]:
+    def get_season_schedule(self, season_year: int = 2025) -> list[ScheduledGame]:
         """
         Fetch full season schedule.
 
@@ -152,7 +152,7 @@ class ESPNScheduleClient:
 
         return games
 
-    def _parse_scoreboard(self, data: Dict[str, Any], target_date: date) -> List[ScheduledGame]:
+    def _parse_scoreboard(self, data: dict[str, Any], target_date: date) -> list[ScheduledGame]:
         """Parse ESPN scoreboard response."""
         games = []
         events = data.get("events", [])
@@ -168,7 +168,7 @@ class ESPNScheduleClient:
 
         return games
 
-    def _parse_event(self, event: Dict[str, Any], target_date: date) -> Optional[ScheduledGame]:
+    def _parse_event(self, event: dict[str, Any], target_date: date) -> ScheduledGame | None:
         """Parse a single ESPN event."""
         event_id = str(event.get("id", ""))
 
@@ -255,7 +255,7 @@ class BasketballAPIScheduleClient:
     BASE_URL = "https://v1.basketball.api-sports.io"
     NCAAM_LEAGUE_ID = 116  # NCAA Men's Basketball
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         if requests is None:
             raise ImportError("requests library required")
 
@@ -269,7 +269,7 @@ class BasketballAPIScheduleClient:
             "Accept": "application/json",
         })
 
-    def get_schedule_for_date(self, target_date: date) -> List[ScheduledGame]:
+    def get_schedule_for_date(self, target_date: date) -> list[ScheduledGame]:
         """Fetch schedule for a specific date."""
         if not self.api_key:
             return []
@@ -290,7 +290,7 @@ class BasketballAPIScheduleClient:
             logger.warning("basketball_api_fetch_failed", date=date_str, error=str(e))
             return []
 
-    def get_season_schedule(self, season_year: int = 2025) -> List[ScheduledGame]:
+    def get_season_schedule(self, season_year: int = 2025) -> list[ScheduledGame]:
         """
         Fetch full season schedule.
 
@@ -318,7 +318,7 @@ class BasketballAPIScheduleClient:
             logger.warning("basketball_api_season_failed", season=season_str, error=str(e))
             return []
 
-    def _parse_games(self, games_data: List[Dict], default_date: Optional[date] = None) -> List[ScheduledGame]:
+    def _parse_games(self, games_data: list[dict], default_date: date | None = None) -> list[ScheduledGame]:
         """Parse Basketball API games response."""
         games = []
 
@@ -333,7 +333,7 @@ class BasketballAPIScheduleClient:
 
         return games
 
-    def _parse_game(self, game_data: Dict, default_date: Optional[date] = None) -> Optional[ScheduledGame]:
+    def _parse_game(self, game_data: dict, default_date: date | None = None) -> ScheduledGame | None:
         """Parse a single game."""
         game_id = str(game_data.get("id", ""))
 
@@ -397,9 +397,9 @@ class BasketballAPIScheduleClient:
 
 
 def fetch_schedules_parallel(
-    target_date: Optional[date] = None,
-    season_year: Optional[int] = None,
-) -> Tuple[List[ScheduledGame], List[ScheduledGame]]:
+    target_date: date | None = None,
+    season_year: int | None = None,
+) -> tuple[list[ScheduledGame], list[ScheduledGame]]:
     """
     Fetch schedules from ESPN and Basketball API in parallel.
 
@@ -449,9 +449,9 @@ def fetch_schedules_parallel(
 
 
 def cross_validate_schedules(
-    espn_games: List[ScheduledGame],
-    bball_games: List[ScheduledGame],
-) -> Dict[str, Any]:
+    espn_games: list[ScheduledGame],
+    bball_games: list[ScheduledGame],
+) -> dict[str, Any]:
     """
     Cross-validate schedules from both sources.
 
@@ -526,7 +526,6 @@ def cross_validate_schedules(
 
 if __name__ == "__main__":
     # CLI for testing
-    import sys
 
     print("=" * 60)
     print("Schedule Sources Test")

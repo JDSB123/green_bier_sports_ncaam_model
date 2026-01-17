@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Fetch historical closing lines and add to canonical master.
 
@@ -12,13 +11,13 @@ This script:
 NOTE: The Odds API typically doesn't provide historical closing lines in their standard API.
 This script will check what's available and document limitations.
 """
-import sys
 import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
 import pandas as pd
 import requests
-from pathlib import Path
-from datetime import datetime
-import time
 
 # Fix encoding for Windows console
 if sys.platform == 'win32':
@@ -29,7 +28,7 @@ def get_api_key():
     # Try secrets file first
     secret_file = Path("secrets/odds_api_key.txt")
     if secret_file.exists():
-        with open(secret_file, 'r') as f:
+        with open(secret_file) as f:
             key = f.read().strip()
             if key and not key.startswith("YOUR_"):
                 return key

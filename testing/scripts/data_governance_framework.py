@@ -13,12 +13,11 @@ Status: IMPLEMENTATION READY
 """
 
 import json
-import sys
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -52,7 +51,7 @@ class GuardRail:
     rule: str  # Human-readable rule
     validator: str  # Python code snippet
     severity: str  # "error" (block) or "warning" (log)
-    applies_to: List[str]  # ["ncaamr", "kaggle", "odds_api"]
+    applies_to: list[str]  # ["ncaamr", "kaggle", "odds_api"]
     fallback_allowed: bool = False  # True = warn, False = block
     documentation: str = ""  # Why this guard rail exists
 
@@ -63,52 +62,52 @@ class DataSource:
     name: str  # "The Odds API", "NCAAR", "Kaggle"
     identifier: str  # "odds_api", "ncaamr", "kaggle"
     status: DataSourceStatus
-    data_types: List[str]  # ["odds", "scores", "ratings", "box_scores"]
-    
+    data_types: list[str]  # ["odds", "scores", "ratings", "box_scores"]
+
     # EXPLICIT ingestion details
-    raw_container: Optional[str] = None  # Azure: ncaam-historical-raw
-    canonical_container: Optional[str] = None  # Azure: ncaam-historical-data
-    raw_paths: List[str] = field(default_factory=list)  # Exact blob paths
-    canonical_paths: List[str] = field(default_factory=list)
-    
+    raw_container: str | None = None  # Azure: ncaam-historical-raw
+    canonical_container: str | None = None  # Azure: ncaam-historical-data
+    raw_paths: list[str] = field(default_factory=list)  # Exact blob paths
+    canonical_paths: list[str] = field(default_factory=list)
+
     # Guard rails
-    guard_rails: List[GuardRail] = field(default_factory=list)
-    qa_qc_rules: Dict[str, List[str]] = field(default_factory=dict)
-    
+    guard_rails: list[GuardRail] = field(default_factory=list)
+    qa_qc_rules: dict[str, list[str]] = field(default_factory=dict)
+
     # Coverage expectations
-    expected_coverage_pct: Dict[str, float] = field(default_factory=dict)  # {"2024": 100.0}
-    minimum_viable_coverage_pct: Dict[str, float] = field(default_factory=dict)
-    
+    expected_coverage_pct: dict[str, float] = field(default_factory=dict)  # {"2024": 100.0}
+    minimum_viable_coverage_pct: dict[str, float] = field(default_factory=dict)
+
     # Documentation
-    api_docs_url: Optional[str] = None
-    ingestion_script: Optional[str] = None
-    last_updated: Optional[str] = None
+    api_docs_url: str | None = None
+    ingestion_script: str | None = None
+    last_updated: str | None = None
     notes: str = ""
 
 
 @dataclass
 class DataSourceRegistry:
     """Registry of ALL data sources with NO placeholders."""
-    sources: List[DataSource] = field(default_factory=list)
+    sources: list[DataSource] = field(default_factory=list)
     last_audited: str = ""
-    audit_trail: List[Dict] = field(default_factory=list)
-    
-    def find_by_id(self, source_id: str) -> Optional[DataSource]:
+    audit_trail: list[dict] = field(default_factory=list)
+
+    def find_by_id(self, source_id: str) -> DataSource | None:
         """Find source by identifier."""
         return next((s for s in self.sources if s.identifier == source_id), None)
-    
-    def find_active_sources(self, data_type: str) -> List[DataSource]:
+
+    def find_active_sources(self, data_type: str) -> list[DataSource]:
         """Find all ACTIVE sources for a data type."""
         return [
             s for s in self.sources
             if s.status == DataSourceStatus.ACTIVE and data_type in s.data_types
         ]
-    
-    def find_sources_by_status(self, status: DataSourceStatus) -> List[DataSource]:
+
+    def find_sources_by_status(self, status: DataSourceStatus) -> list[DataSource]:
         """Find all sources with given status."""
         return [s for s in self.sources if s.status == status]
-    
-    def to_dict(self) -> Dict:
+
+    def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         sources_list = []
         for s in self.sources:
@@ -127,7 +126,7 @@ class DataSourceRegistry:
                 for gr in s.guard_rails
             ]
             sources_list.append(source_dict)
-        
+
         return {
             "sources": sources_list,
             "last_audited": self.last_audited,
@@ -145,7 +144,7 @@ REGISTRY = DataSourceRegistry(
         # =====================================================================
         # ACTIVE SOURCES - Currently Ingesting
         # =====================================================================
-        
+
         DataSource(
             name="The Odds API",
             identifier="odds_api",
@@ -226,7 +225,7 @@ REGISTRY = DataSourceRegistry(
             minimum_viable_coverage_pct={"2024": 75.0, "2025": 75.0, "2026": 60.0},
             notes="Primary odds source. Uses /sports/basketball_ncaa endpoint with closing lines."
         ),
-        
+
         DataSource(
             name="ESPN API",
             identifier="espn_api",
@@ -288,7 +287,7 @@ REGISTRY = DataSourceRegistry(
             minimum_viable_coverage_pct={"2024": 99.0, "2025": 99.0, "2026": 90.0},
             notes="Primary scores source. D1 games from ESPN schedule."
         ),
-        
+
         DataSource(
             name="Barttorvik Ratings",
             identifier="barttorvik",
@@ -343,11 +342,11 @@ REGISTRY = DataSourceRegistry(
             minimum_viable_coverage_pct={"2024": 90.0, "2025": 90.0, "2026": 70.0},
             notes="Primary ratings source. Pre-season ratings available Oct 1. Daily updates starting Nov 1."
         ),
-        
+
         # =====================================================================
         # INACTIVE SOURCES - Available but NOT currently ingested
         # =====================================================================
-        
+
         DataSource(
             name="NCAAR (ncaahoopR)",
             identifier="ncaamr",
@@ -406,7 +405,7 @@ REGISTRY = DataSourceRegistry(
             minimum_viable_coverage_pct={"2024": 95.0, "2025": 95.0},
             notes="Rich box-score data (player stats, minutes). Currently used for feature engineering only (augment_backtest_master.py). NOT actively ingested."
         ),
-        
+
         DataSource(
             name="Kaggle NCAA Dataset",
             identifier="kaggle",
@@ -463,11 +462,11 @@ REGISTRY = DataSourceRegistry(
             minimum_viable_coverage_pct={},
             notes="Tournament scores ONLY (not regular season). Local CSV files. NOT synced to Azure. NOT currently used in backtest pipeline."
         ),
-        
+
         # =====================================================================
         # PLANNED SOURCES - Scheduled for implementation
         # =====================================================================
-        
+
         DataSource(
             name="Basketball-API",
             identifier="basketball_api",
@@ -495,11 +494,11 @@ REGISTRY = DataSourceRegistry(
             minimum_viable_coverage_pct={},
             notes="Secondary/supplementary odds source. Planned for implementation Q2 2026."
         ),
-        
+
         # =====================================================================
         # BLOCKED SOURCES - Cannot ingest
         # =====================================================================
-        
+
         DataSource(
             name="ESPN Box Scores (Advanced)",
             identifier="espn_advanced",
@@ -527,22 +526,22 @@ class DataGovernanceValidator:
     Validates data against guard rails defined for each source.
     NO silent fallbacks - all issues are explicit.
     """
-    
-    def __init__(self, strict_mode: bool = True, audit_trail_path: Optional[Path] = None):
+
+    def __init__(self, strict_mode: bool = True, audit_trail_path: Path | None = None):
         self.strict_mode = strict_mode
         self.audit_trail_path = audit_trail_path or Path("manifests/data_governance_audit.json")
         self.audit_log = []
-    
+
     def validate_data_source(
         self,
         df: pd.DataFrame,
         source_id: str,
         data_type: str,
-        season: Optional[int] = None
-    ) -> Dict[str, Any]:
+        season: int | None = None
+    ) -> dict[str, Any]:
         """
         Validate DataFrame against a source's guard rails.
-        
+
         Returns:
             {
                 "source": "odds_api",
@@ -559,7 +558,7 @@ class DataGovernanceValidator:
         source = REGISTRY.find_by_id(source_id)
         if not source:
             raise ValueError(f"Unknown source: {source_id}")
-        
+
         result = {
             "source": source_id,
             "data_type": data_type,
@@ -571,41 +570,41 @@ class DataGovernanceValidator:
             "guard_rails_failed": 0,
             "timestamp": datetime.now().isoformat()
         }
-        
+
         # Run all guard rails for this source
         for guard_rail in source.guard_rails:
             result["guard_rails_checked"] += 1
-            
+
             try:
                 # Try to execute validator
                 # In real code, this would be: eval(guard_rail.validator, {"df": df, ...})
                 # For now, just log that it was checked
                 is_valid = self._run_guard_rail(guard_rail, df)
-                
+
                 if not is_valid:
                     result["guard_rails_failed"] += 1
                     msg = f"{guard_rail.name}: {guard_rail.rule}"
-                    
+
                     if guard_rail.severity == "error":
                         result["errors"].append(msg)
                         result["status"] = "FAIL"
                     else:
                         result["warnings"].append(msg)
-            
+
             except Exception as e:
                 result["errors"].append(f"Guard rail {guard_rail.name} failed to execute: {e}")
                 result["status"] = "FAIL"
-        
+
         # Write to audit trail
         self.audit_log.append(result)
-        
+
         return result
-    
+
     def _run_guard_rail(self, guard_rail: GuardRail, df: pd.DataFrame) -> bool:
         """Run a single guard rail. (Stub for real implementation.)"""
         # In production, this would execute the validator code
         return True  # Assume pass for now
-    
+
     def save_audit_trail(self):
         """Save all validation results to immutable audit trail."""
         self.audit_trail_path.parent.mkdir(parents=True, exist_ok=True)
@@ -626,12 +625,12 @@ class DataQualityCoverageReport:
     - Data completeness
     - Consistency across sources
     """
-    
+
     def __init__(self):
         self.coverage_matrix = {}  # source_id -> { season -> { metric -> % }}
         self.guard_rail_compliance = {}  # source_id -> { guard_rail -> pass/fail }
-    
-    def generate(self) -> Dict[str, Any]:
+
+    def generate(self) -> dict[str, Any]:
         """Generate comprehensive report."""
         report = {
             "generated_at": datetime.now().isoformat(),
@@ -645,7 +644,7 @@ class DataQualityCoverageReport:
             "guard_rail_compliance": {},
             "recommendations": []
         }
-        
+
         for source in REGISTRY.sources:
             report["coverage_by_source"][source.identifier] = {
                 "name": source.name,
@@ -653,7 +652,7 @@ class DataQualityCoverageReport:
                 "expected_coverage": source.expected_coverage_pct,
                 "minimum_viable": source.minimum_viable_coverage_pct
             }
-        
+
         return report
 
 
@@ -663,11 +662,11 @@ class DataQualityCoverageReport:
 
 def main():
     """Print comprehensive data governance status."""
-    
+
     print("\n" + "="*80)
     print("DATA GOVERNANCE FRAMEWORK - COMPREHENSIVE STATUS")
     print("="*80 + "\n")
-    
+
     # Summary
     print("📊 DATA SOURCE INVENTORY:\n")
     print(f"  Active Sources:    {len(REGISTRY.find_sources_by_status(DataSourceStatus.ACTIVE))}")
@@ -675,7 +674,7 @@ def main():
     print(f"  Planned Sources:   {len(REGISTRY.find_sources_by_status(DataSourceStatus.PLANNED))}")
     print(f"  Blocked Sources:   {len(REGISTRY.find_sources_by_status(DataSourceStatus.BLOCKED))}")
     print()
-    
+
     # Active sources
     print("✅ ACTIVE SOURCES (Currently Ingesting):\n")
     for source in REGISTRY.find_sources_by_status(DataSourceStatus.ACTIVE):
@@ -684,7 +683,7 @@ def main():
         print(f"    Guard rails: {len(source.guard_rails)}")
         print(f"    Coverage: {source.expected_coverage_pct}")
         print()
-    
+
     # Inactive sources
     print("⏸️  INACTIVE SOURCES (Available but NOT Ingested):\n")
     for source in REGISTRY.find_sources_by_status(DataSourceStatus.INACTIVE):
@@ -693,7 +692,7 @@ def main():
         print(f"    Status: {source.status.value}")
         print(f"    Notes: {source.notes}")
         print()
-    
+
     # Planned sources
     print("🔮 PLANNED SOURCES (Scheduled for Implementation):\n")
     for source in REGISTRY.find_sources_by_status(DataSourceStatus.PLANNED):
@@ -701,26 +700,26 @@ def main():
         print(f"    Data types: {', '.join(source.data_types)}")
         print(f"    Notes: {source.notes}")
         print()
-    
+
     # Blocked sources
     print("🚫 BLOCKED SOURCES (Cannot Ingest):\n")
     for source in REGISTRY.find_sources_by_status(DataSourceStatus.BLOCKED):
         print(f"  • {source.name} ({source.identifier})")
         print(f"    Reason: {source.notes}")
         print()
-    
+
     # Guard rails summary
     print("🛡️  GUARD RAIL SUMMARY:\n")
     total_guards = sum(len(s.guard_rails) for s in REGISTRY.sources)
     print(f"  Total guard rails across all sources: {total_guards}")
-    print(f"  Guard rail types:")
-    print(f"    - Schema validation")
-    print(f"    - Value range validation")
-    print(f"    - Integrity checks (no nulls)")
-    print(f"    - Cross-source consistency")
-    print(f"    - Completeness/coverage")
+    print("  Guard rail types:")
+    print("    - Schema validation")
+    print("    - Value range validation")
+    print("    - Integrity checks (no nulls)")
+    print("    - Cross-source consistency")
+    print("    - Completeness/coverage")
     print()
-    
+
     # Export registry
     print("📝 Exporting data source registry...\n")
     registry_path = Path("manifests/data_sources_registry.json")
@@ -729,7 +728,7 @@ def main():
         json.dump(REGISTRY.to_dict(), f, indent=2)
     print(f"  ✓ Registry saved to: {registry_path}")
     print()
-    
+
     print("="*80)
     print("✅ DATA GOVERNANCE FRAMEWORK READY FOR IMPLEMENTATION")
     print("="*80 + "\n")

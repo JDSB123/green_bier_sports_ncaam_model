@@ -4,8 +4,8 @@ Dynamic variance modeling for NCAAM predictions.
 v6.3: ALL DATA IS REQUIRED - no fallbacks, no defaults.
 Adjusts sigma based on shooting style and pace mismatches.
 """
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ class DynamicVarianceCalculator:
 
         # Higher 3PR = more variance (league average baseline from config)
         three_pt_adj = (avg_3pr - self.league_avg_3pr) * self.three_pt_variance_factor
-        
+
         # Pace mismatch adjustment
         tempo_diff = abs(home_tempo - away_tempo)
         pace_adj = tempo_diff * self.pace_variance_factor

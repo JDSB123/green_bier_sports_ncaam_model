@@ -18,8 +18,6 @@ import os
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional
-
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -41,7 +39,7 @@ class TeamRegistry:
     IDs.
     """
 
-    canonical_to_id: Dict[str, str]
+    canonical_to_id: dict[str, str]
     source: str  # "registry_json" or "uuid5_fallback"
 
     def team_id(self, canonical_name: str) -> str:
@@ -54,7 +52,7 @@ class TeamRegistry:
         return str(uuid.uuid5(TEAM_ID_NAMESPACE, key))
 
 
-def load_team_registry(registry_path: Optional[Path] = None) -> TeamRegistry:
+def load_team_registry(registry_path: Path | None = None) -> TeamRegistry:
     """
     Preferred input: `manifests/team_registry.json` created by
     scripts/export_team_registry.py (contains teams[].id + teams[].canonical_name).
@@ -71,7 +69,7 @@ def load_team_registry(registry_path: Optional[Path] = None) -> TeamRegistry:
             data = json.loads(registry_path.read_text(encoding="utf-8"))
             teams = data.get("teams") if isinstance(data, dict) else None
             if isinstance(teams, list):
-                mapping: Dict[str, str] = {}
+                mapping: dict[str, str] = {}
                 for t in teams:
                     if not isinstance(t, dict):
                         continue

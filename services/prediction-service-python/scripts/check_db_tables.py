@@ -2,6 +2,7 @@
 """Check database tables and Barttorvik data."""
 import os
 from pathlib import Path
+
 from sqlalchemy import create_engine, text
 
 # Build connection from environment
@@ -19,21 +20,21 @@ with engine.connect() as conn:
     print("=" * 60)
     print("DATABASE TABLES")
     print("=" * 60)
-    
+
     result = conn.execute(text("""
-        SELECT table_name FROM information_schema.tables 
+        SELECT table_name FROM information_schema.tables
         WHERE table_schema = 'public' ORDER BY table_name
     """))
     for row in result:
         print(f"  - {row[0]}")
-    
+
     print("\n" + "=" * 60)
     print("TEAM RATINGS")
     print("=" * 60)
-    
+
     result = conn.execute(text("""
-        SELECT COUNT(*), 
-               MIN(rating_date) as min_date, 
+        SELECT COUNT(*),
+               MIN(rating_date) as min_date,
                MAX(rating_date) as max_date,
                COUNT(DISTINCT rating_date) as unique_dates
         FROM team_ratings
@@ -42,33 +43,33 @@ with engine.connect() as conn:
     print(f"  Records: {row[0]}")
     print(f"  Date range: {row[1]} to {row[2]}")
     print(f"  Unique dates: {row[3]}")
-    
+
     # Check columns in team_ratings
     result = conn.execute(text("""
-        SELECT column_name FROM information_schema.columns 
+        SELECT column_name FROM information_schema.columns
         WHERE table_name = 'team_ratings' ORDER BY ordinal_position
     """))
     print("\n  Columns:")
     for row in result:
         print(f"    - {row[0]}")
-    
+
     # Check if there's a barttorvik_raw table
     print("\n" + "=" * 60)
     print("BARTTORVIK RAW DATA")
     print("=" * 60)
-    
+
     result = conn.execute(text("""
         SELECT EXISTS (
-            SELECT FROM information_schema.tables 
+            SELECT FROM information_schema.tables
             WHERE table_name = 'barttorvik_raw'
         )
     """))
     has_raw = result.scalar()
-    
+
     if has_raw:
         result = conn.execute(text("""
-            SELECT COUNT(*), 
-                   MIN(captured_at) as min_date, 
+            SELECT COUNT(*),
+                   MIN(captured_at) as min_date,
                    MAX(captured_at) as max_date
             FROM barttorvik_raw
         """))
@@ -77,15 +78,15 @@ with engine.connect() as conn:
         print(f"  Date range: {row[1]} to {row[2]}")
     else:
         print("  Table 'barttorvik_raw' does not exist")
-    
+
     # Sample team ratings
     print("\n" + "=" * 60)
     print("SAMPLE TEAM RATINGS")
     print("=" * 60)
-    
+
     result = conn.execute(text("""
         SELECT team_id, adj_o, adj_d, tempo, barthag, rank, rating_date
-        FROM team_ratings 
+        FROM team_ratings
         ORDER BY rank LIMIT 10
     """))
     print(f"  {'Team':<30} {'AdjO':>6} {'AdjD':>6} {'Tempo':>6} {'Barthag':>8} {'Rank':>5}")

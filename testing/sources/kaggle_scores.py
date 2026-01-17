@@ -8,9 +8,8 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 
@@ -23,7 +22,7 @@ TEAM_MAP_FILE = DATA_DIR / "MTeams.csv"
 TEAM_SPELLINGS_FILE = DATA_DIR / "MTeamSpellings.csv"
 SEASONS_FILE = DATA_DIR / "MSeasons.csv"
 
-GameKey = Tuple[str, str, str]
+GameKey = tuple[str, str, str]
 
 
 class KaggleDataNotFoundError(RuntimeError):
@@ -41,7 +40,7 @@ class GameRecord:
     num_ot: int
     source: str = "kaggle"
 
-    def as_dict(self) -> Dict[str, object]:
+    def as_dict(self) -> dict[str, object]:
         return {
             "away_team": self.away_team,
             "home_team": self.home_team,
@@ -62,7 +61,7 @@ def _require_files(*files: Path) -> None:
         )
 
 
-def _load_team_names() -> Dict[int, str]:
+def _load_team_names() -> dict[int, str]:
     _require_files(TEAM_MAP_FILE)
     frame = pd.read_csv(TEAM_MAP_FILE)
     if "TeamID" not in frame or "TeamName" not in frame:
@@ -70,7 +69,7 @@ def _load_team_names() -> Dict[int, str]:
     return dict(zip(frame["TeamID"], frame["TeamName"]))
 
 
-def _load_spellings() -> Dict[int, List[str]]:
+def _load_spellings() -> dict[int, list[str]]:
     if not TEAM_SPELLINGS_FILE.exists():
         return {}
     frame = pd.read_csv(TEAM_SPELLINGS_FILE)
@@ -101,7 +100,7 @@ def _day_to_date(season: int, day_num: int) -> date:
     return start + timedelta(days=int(day_num))
 
 
-def _winner_home_mapping(row: pd.Series) -> Tuple[str, str, bool]:
+def _winner_home_mapping(row: pd.Series) -> tuple[str, str, bool]:
     wloc = (row.get("WLoc") or "").upper()
     winner = str(row["WTeamID"])
     loser = str(row["LTeamID"])
@@ -116,9 +115,9 @@ def _winner_home_mapping(row: pd.Series) -> Tuple[str, str, bool]:
 
 def load_kaggle_scores(
     season: int,
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
-) -> Dict[GameKey, GameRecord]:
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> dict[GameKey, GameRecord]:
     """Load regular-season scores from Kaggle for the requested season."""
     _require_files(COMPACT_RESULTS, TEAM_MAP_FILE, SEASONS_FILE)
 
@@ -132,7 +131,7 @@ def load_kaggle_scores(
     if season_df.empty:
         return {}
 
-    records: Dict[GameKey, GameRecord] = {}
+    records: dict[GameKey, GameRecord] = {}
 
     for _, row in season_df.iterrows():
         home_id, away_id, neutral = _winner_home_mapping(row)
@@ -145,7 +144,7 @@ def load_kaggle_scores(
             continue
 
         game_day = _day_to_date(season, int(row["DayNum"]))
-        commence = datetime.combine(game_day, datetime.min.time(), tzinfo=timezone.utc)
+        commence = datetime.combine(game_day, datetime.min.time(), tzinfo=UTC)
 
         # Determine score assignment relative to the mapped home/away IDs.
         winner_score = int(row["WScore"])
@@ -167,12 +166,10 @@ def load_kaggle_scores(
         )
 
     if start_date or end_date:
-        to_delete: List[GameKey] = []
+        to_delete: list[GameKey] = []
         for key, record in records.items():
             game_date = record.commence_time.date()
-            if start_date and game_date < start_date:
-                to_delete.append(key)
-            elif end_date and game_date > end_date:
+            if start_date and game_date < start_date or end_date and game_date > end_date:
                 to_delete.append(key)
         for key in to_delete:
             records.pop(key, None)
@@ -182,12 +179,12 @@ def load_kaggle_scores(
 
 def build_score_index(
     season: int,
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
-) -> Dict[str, Dict[str, object]]:
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> dict[str, dict[str, object]]:
     """Flatten records into a single dictionary keyed by ISO strings."""
     data = load_kaggle_scores(season, start_date, end_date)
-    index: Dict[str, Dict[str, object]] = {}
+    index: dict[str, dict[str, object]] = {}
     for key, record in data.items():
         away, home, iso = key
         index_key = f"{iso}:{away} at {home}"
@@ -199,7 +196,7 @@ def build_score_index(
 # CLI helpers
 
 
-def _render_sample(records: Dict[GameKey, GameRecord], sample_size: int) -> None:
+def _render_sample(records: dict[GameKey, GameRecord], sample_size: int) -> None:
     if not records:
         print("No games loaded for requested filters.")
         return
@@ -215,7 +212,7 @@ def _render_sample(records: Dict[GameKey, GameRecord], sample_size: int) -> None
         )
 
 
-def _cli(argv: Optional[List[str]] = None) -> int:
+def _cli(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Inspect Kaggle historical scores (testing branch only)",
     )

@@ -1,6 +1,5 @@
 import json
 import os
-from typing import Dict
 
 from .odds_api_client import OddsApiClient, OddsApiError
 
@@ -8,7 +7,7 @@ from .odds_api_client import OddsApiClient, OddsApiError
 def main() -> int:
     client = OddsApiClient()
 
-    summary: Dict[str, int] = {
+    summary: dict[str, int] = {
         "events": 0,
         "full_game_events": 0,
         "h1_events": 0,

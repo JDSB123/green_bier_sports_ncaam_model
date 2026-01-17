@@ -94,7 +94,7 @@ def test_team_matching():
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         try:
-            with open("/run/secrets/db_password", "r") as f:
+            with open("/run/secrets/db_password") as f:
                 db_password = f.read().strip()
             database_url = f"postgresql://ncaam:{db_password}@postgres:5432/ncaam"
         except FileNotFoundError:
@@ -157,7 +157,7 @@ def test_team_matching():
             away_match = len(game_canonical["away"]) == 1
             home_match = len(game_canonical["home"]) == 1
             if away_match and home_match:
-                print(f"    ✓ CROSS-SOURCE: All sources resolve to same teams")
+                print("    ✓ CROSS-SOURCE: All sources resolve to same teams")
             else:
                 if not away_match:
                     print(f"    ✗ CROSS-SOURCE: Away team mismatch: "
@@ -275,7 +275,7 @@ def test_team_matching():
     if overall_pass:
         print(f"OVERALL: PASSED ({overall_rate:.1f}% match rate)")
     else:
-        print(f"OVERALL: FAILED")
+        print("OVERALL: FAILED")
         if overall_rate < 90:
             print(f"   - Match rate below 90%: {overall_rate:.1f}%")
         if variant_failed > 0:

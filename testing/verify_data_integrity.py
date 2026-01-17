@@ -12,7 +12,6 @@ Run this BEFORE any backtesting to ensure reproducibility.
 """
 
 import hashlib
-import json
 import sys
 from pathlib import Path
 
@@ -81,7 +80,6 @@ def verify_team_aliases() -> bool:
 
 def verify_ratings_anti_leakage() -> bool:
     """Verify ratings season alignment in canonical backtest dataset."""
-    import pandas as pd
 
     reader = get_data_reader()
     dataset_path = "manifests/canonical_training_data_master.csv"
@@ -158,10 +156,9 @@ def main():
         print("OK ALL CHECKS PASSED - Data integrity verified")
         print("  Safe to proceed with backtesting")
         return 0
-    else:
-        print("✗ SOME CHECKS FAILED - Review errors above")
-        print("  Fix issues before backtesting")
-        return 1
+    print("✗ SOME CHECKS FAILED - Review errors above")
+    print("  Fix issues before backtesting")
+    return 1
 
 
 if __name__ == "__main__":

@@ -7,12 +7,12 @@ Each model has its own calibration, formula, and validation metrics.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any
 
 # Use TYPE_CHECKING to avoid circular imports
 # TeamRatings is defined in app.models (the parent module)
 if TYPE_CHECKING:
-    from app.models import TeamRatings as TeamRatingsType
+    pass
 
 
 @dataclass
@@ -92,8 +92,8 @@ class BasePredictor(ABC):
         home: Any,  # TeamRatings
         away: Any,  # TeamRatings
         is_neutral: bool = False,
-        home_rest_days: Optional[int] = None,
-        away_rest_days: Optional[int] = None,
+        home_rest_days: int | None = None,
+        away_rest_days: int | None = None,
     ) -> MarketPrediction:
         """
         Generate prediction for this market.
@@ -199,8 +199,8 @@ class BasePredictor(ABC):
 
     def calculate_situational_adjustment(
         self,
-        home_rest_days: Optional[int],
-        away_rest_days: Optional[int],
+        home_rest_days: int | None,
+        away_rest_days: int | None,
     ) -> float:
         """
         Calculate rest-based situational adjustment.

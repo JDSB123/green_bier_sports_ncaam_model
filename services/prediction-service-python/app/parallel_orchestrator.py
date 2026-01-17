@@ -22,8 +22,9 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime, date, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, date, datetime
+from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -67,7 +68,7 @@ class DataSourceResult:
     source: str
     success: bool
     data: Any = None
-    error: Optional[str] = None
+    error: str | None = None
     duration_ms: float = 0.0
     record_count: int = 0
     from_cache: bool = False
@@ -79,22 +80,22 @@ class OrchestratorResult:
 
     success: bool
     timestamp: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
     # Individual source results
-    ratings: Optional[DataSourceResult] = None
-    odds: Optional[DataSourceResult] = None
-    betting_splits: Optional[DataSourceResult] = None
-    schedule: Optional[DataSourceResult] = None
+    ratings: DataSourceResult | None = None
+    odds: DataSourceResult | None = None
+    betting_splits: DataSourceResult | None = None
+    schedule: DataSourceResult | None = None
 
     # Validation results
-    schedule_cross_validation: Optional[Dict[str, Any]] = None
-    team_resolution_report: Optional[Dict[str, Any]] = None
+    schedule_cross_validation: dict[str, Any] | None = None
+    team_resolution_report: dict[str, Any] | None = None
 
     # Summary
     total_duration_ms: float = 0.0
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 class ParallelOrchestrator:
@@ -106,12 +107,12 @@ class ParallelOrchestrator:
 
     def __init__(
         self,
-        database_url: Optional[str] = None,
-        redis_url: Optional[str] = None,
-        odds_api_key: Optional[str] = None,
-        basketball_api_key: Optional[str] = None,
-        action_network_username: Optional[str] = None,
-        action_network_password: Optional[str] = None,
+        database_url: str | None = None,
+        redis_url: str | None = None,
+        odds_api_key: str | None = None,
+        basketball_api_key: str | None = None,
+        action_network_username: str | None = None,
+        action_network_password: str | None = None,
     ):
         self.database_url = database_url or os.environ.get(
             "DATABASE_URL", ""
@@ -132,7 +133,7 @@ class ParallelOrchestrator:
 
     def sync_all_sources(
         self,
-        target_date: Optional[date] = None,
+        target_date: date | None = None,
         force_schedule_refresh: bool = False,
         season_year: int = 2025,
     ) -> OrchestratorResult:
@@ -150,7 +151,7 @@ class ParallelOrchestrator:
         if target_date is None:
             target_date = date.today()
 
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         result = OrchestratorResult(success=True)
 
         logger.info(
@@ -216,7 +217,7 @@ class ParallelOrchestrator:
         )
 
         # Calculate total duration
-        end_time = datetime.now(timezone.utc)
+        end_time = datetime.now(UTC)
         result.total_duration_ms = (
             (end_time - start_time).total_seconds() * 1000
         )
@@ -307,13 +308,12 @@ class ParallelOrchestrator:
                     record_count=api_result.get("total_snapshots", 0),
                     error=api_result.get("error"),
                 )
-            else:
-                return DataSourceResult(
-                    source="odds",
-                    success=False,
-                    error="sync_odds not available",
-                    duration_ms=(time.time() - start) * 1000,
-                )
+            return DataSourceResult(
+                source="odds",
+                success=False,
+                error="sync_odds not available",
+                duration_ms=(time.time() - start) * 1000,
+            )
 
         except Exception as e:
             return DataSourceResult(
@@ -412,7 +412,7 @@ class ParallelOrchestrator:
 
 
 def go(
-    target_date: Optional[date] = None,
+    target_date: date | None = None,
     force_schedule_refresh: bool = False,
 ) -> OrchestratorResult:
     """

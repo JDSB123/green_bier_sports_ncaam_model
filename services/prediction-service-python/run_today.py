@@ -12,36 +12,34 @@ Usage:
     python run_today.py --date 2025-12-20    # Specific date
 """
 
-import sys
-import os
-import io
 import argparse
-from datetime import datetime, date, timezone, timedelta
-from uuid import UUID
-from zoneinfo import ZoneInfo
-from typing import Optional, List, Dict
-
-from sqlalchemy import create_engine, text
-import requests
+import csv
+import io
 import json
+import os
 
 # Use existing Go/Rust binaries (reuse all hard work!)
 # No need to recreate - just call the proven binaries
 import subprocess
+import sys
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+from uuid import UUID
+from zoneinfo import ZoneInfo
+
+from sqlalchemy import create_engine, text
+from validate_team_matching import TeamMatchingValidator
+
+from app.config import settings
+from app.graph_upload import upload_file_to_teams
+from app.logging_config import get_logger
+from app.models import BetType, MarketOdds, TeamRatings
+from app.persistence import persist_prediction_and_recommendations
 
 # Import prediction engine (modular independent models)
 from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
-from app.models import TeamRatings, MarketOdds, BetType
-from app.config import settings
 from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_total_model
-from app.situational import SituationalAdjuster, RestInfo
-from app.persistence import persist_prediction_and_recommendations
-from app.graph_upload import upload_file_to_teams
-from app.logging_config import get_logger, log_error
-from app.metrics import increment_counter, Timer
-from validate_team_matching import TeamMatchingValidator
-import csv
-from pathlib import Path
+from app.situational import RestInfo, SituationalAdjuster
 
 # Azure Blob Storage for pick history snapshots (v33.14)
 try:
@@ -57,13 +55,13 @@ def _check_recent_team_resolution(
     engine,
     lookback_days: int,
     min_resolution_rate: float,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """Fail-fast guardrail for canonical team matching quality.
 
     Uses `team_resolution_audit` in a recent window so historical one-off issues
     don't permanently block runs.
     """
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     lookback_start = now_utc - timedelta(days=int(lookback_days))
 
     query = text(
@@ -126,7 +124,7 @@ def _pct(numerator: int, denominator: int) -> float:
     return (numerator / denominator) if denominator else 0.0
 
 
-def _summarize_data_quality(games: List[Dict]) -> Dict[str, int]:
+def _summarize_data_quality(games: list[dict]) -> dict[str, int]:
     total = len(games)
     ratings_ok = sum(1 for g in games if g.get("home_ratings") and g.get("away_ratings"))
     odds_ok = sum(1 for g in games if g.get("spread") is not None or g.get("total") is not None)
@@ -160,23 +158,23 @@ def _summarize_data_quality(games: List[Dict]) -> Dict[str, int]:
     }
 
 
-def _odds_snapshot_age_minutes(now_utc: datetime, snapshot_time: Optional[datetime]) -> Optional[float]:
+def _odds_snapshot_age_minutes(now_utc: datetime, snapshot_time: datetime | None) -> float | None:
     if snapshot_time is None:
         return None
     if snapshot_time.tzinfo is None:
         # Assume UTC if DB returned naive timestamps.
-        snapshot_time = snapshot_time.replace(tzinfo=timezone.utc)
-    return (now_utc - snapshot_time.astimezone(timezone.utc)).total_seconds() / 60.0
+        snapshot_time = snapshot_time.replace(tzinfo=UTC)
+    return (now_utc - snapshot_time.astimezone(UTC)).total_seconds() / 60.0
 
 
 def _enforce_odds_freshness_and_completeness(
-    games: List[Dict],
+    games: list[dict],
     max_age_full_minutes: int,
     max_age_1h_minutes: int,
-) -> List[str]:
+) -> list[str]:
     """Fail-fast: no stale odds and no missing prices for any present market."""
-    now_utc = datetime.now(timezone.utc)
-    failures: List[str] = []
+    now_utc = datetime.now(UTC)
+    failures: list[str] = []
 
     for g in games:
         matchup = f"{g.get('away')} @ {g.get('home')}"
@@ -228,7 +226,7 @@ def _enforce_odds_freshness_and_completeness(
     return failures
 
 
-def _enforce_data_quality(summary: Dict[str, int], args: argparse.Namespace) -> List[str]:
+def _enforce_data_quality(summary: dict[str, int], args: argparse.Namespace) -> list[str]:
     total = summary["total"]
     if total <= 0:
         return []
@@ -289,7 +287,7 @@ def _configure_stdout() -> None:
 def _read_secret_file(file_path: str, secret_name: str) -> str:
     """Read secret from Docker secret file - FAILS HARD if missing."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             value = f.read().strip()
             if not value:
                 raise ValueError(f"Secret file {file_path} is empty")
@@ -360,16 +358,16 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     if skip_sync:
         print("[SKIP]  Skipping data sync (--no-sync flag)")
         return True
-    
+
     print(" Syncing fresh data...")
     print()
-    
+
     # Sync ratings using existing Go binary (proven normalization logic)
     print("   Syncing ratings from Barttorvik (Go binary)...")
-    
+
     # Go/Rust binaries expect standard postgres:// URL, not SQLAlchemy's postgresql+psycopg2://
     clean_db_url = DATABASE_URL.replace("+psycopg2", "")
-    
+
     ratings_timeout = int(os.getenv("RATINGS_SYNC_TIMEOUT_SECONDS", "180"))
     odds_timeout = int(os.getenv("RUST_ODDS_SYNC_TIMEOUT_SECONDS", "240"))
     try:
@@ -400,17 +398,17 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     except Exception as e:
         print(f"  [WARN]  Ratings sync error: {e}")
         ratings_success = False
-    
+
     # Sync odds - try Rust binary first, fall back to Python if not available
     odds_success = False
     rust_binary = "/app/bin/odds-ingestion"
-    
+
     if os.path.exists(rust_binary):
         print("  [INFO] Syncing odds from The Odds API (Rust binary)...")
         try:
             # Get API key from env (Azure: ODDS_API_KEY or THE_ODDS_API_KEY) or Docker secret file (Compose)
             odds_api_key = os.getenv("ODDS_API_KEY") or os.getenv("THE_ODDS_API_KEY") or _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
-            
+
             result = subprocess.run(
                 [rust_binary],
                 env={
@@ -444,7 +442,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
             print(f"  [WARN]  Rust odds sync timed out (>{odds_timeout}s)")
         except Exception as e:
             print(f"  [WARN]  Rust odds sync error: {e}")
-    
+
     # Fall back to Python-based odds sync if Rust binary not available or failed
     if not odds_success:
         print("  [INFO] Syncing odds from The Odds API (Python fallback)...")
@@ -498,14 +496,14 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
                     print(f"  [WARN]  Retry odds sync failed: {type(e).__name__}: {e}")
         except Exception as e:
             print(f"  [WARN]  Retry failed: {e}")
-    
+
     print()
     if ratings_success and odds_success:
         print("[OK] Data sync complete")
     else:
         print("[WARN]  Some data sync issues - predictions may use cached data")
     print()
-    
+
     return ratings_success and odds_success
 
 
@@ -513,34 +511,34 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
 # DATABASE FETCHING
 # ==============================================================================
 
-def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List[Dict]:
+def fetch_games_from_db(target_date: date | None = None, engine=None) -> list[dict]:
     """
     Fetch games, odds, and ratings from database.
-    
+
     CRITICAL DATA INTEGRITY: This function ensures all data sources are unified:
     - Games come from `games` table (populated by Odds API ingestion)
     - Odds come from `odds_snapshots` (from Odds API, joined on same game_id)
     - Team records (wins/losses) come from `team_ratings` (from Barttorvik, joined on same teams)
-    
+
     All data is fetched in a SINGLE unified query to ensure:
     1. Team records correspond to the exact same games as the odds
     2. No bifurcation between data sources (e.g., ESPN for games, Odds API for odds)
     3. Quality assurance: team records serve as a data integrity check against odds
-    
+
     ESPN is NOT used for team records in the picks workflow. ESPN is only used
     post-game for syncing halftime scores (settlement.py).
-    
+
     Args:
         target_date: Date to fetch games for (defaults to today)
-        
+
     Returns:
         List of game dicts with ratings, odds, and team records - all unified from same source
     """
     if target_date is None:
         target_date = date.today()
-    
+
     engine = engine or create_engine(DATABASE_URL, pool_pre_ping=True)
-    
+
     query = text("""
         -- UNIFIED DATA SOURCE QUERY - All data tied to same games table
         -- Games: from games table (Odds API source)
@@ -548,7 +546,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
         -- Team records: from team_ratings (Barttorvik source, joined on team_id)
         -- This ensures team records correspond to the exact same games as odds
         -- for quality assurance and data integrity checks
-        
+
         -- Full-game odds: prefer Pinnacle, fallback Bovada, then any book
         WITH latest_odds AS (
             SELECT DISTINCT ON (game_id, market_type, period)
@@ -672,7 +670,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             WHERE bookmaker IN ('draftkings', 'fanduel')
               AND period = 'full'
               AND market_type IN ('spreads', 'totals')
-            ORDER BY game_id, market_type, 
+            ORDER BY game_id, market_type,
               (bookmaker = 'draftkings') DESC,
               time DESC
         ),
@@ -716,7 +714,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             WHERE rating_date <= :target_date
             ORDER BY team_id, rating_date DESC
         )
-        SELECT 
+        SELECT
             g.id as game_id,
             g.commence_time,
             DATE(g.commence_time AT TIME ZONE 'America/Chicago') as date_cst,
@@ -841,18 +839,18 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
             atr.three_pt_rate, atr.three_pt_rate_d, atr.barthag, atr.wab
         ORDER BY g.commence_time
     """)
-    
+
     with engine.connect() as conn:
         result = conn.execute(query, {"target_date": target_date})
         rows = result.fetchall()
-        
+
         games = []
         for row in rows:
-            # 
+            #
             # v6.3: ALL 22 BARTTORVIK FIELDS ARE REQUIRED - NO FALLBACKS
             # If any field is missing, we log an error and skip the game.
             # The data pipeline must ensure complete data before predictions run.
-            # 
+            #
 
             # Check home team has ALL required fields
             home_required_fields = [
@@ -943,7 +941,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                     "barthag": float(row.away_barthag),
                     "wab": float(row.away_wab),
                 }
-            
+
             game = {
                 "game_id": row.game_id,
                 "commence_time": row.commence_time,
@@ -993,7 +991,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
                 "away_ratings": away_ratings,
             }
             games.append(game)
-        
+
         return games
 
 
@@ -1001,7 +999,7 @@ def fetch_games_from_db(target_date: Optional[date] = None, engine=None) -> List
 # GAME HISTORY FOR REST CALCULATION (v6.2)
 # ==============================================================================
 
-def fetch_team_game_history(team_name: str, before_date: datetime, engine) -> List[Dict]:
+def fetch_team_game_history(team_name: str, before_date: datetime, engine) -> list[dict]:
     """
     Fetch recent completed games for a team to calculate rest days.
 
@@ -1050,7 +1048,7 @@ def fetch_team_game_history(team_name: str, before_date: datetime, engine) -> Li
 # ----------------------------------------------------------------------------
 # LEAGUE AVERAGES / TEAM HCA / HEALTH OVERRIDES
 # ----------------------------------------------------------------------------
-def _load_league_averages(engine, target_date: date) -> Optional[Dict[str, float]]:
+def _load_league_averages(engine, target_date: date) -> dict[str, float] | None:
     """Compute seasonal league averages from latest team ratings."""
     query = text("""
         WITH latest_ratings AS (
@@ -1110,7 +1108,7 @@ def _load_league_averages(engine, target_date: date) -> Optional[Dict[str, float
     }
 
 
-def _apply_league_averages(averages: Dict[str, float]) -> None:
+def _apply_league_averages(averages: dict[str, float]) -> None:
     """Apply league averages to config + predictor instances."""
     settings.model.league_avg_tempo = averages["tempo"]
     settings.model.league_avg_efficiency = averages["efficiency"]
@@ -1147,7 +1145,7 @@ def _load_team_hca(
     lookback_days: int,
     min_games: int,
     cap: float,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Compute team-specific HCA using home vs away margins."""
     start_date = datetime.combine(target_date, datetime.min.time()) - timedelta(days=lookback_days)
     end_date = datetime.combine(target_date + timedelta(days=1), datetime.min.time())
@@ -1213,7 +1211,7 @@ def _load_team_hca(
     return team_hca
 
 
-def _load_team_health_file(path: Optional[str]) -> Dict[str, Dict[str, float]]:
+def _load_team_health_file(path: str | None) -> dict[str, dict[str, float]]:
     """Load optional team health adjustments from CSV/JSON."""
     if not path:
         return {}
@@ -1259,9 +1257,9 @@ def _load_team_health_file(path: Optional[str]) -> Dict[str, Dict[str, float]]:
 # ----------------------------------------------------------------------------
 # RECENT PERFORMANCE FOR BAYESIAN CALIBRATION
 # ----------------------------------------------------------------------------
-def _load_recent_hit_rates(engine, lookback_days: int) -> Dict[str, Dict[str, float]]:
+def _load_recent_hit_rates(engine, lookback_days: int) -> dict[str, dict[str, float]]:
     """Load recent settled recommendation results for Bayesian calibration."""
-    since = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+    since = datetime.now(UTC) - timedelta(days=lookback_days)
     query = text(
         """
         SELECT
@@ -1276,7 +1274,7 @@ def _load_recent_hit_rates(engine, lookback_days: int) -> Dict[str, Dict[str, fl
         """
     )
 
-    stats: Dict[str, Dict[str, float]] = {}
+    stats: dict[str, dict[str, float]] = {}
     with engine.begin() as conn:
         rows = conn.execute(query, {"since": since}).fetchall()
 
@@ -1303,21 +1301,21 @@ def _load_recent_hit_rates(engine, lookback_days: int) -> Dict[str, Dict[str, fl
 def get_prediction(
     home_team: str,
     away_team: str,
-    home_ratings: Dict,
-    away_ratings: Dict,
-    market_odds: Optional[Dict] = None,
+    home_ratings: dict,
+    away_ratings: dict,
+    market_odds: dict | None = None,
     is_neutral: bool = False,
-    home_rest: Optional[RestInfo] = None,
-    away_rest: Optional[RestInfo] = None,
-    home_hca: Optional[float] = None,
-    home_hca_1h: Optional[float] = None,
-    home_health: Optional[Dict[str, float]] = None,
-    away_health: Optional[Dict[str, float]] = None,
-    game_id: Optional[UUID] = None,
-    commence_time: Optional[datetime] = None,
+    home_rest: RestInfo | None = None,
+    away_rest: RestInfo | None = None,
+    home_hca: float | None = None,
+    home_hca_1h: float | None = None,
+    home_health: dict[str, float] | None = None,
+    away_health: dict[str, float] | None = None,
+    game_id: UUID | None = None,
+    commence_time: datetime | None = None,
     engine=None,
     persist: bool = True,
-) -> Dict:
+) -> dict:
     """
     Get prediction using direct import (no HTTP).
 
@@ -1396,7 +1394,7 @@ def get_prediction(
         barthag=away_ratings["barthag"],
         wab=away_ratings["wab"],
     )
-    
+
     market_odds_obj = None
     if market_odds:
         market_odds_obj = MarketOdds(
@@ -1433,10 +1431,10 @@ def get_prediction(
             public_bet_pct_over=market_odds.get("public_bet_pct_over"),
             public_money_pct_over=market_odds.get("public_money_pct_over"),
         )
-    
+
     # Generate prediction (v6.2: pass rest info for situational adjustments)
     if commence_time is None:
-        commence_time = datetime.now(timezone.utc)
+        commence_time = datetime.now(UTC)
     if game_id is None:
         raise ValueError("game_id is required for persistence and reproducibility")
 
@@ -1456,13 +1454,13 @@ def get_prediction(
         home_health=home_health,
         away_health=away_health,
     )
-    
+
     # Generate recommendations
     # v33.10: Pass ratings for ML probability models
     recommendations = []
     if market_odds_obj:
         recommendations = prediction_engine.generate_recommendations(
-            prediction, 
+            prediction,
             market_odds_obj,
             home_ratings=home_ratings_obj,
             away_ratings=away_ratings_obj,
@@ -1483,7 +1481,7 @@ def get_prediction(
                 "home_hca_1h": home_hca_1h,
                 "home_health": home_health,
                 "away_health": away_health,
-                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "generated_at": datetime.now(UTC).isoformat(),
                 "build": {
                     "service_version": settings.service_version,
                     "model_version": prediction.model_version,
@@ -1500,13 +1498,13 @@ def get_prediction(
         except Exception as e:
             # Do not fail the whole run if persistence has a transient issue.
             print(f"  [WARN]  Persistence warning for {away_team} @ {home_team}: {type(e).__name__}: {e}")
-    
+
     # Convert to dict
     prediction_dict = {
         k: (v.isoformat() if isinstance(v, datetime) else v)
         for k, v in prediction.__dict__.items()
     }
-    
+
     recommendations_list = []
     for rec in recommendations:
         rec_dict = {}
@@ -1521,7 +1519,7 @@ def get_prediction(
         rec_dict["executive_summary"] = rec.executive_summary
         rec_dict["detailed_rationale"] = rec.detailed_rationale
         recommendations_list.append(rec_dict)
-    
+
     return {
         "prediction": prediction_dict,
         "recommendations": recommendations_list,
@@ -1532,14 +1530,14 @@ def get_prediction(
 # DISPLAY HELPERS
 # ==============================================================================
 
-def format_spread(spread: Optional[float]) -> str:
+def format_spread(spread: float | None) -> str:
     """Format spread for display."""
     if spread is None:
         return "N/A"
     return f"{spread:+.1f}"
 
 
-def format_odds(odds: Optional[int]) -> str:
+def format_odds(odds: int | None) -> str:
     """Format American odds for display."""
     if odds is None:
         return "N/A"
@@ -1551,14 +1549,13 @@ def get_fire_rating(edge: float, bet_tier: str) -> str:
     # Rating scale: * = filled, - = empty
     if bet_tier == "max" or edge >= 5.0:
         return "*****"  # 5/5 MAX
-    elif bet_tier == "medium" or edge >= 4.0:
+    if bet_tier == "medium" or edge >= 4.0:
         return "****-"  # 4/5
-    elif edge >= 3.5:
+    if edge >= 3.5:
         return "***--"  # 3/5
-    elif edge >= 3.0:
+    if edge >= 3.0:
         return "**---"  # 2/5
-    else:
-        return "*----"  # 1/5
+    return "*----"  # 1/5
 
 
 def print_executive_table(all_picks: list, target_date) -> None:
@@ -1569,23 +1566,23 @@ def print_executive_table(all_picks: list, target_date) -> None:
     if not all_picks:
         print("\n[WARN]  No bets meet minimum edge thresholds")
         return
-    
+
     # Sort by fire rating (descending), then edge (descending), then time
     def sort_key(p):
         fire_score = p['fire_rating'].count('*')  # Count filled diamonds
         return (-fire_score, -p['edge'], p['time_cst'])
-    
+
     sorted_picks = sorted(all_picks, key=sort_key)
-    
+
     # Count max plays
     max_plays = sum(1 for p in sorted_picks if p.get('bet_tier') == 'max' or p['edge'] >= 5.0)
-    
+
     # Header
     print()
     print("+" + "-" * 145 + "+")
     print("|" + f"   NCAAM PICKS - {target_date} | {len(sorted_picks)} PLAYS | {max_plays} MAX BETS".ljust(145) + "|")
     print("+" + "-" * 145 + "+")
-    
+
     # Column headers - simplified for clarity
     header = (
         f"| {'DATE/TIME':<12} | {'MATCHUP (Away vs Home)':<40} | "
@@ -1593,57 +1590,57 @@ def print_executive_table(all_picks: list, target_date) -> None:
     )
     print(header)
     print("+" + "-" * 145 + "+")
-    
+
     # Data rows
     for pick in sorted_picks:
         # Date/Time
         date_str = pick.get('date_cst', str(target_date))[-5:]  # MM-DD format
         time_str = pick['time_cst']
         datetime_str = f"{date_str} {time_str}"
-        
+
         # Matchup with records: "Away (W-L) vs Home (W-L)"
         away_rec = f"({pick.get('away_record', '?')})" if pick.get('away_record') else ""
         home_rec = f"({pick.get('home_record', '?')})" if pick.get('home_record') else ""
         matchup = f"{pick['away'][:14]} {away_rec} vs {pick['home'][:14]} {home_rec}"
         if len(matchup) > 40:
             matchup = matchup[:37] + "..."
-        
+
         # Recommended pick with live odds (already formatted)
         pick_str = pick['pick_display']
         if len(pick_str) > 28:
             pick_str = pick_str[:25] + "..."
-        
+
         # Model prediction
         model_str = pick['model_line']
         if len(model_str) > 12:
             model_str = model_str[:12]
-        
+
         # Market price
         market_str = pick['market_line']
         if len(market_str) > 14:
             market_str = market_str[:14]
-        
+
         # Edge
         edge_str = f"{pick['edge']:.1f}pts"
-        
+
         # Fire rating
         fire = pick['fire_rating']
-        
+
         row = (
             f"| {datetime_str:<12} | {matchup:<40} | "
             f"{pick_str:<28} | {model_str:<12} | {market_str:<14} | {edge_str:<8} | {fire:<6} |"
         )
         print(row)
-    
+
     print("+" + "-" * 145 + "+")
-    
+
     # Legend
     print()
     print("  LEGEND: ***** = MAX BET (5+ pts edge) | ****- = STRONG (4+ pts) | ***-- = SOLID (3.5+ pts)")
     print()
 
 
-def format_team_display(team: str, record: Optional[str] = None, rank: Optional[int] = None) -> str:
+def format_team_display(team: str, record: str | None = None, rank: int | None = None) -> str:
     """Format team name with optional record and rank."""
     parts = [team]
     if rank:
@@ -1674,14 +1671,14 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
 
     # Webhook sending disabled - function now just saves CSV and uploads to Blob
     send_enabled = False
-    
+
     # Sort picks by game time ascending (earliest games first)
     sorted_picks = sorted(all_picks, key=lambda p: p['time_cst'])
-    
+
     # Persist CSV to output directory (host-mounted via docker-compose).
     # To save directly into a Teams channel's "Shared Documents", set PICKS_OUTPUT_HOST_DIR
     # to your local OneDrive-synced folder for that channel (manual-only workflow).
-    csv_path: Optional[Path] = None
+    csv_path: Path | None = None
     try:
         out_dir = Path(PICKS_OUTPUT_DIR)
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -1704,12 +1701,12 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
             for p in sorted_picks:
                 # Date/Time CST
                 date_time = f"{p.get('date_cst', target_date)} {p.get('time_cst','')}".strip()
-                
+
                 # Matchup with records
                 away_rec = p.get('away_record') or '?'
                 home_rec = p.get('home_record') or '?'
                 matchup = f"{p['away']} ({away_rec}) vs {p['home']} ({home_rec})"
-                
+
                 # Write row
                 w.writerow(
                     [
@@ -1764,11 +1761,11 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
         out_dir = Path("/app/output")
         out_dir.mkdir(parents=True, exist_ok=True)
         html_path = out_dir / "latest_picks.html"
-        
+
         # Simple CSS-styled HTML table
         # Count max plays for summary
         max_plays = sum(1 for p in sorted_picks if p.get('bet_tier') == 'max' or p.get('edge', 0) >= 5.0)
-        
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -1806,7 +1803,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
             <div class="container">
                 <h1> NCAAM PICKS</h1>
                 <div class="timestamp">Generated: {datetime.now(CST).strftime("%Y-%m-%d %H:%M CST")} | Target Date: {target_date}</div>
-                
+
                 <div class="summary">
                     <div class="stats">
                         <div class="stat">
@@ -1819,7 +1816,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
                         </div>
                     </div>
                 </div>
-                
+
                 <table>
                     <thead>
                         <tr>
@@ -1834,16 +1831,16 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
                     </thead>
                     <tbody>
         """
-        
+
         for p in sorted_picks:
             # Date/Time
             date_time = f"{p.get('date_cst', str(target_date))[-5:]} {p.get('time_cst', '')}"
-            
+
             # Matchup with records
             away_rec = f"<span class='record'>({p.get('away_record', '?')})</span>" if p.get('away_record') else ""
             home_rec = f"<span class='record'>({p.get('home_record', '?')})</span>" if p.get('home_record') else ""
             matchup = f"{p['away']} {away_rec} vs {p['home']} {home_rec}"
-            
+
             edge_val = p.get('edge', 0.0)
             if edge_val >= 5.0:
                 edge_class = "edge-max"
@@ -1853,7 +1850,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
                 edge_class = "edge-med"
             else:
                 edge_class = ""
-            
+
             html_content += f"""
                         <tr>
                             <td>{date_time}</td>
@@ -1865,11 +1862,11 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
                             <td class="fire">{p.get('fire_rating', '')}</td>
                         </tr>
             """
-            
+
         html_content += """
                     </tbody>
                 </table>
-                
+
                 <div class="legend">
                     <strong>FIRE RATING:</strong>
                     <span>***** = MAX BET (5+ pts edge)</span>
@@ -1881,10 +1878,10 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
         </body>
         </html>
         """
-        
+
         with html_path.open("w", encoding="utf-8") as f:
             f.write(html_content)
-            
+
         # URL where this file will be served - use env var or default to current Azure deployment
         base_url = os.getenv(
             "PREDICTION_API_BASE_URL",
@@ -1892,18 +1889,18 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
         )
         html_url = f"{base_url}/picks/html"
         print(f"  [OK] HTML saved: {html_path}")
-        
+
         # Upload to Microsoft Graph (SharePoint/Teams)
         upload_success = upload_file_to_teams(html_path, target_date)
         if upload_success:
             print("  [OK] HTML uploaded to Teams Shared Documents")
-        
+
     except Exception as e:
         print(f"  [WARN]  Failed to generate HTML: {e}")
 
     # Build simple Adaptive Card format (ColumnSet tables don't render in Teams Workflow webhooks)
     now_cst = datetime.now(CST)
-    
+
     # Build top picks as simple text lines (proven to work)
     top_picks_lines = []
     for p in sorted_picks[:10]:
@@ -1913,13 +1910,13 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
         # Format: " Siena +23.5 @ Indiana (31 pts edge)"
         matchup = f"@ {p['home']}" if p.get('pick_side') == 'away' else f"vs {p['away']}"
         top_picks_lines.append(f"{fire} {pick_display} {matchup} ({edge_str} edge)")
-    
+
     top_picks_text = "\n".join(top_picks_lines) if top_picks_lines else "No picks found"
-    
+
     # Count max plays
     max_plays = [p for p in sorted_picks if p.get('bet_tier') == 'MAX' or p['edge'] >= 5.0]
     max_count = len(max_plays)
-    
+
     # Build simple Adaptive Card that actually works
     card_payload = {
         "type": "message",
@@ -1944,7 +1941,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
                         },
                         {
                             "type": "TextBlock",
-                            "text": f"**TOP 10 PLAYS:**",
+                            "text": "**TOP 10 PLAYS:**",
                             "wrap": True,
                             "weight": "Bolder",
                             "spacing": "Medium"
@@ -1968,7 +1965,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
             }
         ]
     }
-    
+
     # CSV and HTML files generated above - webhook sending disabled
     return bool(csv_path and csv_path.exists())
 
@@ -1978,8 +1975,8 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
 # ==============================================================================
 
 
-def _format_health_summary(summary: Dict[str, object]) -> str:
-    lines: List[str] = []
+def _format_health_summary(summary: dict[str, object]) -> str:
+    lines: list[str] = []
     timestamp = str(summary.get("timestamp", "")).strip()
     mode = str(summary.get("mode", "")).strip()
     title = "NCAAM Health Summary"
@@ -2076,7 +2073,7 @@ def _format_health_summary(summary: Dict[str, object]) -> str:
 
 
 def send_health_summary_to_teams(
-    summary: Dict[str, object],
+    summary: dict[str, object],
     webhook_url: str = "",
 ) -> bool:
     """Log health summary. Webhook sending disabled (use outgoing webhook endpoint)."""
@@ -2191,11 +2188,11 @@ def main():
         action="store_true",
         help="Skip 100%% team matching gate (use with --game for specific matchups)"
     )
-    
+
     args = parser.parse_args()
 
     now_cst = datetime.now(CST)
-    health_summary: Dict[str, object] = {
+    health_summary: dict[str, object] = {
         "timestamp": now_cst.strftime("%Y-%m-%d %H:%M %Z"),
         "status": "ok",
         "mode": "settle-only" if args.settle_only else "full",
@@ -2220,8 +2217,8 @@ def main():
         except ValueError:
             print(f" Invalid date format: {args.date}. Use YYYY-MM-DD")
             exit_with_health(1, "invalid date format")
-    
-    
+
+
     print()
     print("" + "" * 118 + "")
     print("" + f"  NCAA BASKETBALL PREDICTIONS - {now_cst.strftime('%A, %B %d, %Y')} @ {now_cst.strftime('%I:%M %p CST')}".ljust(118) + "")
@@ -2229,7 +2226,7 @@ def main():
     print("" + f"  Model: {model_tag} (FG/H1 Spread & Total)".ljust(118) + "")
     print("" + "" * 118 + "")
     print()
-    
+
     # Create DB engine once for the entire run (predictions persistence + settlement).
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
@@ -2238,7 +2235,7 @@ def main():
     # Previously the gate blocked runs before fresh data could even be fetched,
     # causing stale historical unresolved teams to block current-day predictions.
     # ═══════════════════════════════════════════════════════════════════════════
-    
+
     # Step 1: Sync fresh data FIRST (odds + ratings)
     sync_ok = sync_fresh_data(skip_sync=args.no_sync)
     health_summary["sync_ok"] = sync_ok
@@ -2361,7 +2358,12 @@ def main():
     # Optional: score sync + settlement + ROI report (production auditing)
     if not args.no_settle:
         try:
-            from app.settlement import sync_final_scores, sync_halftime_scores, settle_pending_bets, print_performance_report
+            from app.settlement import (
+                print_performance_report,
+                settle_pending_bets,
+                sync_final_scores,
+                sync_halftime_scores,
+            )
 
             print("[RETRY] Syncing final scores + settling pending bets...")
             score_summary = sync_final_scores(engine, days_from=args.settle_days_from)
@@ -2452,7 +2454,7 @@ def main():
     # Fetch games
     print(f"[OK] Fetching games for {target_date}...")
     print()
-    
+
     try:
         games = fetch_games_from_db(target_date=target_date, engine=engine)
     except Exception as e:
@@ -2460,11 +2462,11 @@ def main():
         import traceback
         traceback.print_exc()
         exit_with_health(1, f"failed to fetch games: {type(e).__name__}")
-    
+
     if not games:
         print(f"[WARN]  No games found for {target_date}")
         exit_with_health(0, "no games found")
-    
+
     # Filter by specific game if requested
     if args.game:
         home_filter, away_filter = args.game
@@ -2501,7 +2503,7 @@ def main():
         # No bypass: requirement is 'real fresh odds must always be used'.
         exit_with_health(2, "stale or incomplete odds")
 
-    
+
     print(f"[OK] Found {len(games)} games")
     print()
 
@@ -2511,8 +2513,8 @@ def main():
     # v33.9: Fetch Action Network betting splits for public/sharp detection
     betting_splits_map = {}
     try:
-        from app.betting_splits import get_betting_splits_for_games, ActionNetworkError
-        target_datetime = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc)
+        from app.betting_splits import ActionNetworkError, get_betting_splits_for_games
+        target_datetime = datetime.combine(target_date, datetime.min.time(), tzinfo=UTC)
         betting_splits_map = get_betting_splits_for_games(games, target_datetime)
         if betting_splits_map:
             print(f"[OK] Fetched betting splits for {len(betting_splits_map)} games")
@@ -2548,7 +2550,7 @@ def main():
                     )
                 )
             continue
-        
+
         # Validate odds
         if game.get("spread") is None and game.get("total") is None:
             games_skipped += 1
@@ -2565,9 +2567,9 @@ def main():
                     )
                 )
             continue
-        
+
         games_processed += 1
-        
+
         # Build market odds
         market_odds = {
             "spread": game["spread"],
@@ -2599,7 +2601,7 @@ def main():
             "sharp_spread_open": game.get("sharp_spread_open"),
             "sharp_total_open": game.get("sharp_total_open"),
         }
-        
+
         # v33.9: Add Action Network betting splits if available
         game_key = f"{game['home']}_vs_{game['away']}"
         if game_key in betting_splits_map:
@@ -2685,10 +2687,10 @@ def main():
         except Exception as e:
             print(f"[FATAL] Prediction failed for {game['away']} @ {game['home']}: {type(e).__name__}: {e}")
             exit_with_health(1, f"prediction failed: {type(e).__name__}")
-        
+
         pred = result["prediction"]
         recs = result["recommendations"]
-        
+
         # Collect picks for executive table
         for rec in recs:
             bet_type = rec.get('bet_type', '')
@@ -2756,16 +2758,16 @@ def main():
                 market_str = f"{mkt_line:.1f} ({format_odds(mkt_juice)})"
             else:
                 continue
-            
+
             # Fire rating
             fire = get_fire_rating(rec['edge'], rec.get('bet_tier', 'STANDARD'))
-            
+
             # Determine pick side for display purposes
             if market == "SPREAD" or market == "ML":
                 pick_side = "home" if pick_val == "HOME" else "away"
             else:
                 pick_side = "over" if pick_val == "OVER" else "under"
-            
+
             all_picks.append({
                 "date_cst": game.get("date_cst"),
                 "time_cst": game["time_cst"],
@@ -2783,7 +2785,7 @@ def main():
                 "bet_tier": rec.get('bet_tier', 'STANDARD'),
                 "fire_rating": fire,
             })
-    
+
     print(f"[OK] Processed {games_processed} games ({games_skipped} skipped - missing data)")
     if args.debug_skips and skipped_reasons:
         missing_ratings = sum(1 for r in skipped_reasons if r[2] == "missing_ratings")
@@ -2791,7 +2793,7 @@ def main():
         print(f"  - skipped breakdown: {missing_ratings} missing ratings, {missing_odds} missing odds")
         for away, home, reason, has_home_r, has_away_r, spread, total in skipped_reasons[:30]:
             print(f"  - SKIP ({reason}): {away} @ {home} | ratings(home={has_home_r}, away={has_away_r}) | spread={spread} total={total}")
-    
+
     # Print executive summary table
     print_executive_table(all_picks, target_date)
 

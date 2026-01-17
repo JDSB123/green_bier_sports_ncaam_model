@@ -25,7 +25,6 @@ import argparse
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, List
 
 import pandas as pd
 
@@ -33,20 +32,22 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from testing.azure_data_reader import (
-    get_azure_reader, read_canonical_scores, read_canonical_odds,
+    get_azure_reader,
+    read_canonical_odds,
+    read_canonical_scores,
 )
-from testing.data_window import (
-    CANONICAL_START_SEASON,
-    CANONICAL_START_DATE,
-    default_backtest_seasons,
-    enforce_min_season,
-    season_from_date,
-)
-from testing.azure_io import write_csv, write_json, blob_exists
+from testing.azure_io import blob_exists, write_csv, write_json
 from testing.canonical.ingestion_pipeline import CanonicalIngestionPipeline, DataSource
 from testing.canonical.quality_gates import DataQualityGate
 from testing.canonical.schema_evolution import SchemaEvolutionManager
 from testing.canonical.team_resolution_service import get_team_resolver
+from testing.data_window import (
+    CANONICAL_START_DATE,
+    CANONICAL_START_SEASON,
+    default_backtest_seasons,
+    enforce_min_season,
+    season_from_date,
+)
 
 
 def _canonicalize_team_series(series: pd.Series, resolver) -> pd.Series:
@@ -118,9 +119,9 @@ def _parse_barttorvik_payload(payload, season: int, resolver) -> pd.DataFrame:
 
 def build_canonical_backtest_dataset(
     validate_only: bool = False,
-    seasons: Optional[List[int]] = None,
+    seasons: list[int] | None = None,
     strict_mode: bool = True
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame | None:
     """
     Build canonical backtest dataset using ingestion pipeline.
 
@@ -278,7 +279,7 @@ def build_canonical_backtest_dataset(
 
             validation_result = quality_gate.validate(fg_spreads, "odds")
             if not validation_result.passed and strict_mode:
-                raise ValueError(f"FG spreads validation failed")
+                raise ValueError("FG spreads validation failed")
         except Exception as e:
             print(f"  Warning: Failed to load FG spreads: {e}")
             if strict_mode:
@@ -340,7 +341,7 @@ def build_canonical_backtest_dataset(
         def merge_odds_data(base_df: pd.DataFrame, odds_df: pd.DataFrame,
                           odds_type: str, team_col: str = "home_team") -> pd.DataFrame:
             """Merge odds data with proper canonicalization.
-            
+
             Uses canonical team names for matching:
             - scores: home_canonical, away_canonical
             - odds: home_team_canonical, away_team_canonical
@@ -365,7 +366,7 @@ def build_canonical_backtest_dataset(
                         )
             elif line_cols:
                 raise ValueError(f"{odds_type} odds missing commence_time for pregame validation")
-            
+
             # Odds data uses 'game_date', scores use 'date' - normalize
             if "game_date" in odds_df.columns and "date" not in odds_df.columns:
                 odds_df = odds_df.rename(columns={"game_date": "date"})
@@ -395,7 +396,7 @@ def build_canonical_backtest_dataset(
             merge_cols = ["home_canonical", "away_canonical", "date"]
 
             # Get odds-specific columns to keep
-            odds_cols = [col for col in odds_df.columns 
+            odds_cols = [col for col in odds_df.columns
                         if col not in ["home_team", "away_team", "date",
                                        "home_team_canonical", "away_team_canonical",
                                        "home_canonical", "away_canonical",
@@ -403,7 +404,7 @@ def build_canonical_backtest_dataset(
 
             cols_to_keep = merge_cols + odds_cols
             odds_df = odds_df[cols_to_keep].copy()
-            
+
             # Drop duplicates - keep first occurrence per game
             odds_df = odds_df.drop_duplicates(subset=merge_cols, keep="first")
 
@@ -550,7 +551,7 @@ def build_canonical_backtest_dataset(
         return None
 
 
-def save_canonical_dataset(df: pd.DataFrame, output_blob: Optional[str] = None):
+def save_canonical_dataset(df: pd.DataFrame, output_blob: str | None = None):
     """Save the canonical backtest dataset with metadata.
 
     By default this overwrites the primary backtest master used

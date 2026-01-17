@@ -12,12 +12,11 @@ Usage:
     python validate_team_matching.py --verbose    # Show all details
 """
 
+import argparse
 import os
 import sys
-import argparse
-from datetime import date, datetime
-from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import create_engine, text
 
@@ -25,7 +24,7 @@ from sqlalchemy import create_engine, text
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     try:
-        with open("/run/secrets/db_password", "r") as f:
+        with open("/run/secrets/db_password") as f:
             DB_PASSWORD = f.read().strip()
         DATABASE_URL = f"postgresql://ncaam:{DB_PASSWORD}@postgres:5432/ncaam"
     except FileNotFoundError:
@@ -39,7 +38,7 @@ class ValidationResult:
     metric: str
     value: float
     status: str  # PASS, WARN, FAIL, INFO
-    details: Optional[str] = None
+    details: str | None = None
 
 
 @dataclass
@@ -50,7 +49,7 @@ class UnresolvedTeam:
     context: str
     occurrences: int
     last_seen: datetime
-    alternatives: List[str]
+    alternatives: list[str]
 
 
 class TeamMatchingValidator:
@@ -59,7 +58,7 @@ class TeamMatchingValidator:
     def __init__(self, verbose: bool = False):
         self.engine = create_engine(DATABASE_URL, pool_pre_ping=True)
         self.verbose = verbose
-        self.results: List[ValidationResult] = []
+        self.results: list[ValidationResult] = []
 
     def run_all_validations(self) -> bool:
         """Run all validation checks. Returns True if all critical checks pass."""
@@ -164,7 +163,7 @@ class TeamMatchingValidator:
 
         print()
 
-    def _check_unresolved_teams(self) -> List[UnresolvedTeam]:
+    def _check_unresolved_teams(self) -> list[UnresolvedTeam]:
         """Check for unresolved teams and return them."""
         print("❌ Unresolved Teams")
         print("-" * 60)
@@ -429,16 +428,15 @@ class TeamMatchingValidator:
                 if result.status == "FAIL":
                     print(f"      - {result.metric}: {result.details or result.value}")
             return False
-        elif warned > 0:
+        if warned > 0:
             print("⚠️  VALIDATION PASSED WITH WARNINGS")
             print("   Predictions can run but may have incomplete data")
             return True
-        else:
-            print("✅ ALL VALIDATIONS PASSED")
-            print("   Team matching is at 100% accuracy")
-            return True
+        print("✅ ALL VALIDATIONS PASSED")
+        print("   Team matching is at 100% accuracy")
+        return True
 
-    def attempt_fixes(self, unresolved: List[UnresolvedTeam]):
+    def attempt_fixes(self, unresolved: list[UnresolvedTeam]):
         """Attempt to automatically fix unresolved teams."""
         print()
         print("🔧 Attempting Automatic Fixes")

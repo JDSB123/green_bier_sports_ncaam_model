@@ -11,22 +11,20 @@ prediction workflows.
 
 Usage:
     from team_utils import resolve_team_name
-    
+
     # Simple usage:
     canonical = resolve_team_name("Alabama State")  # Returns "Alabama St."
-    
+
     # With source tracking:
     canonical = resolve_team_name("Alabama Crimson Tide", source="espn")
 """
 from __future__ import annotations
 
-from typing import Optional
-
 # Import from the canonical Team Resolution Service
 from testing.canonical.team_resolution_service import (
-    TeamResolutionService,
     ResolutionResult,
-    get_team_resolver,
+)
+from testing.canonical.team_resolution_service import (
     resolve_team_name as _resolve,
 )
 
@@ -34,26 +32,26 @@ from testing.canonical.team_resolution_service import (
 def resolve_team_name(name: str, source: str = "unknown") -> str:
     """
     Resolve a team name to its canonical form.
-    
+
     Uses the SINGLE SOURCE OF TRUTH: canonical master (manifests/canonical_training_data_master.csv)
-    
+
     Args:
         name: Raw team name from any source (ESPN, Odds API, etc.)
         source: Which data source this came from (for tracking)
-        
+
     Returns:
         Canonical team name, or original name if not found
     """
     if not name or not isinstance(name, str):
         return ""
-    
+
     name = name.strip()
     if not name:
         return ""
-    
+
     # Use the gate
     canonical = _resolve(name, source)
-    
+
     # Return canonical name or original if not matched
     return canonical if canonical else name
 
@@ -89,16 +87,15 @@ if __name__ == "__main__":
         ("mississippi", "odds_api"),
         ("Random University", "test"),  # Should not match
     ]
-    
+
     print("Team Name Resolution Test")
     print("=" * 60)
     print(f"{'Input':<30} | {'Canonical':<30}")
     print("-" * 60)
-    
+
     for name, source in test_names:
         canonical = resolve_team_name(name, source)
         print(f"{name:<30} | {canonical:<30}")
-    
+
     # Show report
     get_resolver().report()
-

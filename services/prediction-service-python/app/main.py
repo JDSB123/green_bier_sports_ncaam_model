@@ -1,30 +1,29 @@
-from datetime import datetime, timezone, timedelta, date
-from typing import Optional, List
-from uuid import UUID
-import time
-import sys
 import hashlib
+import os
 import re
+import subprocess
+import sys
+import time
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+from uuid import UUID
 
-from fastapi import FastAPI, BackgroundTasks, Request, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field, model_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-import subprocess
-import os
-from pathlib import Path
+from slowapi.util import get_remote_address
 from sqlalchemy import text
-from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
-from app.models import TeamRatings, MarketOdds, Prediction, BettingRecommendation
-from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_total_model
+from starlette.middleware.base import BaseHTTPMiddleware
+
 from app.config import settings
-from app.validation import validate_market_odds, validate_team_ratings
-from app.logging_config import get_logger, log_request, log_error
-from app.metrics import increment_counter, observe_histogram, Timer
+from app.logging_config import get_logger, log_error, log_request
+from app.metrics import Timer, increment_counter
+from app.models import BettingRecommendation, MarketOdds, Prediction, TeamRatings
+from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
+from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_total_model
 
 logger = get_logger(__name__)
 
@@ -38,10 +37,10 @@ limiter = Limiter(key_func=get_remote_address)
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log all HTTP requests with structured logging."""
-    
+
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
-        
+
         # Log request
         logger.info(
             "http_request_started",
@@ -50,11 +49,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             query_params=dict(request.query_params),
             client_ip=request.client.host if request.client else None,
         )
-        
+
         try:
             response = await call_next(request)
             duration_ms = (time.time() - start_time) * 1000
-            
+
             # Log response
             log_request(
                 logger,
@@ -63,7 +62,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 status_code=response.status_code,
                 duration_ms=duration_ms,
             )
-            
+
             return response
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
@@ -89,7 +88,7 @@ class TeamRatingsInput(BaseModel):
     adj_d: float
     tempo: float
     rank: int
-    
+
     # Four Factors
     efg: float
     efgd: float
@@ -99,7 +98,7 @@ class TeamRatingsInput(BaseModel):
     drb: float
     ftr: float
     ftrd: float
-    
+
     # Shooting Breakdown
     two_pt_pct: float
     two_pt_pct_d: float
@@ -137,37 +136,37 @@ class TeamRatingsInput(BaseModel):
 
 
 class MarketOddsInput(BaseModel):
-    spread: Optional[float] = None
-    spread_price: Optional[int] = None
-    spread_home_price: Optional[int] = None
-    spread_away_price: Optional[int] = None
-    total: Optional[float] = None
-    over_price: Optional[int] = None
-    under_price: Optional[int] = None
+    spread: float | None = None
+    spread_price: int | None = None
+    spread_home_price: int | None = None
+    spread_away_price: int | None = None
+    total: float | None = None
+    over_price: int | None = None
+    under_price: int | None = None
 
     # First half
-    spread_1h: Optional[float] = None
-    total_1h: Optional[float] = None
-    spread_price_1h: Optional[int] = None
-    spread_1h_home_price: Optional[int] = None
-    spread_1h_away_price: Optional[int] = None
-    over_price_1h: Optional[int] = None
-    under_price_1h: Optional[int] = None
+    spread_1h: float | None = None
+    total_1h: float | None = None
+    spread_price_1h: int | None = None
+    spread_1h_home_price: int | None = None
+    spread_1h_away_price: int | None = None
+    over_price_1h: int | None = None
+    under_price_1h: int | None = None
 
     # Sharp book reference
-    sharp_spread: Optional[float] = None
-    sharp_total: Optional[float] = None
+    sharp_spread: float | None = None
+    sharp_total: float | None = None
     # Opening lines (consensus + sharp)
-    spread_open: Optional[float] = None
-    total_open: Optional[float] = None
-    spread_1h_open: Optional[float] = None
-    total_1h_open: Optional[float] = None
-    sharp_spread_open: Optional[float] = None
-    sharp_total_open: Optional[float] = None
+    spread_open: float | None = None
+    total_open: float | None = None
+    spread_1h_open: float | None = None
+    total_1h_open: float | None = None
+    sharp_spread_open: float | None = None
+    sharp_total_open: float | None = None
 
     @model_validator(mode="after")
     def _validate_odds_completeness(self):
-        def _has_pair(a: Optional[int], b: Optional[int]) -> bool:
+        def _has_pair(a: int | None, b: int | None) -> bool:
             return a is not None and b is not None
 
         # Disallow "prices without lines" (prevents ambiguous / accidental payloads).
@@ -249,13 +248,13 @@ class PredictRequest(BaseModel):
     commence_time: datetime
     home_ratings: TeamRatingsInput
     away_ratings: TeamRatingsInput
-    market_odds: Optional[MarketOddsInput] = None
+    market_odds: MarketOddsInput | None = None
     is_neutral: bool = False
 
 
 class PredictionResponse(BaseModel):
     prediction: dict
-    recommendations: List[dict]
+    recommendations: list[dict]
 
 
 # -----------------------------
@@ -266,24 +265,24 @@ app = FastAPI(
     title="NCAA Basketball Prediction Service",
     description="""
     Production-grade NCAA basketball prediction API.
-    
+
     ## Features
-    
+
     - **Predictions**: Generate predictions for spreads and totals (full game + 1H)
     - **Recommendations**: Get betting recommendations with edge analysis
     - **Picks**: Fetch formatted picks for specific dates
-    
+
     ## Model Version
-    
+
     Current model: see `/health` (the service version is also exposed via the OpenAPI `version` field).
-    
+
     - FG Spread: MAE 10.57 pts, 71.9% accuracy (3,318 games)
     - FG Total: MAE 13.1 pts, 10.7 for middle games (3,318 games)
     - 1H Spread: MAE 8.25 pts, 66.6% accuracy (904 games)
     - 1H Total: MAE 8.88 pts (562 games)
-    
+
     ## Authentication
-    
+
     No authentication required for public endpoints. Rate limiting applies.
     """,
     version=settings.service_version,
@@ -312,31 +311,32 @@ app.add_middleware(
 async def debug_odds_periods():
     """Diagnostic endpoint to check odds periods in database."""
     import os
+
     from sqlalchemy import create_engine, text
-    
+
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
         return {"error": "DATABASE_URL not set"}
-    
+
     try:
         engine = create_engine(db_url)
         with engine.connect() as conn:
             # Check odds periods
             result = conn.execute(text("""
-                SELECT period, market_type, COUNT(*) as cnt 
-                FROM odds_snapshots 
-                WHERE time > NOW() - INTERVAL '24 hours' 
-                GROUP BY period, market_type 
+                SELECT period, market_type, COUNT(*) as cnt
+                FROM odds_snapshots
+                WHERE time > NOW() - INTERVAL '24 hours'
+                GROUP BY period, market_type
                 ORDER BY period, market_type
             """))
             periods = [{"period": r.period, "market_type": r.market_type, "count": r.cnt} for r in result]
-            
+
             # Check total odds count
             total_result = conn.execute(text("""
                 SELECT COUNT(*) as total FROM odds_snapshots WHERE time > NOW() - INTERVAL '24 hours'
             """))
             total = total_result.scalar()
-            
+
             return {
                 "periods": periods,
                 "total_odds_last_24h": total,
@@ -351,19 +351,20 @@ async def debug_odds_periods():
 async def debug_game_odds():
     """Check which games have 1H odds loaded."""
     import os
-    from sqlalchemy import create_engine, text
     from datetime import date
-    
+
+    from sqlalchemy import create_engine, text
+
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
         return {"error": "DATABASE_URL not set"}
-    
+
     try:
         engine = create_engine(db_url)
         with engine.connect() as conn:
             # Check 1H odds - which dates do they belong to?
             result_dates = conn.execute(text("""
-                SELECT 
+                SELECT
                     DATE(g.commence_time AT TIME ZONE 'America/Chicago') as game_date,
                     COUNT(DISTINCT o.game_id) as games_with_1h_odds
                 FROM odds_snapshots o
@@ -374,11 +375,11 @@ async def debug_game_odds():
                 ORDER BY game_date DESC
             """))
             dates_with_1h = [{"date": str(r.game_date), "games_with_1h": r.games_with_1h_odds} for r in result_dates]
-            
+
             # Get today's games with their odds status
             result = conn.execute(text("""
                 WITH game_list AS (
-                    SELECT 
+                    SELECT
                         g.id,
                         ht.canonical_name as home_team,
                         at.canonical_name as away_team,
@@ -390,7 +391,7 @@ async def debug_game_odds():
                       AND g.status = 'scheduled'
                 ),
                 odds_status AS (
-                    SELECT 
+                    SELECT
                         game_id,
                         MAX(CASE WHEN period = 'full' AND market_type = 'spreads' THEN 1 ELSE 0 END) as has_full_spread,
                         MAX(CASE WHEN period = '1h' AND market_type = 'spreads' THEN 1 ELSE 0 END) as has_1h_spread,
@@ -400,7 +401,7 @@ async def debug_game_odds():
                     WHERE time > NOW() - INTERVAL '24 hours'
                     GROUP BY game_id
                 )
-                SELECT 
+                SELECT
                     gl.home_team || ' vs ' || gl.away_team as matchup,
                     COALESCE(os.has_full_spread, 0) as has_full_spread,
                     COALESCE(os.has_1h_spread, 0) as has_1h_spread,
@@ -410,7 +411,7 @@ async def debug_game_odds():
                 LEFT JOIN odds_status os ON gl.id = os.game_id
                 ORDER BY gl.commence_time
             """))
-            
+
             games = []
             for r in result:
                 games.append({
@@ -420,7 +421,7 @@ async def debug_game_odds():
                     "full_total": bool(r.has_full_total),
                     "1h_total": bool(r.has_1h_total),
                 })
-            
+
             return {
                 "date": str(date.today()),
                 "dates_with_1h_odds": dates_with_1h,
@@ -437,21 +438,21 @@ async def debug_game_odds():
 async def release_lock(request: Request, date_param: str = "today"):
     """
     Emergency endpoint to release a stuck advisory lock for a specific date.
-    
+
     Use only if you're certain no run is actually in progress.
     """
     try:
         target_date = _get_target_date(date_param)
     except ValueError:
         return {"error": f"Invalid date format: {date_param}"}
-    
+
     engine = _get_db_engine()
     if not engine:
         return {"error": "Database not configured"}
-    
+
     model_version = _model_version_tag()
     lock_key = _advisory_lock_key("run_today", target_date, model_version)
-    
+
     try:
         with engine.connect() as conn:
             # Check if lock exists
@@ -463,30 +464,29 @@ async def release_lock(request: Request, date_param: str = "today"):
                   AND classid = 0
                   AND granted = true
             """), {"lock_key": lock_key}).scalar()
-            
+
             if not lock_exists:
                 return {
                     "ok": True,
                     "message": f"No lock found for {target_date}",
                     "date": target_date.isoformat(),
                 }
-            
+
             # Try to release (only works if we hold it, but worth trying)
             released = conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": lock_key}).scalar()
-            
+
             if released:
                 return {
                     "ok": True,
                     "message": f"Lock released for {target_date}",
                     "date": target_date.isoformat(),
                 }
-            else:
-                return {
-                    "ok": False,
-                    "message": f"Lock exists but not held by this session. Another process may be running.",
-                    "date": target_date.isoformat(),
-                    "lock_key": lock_key,
-                }
+            return {
+                "ok": False,
+                "message": "Lock exists but not held by this session. Another process may be running.",
+                "date": target_date.isoformat(),
+                "lock_key": lock_key,
+            }
     except Exception as e:
         return {"error": str(e)}
 
@@ -495,6 +495,7 @@ async def release_lock(request: Request, date_param: str = "today"):
 async def debug_team_matching():
     """Check if teams from odds ingestion match ratings teams."""
     import os
+
     from sqlalchemy import create_engine, text
 
     db_url = os.environ.get("DATABASE_URL")
@@ -557,7 +558,7 @@ async def debug_sync_odds():
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
             return {"error": "DATABASE_URL not set"}
-        
+
         from app.odds_sync import sync_odds
         result = sync_odds(
             database_url=database_url,
@@ -583,7 +584,7 @@ def run_picks_task():
             cwd="/app"  # Ensure we run from app root in container
         )
         if result.returncode == 0:
-            print(f"[trigger-picks] Picks generation completed successfully", flush=True)
+            print("[trigger-picks] Picks generation completed successfully", flush=True)
             print(f"[trigger-picks] stdout: {result.stdout[:500] if result.stdout else 'none'}", flush=True)
         else:
             print(f"[trigger-picks] Picks generation failed with code {result.returncode}", flush=True)
@@ -636,8 +637,8 @@ async def get_picks_html():
 
     max_age_minutes = int(os.getenv("MAX_PICKS_REPORT_AGE_MINUTES", "180"))
     try:
-        mtime = datetime.fromtimestamp(html_path.stat().st_mtime, tz=timezone.utc)
-        age_minutes = (datetime.now(timezone.utc) - mtime).total_seconds() / 60.0
+        mtime = datetime.fromtimestamp(html_path.stat().st_mtime, tz=UTC)
+        age_minutes = (datetime.now(UTC) - mtime).total_seconds() / 60.0
         if age_minutes > max_age_minutes:
             raise HTTPException(
                 status_code=409,
@@ -731,13 +732,13 @@ async def health():
 async def get_metrics():
     """
     Export metrics in Prometheus-compatible format.
-    
+
     Returns metrics for monitoring and observability.
     """
     from app.metrics import metrics
-    
+
     all_metrics = metrics.get_all_metrics()
-    
+
     # Format for Prometheus (simple text format)
     lines = []
 
@@ -751,12 +752,12 @@ async def get_metrics():
         f'build_date="{getattr(settings, "build_date", "")}"'
         "} 1"
     )
-    
+
     # Counters
     for name, value in all_metrics["counters"].items():
         lines.append(f"# TYPE {name} counter")
         lines.append(f"{name} {value}")
-    
+
     # Histograms
     for name, stats in all_metrics["histograms"].items():
         lines.append(f"# TYPE {name} histogram")
@@ -768,7 +769,7 @@ async def get_metrics():
         lines.append(f"{name}_p50 {stats['p50']}")
         lines.append(f"{name}_p95 {stats['p95']}")
         lines.append(f"{name}_p99 {stats['p99']}")
-    
+
     # Prometheus expects text/plain (not JSON) and a trailing newline is customary.
     return PlainTextResponse("\n".join(lines) + "\n", media_type="text/plain")
 
@@ -790,22 +791,22 @@ async def config():
 # Picks API Endpoint (for frontend integration)
 # -----------------------------
 
-from datetime import date, timedelta
 from zoneinfo import ZoneInfo
-from sqlalchemy import create_engine, text
+
+from sqlalchemy import create_engine
 
 CST = ZoneInfo("America/Chicago")
 
 
-def _odds_snapshot_age_minutes(now_utc: datetime, snapshot_time: Optional[datetime]) -> Optional[float]:
+def _odds_snapshot_age_minutes(now_utc: datetime, snapshot_time: datetime | None) -> float | None:
     if snapshot_time is None:
         return None
     if snapshot_time.tzinfo is None:
-        snapshot_time = snapshot_time.replace(tzinfo=timezone.utc)
-    return (now_utc - snapshot_time.astimezone(timezone.utc)).total_seconds() / 60.0
+        snapshot_time = snapshot_time.replace(tzinfo=UTC)
+    return (now_utc - snapshot_time.astimezone(UTC)).total_seconds() / 60.0
 
 
-def _format_american_odds(odds: Optional[int]) -> str:
+def _format_american_odds(odds: int | None) -> str:
     if odds is None:
         return "N/A"
     return f"+{int(odds)}" if int(odds) > 0 else str(int(odds))
@@ -817,7 +818,7 @@ def _check_recent_team_resolution(engine) -> dict:
     lookback_days = int(os.getenv("TEAM_MATCHING_LOOKBACK_DAYS", "7"))
     min_rate = float(os.getenv("MIN_TEAM_RESOLUTION_RATE", "0.98"))
     max_unmatched = int(os.getenv("MAX_UNMATCHED_TEAMS", "0"))  # Stricter: no unmatched
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     lookback_start = now_utc - timedelta(days=lookback_days)
 
     with engine.connect() as conn:
@@ -858,10 +859,9 @@ def _get_target_date(date_param: str) -> date:
     today = datetime.now(CST).date()
     if date_param == "today":
         return today
-    elif date_param == "tomorrow":
+    if date_param == "tomorrow":
         return today + timedelta(days=1)
-    else:
-        return datetime.strptime(date_param, "%Y-%m-%d").date()
+    return datetime.strptime(date_param, "%Y-%m-%d").date()
 
 
 def _get_db_engine():
@@ -915,10 +915,10 @@ def _run_today_path() -> str:
 def _check_and_release_stale_lock(conn, lock_key: int, max_lock_age_seconds: int = 1800) -> bool:
     """
     Check if lock is held by a dead/stale connection and release it.
-    
+
     Postgres advisory locks are automatically released when the connection closes,
     but if a connection is stuck open, we can detect and handle it.
-    
+
     Returns True if lock was released/available, False if lock is actively held.
     """
     try:
@@ -931,11 +931,11 @@ def _check_and_release_stale_lock(conn, lock_key: int, max_lock_age_seconds: int
               AND classid = 0
               AND granted = true
         """), {"lock_key": lock_key}).scalar()
-        
+
         if not lock_held:
             # No lock exists - we can acquire it
             return bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
-        
+
         # Lock is held - check if the holding connection is still active
         # Advisory locks are tied to the database session, not the process
         # If the session is idle for too long, it might be stale
@@ -950,15 +950,15 @@ def _check_and_release_stale_lock(conn, lock_key: int, max_lock_age_seconds: int
               AND a.state = 'active'
               AND a.query NOT LIKE '%pg_advisory%'
         """), {"lock_key": lock_key}).scalar()
-        
+
         if not active_session:
             # Lock is held but session is not active - might be stale
             # Try to acquire anyway (will fail if truly held, succeed if connection died)
             return bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
-        
+
         # Lock is actively held by an active session
         return False
-        
+
     except Exception:
         # On any error, just try to acquire the lock
         try:
@@ -987,16 +987,16 @@ def _trigger_run_today(
     """
     model_version = _model_version_tag()
     lock_key = _advisory_lock_key("run_today", target_date, model_version)
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
 
     # Hold the advisory lock on a single connection for the duration of the run.
     conn = engine.connect()
     try:
         got_lock = False
-        
+
         # First, try to get the lock
         got_lock = bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
-        
+
         # If lock is held, check if it's stale (from a dead process)
         if not got_lock:
             if _check_and_release_stale_lock(conn, lock_key):
@@ -1041,7 +1041,7 @@ def _trigger_run_today(
             timeout=timeout_s,
             env=os.environ.copy(),
         )
-        duration_ms = (datetime.now(timezone.utc) - started_at).total_seconds() * 1000.0
+        duration_ms = (datetime.now(UTC) - started_at).total_seconds() * 1000.0
 
         def _tail(s: str, n: int = 20) -> str:
             lines = (s or "").splitlines()
@@ -1074,7 +1074,7 @@ def _trigger_run_today(
         conn.close()
 
 
-def _fetch_persisted_picks(engine, target_date: date) -> List[dict]:
+def _fetch_persisted_picks(engine, target_date: date) -> list[dict]:
     """
     Read picks from Postgres (single source of truth).
 
@@ -1134,10 +1134,10 @@ def _fetch_persisted_picks(engine, target_date: date) -> List[dict]:
             {"target_date": target_date},
         ).fetchall()
 
-    def to_float(v) -> Optional[float]:
+    def to_float(v) -> float | None:
         return None if v is None else float(v)
 
-    picks: List[dict] = []
+    picks: list[dict] = []
     for r in rows:
         bet_type = str(r.bet_type or "")
         pick = str(r.pick or "")
@@ -1345,24 +1345,24 @@ async def get_picks_json(
 async def get_weekly_picks(request: Request, days: int = 7):
     """
     Fetch picks for the next N days (for website weekly lineup integration).
-    
+
     This is the primary endpoint for greenbiersportsventures.com/weekly.
-    
+
     Args:
         days: Number of days to fetch (default 7, max 14)
-    
+
     Returns:
         JSON with picks grouped by date, suitable for rendering a weekly lineup table.
     """
     days = min(max(days, 1), 14)  # Clamp to 1-14 days
-    
+
     engine = _get_db_engine()
     if not engine:
         return {"error": "Database not configured", "days": []}
-    
+
     today = date.today()
     result_days = []
-    
+
     for offset in range(days):
         target_date = today + timedelta(days=offset)
         try:
@@ -1378,7 +1378,7 @@ async def get_weekly_picks(request: Request, days: int = 7):
         except Exception as e:
             logger.warning(f"Error fetching picks for {target_date}: {e}")
             continue
-    
+
     return {
         "generated_at": datetime.now(CST).isoformat(),
         "model_version": _model_version_tag(),
@@ -1444,11 +1444,11 @@ async def run_picks(request: Request, date_param: str = "today", sync: bool = Tr
     description="""
     Generate predictions for all 4 markets (FG Spread, FG Total, 1H Spread, 1H Total)
     and betting recommendations based on market odds.
-    
+
     **Input:**
     - Team ratings (all 22 Barttorvik fields required)
     - Market odds (optional, but required for recommendations)
-    
+
     **Output:**
     - Predictions for all 4 markets
     - Betting recommendations (filtered by edge/EV thresholds)
@@ -1457,7 +1457,7 @@ async def run_picks(request: Request, date_param: str = "today", sync: bool = Tr
 @limiter.limit("60/minute")
 async def predict(request: Request, req: PredictRequest):
     increment_counter("predictions_requested_total")
-    
+
     try:
         with Timer("prediction_generation_duration_seconds"):
             home = req.home_ratings.to_domain()
@@ -1475,13 +1475,13 @@ async def predict(request: Request, req: PredictRequest):
                 is_neutral=req.is_neutral,
             )
 
-            recs: List[BettingRecommendation] = []
+            recs: list[BettingRecommendation] = []
             if market:
                 recs = prediction_engine.generate_recommendations(pred, market)
-            
+
             increment_counter("predictions_generated_total")
             increment_counter("recommendations_generated_total", amount=len(recs))
-            
+
             logger.info(
                 "prediction_completed",
                 game_id=str(req.game_id),
@@ -1489,7 +1489,7 @@ async def predict(request: Request, req: PredictRequest):
                 away_team=req.away_team,
                 recommendations_count=len(recs),
             )
-        
+
         # Convert dataclasses to serializable dicts
         prediction_dict = {
             k: (v.isoformat() if isinstance(v, datetime) else v)
@@ -1510,7 +1510,7 @@ async def predict(request: Request, req: PredictRequest):
             recommendations_list.append(d)
 
         return PredictionResponse(prediction=prediction_dict, recommendations=recommendations_list)
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1523,14 +1523,14 @@ async def predict(request: Request, req: PredictRequest):
 # Teams Outgoing Webhook Handler
 # -----------------------------
 
-import hmac
-import hashlib
 import base64
+import hmac
 import json
+
 from fastapi import Request
 
 
-def _load_teams_webhook_secret() -> Optional[str]:
+def _load_teams_webhook_secret() -> str | None:
     """Load Teams webhook secret from Docker secret or environment."""
     # Try Docker secret first
     secret_file = os.getenv("TEAMS_WEBHOOK_SECRET_FILE", "/run/secrets/teams_webhook_secret")
@@ -1544,30 +1544,30 @@ def _load_teams_webhook_secret() -> Optional[str]:
     return os.getenv("TEAMS_WEBHOOK_SECRET")
 
 
-def _verify_teams_hmac(body: bytes, auth_header: Optional[str], secret: str) -> bool:
+def _verify_teams_hmac(body: bytes, auth_header: str | None, secret: str) -> bool:
     """Verify the HMAC signature from Teams outgoing webhook.
-    
+
     Teams sends: Authorization: HMAC <base64-encoded-hmac>
     We compute: HMAC-SHA256(body, base64_decode(secret))
     """
     if not auth_header:
         return False
-    
+
     # Parse "HMAC <signature>" format
     parts = auth_header.split(" ", 1)
     if len(parts) != 2 or parts[0].upper() != "HMAC":
         return False
-    
+
     received_sig = parts[1]
-    
+
     try:
         # Decode the shared secret (it's base64 encoded)
         secret_bytes = base64.b64decode(secret)
-        
+
         # Compute HMAC-SHA256 of the request body
         computed = hmac.new(secret_bytes, body, hashlib.sha256)
         computed_sig = base64.b64encode(computed.digest()).decode('utf-8')
-        
+
         # Constant-time comparison to prevent timing attacks
         return hmac.compare_digest(computed_sig, received_sig)
     except Exception as e:
@@ -1579,9 +1579,9 @@ class TeamsWebhookMessage(BaseModel):
     """Teams outgoing webhook message structure."""
     text: str
     type: str = "message"
-    timestamp: Optional[str] = None
-    from_field: Optional[dict] = Field(alias="from", default=None)
-    channelData: Optional[dict] = None
+    timestamp: str | None = None
+    from_field: dict | None = Field(alias="from", default=None)
+    channelData: dict | None = None
 
 
 @app.post("/teams-webhook")

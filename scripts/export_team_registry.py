@@ -21,22 +21,20 @@ import argparse
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 import psycopg2
 import psycopg2.extras
 
 from testing.azure_data_reader import AzureDataReader
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def _utc_now_z() -> str:
     return (
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         .replace(microsecond=0)
         .isoformat()
         .replace("+00:00", "Z")
@@ -52,7 +50,7 @@ def _normalize_db_url(url: str) -> str:
     return u
 
 
-def _read_secret(path: Path) -> Optional[str]:
+def _read_secret(path: Path) -> str | None:
     try:
         s = path.read_text(encoding="utf-8").strip()
         return s or None
@@ -188,9 +186,7 @@ def build_flat_alias_mapping(
         if existing_canonical == canonical:
             # Same mapping, OK.
             # Still keep the \"best\" metadata so future compares are consistent.
-            if has_ratings and not existing_has_ratings:
-                chosen_meta[alias_key] = (team_id, has_ratings, confidence)
-            elif (has_ratings == existing_has_ratings) and (confidence > existing_conf):
+            if has_ratings and not existing_has_ratings or (has_ratings == existing_has_ratings) and (confidence > existing_conf):
                 chosen_meta[alias_key] = (team_id, has_ratings, confidence)
             continue
 
@@ -422,4 +418,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

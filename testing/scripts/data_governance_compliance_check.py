@@ -15,11 +15,10 @@ Usage:
     python testing/scripts/data_governance_validator.py --fix (auto-remediate)
 """
 
-import subprocess
 import json
-from pathlib import Path
-from typing import List, Tuple, Dict
+import subprocess
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = ROOT / "testing" / "scripts"
@@ -90,12 +89,12 @@ class ComplianceValidator:
         violations_found = []
         for pattern, desc in bad_patterns:
             bad_files = [f for f in tracked_files if pattern in f]
-            
+
             # Allow exception: config/schema files
             if pattern == '.json':
-                bad_files = [f for f in bad_files 
+                bad_files = [f for f in bad_files
                            if 'config' not in f and 'schema' not in f]
-            
+
             if bad_files:
                 violations_found.extend(bad_files)
                 self.print_check("FAIL", f"Found {desc} in Git: {bad_files[0]}")
@@ -103,8 +102,7 @@ class ComplianceValidator:
         if not violations_found:
             self.print_check("PASS", "No data files detected in Git")
             return True
-        else:
-            return False
+        return False
 
     # ========================================================================
     # CHECK 2: Local Data Directory Compliance
@@ -131,8 +129,7 @@ class ComplianceValidator:
         if not violations_found:
             self.print_check("PASS", "No permanent local data storage detected")
             return True
-        else:
-            return False
+        return False
 
     # ========================================================================
     # CHECK 3: Script Compliance (Reading from Azure)
@@ -156,19 +153,19 @@ class ComplianceValidator:
             script_path = SCRIPTS_DIR / script_name
             if script_path.exists():
                 content = script_path.read_text()
-                
+
                 # Check for Azure imports
                 has_azure_reader = (
                     "from testing.azure_data_reader import" in content or
                     "from testing.azure_io import" in content or
                     "AzureDataReader" in content
                 )
-                
+
                 # Check for suspicious local reads
                 has_local_read = (
                     "open(" in content and "testing/data" in content
                 ) and "AzureDataReader" not in content
-                
+
                 if has_local_read and not has_azure_reader:
                     violations_found.append(script_name)
                     self.print_check("FAIL", f"{script_name} reads from local files")
@@ -186,7 +183,7 @@ class ComplianceValidator:
         self.print_header("CHECK 4: AUDIT TRAIL COMPLIANCE")
 
         manifests_dir = ROOT / "manifests"
-        
+
         required_manifests = [
             "comprehensive_ingestion_audit.json",
             "ingestion_endpoint_inventory.json",
@@ -222,20 +219,19 @@ class ComplianceValidator:
 
         try:
             from testing.azure_data_reader import AzureDataReader
-            
+
             reader = AzureDataReader(container_name="ncaam-historical-data")
-            
+
             # Try to list files
             files = reader.list_files("backtest_datasets/", pattern="*.csv", max_results=1)
-            
+
             if files:
                 self.print_check("PASS", "Can connect to Azure blob storage")
-                self.print_check("PASS", f"Container: ncaam-historical-data")
+                self.print_check("PASS", "Container: ncaam-historical-data")
                 return True
-            else:
-                self.print_check("WARN", "Connected but no files found (expected in some cases)")
-                return True
-                
+            self.print_check("WARN", "Connected but no files found (expected in some cases)")
+            return True
+
         except Exception as e:
             self.print_check("FAIL", f"Cannot connect to Azure: {e}")
             return False
@@ -293,40 +289,38 @@ class ComplianceValidator:
         print(f"  Violations:      {len(self.violations)}")
 
         if self.violations:
-            print(f"\n  ❌ VIOLATIONS FOUND:")
+            print("\n  ❌ VIOLATIONS FOUND:")
             for v in self.violations:
                 print(f"     • {v}")
 
         if self.warnings:
-            print(f"\n  ⚠️  WARNINGS:")
+            print("\n  ⚠️  WARNINGS:")
             for w in self.warnings:
                 print(f"     • {w}")
 
         # Exit code
         if self.violations:
-            print(f"\n  Status: 🚨 NON-COMPLIANT")
-            print(f"  See docs/AZURE_BLOB_STORAGE_ARCHITECTURE.md for remediation")
+            print("\n  Status: 🚨 NON-COMPLIANT")
+            print("  See docs/AZURE_BLOB_STORAGE_ARCHITECTURE.md for remediation")
             if self.strict:
                 return 1  # Fail in strict mode
-            else:
-                return 0  # Warn only in normal mode
-        else:
-            print(f"\n  Status: ✅ COMPLIANT")
-            return 0
+            return 0  # Warn only in normal mode
+        print("\n  Status: ✅ COMPLIANT")
+        return 0
 
 
 def main():
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Data Governance Validator")
     parser.add_argument("--strict", action="store_true", help="Fail on any violation")
     parser.add_argument("--fix", action="store_true", help="Auto-remediate violations")
-    
+
     args = parser.parse_args()
-    
+
     validator = ComplianceValidator(strict=args.strict, fix=args.fix)
     exit_code = validator.run()
-    
+
     return exit_code
 
 

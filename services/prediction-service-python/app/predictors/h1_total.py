@@ -23,12 +23,12 @@ Betting Strategy:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from app import __version__ as APP_VERSION
+from app.models import BetType
 from app.predictors.base import BasePredictor, MarketPrediction
 from app.statistical_confidence import statistical_confidence
-from app.models import BetType
 
 if TYPE_CHECKING:
     from app.models import TeamRatings
@@ -118,8 +118,8 @@ class H1TotalModel(BasePredictor):
 
     def _estimate_h1_possessions(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
     ) -> float:
         """
         Estimate 1H possessions independently.
@@ -176,8 +176,8 @@ class H1TotalModel(BasePredictor):
 
     def _calculate_base_h1_total(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
     ) -> tuple[float, float, float]:
         """
         Calculate base 1H total using independent 1H model.
@@ -201,8 +201,8 @@ class H1TotalModel(BasePredictor):
 
     def _calculate_h1_adjustment(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
         base_total: float,
     ) -> tuple[float, str]:
         """
@@ -255,8 +255,8 @@ class H1TotalModel(BasePredictor):
 
     def _calculate_h1_variance(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
     ) -> float:
         """
         Calculate 1H variance (inherently higher than FG).
@@ -287,11 +287,11 @@ class H1TotalModel(BasePredictor):
 
     def predict(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
         is_neutral: bool = False,
-        home_rest_days: Optional[int] = None,
-        away_rest_days: Optional[int] = None,
+        home_rest_days: int | None = None,
+        away_rest_days: int | None = None,
     ) -> MarketPrediction:
         """
         Generate 1H total prediction using independent model.

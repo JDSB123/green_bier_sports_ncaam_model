@@ -19,7 +19,7 @@ def configure_logging(
 ) -> None:
     """
     Configure structured logging for the application.
-    
+
     Args:
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         json_logs: If True, output JSON format (production). If False, pretty console format (dev)
@@ -31,7 +31,7 @@ def configure_logging(
         stream=sys.stdout,
         level=getattr(logging, log_level.upper(), logging.INFO),
     )
-    
+
     # Shared processors for all loggers
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,  # Merge context vars
@@ -40,7 +40,7 @@ def configure_logging(
         structlog.processors.TimeStamper(fmt="iso"),  # ISO timestamp
         structlog.processors.StackInfoRenderer(),  # Stack traces
     ]
-    
+
     if json_logs:
         # Production: JSON format for log aggregation
         shared_processors.extend([
@@ -55,7 +55,7 @@ def configure_logging(
             structlog.processors.UnicodeDecoder(),
             structlog.dev.ConsoleRenderer(colors=True),  # Pretty colors
         ])
-    
+
     # Configure structlog
     structlog.configure(
         processors=shared_processors,
@@ -64,7 +64,7 @@ def configure_logging(
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     # Add service name to all logs
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(service=service_name)
@@ -73,10 +73,10 @@ def configure_logging(
 def get_logger(name: str) -> structlog.BoundLogger:
     """
     Get a structured logger instance.
-    
+
     Args:
         name: Logger name (typically __name__)
-        
+
     Returns:
         Configured structlog logger
     """
@@ -155,4 +155,3 @@ def log_recommendation(
         ev_percent=round(ev_percent, 2),
         **kwargs,
     )
-

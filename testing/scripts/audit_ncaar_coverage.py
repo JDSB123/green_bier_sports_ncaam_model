@@ -12,8 +12,8 @@ Output: Detailed breakdown of match rates and suggestions.
 """
 
 import sys
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 
 import pandas as pd
 
@@ -141,7 +141,7 @@ def main():
     print(f"Total potential matches: {exact + near:,} ({(exact + near)/total*100:.1f}%)")
     print(f"Completely unmatched: {unmatched:,} ({unmatched/total*100:.1f}%)")
 
-    print(f"\nUnresolved team variants (top 10):")
+    print("\nUnresolved team variants (top 10):")
     for team, count in stats["unresolved_teams"].most_common(10):
         print(f"  {team}: {count}")
 

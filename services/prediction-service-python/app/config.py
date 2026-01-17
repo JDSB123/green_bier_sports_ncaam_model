@@ -5,8 +5,8 @@ Versioning:
 - Historical change notes live in docs/VERSIONING.md.
 """
 
-from pydantic_settings import BaseSettings
 from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings
 
 from . import __version__ as APP_VERSION
 

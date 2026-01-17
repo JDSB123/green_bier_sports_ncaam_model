@@ -13,9 +13,8 @@ import json
 import math
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -37,7 +36,11 @@ def load_canonical_master() -> pd.DataFrame:
     if local_master.exists():
         df = pd.read_csv(local_master)
     else:
-        df = reader.read_csv("manifests/canonical_training_data_master.csv")
+        # Try canonical/ path first (Azure), then manifests/ path
+        try:
+            df = reader.read_csv("canonical/canonical_training_data_master.csv")
+        except FileNotFoundError:
+            df = reader.read_csv("manifests/canonical_training_data_master.csv")
 
     # Normalize dates
     if "game_date" in df.columns:
@@ -96,7 +99,7 @@ def add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
     df["two_pt_pct_avg"] = (_col("home_two_pt_pct") + _col("away_two_pt_pct")) / 2.0
 
     def _odds_to_prob(series: pd.Series) -> pd.Series:
-        def _calc(value: float) -> Optional[float]:
+        def _calc(value: float) -> float | None:
             if pd.isna(value):
                 return None
             if value >= 100:
@@ -113,7 +116,7 @@ def add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def standardize(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def standardize(X: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Standardize features and return (Xz, means, stds)."""
     means = np.nanmean(X, axis=0)
     stds = np.nanstd(X, axis=0)
@@ -122,7 +125,7 @@ def standardize(X: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     return Xz, means, stds
 
 
-def fit_linear_model(X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, float, np.ndarray, np.ndarray]:
+def fit_linear_model(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, float, np.ndarray, np.ndarray]:
     """Fit linear regression with standardization."""
     Xz, means, stds = standardize(X)
     Xb = np.column_stack([np.ones(len(Xz)), Xz])
@@ -143,7 +146,7 @@ def fit_logistic_model(
     lr: float = 0.1,
     max_iter: int = 800,
     reg: float = 1e-3,
-) -> Tuple[np.ndarray, float, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, float, np.ndarray, np.ndarray]:
     """Fit logistic regression with simple gradient descent."""
     Xz, means, stds = standardize(X)
     Xb = np.column_stack([np.ones(len(Xz)), Xz])
@@ -189,7 +192,7 @@ def margin_to_prob(margins: np.ndarray, sigma: float) -> np.ndarray:
     return np.array([0.5 * (1.0 + math.erf(margin / scale)) for margin in margins], dtype=float)
 
 
-def american_odds_to_prob(american_odds: float) -> Optional[float]:
+def american_odds_to_prob(american_odds: float) -> float | None:
     if pd.isna(american_odds):
         return None
     if american_odds >= 100:
@@ -197,7 +200,7 @@ def american_odds_to_prob(american_odds: float) -> Optional[float]:
     return abs(american_odds) / (abs(american_odds) + 100.0)
 
 
-def american_odds_to_decimal(american_odds: float) -> Optional[float]:
+def american_odds_to_decimal(american_odds: float) -> float | None:
     if pd.isna(american_odds):
         return None
     if american_odds >= 100:
@@ -205,7 +208,7 @@ def american_odds_to_decimal(american_odds: float) -> Optional[float]:
     return (100.0 / abs(american_odds)) + 1.0
 
 
-def calculate_profit(outcome: str, wager: float, odds: float) -> Optional[float]:
+def calculate_profit(outcome: str, wager: float, odds: float) -> float | None:
     decimal_odds = american_odds_to_decimal(odds)
     if decimal_odds is None:
         return None
@@ -255,7 +258,7 @@ def simulate_spread_total_bets(
     min_edge: float,
     bet_type: str,
     wager: float = 100.0,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     total_bets = 0
     wins = 0
     losses = 0
@@ -326,7 +329,7 @@ def simulate_moneyline_bets(
     result_col: str,
     min_edge: float,
     wager: float = 100.0,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     total_bets = 0
     wins = 0
     losses = 0
@@ -396,15 +399,15 @@ def simulate_moneyline_bets(
 class MarketSpec:
     name: str
     target_col: str
-    line_col: Optional[str]
+    line_col: str | None
     price_home_col: str
     price_away_col: str
     sigma: float
     model_type: str  # "linear" or "logistic"
     target_mode: str  # "raw", "residual", "win_prob"
-    feature_sets: List[List[str]]
+    feature_sets: list[list[str]]
     bet_type: str  # "spread", "total", "moneyline"
-    edge_grid: List[float]
+    edge_grid: list[float]
 
 
 SPREAD_BASE_FEATURE_SETS = [
@@ -428,11 +431,11 @@ MONEYLINE_FEATURE_SETS = [
     ["ml_implied_home", "net_diff", "barthag_diff", "efg_diff", "tor_diff", "rank_diff", "wab_diff"],
 ]
 
-def _with_line(base_sets: List[List[str]], line_col: str) -> List[List[str]]:
+def _with_line(base_sets: list[list[str]], line_col: str) -> list[list[str]]:
     return [[line_col] + feats for feats in base_sets]
 
 
-def build_market_specs() -> Dict[str, MarketSpec]:
+def build_market_specs() -> dict[str, MarketSpec]:
     return {
         "fg_spread": MarketSpec(
             name="fg_spread",
@@ -517,8 +520,8 @@ def build_market_specs() -> Dict[str, MarketSpec]:
 
 def split_train_valid(
     df: pd.DataFrame,
-    holdout_season: Optional[int],
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    holdout_season: int | None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     seasons = sorted(df["season"].dropna().unique().tolist())
     if not seasons:
         return df, df
@@ -542,9 +545,9 @@ def evaluate_feature_set(
     spec: MarketSpec,
     train_df: pd.DataFrame,
     valid_df: pd.DataFrame,
-    feature_set: List[str],
+    feature_set: list[str],
     min_bets: int,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     cols = feature_set + [spec.target_col]
     if spec.line_col:
         cols.append(spec.line_col)
@@ -657,8 +660,8 @@ def evaluate_feature_set(
 
 def save_model(
     spec: MarketSpec,
-    feature_set: List[str],
-    metrics: Dict[str, float],
+    feature_set: list[str],
+    metrics: dict[str, float],
     output_dir: Path,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -679,7 +682,7 @@ def save_model(
             "mae": metrics.get("mae"),
             "log_loss": metrics.get("log_loss"),
             "sigma": spec.sigma,
-            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
         },
     }
     path = output_dir / f"{spec.name}.json"
@@ -692,10 +695,10 @@ class ModelWrapper:
     def __init__(
         self,
         model_type: str,
-        weights: List[float],
+        weights: list[float],
         intercept: float,
-        means: List[float],
-        stds: List[float],
+        means: list[float],
+        stds: list[float],
     ) -> None:
         self.model_type = model_type
         self.weights = np.array(weights, dtype=float)
@@ -721,11 +724,11 @@ class ModelWrapper:
         return np.column_stack([1.0 - probs, probs])
 
 
-def load_model(market: str, allow_linear: bool = False) -> Tuple[Optional[ModelWrapper], Optional[List[str]], Optional[Dict]]:
+def load_model(market: str, allow_linear: bool = False) -> tuple[ModelWrapper | None, list[str] | None, dict | None]:
     path = MODEL_DIR / f"{market}.json"
     if not path.exists():
         return None, None, None
-    with open(path, "r") as f:
+    with open(path) as f:
         data = json.load(f)
     model_type = data.get("model_type")
     metadata = data.get("metadata", {})
@@ -837,7 +840,7 @@ def main() -> int:
         print(f"Bets: {best_metrics.get('total_bets')} | Win Rate: {best_metrics.get('win_rate', 0.0):.1f}%")
         print(f"Saved: {model_path}")
 
-    summary_path = RESULTS_DIR / f"training_summary_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+    summary_path = RESULTS_DIR / f"training_summary_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2)
     print("\nTraining summary saved:", summary_path)

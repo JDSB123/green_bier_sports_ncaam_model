@@ -39,10 +39,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
 
 import pandas as pd
 
@@ -50,15 +49,13 @@ import pandas as pd
 ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT_DIR))
 
-from testing.azure_io import read_csv, read_json, blob_exists, list_files
 from testing.azure_data_reader import get_azure_reader
-from testing.data_paths import DATA_PATHS
+from testing.azure_io import blob_exists
 from testing.data_window import (
     current_season,
     default_backtest_seasons,
     enforce_min_season,
 )
-
 
 # ============================================================================
 # CONFIGURATION - BACKTEST SEASONS
@@ -244,10 +241,9 @@ def _get_season(date) -> int | None:
         return None
     if date.month >= 11:
         return date.year + 1
-    elif date.month <= 4:
+    if date.month <= 4:
         return date.year
-    else:
-        return None  # Off-season
+    return None  # Off-season
 
 
 # Global alias lookup cache
@@ -517,7 +513,7 @@ def audit_h1_coverage(result: AuditResult, verbose: bool = False) -> None:
             result.add_issue(AuditIssue(
                 category="h1_coverage",
                 severity="warning",
-                message=f"Backtest master not found",
+                message="Backtest master not found",
                 details={"path": BACKTEST_MASTER}
             ))
 
@@ -614,7 +610,7 @@ def audit_odds_coverage(result: AuditResult, verbose: bool = False) -> None:
             result.add_issue(AuditIssue(
                 category="odds_coverage",
                 severity="warning",
-                message=f"Backtest master not found",
+                message="Backtest master not found",
                 details={"path": BACKTEST_MASTER}
             ))
 
@@ -679,7 +675,7 @@ def audit_ratings_coverage(result: AuditResult, verbose: bool = False) -> None:
             result.add_issue(AuditIssue(
                 category="ratings_coverage",
                 severity="warning",
-                message=f"Backtest master not found",
+                message="Backtest master not found",
                 details={"path": BACKTEST_MASTER}
             ))
 
@@ -820,7 +816,7 @@ def audit_ingestion_recency(result: AuditResult, verbose: bool = False) -> None:
                     print_info(f"{blob_path.split('/')[-1]}: Properties not available")
             except AttributeError:
                 # get_blob_properties may not exist
-                print_info(f"Blob properties API not available")
+                print_info("Blob properties API not available")
                 break
             except Exception as e:
                 print_warn(f"{blob_path}: Could not get properties: {e}")
@@ -846,7 +842,7 @@ def print_summary(result: AuditResult) -> None:
     error_count = len([i for i in result.issues if i["severity"] == "error"])
     warning_count = len([i for i in result.issues if i["severity"] == "warning"])
 
-    print(f"\nIssues Found:")
+    print("\nIssues Found:")
     print(f"  Critical: {critical_count}")
     print(f"  Errors:   {error_count}")
     print(f"  Warnings: {warning_count}")
@@ -930,7 +926,7 @@ def main(argv: list[str] | None = None) -> int:
     # Exit code
     if result.has_critical or result.has_errors:
         return 1
-    elif result.has_warnings:
+    if result.has_warnings:
         return 2
     return 0
 

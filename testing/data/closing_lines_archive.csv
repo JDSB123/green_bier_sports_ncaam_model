@@ -1,0 +1,33 @@
+game_id,commence_time,capture_time,home_team,away_team,fg_spread_closing,fg_spread_price_closing,fg_total_closing,fg_total_price_closing,h1_spread_closing,h1_spread_price_closing,h1_total_closing,h1_total_price_closing,source
+c0843086d7875af9d8e64985d5fa111b,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Akron Zips,Western Michigan Broncos,-19.5,-110,166.5,-105,,,,,the_odds_api
+d0fc1845c1040c3d42f760f394937104,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Illinois St Redbirds,Bradley Braves,-5.5,-110,147.5,-110,,,,,the_odds_api
+93a36cdb8dad5997baf4b93429c5ccfa,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Brown Bears,Columbia Lions,4.0,-110,142.0,-115,,,,,the_odds_api
+0f77500a06538da45cbedb9d19a6e39f,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Colgate Raiders,Bucknell Bison,-8.0,-110,138.5,-110,,,,,the_odds_api
+b7b8af6105b40e65267294e5f7892a98,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Central Arkansas Bears,North Florida Ospreys,-12.5,-115,163.5,-105,,,,,the_odds_api
+bb95360d4b829703d9064e10b6e43db6,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,St. Francis (PA) Red Flash,Central Connecticut St Blue Devils,6.5,-110,145.0,-110,,,,,the_odds_api
+f18599ca7e17607f9eb94792e3469336,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Chicago St Cougars,Le Moyne Dolphins,5.5,-110,146.0,-110,,,,,the_odds_api
+21b6b014dc94535709706e449d27cfe4,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Cincinnati Bearcats,Iowa State Cyclones,5.5,-105,141.5,-112,,,,,the_odds_api
+c5a35142445feca3d29aaf1844501e1d,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Cleveland St Vikings,Youngstown St Penguins,8.0,-105,155.0,-110,,,,,the_odds_api
+c266a34cce7474181199840a3c2257e9,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Yale Bulldogs,Cornell Big Red,-9.5,-110,174.5,-110,,,,,the_odds_api
+e04266b656721ce385c7912083d5cbe8,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Delaware Blue Hens,New Mexico St Aggies,5.0,-110,134.5,-110,,,,,the_odds_api
+f86a4e1db2c06294dccffc5656343695,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,IUPUI Jaguars,Detroit Mercy Titans,-1.5,-115,168.5,-103,,,,,the_odds_api
+1be2722b687f57dce5fb9129d161f180,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Samford Bulldogs,East Tennessee St Buccaneers,3.0,-110,146.0,-110,,,,,the_odds_api
+2e0657f377b52bc3362cab793c86d262,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Marist Red Foxes,Fairfield Stags,-7.5,-110,140.5,-110,,,,,the_odds_api
+40a22785cfc3c09f3dd958a1a3459395,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Florida Gulf Coast Eagles,West Georgia Wolves,-10.5,-110,156.5,-105,,,,,the_odds_api
+90fe839deb14e393d6fc226372c6cb12,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Florida Int'l Golden Panthers,Sam Houston St Bearkats,-2.0,-110,169.0,-110,,,,,the_odds_api
+f2d811439fee873ec10fadad57edc6d0,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Gardner-Webb Bulldogs,Presbyterian Blue Hose,8.5,-112,145.0,-110,,,,,the_odds_api
+ba0d695a042ce4ffc6a5f90dec618ba6,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Harvard Crimson,Princeton Tigers,-4.5,-115,132.5,-115,,,,,the_odds_api
+2ffac046101c13bb7762aa8846edff30,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Lehigh Mountain Hawks,Navy Midshipmen,3.0,-110,135.5,-110,,,,,the_odds_api
+0c672bc341ccd57583a70e7f9677f49b,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Manhattan Jaspers,Siena Saints,7.0,-105,145.5,-115,,,,,the_odds_api
+a8e0fb85907a13e294fa4997dad1a88e,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Mercyhurst Lakers,Stonehill Skyhawks,-4.0,-115,128.5,-115,,,,,the_odds_api
+df19e8d1c536b826da0654ec102c04e9,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,North Dakota Fighting Hawks,South Dakota Coyotes,-2.0,-115,160.5,-107,,,,,the_odds_api
+eccb07fd204c9a5d8c2bbe8d15d5d167,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,North Dakota St Bison,St. Thomas (MN) Tommies,-2.5,-110,151.0,-110,,,,,the_odds_api
+a32f93ede7140341204f0d0396e6769e,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Stetson Hatters,Queens University Royals,10.0,-110,163.0,-112,,,,,the_odds_api
+238eb179b45f51205ac3f7c4ff87f701,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,Saint Peter's Peacocks,Rider Broncs,-11.0,-115,134.0,-113,,,,,the_odds_api
+7d42bfa971531ba5fccd05a148566fba,2026-01-17T19:00:00Z,2026-01-17T17:59:34.061773+00:00,UNC Asheville Bulldogs,Winthrop Eagles,5.5,-105,153.0,-115,,,,,the_odds_api
+c64c6e67f57b02186372077b7a4dc6ef,2026-01-17T19:00:27Z,2026-01-17T17:59:34.061773+00:00,Boston College Eagles,Syracuse Orange,6.5,-112,139.5,-110,,,,,the_odds_api
+c50bfed99b7c9e6e633b043c2ff4c7fe,2026-01-17T19:00:29Z,2026-01-17T17:59:34.061773+00:00,Vanderbilt Commodores,Florida Gators,1.5,-118,165.5,-110,,,,,the_odds_api
+ec4dc748483567b24f16a3d23edabda0,2026-01-17T19:00:41Z,2026-01-17T17:59:34.061773+00:00,Wisconsin Badgers,Rutgers Scarlet Knights,-14.5,-120,149.5,-114,,,,,the_odds_api
+f72b6781581a8f3b44cffc5fb6f6a995,2026-01-17T19:00:42Z,2026-01-17T17:59:34.061773+00:00,Utah Utes,TCU Horned Frogs,4.5,-105,154.5,-110,,,,,the_odds_api
+24afb9acb727e88f1c990c300e0fee0f,2026-01-17T19:00:47Z,2026-01-17T17:59:34.061773+00:00,Indiana Hoosiers,Iowa Hawkeyes,-3.5,-110,145.5,-110,,,,,the_odds_api
+c21cca025dcb168d1cae4b7cbb421606,2026-01-17T19:15:02Z,2026-01-17T17:59:34.061773+00:00,Clemson Tigers,Miami Hurricanes,-4.5,-118,142.5,-115,,,,,the_odds_api

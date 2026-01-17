@@ -8,15 +8,14 @@ Tests all 4 independent prediction models:
 - H1 Total (v33.10.0, Calibration=+2.7)
 """
 
-import pytest
+from app.models import TeamRatings
 from app.predictors import (
+    MarketPrediction,
     fg_spread_model,
     fg_total_model,
     h1_spread_model,
     h1_total_model,
-    MarketPrediction,
 )
-from app.models import TeamRatings
 
 
 class TestFGSpreadModel:
@@ -227,10 +226,10 @@ class TestModelIndependence:
         """All models should report the same runtime version."""
         from app import __version__ as app_version
 
-        assert fg_spread_model.MODEL_VERSION == app_version
-        assert fg_total_model.MODEL_VERSION == app_version
-        assert h1_spread_model.MODEL_VERSION == app_version
-        assert h1_total_model.MODEL_VERSION == app_version
+        assert app_version == fg_spread_model.MODEL_VERSION
+        assert app_version == fg_total_model.MODEL_VERSION
+        assert app_version == h1_spread_model.MODEL_VERSION
+        assert app_version == h1_total_model.MODEL_VERSION
 
 
 class TestMinEdgeThresholds:
@@ -295,10 +294,10 @@ class TestExtremeTotalRanges:
     def test_fg_total_extreme_thresholds_exist(self):
         """Verify extreme total thresholds are defined in engine."""
         from app.prediction_engine_v33 import (
-            FG_TOTAL_MIN_RELIABLE,
             FG_TOTAL_MAX_RELIABLE,
-            H1_TOTAL_MIN_RELIABLE,
+            FG_TOTAL_MIN_RELIABLE,
             H1_TOTAL_MAX_RELIABLE,
+            H1_TOTAL_MIN_RELIABLE,
         )
         assert FG_TOTAL_MIN_RELIABLE == 120.0
         assert FG_TOTAL_MAX_RELIABLE == 170.0
@@ -307,7 +306,7 @@ class TestExtremeTotalRanges:
 
     def test_fg_total_prediction_in_typical_range(self, strong_home_team, mid_away_team):
         """FG Total prediction for typical teams should be in reliable range."""
-        from app.prediction_engine_v33 import FG_TOTAL_MIN_RELIABLE, FG_TOTAL_MAX_RELIABLE
+        from app.prediction_engine_v33 import FG_TOTAL_MAX_RELIABLE, FG_TOTAL_MIN_RELIABLE
         pred = fg_total_model.predict(strong_home_team, mid_away_team)
         # Strong vs mid-tier should produce a total in the reliable range
         assert FG_TOTAL_MIN_RELIABLE <= pred.value <= FG_TOTAL_MAX_RELIABLE, \
@@ -315,7 +314,7 @@ class TestExtremeTotalRanges:
 
     def test_h1_total_prediction_in_typical_range(self, strong_home_team, mid_away_team):
         """H1 Total prediction for typical teams should be in reliable range."""
-        from app.prediction_engine_v33 import H1_TOTAL_MIN_RELIABLE, H1_TOTAL_MAX_RELIABLE
+        from app.prediction_engine_v33 import H1_TOTAL_MAX_RELIABLE, H1_TOTAL_MIN_RELIABLE
         pred = h1_total_model.predict(strong_home_team, mid_away_team)
         assert H1_TOTAL_MIN_RELIABLE <= pred.value <= H1_TOTAL_MAX_RELIABLE, \
             f"H1 Total {pred.value} outside reliable range for typical matchup"
@@ -381,9 +380,10 @@ class TestCLVTracking:
 
     def test_clv_method_exists_on_recommendation(self):
         """BettingRecommendation should have calculate_clv method."""
-        from app.models import BettingRecommendation, BetType, Pick, BetTier
-        from uuid import uuid4
         from datetime import datetime
+        from uuid import uuid4
+
+        from app.models import BetTier, BettingRecommendation, BetType, Pick
 
         rec = BettingRecommendation(
             game_id=uuid4(),
@@ -419,9 +419,10 @@ class TestCLVTracking:
 
     def test_clv_over_calculation(self):
         """Test CLV calculation for OVER total bet."""
-        from app.models import BettingRecommendation, BetType, Pick, BetTier
-        from uuid import uuid4
         from datetime import datetime
+        from uuid import uuid4
+
+        from app.models import BetTier, BettingRecommendation, BetType, Pick
 
         rec = BettingRecommendation(
             game_id=uuid4(),

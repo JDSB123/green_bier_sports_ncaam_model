@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Comprehensive verification of canonical_training_data_master.csv quality.
 
@@ -12,9 +11,10 @@ Validates:
 6. Market coverage across all required markets
 """
 import sys
-import pandas as pd
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
 
 # Fix encoding for Windows console
 if sys.platform == 'win32':
@@ -43,7 +43,7 @@ def main():
     csv_files = list(manifests_dir.glob("*.csv"))
     non_backup = [f for f in csv_files if '.bak_' not in f.name]
 
-    print(f"CSV files in manifests/:")
+    print("CSV files in manifests/:")
     for f in csv_files:
         print(f"  - {f.name} ({f.stat().st_size / 1024 / 1024:.1f} MB)")
 
@@ -60,7 +60,7 @@ def main():
     seasons = sorted(df['season'].unique())
     print(f"Seasons: {seasons}")
     print(f"Date range: {df['game_date'].min()} to {df['game_date'].max()}")
-    print(f"\nGames by season:")
+    print("\nGames by season:")
     for season in seasons:
         season_df = df[df['season'] == season]
         print(f"  {season}: {len(season_df):,} games")
@@ -81,7 +81,7 @@ def main():
 
     # Count unique team names across different columns
     team_name_cols = [c for c in df.columns if 'team' in c.lower() and 'home' in c.lower()]
-    print(f"\nUnique team counts by column:")
+    print("\nUnique team counts by column:")
     for col in team_name_cols[:5]:  # First 5 team columns
         if col in df.columns:
             unique = df[col].nunique()
@@ -92,9 +92,9 @@ def main():
         unique_canonical = len(set(df['home_canonical'].dropna()) | set(df['away_canonical'].dropna()))
         print(f"\n  Total unique canonical teams: {unique_canonical}")
         if unique_canonical <= 350:  # D1 has ~350 teams
-            print(f"✓ PASS: Canonical team count is reasonable\n")
+            print("✓ PASS: Canonical team count is reasonable\n")
         else:
-            print(f"⚠️  WARNING: High canonical team count, may have duplicates\n")
+            print("⚠️  WARNING: High canonical team count, may have duplicates\n")
     else:
         print("⚠️  WARNING: home_canonical/away_canonical columns not found\n")
 
@@ -169,7 +169,7 @@ def main():
         total = len(season_check)
 
         if correct == total:
-            print(f"\n✓ PASS: All ratings use prior season (N-1) - NO DATA LEAKAGE")
+            print("\n✓ PASS: All ratings use prior season (N-1) - NO DATA LEAKAGE")
         else:
             print(f"\n❌ FAIL: {total - correct:,} games have incorrect rating season")
 

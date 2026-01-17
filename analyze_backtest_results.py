@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Analyze backtest results to find patterns in losses."""
 import sys
+
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-import pandas as pd
-import numpy as np
 from pathlib import Path
+
+import pandas as pd
+
 
 def main():
     results_file = Path("testing/results/historical/fg_spread_results_20260116_173511.csv")
@@ -29,7 +30,7 @@ def main():
     losses = (df['outcome'] == 'loss').sum()
     pushes = (df['outcome'] == 'push').sum()
 
-    print(f'\nOVERALL PERFORMANCE:')
+    print('\nOVERALL PERFORMANCE:')
     print(f'  Total Bets: {len(df):,}')
     print(f'  Record: {wins}W - {losses}L - {pushes}P')
     print(f'  Win Rate: {wins / (wins + losses) * 100:.1f}%')
@@ -129,19 +130,19 @@ def main():
     high_edge_roi = high_edge_df["profit"].sum()/high_edge_df["wager"].sum()*100 if len(high_edge_df) > 0 else 0
     low_edge_roi = low_edge_df["profit"].sum()/low_edge_df["wager"].sum()*100 if len(low_edge_df) > 0 else 0
 
-    print(f'\n1. Home vs Away Bias:')
+    print('\n1. Home vs Away Bias:')
     print(f'   - Betting home: {home_roi:+.2f}% ROI')
     print(f'   - Betting away: {away_roi:+.2f}% ROI')
     if abs(home_roi - away_roi) > 5:
         print(f'   ⚠️  SIGNIFICANT BIAS: {"Home" if home_roi > away_roi else "Away"} bets perform {abs(home_roi - away_roi):.1f}% better')
 
-    print(f'\n2. Edge Calibration:')
+    print('\n2. Edge Calibration:')
     print(f'   - High edge (>10pts): {high_edge_roi:+.2f}% ROI on {len(high_edge_df)} bets')
     print(f'   - Low edge (1.5-2pts): {low_edge_roi:+.2f}% ROI on {len(low_edge_df)} bets')
     if high_edge_roi < 0:
-        print(f'   ⚠️  HIGH EDGE BETS LOSING: Model edge calculation may be miscalibrated')
+        print('   ⚠️  HIGH EDGE BETS LOSING: Model edge calculation may be miscalibrated')
 
-    print(f'\n3. Season Trend:')
+    print('\n3. Season Trend:')
     s2024_roi = df[df['season'] == 2024]["profit"].sum()/df[df['season'] == 2024]["wager"].sum()*100
     s2025_roi = df[df['season'] == 2025]["profit"].sum()/df[df['season'] == 2025]["wager"].sum()*100
     print(f'   - 2024: {s2024_roi:+.2f}% ROI')

@@ -1,4 +1,6 @@
 import pandas as pd
+
+
 def deploy_canonical_master():
     """Upload canonical_training_data_master.csv to Azure canonical blob storage."""
     print("\n" + "="*80)
@@ -40,8 +42,8 @@ if sys.platform == 'win32':
 ROOT = Path(__file__).resolve().parents[2]
 
 try:
-    from testing.azure_io import upload_text, write_csv
     from testing.azure_data_reader import AzureDataReader
+    from testing.azure_io import upload_text, write_csv
 except ImportError as e:
     print(f"[ERROR] Azure utilities not available: {e}")
     import traceback
@@ -53,7 +55,7 @@ def deploy_governance_files():
     print("\n" + "="*80)
     print("DEPLOYING GOVERNANCE FILES TO AZURE")
     print("="*80)
-    
+
     # Files to deploy
     governance_files = [
         "DOCUMENTATION_GOVERNANCE_MANIFEST.json",
@@ -63,18 +65,18 @@ def deploy_governance_files():
         "CLEANUP_COMPLETION_SUMMARY.md",
         "EXECUTION_REPORT.txt",
     ]
-    
+
     deployed = 0
     for filename in governance_files:
         filepath = ROOT / filename
         if not filepath.exists():
             print(f"  ✗ NOT FOUND: {filename}")
             continue
-        
+
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath) as f:
                 content = f.read()
-            
+
             # Upload to Azure governance folder
             azure_path = f"governance/{filename}"
             upload_text(azure_path, content)
@@ -82,7 +84,7 @@ def deploy_governance_files():
             deployed += 1
         except Exception as e:
             print(f"  ✗ {filename}: {e}")
-    
+
     return deployed
 
 def deploy_audit_trails():
@@ -90,22 +92,22 @@ def deploy_audit_trails():
     print("\n" + "="*80)
     print("DEPLOYING AUDIT TRAILS TO AZURE")
     print("="*80)
-    
+
     audit_files = [
         "manifests/comprehensive_ingestion_audit.json",
     ]
-    
+
     deployed = 0
     for filename in audit_files:
         filepath = ROOT / filename
         if not filepath.exists():
             print(f"  ✗ NOT FOUND: {filename}")
             continue
-        
+
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath) as f:
                 content = f.read()
-            
+
             # Upload audit trail
             azure_path = f"governance/audits/{filename.split('/')[-1]}"
             upload_text(azure_path, content)
@@ -113,7 +115,7 @@ def deploy_audit_trails():
             deployed += 1
         except Exception as e:
             print(f"  ✗ {filename}: {e}")
-    
+
     return deployed
 
 def verify_azure_deployment():
@@ -121,10 +123,10 @@ def verify_azure_deployment():
     print("\n" + "="*80)
     print("VERIFYING AZURE DEPLOYMENT")
     print("="*80)
-    
+
     try:
         reader = AzureDataReader()
-        
+
         # List governance files
         governance_files = reader.list_files("governance/")
         print(f"  ✓ Governance files in Azure: {len(governance_files)}")
@@ -132,7 +134,7 @@ def verify_azure_deployment():
             print(f"    - {f}")
         if len(governance_files) > 5:
             print(f"    ... and {len(governance_files) - 5} more")
-        
+
         return True
     except Exception as e:
         print(f"  ✗ Verification failed: {e}")
@@ -143,16 +145,16 @@ def main():
     # Deploy canonical master
     canonical_count = deploy_canonical_master()
     print("\nDEPLOYMENT TO AZURE: Governance & Cleanup Artifacts")
-    
+
     # Deploy governance files
     governance_count = deploy_governance_files()
-    
+
     # Deploy audit trails
     audit_count = deploy_audit_trails()
-    
+
     # Verify
     verified = verify_azure_deployment()
-    
+
     # Summary
     print("\n" + "="*80)
     print("DEPLOYMENT SUMMARY")
@@ -164,13 +166,12 @@ def main():
     print(f"  Total deployed: {canonical_count + governance_count + audit_count}")
     print("\n  Location: Azure blob storage (ncaam-historical-data/canonical/)")
     print("  Authority: manifests/canonical_training_data_master.csv")
-    
+
     if verified and canonical_count:
         print("\n✓ DEPLOYMENT COMPLETE - CANONICAL MASTER & GOVERNANCE BACKED UP TO AZURE")
         return 0
-    else:
-        print("\n✗ DEPLOYMENT INCOMPLETE - SOME FILES NOT VERIFIED OR CANONICAL MASTER NOT UPLOADED")
-        return 1
+    print("\n✗ DEPLOYMENT INCOMPLETE - SOME FILES NOT VERIFIED OR CANONICAL MASTER NOT UPLOADED")
+    return 1
 
 if __name__ == "__main__":
     sys.exit(main())

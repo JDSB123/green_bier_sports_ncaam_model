@@ -2,15 +2,16 @@
 Pytest configuration and fixtures for NCAAM prediction tests.
 """
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add the service root to Python path
 SERVICE_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(SERVICE_ROOT))
 
-from app.models import TeamRatings, MarketOdds
+from app.models import MarketOdds, TeamRatings
 
 
 @pytest.fixture

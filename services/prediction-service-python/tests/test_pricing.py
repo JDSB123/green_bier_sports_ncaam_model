@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from app.models import BetType, MarketOdds
@@ -23,7 +23,7 @@ def test_spread_home_pick_uses_home_price(strong_home_team, weak_team):
         game_id=uuid4(),
         home_team=strong_home_team.team_name,
         away_team=weak_team.team_name,
-        commence_time=datetime.now(timezone.utc),
+        commence_time=datetime.now(UTC),
         home_ratings=strong_home_team,
         away_ratings=weak_team,
         market_odds=market_odds,
@@ -53,7 +53,7 @@ def test_spread_away_pick_uses_away_price(weak_team, strong_home_team):
         game_id=uuid4(),
         home_team=weak_team.team_name,
         away_team=strong_home_team.team_name,
-        commence_time=datetime.now(timezone.utc),
+        commence_time=datetime.now(UTC),
         home_ratings=weak_team,
         away_ratings=strong_home_team,
         market_odds=market_odds,

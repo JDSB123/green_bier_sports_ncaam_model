@@ -19,13 +19,12 @@ Where:
 Uses ALL 22 Barttorvik fields for matchup adjustments.
 """
 
-from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from app import __version__ as APP_VERSION
+from app.models import BetType
 from app.predictors.base import BasePredictor, MarketPrediction
 from app.statistical_confidence import statistical_confidence
-from app.models import BetType
 
 # TeamRatings is in app.models (models.py, not the predictors package)
 if TYPE_CHECKING:
@@ -86,8 +85,8 @@ class FGSpreadModel(BasePredictor):
         home: "TeamRatings",
         away: "TeamRatings",
         is_neutral: bool = False,
-        home_rest_days: Optional[int] = None,
-        away_rest_days: Optional[int] = None,
+        home_rest_days: int | None = None,
+        away_rest_days: int | None = None,
     ) -> MarketPrediction:
         """
         Generate full game spread prediction.

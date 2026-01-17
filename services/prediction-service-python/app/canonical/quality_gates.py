@@ -8,11 +8,13 @@ Simplified version for production deployment.
 This is a production copy of testing/canonical/quality_gates.py
 """
 
-import pandas as pd
-from dataclasses import dataclass, field as dataclass_field
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import datetime
-from typing import Dict, List, Optional, Any
 from enum import Enum
+from typing import Any
+
+import pandas as pd
 
 
 class ValidationSeverity(Enum):
@@ -29,10 +31,10 @@ class ValidationIssue:
     rule_name: str
     severity: ValidationSeverity
     message: str
-    field: Optional[str] = None
-    row_indices: List[int] = dataclass_field(default_factory=list)
-    suggested_fix: Optional[str] = None
-    metadata: Dict[str, Any] = dataclass_field(default_factory=dict)
+    field: str | None = None
+    row_indices: list[int] = dataclass_field(default_factory=list)
+    suggested_fix: str | None = None
+    metadata: dict[str, Any] = dataclass_field(default_factory=dict)
 
 
 @dataclass
@@ -40,7 +42,7 @@ class ValidationResult:
     """Result of data quality validation."""
     passed: bool
     total_records: int
-    issues: List[ValidationIssue] = dataclass_field(default_factory=list)
+    issues: list[ValidationIssue] = dataclass_field(default_factory=list)
     blocked_records: int = 0
     warnings_count: int = 0
     timestamp: datetime = dataclass_field(default_factory=datetime.now)
@@ -113,7 +115,7 @@ class DataQualityGate:
 
         return result
 
-    def _validate_universal(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_universal(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate universal rules applicable to all data types."""
         issues = []
 
@@ -140,7 +142,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_scores_data(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_scores_data(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate scores data."""
         issues = []
 
@@ -177,7 +179,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_odds_data(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_odds_data(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate odds data."""
         issues = []
 
@@ -208,7 +210,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_ratings_data(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_ratings_data(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate ratings data."""
         issues = []
 

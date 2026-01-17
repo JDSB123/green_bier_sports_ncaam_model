@@ -18,10 +18,8 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List, Optional
 
 import psycopg2
-
 
 MIGRATIONS_DIR = Path("/app/migrations")
 COMPLETE_SCHEMA = MIGRATIONS_DIR / "complete_schema.sql"
@@ -36,7 +34,7 @@ def _read_secret_file(file_path: str, secret_name: str) -> str:
         raise RuntimeError(f"Secret file missing at {file_path} ({secret_name}): {e}") from e
 
 
-def _build_database_url_from_env() -> Optional[str]:
+def _build_database_url_from_env() -> str | None:
     """
     Build DATABASE_URL when it's not explicitly set.
 
@@ -59,17 +57,17 @@ def _build_database_url_from_env() -> Optional[str]:
     return f"postgresql://{db_user}:{password}@{db_host}:{db_port}/{db_name}"
 
 
-def _split_sql(sql: str) -> List[str]:
+def _split_sql(sql: str) -> list[str]:
     """Split SQL into statements, respecting quotes and dollar-strings."""
 
-    stmts: List[str] = []
-    buf: List[str] = []
+    stmts: list[str] = []
+    buf: list[str] = []
 
     in_single = False
     in_double = False
     in_line_comment = False
     in_block_comment = False
-    dollar_tag: Optional[str] = None  # e.g. $$ or $func$
+    dollar_tag: str | None = None  # e.g. $$ or $func$
 
     i = 0
     n = len(sql)
@@ -187,12 +185,12 @@ def _split_sql(sql: str) -> List[str]:
     return stmts
 
 
-def _ordered_migration_files() -> List[Path]:
+def _ordered_migration_files() -> list[Path]:
     """Return numbered migration files (001_*.sql ... 999_*.sql) in order."""
     return sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9]_*.sql"))
 
 
-def _migration_number(path: Path) -> Optional[int]:
+def _migration_number(path: Path) -> int | None:
     """Extract leading 3-digit migration number from filename, if present."""
     name = path.name
     if len(name) < 4:
@@ -260,8 +258,8 @@ def _detect_existing_baseline(cur) -> int:
     return 13
 
 
-def _files_to_apply(files: List[Path], applied: set, baseline: int) -> List[Path]:
-    out: List[Path] = []
+def _files_to_apply(files: list[Path], applied: set, baseline: int) -> list[Path]:
+    out: list[Path] = []
     for p in files:
         num = _migration_number(p) or 0
         if baseline and num < baseline:

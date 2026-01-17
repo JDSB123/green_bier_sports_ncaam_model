@@ -20,7 +20,6 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Dict, Set, Tuple
 
 # Allow running without psycopg2 for pre-commit checks
 try:
@@ -33,7 +32,7 @@ except ImportError:
 ODDS_SYNC_PATH = Path(__file__).parent.parent / "services" / "prediction-service-python" / "app" / "odds_sync.py"
 
 
-def extract_hardcoded_aliases() -> Dict[str, str]:
+def extract_hardcoded_aliases() -> dict[str, str]:
     """Extract TEAM_NAME_ALIASES dict from odds_sync.py source code."""
     if not ODDS_SYNC_PATH.exists():
         print(f"ERROR: {ODDS_SYNC_PATH} not found")
@@ -79,7 +78,7 @@ def get_database_url() -> str:
     return url
 
 
-def fetch_db_aliases() -> Dict[str, str]:
+def fetch_db_aliases() -> dict[str, str]:
     """Fetch all aliases from team_aliases table."""
     if not HAS_PSYCOPG2:
         print("WARNING: psycopg2 not installed, skipping database validation")
@@ -111,9 +110,9 @@ def fetch_db_aliases() -> Dict[str, str]:
 
 
 def compare_aliases(
-    hardcoded: Dict[str, str],
-    db_aliases: Dict[str, str]
-) -> Tuple[Set[str], Set[str], Dict[str, Tuple[str, str]]]:
+    hardcoded: dict[str, str],
+    db_aliases: dict[str, str]
+) -> tuple[set[str], set[str], dict[str, tuple[str, str]]]:
     """
     Compare hardcoded aliases with database.
 
@@ -136,7 +135,7 @@ def compare_aliases(
     return only_in_code, only_in_db, mismatched
 
 
-def sync_to_database(hardcoded: Dict[str, str]) -> int:
+def sync_to_database(hardcoded: dict[str, str]) -> int:
     """Sync hardcoded aliases to database."""
     if not HAS_PSYCOPG2:
         print("ERROR: psycopg2 required for --sync")
@@ -200,7 +199,7 @@ def generate_dict_from_db() -> int:
     print("TEAM_NAME_ALIASES = {")
 
     # Group by canonical name for readability
-    by_canonical: Dict[str, list] = {}
+    by_canonical: dict[str, list] = {}
     for alias, canonical in sorted(db_aliases.items()):
         if canonical not in by_canonical:
             by_canonical[canonical] = []

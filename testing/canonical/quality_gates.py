@@ -21,11 +21,13 @@ Usage:
 """
 
 import json
-from dataclasses import dataclass, field as dataclass_field
+from collections.abc import Callable
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Union
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -44,10 +46,10 @@ class ValidationIssue:
     rule_name: str
     severity: ValidationSeverity
     message: str
-    field: Optional[str] = None
-    row_indices: List[int] = dataclass_field(default_factory=list)
-    suggested_fix: Optional[str] = None
-    metadata: Dict[str, Any] = dataclass_field(default_factory=dict)
+    field: str | None = None
+    row_indices: list[int] = dataclass_field(default_factory=list)
+    suggested_fix: str | None = None
+    metadata: dict[str, Any] = dataclass_field(default_factory=dict)
 
 
 @dataclass
@@ -55,7 +57,7 @@ class ValidationResult:
     """Result of data quality validation."""
     passed: bool
     total_records: int
-    issues: List[ValidationIssue] = dataclass_field(default_factory=list)
+    issues: list[ValidationIssue] = dataclass_field(default_factory=list)
     blocked_records: int = 0
     warnings_count: int = 0
     timestamp: datetime = dataclass_field(default_factory=datetime.now)
@@ -73,7 +75,7 @@ class ValidationResult:
     def has_warnings(self) -> bool:
         return any(issue.severity == ValidationSeverity.WARNING for issue in self.issues)
 
-    def get_issues_by_severity(self, severity: ValidationSeverity) -> List[ValidationIssue]:
+    def get_issues_by_severity(self, severity: ValidationSeverity) -> list[ValidationIssue]:
         """Get issues of a specific severity."""
         return [issue for issue in self.issues if issue.severity == severity]
 
@@ -83,10 +85,10 @@ class QualityRule:
     """A data quality validation rule."""
     name: str
     description: str
-    validator: Callable[[pd.DataFrame], List[ValidationIssue]]
+    validator: Callable[[pd.DataFrame], list[ValidationIssue]]
     severity: ValidationSeverity = ValidationSeverity.ERROR
     enabled: bool = True
-    applies_to: List[str] = dataclass_field(default_factory=lambda: ["all"])  # Data types this applies to
+    applies_to: list[str] = dataclass_field(default_factory=lambda: ["all"])  # Data types this applies to
 
 
 class DataQualityGate:
@@ -100,8 +102,8 @@ class DataQualityGate:
         self,
         strict_mode: bool = True,
         enable_warnings: bool = True,
-        custom_rules: Optional[List[QualityRule]] = None,
-        config_file: Optional[Path] = None
+        custom_rules: list[QualityRule] | None = None,
+        config_file: Path | None = None
     ):
         """
         Initialize the data quality gate.
@@ -127,9 +129,9 @@ class DataQualityGate:
             self._load_config(config_file)
 
         # Validation history for learning
-        self._validation_history: List[ValidationResult] = []
+        self._validation_history: list[ValidationResult] = []
 
-    def _build_standard_rules(self) -> List[QualityRule]:
+    def _build_standard_rules(self) -> list[QualityRule]:
         """Build the standard set of quality validation rules."""
 
         rules = [
@@ -233,7 +235,7 @@ class DataQualityGate:
         self,
         df: pd.DataFrame,
         data_type: str,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None
     ) -> ValidationResult:
         """
         Validate a DataFrame against quality rules.
@@ -302,7 +304,7 @@ class DataQualityGate:
         self,
         df: pd.DataFrame,
         data_type: str,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None
     ) -> pd.DataFrame:
         """
         Validate DataFrame and raise exception if validation fails.
@@ -337,7 +339,7 @@ class DataQualityGate:
 
     # Individual validation rule implementations
 
-    def _validate_null_values(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_null_values(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Check for excessive null values in critical columns."""
         issues = []
 
@@ -374,7 +376,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_duplicates(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_duplicates(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Check for duplicate records."""
         issues = []
 
@@ -408,7 +410,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_scores_required_fields(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_scores_required_fields(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate required fields for scores data."""
         issues = []
         required_fields = ["home_team", "away_team", "date"]
@@ -424,7 +426,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_scores_reasonable_values(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_scores_reasonable_values(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Check scores are within reasonable ranges."""
         issues = []
 
@@ -460,7 +462,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_date_consistency(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_date_consistency(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate date formats and ranges."""
         issues = []
 
@@ -508,7 +510,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_team_resolution(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_team_resolution(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate team names can be resolved."""
         from .team_resolution_service import get_team_resolver
 
@@ -548,7 +550,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_odds_required_fields(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_odds_required_fields(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate required fields for odds data."""
         issues = []
         required_fields = ["home_team", "away_team"]
@@ -576,7 +578,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_spread_convention(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_spread_convention(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate spread sign conventions."""
         issues = []
 
@@ -596,7 +598,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_price_ranges(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_price_ranges(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate betting price ranges."""
         issues = []
 
@@ -620,7 +622,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_rating_ranges(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_rating_ranges(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate rating value ranges."""
         issues = []
 
@@ -644,7 +646,7 @@ class DataQualityGate:
 
         return issues
 
-    def _validate_cross_source_consistency(self, df: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_cross_source_consistency(self, df: pd.DataFrame) -> list[ValidationIssue]:
         """Validate consistency across data sources (for merged datasets)."""
         issues = []
 
@@ -686,11 +688,11 @@ class DataQualityGate:
         except Exception as e:
             print(f"Warning: Failed to load quality gate config: {e}")
 
-    def get_validation_history(self) -> List[ValidationResult]:
+    def get_validation_history(self) -> list[ValidationResult]:
         """Get validation history."""
         return self._validation_history.copy()
 
-    def get_rule_stats(self) -> Dict[str, Dict[str, Any]]:
+    def get_rule_stats(self) -> dict[str, dict[str, Any]]:
         """Get statistics about rule performance."""
         stats = {}
 

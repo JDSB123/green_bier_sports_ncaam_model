@@ -16,10 +16,8 @@ import argparse
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List
-
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,7 +27,7 @@ URL_RE = re.compile(r"https?://[^\s\"'()<>\]]+")
 
 def _utc_now_z() -> str:
     return (
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         .replace(microsecond=0)
         .isoformat()
         .replace("+00:00", "Z")
@@ -65,8 +63,8 @@ class Occurrence:
     excerpt: str
 
 
-def _iter_code_files(base: Path, exts: set[str]) -> List[Path]:
-    out: List[Path] = []
+def _iter_code_files(base: Path, exts: set[str]) -> list[Path]:
+    out: list[Path] = []
     if not base.exists():
         return out
     for p in base.rglob("*"):
@@ -120,7 +118,7 @@ def main() -> int:
         ROOT / ".github",
     ]
 
-    url_to_occ: Dict[str, List[Occurrence]] = {}
+    url_to_occ: dict[str, list[Occurrence]] = {}
 
     files_scanned: int = 0
     for base in roots:
@@ -226,4 +224,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

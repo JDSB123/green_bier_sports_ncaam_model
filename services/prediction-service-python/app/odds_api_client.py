@@ -1,11 +1,11 @@
 import os
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import requests
 
-from app.metrics import increment_counter, observe_histogram, Timer
 from app.logging_config import get_logger
+from app.metrics import Timer, increment_counter
 
 logger = get_logger(__name__)
 
@@ -19,7 +19,7 @@ class OddsApiError(Exception):
 
 def _read_secret_file(path: str, name: str) -> str:
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return f.read().strip()
     except Exception as e:
         raise OddsApiError(f"Secret file missing at {path} ({name}): {e}")
@@ -35,15 +35,15 @@ class OddsApiClient:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        sport_key: Optional[str] = None,
+        api_key: str | None = None,
+        sport_key: str | None = None,
         base_url: str = DEFAULT_BASE_URL,
-        regions: Optional[str] = None,
-        odds_format: Optional[str] = None,
+        regions: str | None = None,
+        odds_format: str | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.sport_key = sport_key or DEFAULT_SPORT_KEY
-        
+
         # Priority: 1. Constructor arg, 2. Env var (Azure uses ODDS_API_KEY, local uses THE_ODDS_API_KEY), 3. Docker Secret File
         env_key = os.getenv("ODDS_API_KEY") or os.getenv("THE_ODDS_API_KEY")
         file_key = None
@@ -92,9 +92,9 @@ class OddsApiClient:
         self,
         method: str,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         max_attempts: int = 5,
-    ) -> Tuple[requests.Response, Dict[str, Optional[str]]]:
+    ) -> tuple[requests.Response, dict[str, str | None]]:
         url = f"{self.base_url}{path}"
         attempt = 0
         params = params or {}
@@ -174,22 +174,22 @@ class OddsApiClient:
                 raise OddsApiError(f"Odds API error (status {status}): {resp.text}")
 
     # Public methods
-    def get_sports(self) -> List[Dict[str, Any]]:
+    def get_sports(self) -> list[dict[str, Any]]:
         resp, _ = self._request("GET", "/sports")
         return resp.json()
 
-    def get_events(self) -> List[Dict[str, Any]]:
+    def get_events(self) -> list[dict[str, Any]]:
         path = f"/sports/{self.sport_key}/events"
         resp, _ = self._request("GET", path)
         return resp.json()
 
     def get_odds_full(
         self,
-        markets: Optional[str] = None,
-        regions: Optional[str] = None,
-        odds_format: Optional[str] = None,
-        bookmakers: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        markets: str | None = None,
+        regions: str | None = None,
+        odds_format: str | None = None,
+        bookmakers: str | None = None,
+    ) -> list[dict[str, Any]]:
         path = f"/sports/{self.sport_key}/odds"
         params = {
             "regions": regions or self.regions,
@@ -205,11 +205,11 @@ class OddsApiClient:
     def get_event_odds(
         self,
         event_id: str,
-        markets: Optional[str] = None,
-        bookmakers: Optional[str] = None,
-        regions: Optional[str] = None,
-        odds_format: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        markets: str | None = None,
+        bookmakers: str | None = None,
+        regions: str | None = None,
+        odds_format: str | None = None,
+    ) -> dict[str, Any]:
         path = f"/sports/{self.sport_key}/events/{event_id}/odds"
         params = {
             "regions": regions or self.regions,
@@ -222,16 +222,16 @@ class OddsApiClient:
         resp, headers = self._request("GET", path, params=params)
         return resp.json()
 
-    def get_scores(self, days_from: int = 1) -> List[Dict[str, Any]]:
+    def get_scores(self, days_from: int = 1) -> list[dict[str, Any]]:
         path = f"/sports/{self.sport_key}/scores"
         params = {"daysFrom": days_from}
         resp, _ = self._request("GET", path, params=params)
         return resp.json()
 
     # Convenience methods aligned with env-configured markets
-    def get_odds_h1(self) -> List[Dict[str, Any]]:
+    def get_odds_h1(self) -> list[dict[str, Any]]:
         events = self.get_events()
-        out: List[Dict[str, Any]] = []
+        out: list[dict[str, Any]] = []
         for ev in events:
             ev_id = ev.get("id")
             if not ev_id:
@@ -248,9 +248,9 @@ class OddsApiClient:
                 continue
         return out
 
-    def get_odds_h2(self) -> List[Dict[str, Any]]:
+    def get_odds_h2(self) -> list[dict[str, Any]]:
         events = self.get_events()
-        out: List[Dict[str, Any]] = []
+        out: list[dict[str, Any]] = []
         for ev in events:
             ev_id = ev.get("id")
             if not ev_id:
@@ -275,14 +275,14 @@ class OddsApiClient:
     def get_alternate_lines(
         self,
         event_id: str,
-        bookmakers: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        bookmakers: str | None = None,
+    ) -> dict[str, Any]:
         """
         Get alternate spread and total lines for line shopping.
-        
+
         These are all available point spread and total outcomes beyond
         the featured lines. Useful for finding +EV on alternate numbers.
-        
+
         Markets: alternate_spreads, alternate_totals, alternate_spreads_h1, alternate_totals_h1
         """
         markets = "alternate_spreads,alternate_totals,alternate_spreads_h1,alternate_totals_h1"
@@ -291,11 +291,11 @@ class OddsApiClient:
     def get_team_totals(
         self,
         event_id: str,
-        bookmakers: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        bookmakers: str | None = None,
+    ) -> dict[str, Any]:
         """
         Get team totals (over/under on individual team scores).
-        
+
         Markets: team_totals, alternate_team_totals
         """
         markets = "team_totals,alternate_team_totals"
@@ -304,13 +304,13 @@ class OddsApiClient:
     def get_sharp_vs_square_lines(
         self,
         event_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get lines from both sharp and square books for comparison.
-        
+
         Sharp books: pinnacle, circa, bookmaker
         Square books: draftkings, fanduel, betmgm, caesars
-        
+
         Use this for line shopping - bet where you get the best number,
         but validate against sharp book consensus.
         """
@@ -324,11 +324,11 @@ class OddsApiClient:
     def get_all_game_markets(
         self,
         event_id: str,
-        bookmakers: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        bookmakers: str | None = None,
+    ) -> dict[str, Any]:
         """
         Get all game-level markets for an event (comprehensive pull).
-        
+
         Includes featured lines, alternates, team totals, and moneylines.
         Warning: This is an expensive call that uses more API credits.
         """
@@ -344,10 +344,10 @@ class OddsApiClient:
     def get_closing_lines_for_event(
         self,
         event_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get current lines for CLV capture (pre-game closing line snapshot).
-        
+
         Focuses on primary markets from sharp books (Pinnacle preferred).
         """
         markets = "spreads,totals,spreads_h1,totals_h1"

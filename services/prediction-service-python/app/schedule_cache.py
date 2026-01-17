@@ -14,9 +14,9 @@ v33.11.0: Optimized schedule fetching - load once, sync changes.
 import hashlib
 import json
 import os
-from dataclasses import asdict
-from datetime import datetime, date, timezone, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -32,7 +32,6 @@ except ImportError:
     create_engine = None
 
 from .schedule_sources import ScheduledGame
-
 
 # Cache keys
 SCHEDULE_CACHE_KEY = "ncaam:schedule:season:{season}"
@@ -52,8 +51,8 @@ class ScheduleCache:
 
     def __init__(
         self,
-        redis_url: Optional[str] = None,
-        database_url: Optional[str] = None,
+        redis_url: str | None = None,
+        database_url: str | None = None,
     ):
         self.redis_url = redis_url or os.environ.get("REDIS_URL", "")
         self.database_url = database_url or os.environ.get("DATABASE_URL", "")
@@ -139,7 +138,7 @@ class ScheduleCache:
             conn.execute(create_sql)
             conn.commit()
 
-    def _game_to_dict(self, game: ScheduledGame) -> Dict[str, Any]:
+    def _game_to_dict(self, game: ScheduledGame) -> dict[str, Any]:
         """Convert ScheduledGame to serializable dict."""
         return {
             "external_id": game.external_id,
@@ -159,7 +158,7 @@ class ScheduleCache:
             "away_conference": game.away_conference,
         }
 
-    def _dict_to_game(self, data: Dict[str, Any]) -> ScheduledGame:
+    def _dict_to_game(self, data: dict[str, Any]) -> ScheduledGame:
         """Convert dict back to ScheduledGame."""
         game_date = data.get("game_date")
         if isinstance(game_date, str):
@@ -189,7 +188,7 @@ class ScheduleCache:
             away_conference=data.get("away_conference"),
         )
 
-    def _compute_hash(self, games: List[ScheduledGame]) -> str:
+    def _compute_hash(self, games: list[ScheduledGame]) -> str:
         """Compute hash of schedule for change detection."""
         # Sort by external_id for consistent hashing
         sorted_games = sorted(games, key=lambda g: g.external_id)
@@ -199,8 +198,8 @@ class ScheduleCache:
     def get_cached_schedule(
         self,
         season: int,
-        source: Optional[str] = None,
-    ) -> Tuple[Optional[List[ScheduledGame]], Optional[str], Optional[datetime]]:
+        source: str | None = None,
+    ) -> tuple[list[ScheduledGame] | None, str | None, datetime | None]:
         """
         Get cached schedule for a season.
 
@@ -256,8 +255,8 @@ class ScheduleCache:
     def _get_from_db(
         self,
         season: int,
-        source: Optional[str] = None,
-    ) -> List[ScheduledGame]:
+        source: str | None = None,
+    ) -> list[ScheduledGame]:
         """Get schedule from database."""
         if not self._db_engine:
             return []
@@ -304,7 +303,7 @@ class ScheduleCache:
     def save_schedule(
         self,
         season: int,
-        games: List[ScheduledGame],
+        games: list[ScheduledGame],
     ) -> bool:
         """
         Save schedule to cache (both Redis and DB).
@@ -320,7 +319,7 @@ class ScheduleCache:
 
         data = [self._game_to_dict(g) for g in games]
         schedule_hash = self._compute_hash(games)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         success = True
 
@@ -348,7 +347,7 @@ class ScheduleCache:
 
         return success
 
-    def _save_to_db(self, season: int, games: List[ScheduledGame]):
+    def _save_to_db(self, season: int, games: list[ScheduledGame]):
         """Save schedule to database using upsert."""
         if not self._db_engine:
             return
@@ -410,8 +409,8 @@ class ScheduleCache:
     def get_schedule_changes(
         self,
         season: int,
-        new_games: List[ScheduledGame],
-    ) -> Dict[str, List[ScheduledGame]]:
+        new_games: list[ScheduledGame],
+    ) -> dict[str, list[ScheduledGame]]:
         """
         Compare new games with cached schedule to find changes.
 
@@ -486,14 +485,14 @@ class ScheduleCache:
         if last_sync is None:
             return True
 
-        age = datetime.now(timezone.utc) - last_sync
+        age = datetime.now(UTC) - last_sync
         return age > timedelta(hours=max_age_hours)
 
     def get_games_for_date(
         self,
         target_date: date,
-        season: Optional[int] = None,
-    ) -> List[ScheduledGame]:
+        season: int | None = None,
+    ) -> list[ScheduledGame]:
         """
         Get cached games for a specific date.
 
@@ -519,7 +518,7 @@ class ScheduleCache:
 def get_or_load_schedule(
     season: int,
     force_refresh: bool = False,
-) -> List[ScheduledGame]:
+) -> list[ScheduledGame]:
     """
     Get schedule from cache or load from APIs if needed.
 
@@ -529,7 +528,7 @@ def get_or_load_schedule(
     3. Save to cache
     4. Return games
     """
-    from .schedule_sources import fetch_schedules_parallel, cross_validate_schedules
+    from .schedule_sources import cross_validate_schedules, fetch_schedules_parallel
 
     cache = ScheduleCache()
 
@@ -569,7 +568,7 @@ def get_or_load_schedule(
     return all_games
 
 
-def get_today_games(force_refresh: bool = False) -> List[ScheduledGame]:
+def get_today_games(force_refresh: bool = False) -> list[ScheduledGame]:
     """
     Get games for today from cache.
 

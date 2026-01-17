@@ -34,12 +34,12 @@ except ImportError:
 # Production model loader
 try:
     from app.ml.model_loader import (
-        ProductionModelLoader,
-        get_model_manager,
-        reload_models,
-        enhance_prediction_with_ml,
         ModelInfo,
         PredictionResult,
+        ProductionModelLoader,
+        enhance_prediction_with_ml,
+        get_model_manager,
+        reload_models,
     )
     HAS_MODEL_LOADER = True
 except ImportError:

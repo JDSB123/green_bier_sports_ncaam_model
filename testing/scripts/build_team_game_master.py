@@ -24,7 +24,6 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
@@ -57,7 +56,7 @@ def build_team_game_master(
     print(f"  Loaded {len(df):,} games, {len(df.columns)} columns")
 
     # Determine game date column
-    date_col: Optional[str] = None
+    date_col: str | None = None
     if "game_date" in df.columns:
         date_col = "game_date"
     elif "date" in df.columns:

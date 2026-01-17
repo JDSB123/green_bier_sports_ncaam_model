@@ -1,13 +1,19 @@
 #!/bin/bash
-# Post-create script for Codespaces
+# Post-create script for Codespaces - runs ONCE on container creation
 set -e
 
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  NCAAM Model - Codespaces Setup                           ║"
+echo "║  NCAAM Model - Codespaces Setup (First-Time)              ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 
+VENV_PATH="/workspaces/green_bier_sports_ncaam_model/.venv"
+
 echo ""
-echo "[1] Installing Python dependencies..."
+echo "[1] Creating Python virtual environment..."
+python -m venv "$VENV_PATH" --clear
+source "$VENV_PATH/bin/activate"
+
+echo "[2] Installing Python dependencies..."
 pip install --upgrade pip setuptools wheel -q
 
 # Install all requirements (the image is Debian-based, so xgboost wheels work)
@@ -58,6 +64,5 @@ echo "  1. Add ODDS_API_KEY to .env.local"
 echo "  2. Run: python services/prediction-service-python/main.py"
 echo "  3. Visit: http://localhost:8000/docs (API docs)"
 echo ""
-echo "Optional: to install heavier data/ML dependencies (pandas/numpy/xgboost/etc), run:"
-echo "  bash .devcontainer/install-heavy-requirements.sh"
+echo "The virtual environment will auto-activate on terminal open."
 echo ""

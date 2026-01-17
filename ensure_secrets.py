@@ -15,13 +15,12 @@ Creates:
 
 NOTE: The Odds API key must be provided. Get it from https://the-odds-api.com/
       The script will prompt for it if secrets/odds_api_key.txt doesn't exist.
-      
+
       Key storage locations:
       - Docker Compose: secrets/odds_api_key.txt → /run/secrets/odds_api_key
       - Azure: Environment variable THE_ODDS_API_KEY
 """
 
-import os
 import secrets
 import sys
 from pathlib import Path
@@ -78,13 +77,13 @@ def main():
 
     # Check for odds_api_key.txt
     odds_api_key_file = secrets_dir / "odds_api_key.txt"
-    
+
     if not odds_api_key_file.exists():
-        print(f"  [MISSING] odds_api_key.txt")
+        print("  [MISSING] odds_api_key.txt")
         print()
         print("  Please enter your The Odds API key (or press Enter to skip):")
         user_key = input("  > ").strip()
-        
+
         if user_key:
             create_secret_file(odds_api_key_file, user_key, "Odds API Key")
             created.append("odds_api_key.txt")
@@ -94,7 +93,7 @@ def main():
         # Validate content
         content = odds_api_key_file.read_text().strip()
         if not content or "change_me" in content.lower() or content.lower().startswith("sample"):
-             print(f"  [WARNING] odds_api_key.txt exists but appears to be a placeholder!")
+             print("  [WARNING] odds_api_key.txt exists but appears to be a placeholder!")
              print(f"            Current content: {content[:10]}...")
              print("  Do you want to overwrite it? (y/N)")
              if input("  > ").lower().startswith('y'):
@@ -104,7 +103,7 @@ def main():
                      odds_api_key_file.write_text(user_key)
                      print("  [UPDATED] odds_api_key.txt")
         else:
-            print(f"  [OK] odds_api_key.txt exists")
+            print("  [OK] odds_api_key.txt exists")
 
     print()
     print("=" * 50)
@@ -116,7 +115,7 @@ def main():
 
     # Final check
     has_file = odds_api_key_file.exists() and len(odds_api_key_file.read_text().strip()) > 10
-    
+
     if not has_file:
         print()
         print("ACTION REQUIRED: You must create secrets/odds_api_key.txt")

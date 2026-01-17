@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Fix canonical master team name canonicalization.
 
@@ -9,11 +8,12 @@ Actions:
 3. Rename columns for clarity
 4. Update schema
 """
-import sys
-import pandas as pd
-from pathlib import Path
-from datetime import datetime
 import shutil
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
 
 # Fix encoding for Windows console
 if sys.platform == 'win32':
@@ -49,10 +49,10 @@ def main():
         unique = df[col].nunique()
         print(f"  {col}: {coverage:,} ({coverage/len(df)*100:.1f}%), {unique} unique")
 
-    print(f"\nBest column: home_canonical / away_canonical")
-    print(f"  - 100% coverage")
-    print(f"  - 334 unique teams (appropriate for D1)")
-    print(f"  - Clean names (e.g., 'North Carolina' not 'North Carolina Tar Heels')")
+    print("\nBest column: home_canonical / away_canonical")
+    print("  - 100% coverage")
+    print("  - 334 unique teams (appropriate for D1)")
+    print("  - Clean names (e.g., 'North Carolina' not 'North Carolina Tar Heels')")
 
     # FIXES
     print("\n" + "-" * 80)
@@ -133,7 +133,7 @@ def main():
     away_unique = set(df['away_canonical'].dropna())
     total_unique = home_unique | away_unique
 
-    print(f"\nCanonical team validation:")
+    print("\nCanonical team validation:")
     print(f"  Home unique: {len(home_unique)}")
     print(f"  Away unique: {len(away_unique)}")
     print(f"  Total unique: {len(total_unique)}")
@@ -144,7 +144,7 @@ def main():
         print(f"  ⚠️  WARNING: {len(total_unique)} teams is higher than expected")
 
     # Check for potential duplicates
-    print(f"\nChecking for potential duplicate team names...")
+    print("\nChecking for potential duplicate team names...")
     teams = sorted(total_unique)
     duplicates = []
     for i, team1 in enumerate(teams):
@@ -179,7 +179,7 @@ def main():
     print("\n" + "=" * 80)
     print("SUMMARY")
     print("=" * 80)
-    print(f"✓ Consolidated to single canonical team columns:")
+    print("✓ Consolidated to single canonical team columns:")
     print(f"  - home_canonical ({len(home_unique)} unique)")
     print(f"  - away_canonical ({len(away_unique)} unique)")
     print(f"✓ Removed {len(columns_to_remove) + len(redundant_team_cols)} redundant columns")

@@ -21,7 +21,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -36,7 +35,7 @@ from testing.data_window import CANONICAL_START_SEASON, default_backtest_seasons
 # Paths
 RESULTS_DIR = ROOT_DIR / "testing" / "results" / "historical"
 
-def _first_present(df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
+def _first_present(df: pd.DataFrame, candidates: list[str]) -> str | None:
     for col in candidates:
         if col in df.columns:
             return col
@@ -75,7 +74,7 @@ def _add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
     df["two_pt_pct_avg"] = (_col("home_two_pt_pct") + _col("away_two_pt_pct")) / 2.0
 
     def _odds_to_prob(series: pd.Series) -> pd.Series:
-        def _calc(value: float) -> Optional[float]:
+        def _calc(value: float) -> float | None:
             if pd.isna(value):
                 return None
             if value >= 100:
@@ -112,9 +111,9 @@ class BetOutcome(str, Enum):
 class BacktestConfig:
     """Configuration for backtest run."""
     market: MarketType
-    seasons: List[int]
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    seasons: list[int]
+    start_date: str | None = None
+    end_date: str | None = None
     min_edge: float = 1.5  # Minimum edge (pts or probability points) to place bet
     use_trained_models: bool = False
     use_model_min_edge: bool = False
@@ -151,7 +150,7 @@ class BetResult:
 class BacktestSummary:
     """Summary statistics for a backtest run."""
     market: str
-    seasons: List[int]
+    seasons: list[int]
     total_games: int
     games_with_odds: int
     games_with_ratings: int
@@ -164,7 +163,7 @@ class BacktestSummary:
     roi: float
     win_rate: float
     avg_edge: float
-    by_season: Dict[int, Dict] = field(default_factory=dict)
+    by_season: dict[int, dict] = field(default_factory=dict)
 
 
 class NCAAMPredictor:
@@ -496,9 +495,8 @@ class NCAAMPredictor:
         if "spread" in market_type.value:
             # For spreads: if predicted < market, bet home (cover more)
             return "home" if predicted < market else "away"
-        else:
-            # For totals: if predicted > market, bet over
-            return "over" if predicted > market else "under"
+        # For totals: if predicted > market, bet over
+        return "over" if predicted > market else "under"
 
 
 def load_backtest_data() -> pd.DataFrame:
@@ -570,7 +568,7 @@ def validate_sign_convention(df: pd.DataFrame) -> bool:
             print(f"   With negative spread (correctly favored): {negative_spread_pct:.1f}%")
 
             if negative_spread_pct < 50:
-                print(f"   [WARN] Sign convention may be inverted!")
+                print("   [WARN] Sign convention may be inverted!")
                 return False
 
     # Check correlation: negative spread should correlate with positive actual margin
@@ -581,12 +579,12 @@ def validate_sign_convention(df: pd.DataFrame) -> bool:
 
         # Negative correlation expected (home favored = negative spread, likely positive margin)
         if corr > 0.3:
-            print(f"   [WARN] Unexpected positive correlation - check sign convention!")
+            print("   [WARN] Unexpected positive correlation - check sign convention!")
             return False
-        elif corr < -0.1:
-            print(f"   [OK] Negative correlation confirms correct sign convention")
+        if corr < -0.1:
+            print("   [OK] Negative correlation confirms correct sign convention")
 
-    print(f"   [OK] Sign convention validated")
+    print("   [OK] Sign convention validated")
     return True
 
 
@@ -610,7 +608,7 @@ def validate_team_matching(df: pd.DataFrame) -> bool:
     if len(same_team) > 0:
         print(f"   [ERROR] {len(same_team)} games with same home/away team!")
         return False
-    print(f"   [OK] No games with same team in both positions")
+    print("   [OK] No games with same team in both positions")
 
     # Check 2: Home court advantage visible
     home_wins = (df["actual_margin"] > 0).sum()
@@ -620,13 +618,12 @@ def validate_team_matching(df: pd.DataFrame) -> bool:
     print(f"   Home win rate: {home_win_pct:.1f}% ({home_wins:,} / {home_wins + away_wins:,})")
 
     if home_win_pct < 45:
-        print(f"   [WARN] Home win rate unusually low - check home/away assignment")
+        print("   [WARN] Home win rate unusually low - check home/away assignment")
         return False
-    elif home_win_pct > 75:
-        print(f"   [WARN] Home win rate unusually high - check data quality")
+    if home_win_pct > 75:
+        print("   [WARN] Home win rate unusually high - check data quality")
         return False
-    else:
-        print(f"   [OK] Home court advantage in expected range (50-65%)")
+    print("   [OK] Home court advantage in expected range (50-65%)")
 
     # Check 3: Canonical team names used
     if "home_team_canonical" in df.columns:
@@ -635,7 +632,7 @@ def validate_team_matching(df: pd.DataFrame) -> bool:
         if missing_canonical > 0:
             print(f"   [WARN] {missing_canonical} games missing canonical home team name")
         else:
-            print(f"   [OK] All games have canonical team names")
+            print("   [OK] All games have canonical team names")
 
         # Check for duplicate team name issues
         unique_teams = set(df["home_canonical"].dropna().unique()) | set(df["away_canonical"].dropna().unique())
@@ -665,7 +662,7 @@ def validate_team_matching(df: pd.DataFrame) -> bool:
                             potential_issues.append(f"{team} vs {other_team}")
 
         if potential_issues:
-            print(f"   [WARN] Potential duplicate team names:")
+            print("   [WARN] Potential duplicate team names:")
             for issue in potential_issues[:5]:  # Show first 5
                 print(f"      - {issue}")
             print(f"   Total potential issues: {len(potential_issues)}")
@@ -687,7 +684,7 @@ def validate_no_data_leakage(df: pd.DataFrame) -> bool:
     print("-" * 40)
 
     if "ratings_season" not in df.columns or "season" not in df.columns:
-        print(f"   [WARN] Cannot validate - ratings_season column missing")
+        print("   [WARN] Cannot validate - ratings_season column missing")
         return True
 
     # Check that ratings_season = season - 1
@@ -698,7 +695,7 @@ def validate_no_data_leakage(df: pd.DataFrame) -> bool:
         print(f"   Example: Game season {mismatches.iloc[0]['season']}, rating season {mismatches.iloc[0]['ratings_season']}")
         return False
 
-    print(f"   [OK] All ratings from prior season (N-1)")
+    print("   [OK] All ratings from prior season (N-1)")
 
     # Verify we're using pre-season ratings, not mid-season
     if "home_adj_o" in df.columns:
@@ -720,7 +717,7 @@ def validate_actual_odds_used(df: pd.DataFrame) -> bool:
     price_cols = [c for c in df.columns if "price" in c.lower()]
 
     if not price_cols:
-        print(f"   [ERROR] No price columns found!")
+        print("   [ERROR] No price columns found!")
         print("   Run: python testing/scripts/build_backtest_dataset_canonical.py")
         return False
 
@@ -738,7 +735,7 @@ def validate_actual_odds_used(df: pd.DataFrame) -> bool:
         if coverage < 50:
             print(f"   [WARN] Low price coverage ({coverage:.1f}%) - some bets may use -110 fallback")
         else:
-            print(f"   [OK] Good price coverage for actual odds")
+            print("   [OK] Good price coverage for actual odds")
 
     return True
 
@@ -775,13 +772,12 @@ def determine_outcome(
 
     if abs(diff) < 0.001:  # Push
         return BetOutcome.PUSH
-    elif diff > 0:
+    if diff > 0:
         return BetOutcome.WIN
-    else:
-        return BetOutcome.LOSS
+    return BetOutcome.LOSS
 
 
-def american_odds_to_decimal(american_odds: float) -> Optional[float]:
+def american_odds_to_decimal(american_odds: float) -> float | None:
     """
     Convert American odds to decimal multiplier.
 
@@ -800,12 +796,11 @@ def american_odds_to_decimal(american_odds: float) -> Optional[float]:
     if american_odds >= 100:
         # Positive odds: +150 means win $150 on $100 bet
         return (american_odds / 100) + 1
-    else:
-        # Negative odds: -110 means bet $110 to win $100
-        return (100 / abs(american_odds)) + 1
+    # Negative odds: -110 means bet $110 to win $100
+    return (100 / abs(american_odds)) + 1
 
 
-def american_odds_to_prob(american_odds: float) -> Optional[float]:
+def american_odds_to_prob(american_odds: float) -> float | None:
     """Convert American odds to implied probability (vig included)."""
     if pd.isna(american_odds):
         return None
@@ -814,7 +809,7 @@ def american_odds_to_prob(american_odds: float) -> Optional[float]:
     return abs(american_odds) / (abs(american_odds) + 100.0)
 
 
-def calculate_profit(outcome: BetOutcome, wager: float, odds: float) -> Optional[float]:
+def calculate_profit(outcome: BetOutcome, wager: float, odds: float) -> float | None:
     """
     Calculate profit from bet outcome using ACTUAL ODDS.
 
@@ -836,10 +831,9 @@ def calculate_profit(outcome: BetOutcome, wager: float, odds: float) -> Optional
 
     if outcome == BetOutcome.WIN:
         return wager * (decimal_odds - 1)  # Profit = wager * (decimal - 1)
-    elif outcome == BetOutcome.LOSS:
+    if outcome == BetOutcome.LOSS:
         return -wager
-    else:
-        return 0.0  # Push
+    return 0.0  # Push
 
 
 def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> BacktestSummary:
@@ -959,7 +953,7 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
     valid = has_odds & has_ratings
     df_valid = df[valid].copy()
 
-    print(f"\nData Summary:")
+    print("\nData Summary:")
     print(f"  Total games in seasons: {total_games:,}")
     line_label = line_col or (f"{price_col}/{alt_price_col}" if price_col and alt_price_col else "moneyline odds")
     print(f"  Games with {line_label}: {games_with_odds:,}")
@@ -991,12 +985,12 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
             effective_min_edge = float(model_min_edge)
             print(f"[INFO] Using model min_edge: {effective_min_edge}")
 
-    results: List[BetResult] = []
+    results: list[BetResult] = []
 
-    def _feature_vector(row: pd.Series) -> Optional[List[float]]:
+    def _feature_vector(row: pd.Series) -> list[float] | None:
         if not trained_features:
             return None
-        values: List[float] = []
+        values: list[float] = []
         for name in trained_features:
             val = row.get(name)
             if pd.isna(val):
@@ -1264,7 +1258,7 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
     print(f"ROI: {roi:+.2f}%")
     print(f"Avg Edge: {avg_edge:.2f}%")
 
-    print(f"\nBy Season:")
+    print("\nBy Season:")
     for season, stats in sorted(by_season.items()):
         print(f"  {season}: {stats['bets']} bets, {stats['win_rate']:.1f}% win, ${stats['profit']:+,.0f} ({stats['roi']:+.1f}% ROI)")
 

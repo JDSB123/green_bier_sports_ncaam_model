@@ -4,13 +4,14 @@ Integration tests for the full prediction pipeline.
 Tests the complete flow from data fetch to prediction generation.
 """
 
-import pytest
-from datetime import date, datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from app.prediction_engine_v33 import prediction_engine_v33
-from app.models import TeamRatings, MarketOdds, BetType
+import pytest
+
 from app.config import settings
+from app.models import BetType, MarketOdds, TeamRatings
+from app.prediction_engine_v33 import prediction_engine_v33
 
 
 @pytest.fixture
@@ -95,8 +96,8 @@ def test_full_prediction_pipeline(
 ):
     """Test the complete prediction pipeline."""
     game_id = uuid4()
-    commence_time = datetime.now(timezone.utc)
-    
+    commence_time = datetime.now(UTC)
+
     # Generate prediction
     prediction = prediction_engine_v33.make_prediction(
         game_id=game_id,
@@ -108,32 +109,32 @@ def test_full_prediction_pipeline(
         market_odds=sample_market_odds,
         is_neutral=False,
     )
-    
+
     # Verify prediction structure
     assert prediction.game_id == game_id
     assert prediction.home_team == "Duke"
     assert prediction.away_team == "North Carolina"
     assert prediction.model_version.startswith("v33")
-    
+
     # Verify all 4 markets are predicted
     assert prediction.predicted_spread is not None
     assert prediction.predicted_total is not None
     assert prediction.predicted_spread_1h is not None
     assert prediction.predicted_total_1h is not None
-    
+
     # Verify edges are calculated
     assert prediction.spread_edge >= 0
     assert prediction.total_edge >= 0
-    
+
     # Generate recommendations
     recommendations = prediction_engine_v33.generate_recommendations(
         prediction,
         sample_market_odds,
     )
-    
+
     # Verify recommendations structure
     assert isinstance(recommendations, list)
-    
+
     # If recommendations exist, verify structure
     for rec in recommendations:
         assert rec.game_id == game_id
@@ -150,8 +151,8 @@ def test_prediction_without_odds(
 ):
     """Test prediction generation without market odds."""
     game_id = uuid4()
-    commence_time = datetime.now(timezone.utc)
-    
+    commence_time = datetime.now(UTC)
+
     prediction = prediction_engine_v33.make_prediction(
         game_id=game_id,
         home_team=sample_home_ratings.team_name,
@@ -162,11 +163,11 @@ def test_prediction_without_odds(
         market_odds=None,
         is_neutral=False,
     )
-    
+
     # Should still generate predictions
     assert prediction.predicted_spread is not None
     assert prediction.predicted_total is not None
-    
+
     # But edges should be 0 without market odds
     assert prediction.spread_edge == 0.0
     assert prediction.total_edge == 0.0
@@ -178,8 +179,8 @@ def test_neutral_site_prediction(
 ):
     """Test prediction for neutral site game."""
     game_id = uuid4()
-    commence_time = datetime.now(timezone.utc)
-    
+    commence_time = datetime.now(UTC)
+
     prediction_neutral = prediction_engine_v33.make_prediction(
         game_id=game_id,
         home_team=sample_home_ratings.team_name,
@@ -190,7 +191,7 @@ def test_neutral_site_prediction(
         market_odds=None,
         is_neutral=True,
     )
-    
+
     prediction_home = prediction_engine_v33.make_prediction(
         game_id=game_id,
         home_team=sample_home_ratings.team_name,
@@ -201,7 +202,7 @@ def test_neutral_site_prediction(
         market_odds=None,
         is_neutral=False,
     )
-    
+
     # Neutral site should have less home advantage
     # (spread should be less negative or more positive)
     assert prediction_neutral.predicted_spread > prediction_home.predicted_spread
@@ -213,8 +214,8 @@ def test_recommendation_filtering(
 ):
     """Test that recommendations are properly filtered by edge thresholds."""
     game_id = uuid4()
-    commence_time = datetime.now(timezone.utc)
-    
+    commence_time = datetime.now(UTC)
+
     # Create market odds with very small edge (should be filtered out)
     small_edge_odds = MarketOdds(
         spread=-5.0,  # Very close to model prediction
@@ -224,7 +225,7 @@ def test_recommendation_filtering(
         over_price=-110,
         under_price=-110,
     )
-    
+
     prediction = prediction_engine_v33.make_prediction(
         game_id=game_id,
         home_team=sample_home_ratings.team_name,
@@ -235,12 +236,12 @@ def test_recommendation_filtering(
         market_odds=small_edge_odds,
         is_neutral=False,
     )
-    
+
     recommendations = prediction_engine_v33.generate_recommendations(
         prediction,
         small_edge_odds,
     )
-    
+
     # Should filter out recommendations with edge < threshold
     for rec in recommendations:
         if rec.bet_type == BetType.SPREAD:
@@ -255,8 +256,8 @@ def test_recommendation_ev_gating(
 ):
     """Test that recommendations are filtered by EV thresholds."""
     game_id = uuid4()
-    commence_time = datetime.now(timezone.utc)
-    
+    commence_time = datetime.now(UTC)
+
     market_odds = MarketOdds(
         spread=-5.5,
         spread_home_price=-110,
@@ -265,7 +266,7 @@ def test_recommendation_ev_gating(
         over_price=-110,
         under_price=-110,
     )
-    
+
     prediction = prediction_engine_v33.make_prediction(
         game_id=game_id,
         home_team=sample_home_ratings.team_name,
@@ -276,14 +277,13 @@ def test_recommendation_ev_gating(
         market_odds=market_odds,
         is_neutral=False,
     )
-    
+
     recommendations = prediction_engine_v33.generate_recommendations(
         prediction,
         market_odds,
     )
-    
+
     # All recommendations should have positive EV
     for rec in recommendations:
         assert rec.ev_percent >= settings.model.min_ev_percent
         assert rec.confidence >= settings.model.min_confidence
-

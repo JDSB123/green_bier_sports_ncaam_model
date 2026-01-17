@@ -19,9 +19,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -31,11 +30,11 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 # Add scripts to path for team_utils (single source of truth)
 sys.path.insert(0, str(ROOT_DIR / "testing" / "scripts"))
 from team_utils import resolve_team_name
-from testing.azure_data_reader import get_azure_reader, read_barttorvik_ratings
-from testing.data_window import CANONICAL_START_SEASON, enforce_min_season
-from testing.data_paths import DATA_PATHS
-from testing.azure_io import write_csv as azure_write_csv
 
+from testing.azure_data_reader import get_azure_reader, read_barttorvik_ratings
+from testing.azure_io import write_csv as azure_write_csv
+from testing.data_paths import DATA_PATHS
+from testing.data_window import CANONICAL_START_SEASON, enforce_min_season
 
 # ==================== Model Constants ====================
 # These match the production model in predictor.py
@@ -205,24 +204,24 @@ def load_game_results(season: int) -> pd.DataFrame:
     return df
 
 
-def find_team_rating(team_name: str, ratings: dict[str, TeamRatings]) -> Optional[TeamRatings]:
+def find_team_rating(team_name: str, ratings: dict[str, TeamRatings]) -> TeamRatings | None:
     """Find team rating using canonical name from single source of truth.
-    
+
     Uses ProductionTeamResolver via team_utils for EXACT matching only.
     No fuzzy matching to prevent false positives like 'Tennessee' -> 'Tennessee St.'.
     """
     # Resolve to canonical name using single source of truth
     canonical = resolve_team_name(team_name)
-    
+
     # Direct match on canonical name
     if canonical in ratings:
         return ratings[canonical]
-    
+
     # Try lowercase match (ratings may be keyed lowercase)
     canonical_lower = canonical.lower()
     if canonical_lower in ratings:
         return ratings[canonical_lower]
-    
+
     # Try matching resolved names in rating keys
     for rating_name, rating in ratings.items():
         if not isinstance(rating_name, str):
@@ -230,7 +229,7 @@ def find_team_rating(team_name: str, ratings: dict[str, TeamRatings]) -> Optiona
         rating_canonical = resolve_team_name(rating_name)
         if rating_canonical == canonical:
             return rating
-    
+
     return None
 
 
@@ -478,7 +477,7 @@ def main(argv: list[str] | None = None) -> int:
         # Get prior season ratings to avoid data leakage
         prior_ratings = all_ratings.get(season - 1)
         if prior_ratings:
-            print(f"[INFO] Using prior season ratings for Nov-Dec games")
+            print("[INFO] Using prior season ratings for Nov-Dec games")
 
         results = validate_season(season, ratings, games, prior_ratings, verbose=True)
         all_results.extend(results)
@@ -500,13 +499,13 @@ def main(argv: list[str] | None = None) -> int:
 
         overall = calculate_metrics(all_results)
         print(f"\n  Games Validated:  {overall['games_validated']}")
-        print(f"\n  SPREAD:")
+        print("\n  SPREAD:")
         print(f"    MAE:           {overall['spread_mae']} points")
         print(f"    RMSE:          {overall['spread_rmse']} points")
         print(f"    Std Dev:       {overall['spread_std']} points")
         print(f"    Bias:          {overall['spread_bias']:+.2f}")
         print(f"    Direction:     {overall['spread_direction_accuracy']}%")
-        print(f"\n  TOTAL:")
+        print("\n  TOTAL:")
         print(f"    MAE:           {overall['total_mae']} points")
         print(f"    RMSE:          {overall['total_rmse']} points")
         print(f"    Std Dev:       {overall['total_std']} points")

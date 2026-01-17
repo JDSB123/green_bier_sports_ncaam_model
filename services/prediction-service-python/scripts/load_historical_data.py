@@ -13,7 +13,7 @@ Data Sources:
 Usage:
     # Load 2023-24 and 2024-25 seasons (season 2024+)
     python scripts/load_historical_data.py --seasons 2024 2025
-    
+
     # Load specific date range
     python scripts/load_historical_data.py --start 2023-11-01 --end 2024-03-31
 """
@@ -21,10 +21,10 @@ Usage:
 import argparse
 import os
 import sys
-from datetime import datetime, date, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Any
 import time
+from datetime import date
+from pathlib import Path
+from typing import Any
 
 # Add app and repo root to path
 APP_DIR = Path(__file__).parent.parent
@@ -54,50 +54,50 @@ except ImportError:
 
 class BasketballAPIClient:
     """Client for Basketball API (api-basketball.com)."""
-    
+
     BASE_URL = "https://v1.basketball.api-sports.io"
     NCAAM_LEAGUE_ID = 116  # NCAA Men's Basketball
-    
-    def __init__(self, api_key: Optional[str] = None):
+
+    def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.environ.get("BASKETBALL_API_KEY")
         if not self.api_key:
             # Try reading from file
             key_file = Path(__file__).parent.parent.parent.parent / "secrets" / "basketball_api_key.txt"
             if key_file.exists():
                 self.api_key = key_file.read_text().strip()
-        
+
         if not self.api_key:
             raise ValueError("Basketball API key required. Set BASKETBALL_API_KEY or create secrets/basketball_api_key.txt")
-        
+
         self.session = requests.Session()
         self.session.headers.update({
             "x-apisports-key": self.api_key,
         })
-        
+
         # Rate limiting
         self.last_request_time = 0
         self.min_request_interval = 1.0  # 1 second between requests
-    
-    def _request(self, endpoint: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
+
+    def _request(self, endpoint: str, params: dict[str, Any] = None) -> dict[str, Any]:
         """Make rate-limited API request."""
         # Rate limiting
         elapsed = time.time() - self.last_request_time
         if elapsed < self.min_request_interval:
             time.sleep(self.min_request_interval - elapsed)
-        
+
         url = f"{self.BASE_URL}/{endpoint}"
         response = self.session.get(url, params=params)
         self.last_request_time = time.time()
-        
+
         if response.status_code != 200:
             raise Exception(f"API error {response.status_code}: {response.text}")
-        
+
         return response.json()
-    
-    def get_games(self, season: int, date_str: Optional[str] = None) -> List[Dict]:
+
+    def get_games(self, season: int, date_str: str | None = None) -> list[dict]:
         """
         Get games for a season or specific date.
-        
+
         Args:
             season: Season year (e.g., 2023 for 2023-24 season)
             date_str: Optional date (YYYY-MM-DD)
@@ -108,11 +108,11 @@ class BasketballAPIClient:
         }
         if date_str:
             params["date"] = date_str
-        
+
         data = self._request("games", params)
         return data.get("response", [])
-    
-    def get_game_stats(self, game_id: int) -> Dict:
+
+    def get_game_stats(self, game_id: int) -> dict:
         """Get statistics for a specific game."""
         data = self._request("games/statistics", {"id": game_id})
         return data.get("response", {})
@@ -120,19 +120,19 @@ class BasketballAPIClient:
 
 class BartttorvikScraper:
     """Scrape historical ratings from Barttorvik."""
-    
+
     BASE_URL = "https://barttorvik.com"
-    
+
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 NCAAM-Research/1.0",
         })
-    
-    def get_ratings_for_date(self, rating_date: date) -> List[Dict]:
+
+    def get_ratings_for_date(self, rating_date: date) -> list[dict]:
         """
         Get team ratings as of a specific date.
-        
+
         Note: Barttorvik may not have exact historical data publicly available.
         This is a placeholder for manual data import.
         """
@@ -157,18 +157,18 @@ def create_database_engine():
         db_user = os.environ.get("DB_USER", "ncaam")
         db_name = os.environ.get("DB_NAME", "ncaam")
         db_pass = os.environ.get("DB_PASSWORD", "ncaam")
-        
+
         # Try reading password from file
         pw_file = Path("/run/secrets/db_password")
         if pw_file.exists():
             db_pass = pw_file.read_text().strip()
-        
+
         db_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
-    
+
     return create_engine(db_url)
 
 
-def load_games_from_blob(blob_path: str) -> List[Dict]:
+def load_games_from_blob(blob_path: str) -> list[dict]:
     """
     Load game data from Azure Blob Storage (CSV).
 
@@ -196,7 +196,7 @@ def load_games_from_blob(blob_path: str) -> List[Dict]:
     return games
 
 
-def load_ratings_from_blob(blob_path: str) -> Dict[str, Dict]:
+def load_ratings_from_blob(blob_path: str) -> dict[str, dict]:
     """
     Load team ratings from Azure Blob Storage (CSV).
 
@@ -267,48 +267,48 @@ def main():
         action="store_true",
         help="Print what would be loaded without writing"
     )
-    
+
     args = parser.parse_args()
-    
+
     print("=" * 60)
     print("NCAAM Historical Data Loader")
     print("=" * 60)
-    
+
     # Load from Azure if provided
     if args.games_blob:
         print(f"\nLoading games from Azure blob: {args.games_blob}")
         games = load_games_from_blob(args.games_blob)
         print(f"   Loaded {len(games)} games")
-        
+
         if not args.dry_run:
             # TODO: Insert into database
             print("   ⚠️ Database insert not yet implemented")
-    
+
     if args.ratings_blob:
         print(f"\nLoading ratings from Azure blob: {args.ratings_blob}")
         ratings = load_ratings_from_blob(args.ratings_blob)
         print(f"   Loaded {len(ratings)} team-date ratings")
-        
+
         if not args.dry_run:
             # TODO: Insert into database
             print("   ⚠️ Database insert not yet implemented")
-    
+
     # Fetch from API if seasons provided
     if args.seasons:
         if not HAS_REQUESTS:
             print("❌ requests library required for API access")
             sys.exit(1)
         args.seasons = enforce_min_season(args.seasons)
-        
+
         try:
             client = BasketballAPIClient()
-            print(f"\n🌐 Fetching from Basketball API...")
-            
+            print("\n🌐 Fetching from Basketball API...")
+
             for season in args.seasons:
                 print(f"\n   Season {season}-{season+1}:")
                 games = client.get_games(season)
                 print(f"   Found {len(games)} games")
-                
+
                 if args.dry_run:
                     # Show sample
                     for game in games[:3]:
@@ -316,7 +316,7 @@ def main():
         except Exception as e:
             print(f"❌ API error: {e}")
             sys.exit(1)
-    
+
     if not any([args.games_blob, args.ratings_blob, args.seasons]):
         print("\nNo data source specified!")
         print("\nUsage examples:")
@@ -327,7 +327,7 @@ def main():
         print("  python scripts/load_historical_data.py --seasons 2024 2025")
         print("")
         print("Azure Blob Storage is the single source of truth.")
-    
+
     print("\n✅ Done!")
 
 

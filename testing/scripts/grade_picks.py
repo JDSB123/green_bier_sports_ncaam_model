@@ -225,35 +225,30 @@ def grade_pick(pick, game):
     if pick_type == 'over':
         if total > line:
             return 'WIN', f'Total {total} > {line}'
-        elif total < line:
+        if total < line:
             return 'LOSS', f'Total {total} < {line}'
-        else:
-            return 'PUSH', f'Total {total} = {line}'
+        return 'PUSH', f'Total {total} = {line}'
 
-    elif pick_type == 'under':
+    if pick_type == 'under':
         if total < line:
             return 'WIN', f'Total {total} < {line}'
-        elif total > line:
+        if total > line:
             return 'LOSS', f'Total {total} > {line}'
-        else:
-            return 'PUSH', f'Total {total} = {line}'
+        return 'PUSH', f'Total {total} = {line}'
 
-    elif pick_type == 'ml':
+    if pick_type == 'ml':
         pick_lower = pick_team.lower()
         # Determine if pick team is home or away
         is_home = pick_lower in game['home']
         if is_home:
             if home_score > away_score:
                 return 'WIN', f'{pick_team} won {home_score}-{away_score}'
-            else:
-                return 'LOSS', f'{pick_team} lost {home_score}-{away_score}'
-        else:
-            if away_score > home_score:
-                return 'WIN', f'{pick_team} won {away_score}-{home_score}'
-            else:
-                return 'LOSS', f'{pick_team} lost {away_score}-{home_score}'
+            return 'LOSS', f'{pick_team} lost {home_score}-{away_score}'
+        if away_score > home_score:
+            return 'WIN', f'{pick_team} won {away_score}-{home_score}'
+        return 'LOSS', f'{pick_team} lost {away_score}-{home_score}'
 
-    elif pick_type == 'spread':
+    if pick_type == 'spread':
         pick_lower = pick_team.lower()
         is_home = pick_lower in game['home'] or game['home'] in pick_lower
 
@@ -262,19 +257,16 @@ def grade_pick(pick, game):
             cover_margin = spread + line
             if cover_margin > 0:
                 return 'WIN', f'{pick_team} covered by {cover_margin:.1f} ({away_score}-{home_score})'
-            elif cover_margin < 0:
+            if cover_margin < 0:
                 return 'LOSS', f'{pick_team} lost by {-cover_margin:.1f} ({away_score}-{home_score})'
-            else:
-                return 'PUSH', f'Push ({away_score}-{home_score})'
-        else:
-            # Away team spread
-            cover_margin = -spread + line
-            if cover_margin > 0:
-                return 'WIN', f'{pick_team} covered by {cover_margin:.1f} ({away_score}-{home_score})'
-            elif cover_margin < 0:
-                return 'LOSS', f'{pick_team} lost by {-cover_margin:.1f} ({away_score}-{home_score})'
-            else:
-                return 'PUSH', f'Push ({away_score}-{home_score})'
+            return 'PUSH', f'Push ({away_score}-{home_score})'
+        # Away team spread
+        cover_margin = -spread + line
+        if cover_margin > 0:
+            return 'WIN', f'{pick_team} covered by {cover_margin:.1f} ({away_score}-{home_score})'
+        if cover_margin < 0:
+            return 'LOSS', f'{pick_team} lost by {-cover_margin:.1f} ({away_score}-{home_score})'
+        return 'PUSH', f'Push ({away_score}-{home_score})'
 
     return 'UNKNOWN', 'Could not grade'
 
@@ -326,7 +318,7 @@ def main():
     print(f'  LOSSES:    {losses}')
     print(f'  PUSHES:    {pushes}')
     print(f'  NOT FOUND: {not_found}')
-    print(f'  ---------------------')
+    print('  ---------------------')
     print(f'  TOTAL GRADED: {total_graded}')
     print(f'  WIN RATE:     {win_pct:.1f}%')
 

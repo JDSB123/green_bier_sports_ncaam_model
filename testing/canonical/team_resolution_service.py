@@ -16,9 +16,8 @@ Usage:
 import re
 from collections import defaultdict
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Set
 from functools import lru_cache
+from pathlib import Path
 
 import pandas as pd
 
@@ -38,7 +37,7 @@ class ResolutionResult:
     confidence: float
     method: str  # "exact", "alias", "fuzzy", "learned"
     original_name: str
-    alternatives: List[Tuple[str, float]] = None
+    alternatives: list[tuple[str, float]] = None
 
     def __post_init__(self):
         if self.alternatives is None:
@@ -59,7 +58,7 @@ class TeamResolutionService:
 
     def __init__(
         self,
-        aliases_file: Optional[Path] = None,
+        aliases_file: Path | None = None,
         fuzzy_threshold: int = 85,
         learn_corrections: bool = False,
         enable_fuzzy: bool = False,
@@ -103,13 +102,13 @@ class TeamResolutionService:
         self._reverse_aliases = self._build_reverse_aliases()
 
         # Learning data
-        self._learned_corrections: Dict[str, str] = {}
-        self._confidence_cache: Dict[str, ResolutionResult] = {}
+        self._learned_corrections: dict[str, str] = {}
+        self._confidence_cache: dict[str, ResolutionResult] = {}
 
         # Set up cached methods
         self.resolve = lru_cache(maxsize=cache_size)(self._resolve_uncached)
 
-    def _load_aliases(self) -> Dict[str, str]:
+    def _load_aliases(self) -> dict[str, str]:
         """Load team aliases from Azure blob storage."""
         try:
             from testing.azure_data_reader import AzureDataReader
@@ -117,7 +116,7 @@ class TeamResolutionService:
             reader = AzureDataReader(enable_canonicalization=False)
             raw_aliases = reader.read_json("backtest_datasets/team_aliases_db.json")
 
-            normalized: Dict[str, str] = {}
+            normalized: dict[str, str] = {}
             for raw_key, canonical in raw_aliases.items():
                 key = self._normalize_team_name(str(raw_key))
                 if not key:
@@ -129,13 +128,13 @@ class TeamResolutionService:
         except Exception as e:
             raise RuntimeError(f"Failed to load aliases from Azure: {e}") from e
 
-    def _build_canonical_set(self) -> Set[str]:
+    def _build_canonical_set(self) -> set[str]:
         """Build set of all canonical team names."""
         canonical = set(self._aliases.values())
         # Add some common variations that might not be in aliases
         return canonical
 
-    def _build_reverse_aliases(self) -> Dict[str, List[str]]:
+    def _build_reverse_aliases(self) -> dict[str, list[str]]:
         """Build reverse mapping from canonical name to all variants."""
         reverse = defaultdict(list)
         for variant, canonical in self._aliases.items():
@@ -283,7 +282,7 @@ class TeamResolutionService:
         if hasattr(self, 'resolve') and hasattr(self.resolve, 'cache_info'):
             self.resolve.cache_clear()
 
-    def get_unresolved_teams(self, team_list: List[str]) -> List[str]:
+    def get_unresolved_teams(self, team_list: list[str]) -> list[str]:
         """Get list of teams that cannot be resolved with high confidence."""
         unresolved = []
         for team in team_list:
@@ -294,15 +293,15 @@ class TeamResolutionService:
 
     def validate_resolution(
         self,
-        team_list: List[str],
-    ) -> Dict[str, ResolutionResult]:
+        team_list: list[str],
+    ) -> dict[str, ResolutionResult]:
         """Validate resolution for a list of teams, return detailed results."""
         results = {}
         for team in team_list:
             results[team] = self.resolve(team)
         return results
 
-    def add_aliases(self, new_aliases: Dict[str, str]):
+    def add_aliases(self, new_aliases: dict[str, str]):
         raise RuntimeError(
             "Alias mutation is disabled. Update aliases in the Team Registry "
             "(Postgres) and re-export the JSON artifact."
@@ -315,7 +314,7 @@ class TeamResolutionService:
             "synced artifact."
         )
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get statistics about the resolution service."""
         return {
             "total_aliases": len(self._aliases),
@@ -327,7 +326,7 @@ class TeamResolutionService:
 
 
 # Global singleton instance
-_team_resolver: Optional[TeamResolutionService] = None
+_team_resolver: TeamResolutionService | None = None
 
 
 def get_team_resolver() -> TeamResolutionService:
@@ -347,7 +346,7 @@ def resolve_team_name(name: str) -> str:
     return get_team_resolver().resolve(name).canonical_name
 
 
-def resolve_team_names(names: List[str]) -> List[str]:
+def resolve_team_names(names: list[str]) -> list[str]:
     """Convenience function to resolve multiple team names."""
     resolver = get_team_resolver()
     return [resolver.resolve(name).canonical_name for name in names]

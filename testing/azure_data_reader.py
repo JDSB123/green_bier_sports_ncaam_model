@@ -26,11 +26,12 @@ Usage:
         process(chunk)
 """
 
-import os
 import io
 import json
-from typing import Optional, Iterator, Dict, List, Any
+import os
 import warnings
+from collections.abc import Iterator
+from typing import Any
 
 try:
     import pandas as pd
@@ -39,8 +40,8 @@ except ImportError:
     PANDAS_AVAILABLE = False
 
 try:
-    from azure.storage.blob import BlobServiceClient, ContainerClient
     from azure.core.exceptions import ResourceNotFoundError
+    from azure.storage.blob import BlobServiceClient, ContainerClient
     AZURE_AVAILABLE = True
 except ImportError:
     AZURE_AVAILABLE = False
@@ -62,7 +63,6 @@ from .data_window import (
     enforce_min_season,
     season_from_date,
 )
-
 
 # Azure configuration
 STORAGE_ACCOUNT = "metricstrackersgbsv"
@@ -86,7 +86,7 @@ class AzureDataReader:
     def __init__(
         self,
         container_name: str = DEFAULT_CONTAINER,
-        connection_string: Optional[str] = None,
+        connection_string: str | None = None,
         enable_canonicalization: bool = True,
         strict_mode: bool = True,
     ):
@@ -113,11 +113,11 @@ class AzureDataReader:
         self._connection_string = connection_string or self._get_connection_string()
 
         # Initialize blob service
-        self._blob_service: Optional[BlobServiceClient] = None
-        self._container_client: Optional[ContainerClient] = None
+        self._blob_service: BlobServiceClient | None = None
+        self._container_client: ContainerClient | None = None
 
         # Cache for file listings
-        self._file_list_cache: Dict[str, List[str]] = {}
+        self._file_list_cache: dict[str, list[str]] = {}
 
         # Initialize canonical ingestion components
         if self.enable_canonicalization:
@@ -128,7 +128,7 @@ class AzureDataReader:
             self._ingestion_pipeline = None
             self._quality_gate = None
             self._schema_manager = None
-    
+
     def _get_connection_string(self) -> str:
         """Get Azure connection string from environment or Azure CLI."""
         # Try canonical connection string first (historical data)
@@ -137,9 +137,9 @@ class AzureDataReader:
             return conn_str
 
         # Try Azure CLI
-        import subprocess
         import shutil
-        
+        import subprocess
+
         az_cmd = shutil.which("az") or shutil.which("az.cmd")
         if not az_cmd:
             raise RuntimeError(
@@ -147,7 +147,7 @@ class AzureDataReader:
                 "1. Set AZURE_CANONICAL_CONNECTION_STRING\n"
                 "2. Install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
             )
-        
+
         try:
             result = subprocess.run(
                 [
@@ -168,7 +168,7 @@ class AzureDataReader:
                 f"Failed to get connection string via Azure CLI: {e}\n"
                 "Run 'az login' first or set AZURE_CANONICAL_CONNECTION_STRING"
             )
-    
+
     @property
     def blob_service(self) -> BlobServiceClient:
         """Lazy-initialize blob service client."""
@@ -177,7 +177,7 @@ class AzureDataReader:
                 self._connection_string
             )
         return self._blob_service
-    
+
     @property
     def container(self) -> ContainerClient:
         """Lazy-initialize container client."""
@@ -186,39 +186,39 @@ class AzureDataReader:
                 self.container_name
             )
         return self._container_client
-    
+
     def blob_exists(self, blob_path: str) -> bool:
         """Check if a blob exists."""
         blob_client = self.container.get_blob_client(blob_path)
         return blob_client.exists()
-    
+
     def get_blob_size(self, blob_path: str) -> int:
         """Get size of a blob in bytes."""
         blob_client = self.container.get_blob_client(blob_path)
         props = blob_client.get_blob_properties()
         return props.size
-    
+
     def list_files(
         self,
         prefix: str = "",
-        pattern: Optional[str] = None,
+        pattern: str | None = None,
         use_cache: bool = True
-    ) -> List[str]:
+    ) -> list[str]:
         """
         List files in a blob directory.
-        
+
         Args:
             prefix: Directory prefix (e.g., "ncaahoopR_data-master/box_scores/")
             pattern: Optional glob pattern to filter (e.g., "*.csv")
             use_cache: Whether to use cached listing
-        
+
         Returns:
             List of blob paths
         """
         cache_key = f"{prefix}:{pattern}"
         if use_cache and cache_key in self._file_list_cache:
             return self._file_list_cache[cache_key]
-        
+
         files = []
         for blob in self.container.list_blobs(name_starts_with=prefix):
             name = blob.name
@@ -227,12 +227,12 @@ class AzureDataReader:
                 if not fnmatch(name.split("/")[-1], pattern):
                     continue
             files.append(name)
-        
+
         if use_cache:
             self._file_list_cache[cache_key] = files
-        
+
         return files
-    
+
     def read_bytes(self, blob_path: str) -> bytes:
         """Read a blob as raw bytes."""
         blob_client = self.container.get_blob_client(blob_path)
@@ -240,11 +240,11 @@ class AzureDataReader:
             return blob_client.download_blob().readall()
         except ResourceNotFoundError:
             raise FileNotFoundError(f"Blob not found: {blob_path}")
-    
+
     def read_text(self, blob_path: str, encoding: str = "utf-8") -> str:
         """Read a blob as text."""
         return self.read_bytes(blob_path).decode(encoding)
-    
+
     def read_json(self, blob_path: str, apply_canonicalization: bool = True) -> Any:
         """Read a JSON blob with optional canonicalization."""
         data = json.loads(self.read_text(blob_path))
@@ -255,12 +255,12 @@ class AzureDataReader:
             pass
 
         return data
-    
+
     def read_csv(
         self,
         blob_path: str,
         data_type: str = "auto",
-        apply_canonicalization: Optional[bool] = None,
+        apply_canonicalization: bool | None = None,
         **pandas_kwargs
     ) -> "pd.DataFrame":
         """
@@ -347,9 +347,8 @@ class AzureDataReader:
         except Exception as e:
             if self.strict_mode:
                 raise
-            else:
-                print(f"Warning: Canonical ingestion failed for {blob_path}: {e}")
-                return df
+            print(f"Warning: Canonical ingestion failed for {blob_path}: {e}")
+            return df
 
     def _infer_data_type(self, blob_path: str) -> str:
         """Infer data type from blob path."""
@@ -357,15 +356,14 @@ class AzureDataReader:
 
         if any(keyword in path_lower for keyword in ["score", "game", "fg.csv", "h1.csv"]):
             return "scores"
-        elif any(keyword in path_lower for keyword in ["odds", "spread", "total", "moneyline"]):
+        if any(keyword in path_lower for keyword in ["odds", "spread", "total", "moneyline"]):
             return "odds"
-        elif any(keyword in path_lower for keyword in ["rating", "barttorvik"]):
+        if any(keyword in path_lower for keyword in ["rating", "barttorvik"]):
             return "ratings"
-        elif "ncaahoopR" in path_lower:
+        if "ncaahoopR" in path_lower:
             return "ncaahoopR"
-        else:
-            return "unknown"
-    
+        return "unknown"
+
     def read_csv_chunks(
         self,
         blob_path: str,
@@ -374,18 +372,18 @@ class AzureDataReader:
     ) -> Iterator["pd.DataFrame"]:
         """
         Read a large CSV in chunks (streaming).
-        
+
         Args:
             blob_path: Path to CSV in blob storage
             chunksize: Number of rows per chunk
             **pandas_kwargs: Additional arguments for pd.read_csv
-        
+
         Yields:
             pandas DataFrame chunks
         """
         if not PANDAS_AVAILABLE:
             raise ImportError("pandas required. Install with: pip install pandas")
-        
+
         content = self.read_bytes(blob_path)
         return pd.read_csv(
             io.BytesIO(content),
@@ -393,7 +391,7 @@ class AzureDataReader:
             **pandas_kwargs
         )
 
-    def _normalize_tags(self, tags: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+    def _normalize_tags(self, tags: dict[str, str] | None) -> dict[str, str] | None:
         if not tags:
             return None
         normalized = {}
@@ -403,7 +401,7 @@ class AzureDataReader:
             normalized[str(key)] = str(value)
         return normalized or None
 
-    def set_blob_tags(self, blob_path: str, tags: Optional[Dict[str, str]]) -> None:
+    def set_blob_tags(self, blob_path: str, tags: dict[str, str] | None) -> None:
         """Set Azure Blob Storage tags for an existing blob."""
         normalized = self._normalize_tags(tags)
         if not normalized:
@@ -415,9 +413,9 @@ class AzureDataReader:
         self,
         blob_path: str,
         content: bytes,
-        content_type: Optional[str] = None,
+        content_type: str | None = None,
         overwrite: bool = True,
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
     ) -> None:
         """Upload raw bytes to Azure Blob Storage."""
         blob_client = self.container.get_blob_client(blob_path)
@@ -437,9 +435,9 @@ class AzureDataReader:
         blob_path: str,
         text: str,
         encoding: str = "utf-8",
-        content_type: Optional[str] = None,
+        content_type: str | None = None,
         overwrite: bool = True,
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
     ) -> None:
         """Upload text content to Azure Blob Storage."""
         data = text.encode(encoding)
@@ -458,7 +456,7 @@ class AzureDataReader:
         indent: int = 2,
         sort_keys: bool = False,
         overwrite: bool = True,
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
     ) -> None:
         """Serialize and upload JSON to Azure Blob Storage."""
         text = json.dumps(payload, indent=indent, sort_keys=sort_keys)
@@ -475,7 +473,7 @@ class AzureDataReader:
         blob_path: str,
         df: "pd.DataFrame",
         overwrite: bool = True,
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
         **pandas_kwargs,
     ) -> None:
         """Serialize and upload a DataFrame as CSV to Azure Blob Storage."""
@@ -492,7 +490,7 @@ class AzureDataReader:
             overwrite=overwrite,
             tags=tags,
         )
-    def read_canonical_scores(self, season: Optional[int] = None) -> "pd.DataFrame":
+    def read_canonical_scores(self, season: int | None = None) -> "pd.DataFrame":
         """Read canonical scores data from Azure (2023-24 season onward)."""
         if season:
             enforce_min_season([season])
@@ -561,7 +559,7 @@ class AzureDataReader:
 
         return df.drop(columns=["_commence_time", "_line_time"], errors="ignore")
 
-    def read_canonical_odds(self, market: str = "fg_spread", season: Optional[int] = None) -> "pd.DataFrame":
+    def read_canonical_odds(self, market: str = "fg_spread", season: int | None = None) -> "pd.DataFrame":
         """Read canonical odds data from Azure (2023-24 season onward, pregame only)."""
         valid_markets = ["fg_spread", "fg_total", "h1_spread", "h1_total"]
         if market not in valid_markets:
@@ -627,7 +625,7 @@ class AzureDataReader:
 
         return df
 
-    def read_canonical_ratings(self, season: int) -> Dict:
+    def read_canonical_ratings(self, season: int) -> dict:
         """Read canonical ratings data from Azure."""
         return self.read_json(f"ratings/barttorvik/ratings_{season}.json")
 
@@ -661,7 +659,7 @@ class AzureDataReader:
 
 
 # Singleton instances
-_azure_reader: Optional[AzureDataReader] = None
+_azure_reader: AzureDataReader | None = None
 
 
 def get_azure_reader() -> AzureDataReader:
@@ -689,25 +687,25 @@ def read_backtest_master(enhanced: bool = True) -> "pd.DataFrame":
     return reader.read_backtest_master(enhanced=enhanced)
 
 
-def read_canonical_scores(season: Optional[int] = None) -> "pd.DataFrame":
+def read_canonical_scores(season: int | None = None) -> "pd.DataFrame":
     """Read canonical scores data from Azure."""
     reader = get_azure_reader()
     return reader.read_canonical_scores(season=season)
 
 
-def read_canonical_odds(market: str = "fg_spread", season: Optional[int] = None) -> "pd.DataFrame":
+def read_canonical_odds(market: str = "fg_spread", season: int | None = None) -> "pd.DataFrame":
     """Read canonical odds data from Azure."""
     reader = get_azure_reader()
     return reader.read_canonical_odds(market=market, season=season)
 
 
-def read_barttorvik_ratings(season: int) -> Dict:
+def read_barttorvik_ratings(season: int) -> dict:
     """Read Barttorvik ratings for a season from Azure."""
     reader = get_azure_reader()
     return reader.read_json(f"ratings/barttorvik/ratings_{season}.json")
 
 
-def read_team_aliases() -> Dict[str, str]:
+def read_team_aliases() -> dict[str, str]:
     """Read team aliases database from Azure."""
     reader = get_azure_reader()
     return reader.read_json("backtest_datasets/team_aliases_db.json")
@@ -718,25 +716,25 @@ if __name__ == "__main__":
     print("=" * 60)
     print("Azure Data Reader Test")
     print("=" * 60)
-    
+
     try:
         reader = AzureDataReader()
-        
+
         # List some files
         print("\nListing backtest_datasets/...")
         files = reader.list_files("backtest_datasets/", pattern="*.csv")
         for f in files[:10]:
             size = reader.get_blob_size(f)
             print(f"  {f}: {size:,} bytes")
-        
+
         # Try reading backtest master
         print("\nReading backtest_master.csv...")
         df = reader.read_csv("backtest_datasets/backtest_master.csv")
         print(f"  Rows: {len(df):,}")
         print(f"  Columns: {len(df.columns)}")
-        
+
         print("\n[OK] Azure Data Reader working!")
-        
+
     except Exception as e:
         print(f"\n[ERROR] {e}")
         print("\nMake sure to:")

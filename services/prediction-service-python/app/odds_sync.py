@@ -10,13 +10,13 @@ Use this when the Rust binary is not available (e.g., in Azure Container Apps).
 
 import os
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 import psycopg2
 from psycopg2.extras import execute_batch, register_uuid
 
-from .odds_api_client import OddsApiClient, OddsApiError
+from .odds_api_client import OddsApiClient
 
 # Register UUID type adapter for psycopg2
 register_uuid()
@@ -133,14 +133,14 @@ def normalize_team_name(name: str) -> str:
 class OddsSyncService:
     """
     Syncs odds from The Odds API to the database.
-    
+
     Compatible with the Rust odds-ingestion service schema.
     """
 
     def __init__(
         self,
         database_url: str,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         enable_full: bool = True,
         enable_h1: bool = True,
         enable_h2: bool = False,
@@ -150,24 +150,24 @@ class OddsSyncService:
         self.enable_full = enable_full
         self.enable_h1 = enable_h1
         self.enable_h2 = enable_h2
-        
+
         # Parse database URL for psycopg2
         # Format: postgres://user:pass@host:port/db?sslmode=require
         self._parse_db_url()
-        
+
         self.client = OddsApiClient(api_key=api_key)
-        self.game_cache: Dict[str, uuid.UUID] = {}
+        self.game_cache: dict[str, uuid.UUID] = {}
         # Count events skipped due to unresolved teams (prevents polluting `teams` with duplicates).
         self.skipped_unresolved_events: int = 0
 
     def _parse_db_url(self):
         """Parse DATABASE_URL into psycopg2 connection params."""
         import urllib.parse
-        
+
         url = self.database_url
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
-        
+
         parsed = urllib.parse.urlparse(url)
         self.db_params = {
             "host": parsed.hostname,
@@ -176,7 +176,7 @@ class OddsSyncService:
             "password": parsed.password,
             "dbname": parsed.path.lstrip("/"),
         }
-        
+
         # Parse query string for sslmode
         query = urllib.parse.parse_qs(parsed.query)
         if "sslmode" in query:
@@ -186,7 +186,7 @@ class OddsSyncService:
         """Get a database connection."""
         return psycopg2.connect(**self.db_params)
 
-    def _log_and_resolve_team(self, cur, team_name: str, source: str, context: Optional[str]) -> Optional[str]:
+    def _log_and_resolve_team(self, cur, team_name: str, source: str, context: str | None) -> str | None:
         """
         Resolve to canonical name and log the attempt in `team_resolution_audit`.
 
@@ -244,7 +244,7 @@ class OddsSyncService:
         except Exception:
             return
 
-    def _resolve_team_id(self, cur, team_name: str, *, source: str, context: Optional[str]) -> Optional[uuid.UUID]:
+    def _resolve_team_id(self, cur, team_name: str, *, source: str, context: str | None) -> uuid.UUID | None:
         """
         Resolve a team name to its ID using strict matching.
 
@@ -295,8 +295,8 @@ class OddsSyncService:
         external_id: str,
         home_team: str,
         away_team: str,
-        commence_time: Optional[datetime]
-    ) -> Optional[uuid.UUID]:
+        commence_time: datetime | None
+    ) -> uuid.UUID | None:
         """Get or create a game_id for an external event.
 
         If a team cannot be resolved, we skip the event (and commit audit rows) rather
@@ -372,8 +372,8 @@ class OddsSyncService:
                     external_id,
                     home_team_id,
                     away_team_id,
-                    commence_time or datetime.now(timezone.utc),
-                    datetime.now(timezone.utc),
+                    commence_time or datetime.now(UTC),
+                    datetime.now(UTC),
                 )
             )
             result = cur.fetchone()
@@ -383,12 +383,12 @@ class OddsSyncService:
             return game_id
 
     def _parse_market(
-        self, market: Dict[str, Any], home_team: str, away_team: str
-    ) -> Optional[Dict[str, Any]]:
+        self, market: dict[str, Any], home_team: str, away_team: str
+    ) -> dict[str, Any] | None:
         """Parse a market into normalized odds fields."""
         market_key = market.get("key", "")
         outcomes = market.get("outcomes", [])
-        
+
         # Only spreads/totals are supported
         if "spreads" in market_key:
             normalized_market = "spreads"
@@ -408,7 +408,7 @@ class OddsSyncService:
             "over_price": None,
             "under_price": None,
         }
-        
+
         # Parse based on market type
         if "spreads" in market_key:
             for outcome in outcomes:
@@ -434,15 +434,15 @@ class OddsSyncService:
         """Determine period from market key."""
         if "_h1" in market_key:
             return "1h"  # Lowercase to match Rust service
-        elif "_h2" in market_key:
+        if "_h2" in market_key:
             return "2h"
         return "full"
 
-    def _store_snapshots(self, conn, snapshots: List[Dict[str, Any]]) -> int:
+    def _store_snapshots(self, conn, snapshots: list[dict[str, Any]]) -> int:
         """Store odds snapshots in the database."""
         if not snapshots:
             return 0
-        
+
         with conn.cursor() as cur:
             sql = """
                 INSERT INTO odds_snapshots (
@@ -459,7 +459,7 @@ class OddsSyncService:
                     over_price = EXCLUDED.over_price,
                     under_price = EXCLUDED.under_price
             """
-            
+
             data = [
                 (
                     s["time"],
@@ -477,36 +477,36 @@ class OddsSyncService:
                 )
                 for s in snapshots
             ]
-            
+
             execute_batch(cur, sql, data)
             conn.commit()
-        
+
         return len(snapshots)
 
-    def sync_full_game_odds(self) -> Tuple[int, int]:
+    def sync_full_game_odds(self) -> tuple[int, int]:
         """Sync full-game odds. Returns (events_count, snapshots_count)."""
         print("    Fetching full-game odds...")
         events = self.client.get_odds_full()
-        
+
         if not events:
             print("    No full-game odds events found")
             return 0, 0
-        
+
         conn = self._get_connection()
         snapshots = []
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         processed_events = 0
-        
+
         try:
             for event in events:
                 external_id = event.get("id", "")
                 home_team = event.get("home_team", "")
                 away_team = event.get("away_team", "")
                 commence_time_str = event.get("commence_time")
-                
+
                 if not external_id or not home_team or not away_team:
                     continue
-                
+
                 commence_time = None
                 if commence_time_str:
                     try:
@@ -515,29 +515,29 @@ class OddsSyncService:
                         )
                     except ValueError:
                         pass
-                
+
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time
                 )
                 if not game_id:
                     continue
                 processed_events += 1
-                
+
                 for bookmaker in event.get("bookmakers", []):
                     bookie_key = bookmaker.get("key", "")
-                    
+
                     for market in bookmaker.get("markets", []):
                         parsed = self._parse_market(market, home_team, away_team)
                         if not parsed:
                             continue
-                        
+
                         snapshots.append({
                             "time": now,
                             "game_id": game_id,
                             "bookmaker": bookie_key,
                             **parsed,
                         })
-            
+
             stored = self._store_snapshots(conn, snapshots)
             skipped = int(self.skipped_unresolved_events or 0)
             print(f"    ✓ Full-game: {processed_events}/{len(events)} events, {stored} snapshots (skipped_unresolved_total={skipped})")
@@ -545,30 +545,30 @@ class OddsSyncService:
         finally:
             conn.close()
 
-    def sync_h1_odds(self) -> Tuple[int, int]:
+    def sync_h1_odds(self) -> tuple[int, int]:
         """Sync first-half odds. Returns (events_count, snapshots_count)."""
         print("    Fetching 1H odds...")
         events = self.client.get_odds_h1()
-        
+
         if not events:
             print("    No 1H odds events found")
             return 0, 0
-        
+
         conn = self._get_connection()
         snapshots = []
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         processed_events = 0
-        
+
         try:
             for event in events:
                 external_id = event.get("id", "")
                 home_team = event.get("home_team", "")
                 away_team = event.get("away_team", "")
                 commence_time_str = event.get("commence_time")
-                
+
                 if not external_id or not home_team or not away_team:
                     continue
-                
+
                 commence_time = None
                 if commence_time_str:
                     try:
@@ -577,22 +577,22 @@ class OddsSyncService:
                         )
                     except ValueError:
                         pass
-                
+
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time
                 )
                 if not game_id:
                     continue
                 processed_events += 1
-                
+
                 for bookmaker in event.get("bookmakers", []):
                     bookie_key = bookmaker.get("key", "")
-                    
+
                     for market in bookmaker.get("markets", []):
                         parsed = self._parse_market(market, home_team, away_team)
                         if not parsed:
                             continue
-                        
+
                         # Only store 1H markets
                         if parsed["period"] == "1h":
                             snapshots.append({
@@ -601,7 +601,7 @@ class OddsSyncService:
                                 "bookmaker": bookie_key,
                                 **parsed,
                             })
-            
+
             stored = self._store_snapshots(conn, snapshots)
             skipped = int(self.skipped_unresolved_events or 0)
             print(f"    ✓ 1H: {processed_events}/{len(events)} events, {stored} snapshots (skipped_unresolved_total={skipped})")
@@ -609,30 +609,30 @@ class OddsSyncService:
         finally:
             conn.close()
 
-    def sync_h2_odds(self) -> Tuple[int, int]:
+    def sync_h2_odds(self) -> tuple[int, int]:
         """Sync second-half odds. Returns (events_count, snapshots_count)."""
         print("    Fetching 2H odds...")
         events = self.client.get_odds_h2()
-        
+
         if not events:
             print("    No 2H odds events found")
             return 0, 0
-        
+
         conn = self._get_connection()
         snapshots = []
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         processed_events = 0
-        
+
         try:
             for event in events:
                 external_id = event.get("id", "")
                 home_team = event.get("home_team", "")
                 away_team = event.get("away_team", "")
                 commence_time_str = event.get("commence_time")
-                
+
                 if not external_id or not home_team or not away_team:
                     continue
-                
+
                 commence_time = None
                 if commence_time_str:
                     try:
@@ -641,22 +641,22 @@ class OddsSyncService:
                         )
                     except ValueError:
                         pass
-                
+
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time
                 )
                 if not game_id:
                     continue
                 processed_events += 1
-                
+
                 for bookmaker in event.get("bookmakers", []):
                     bookie_key = bookmaker.get("key", "")
-                    
+
                     for market in bookmaker.get("markets", []):
                         parsed = self._parse_market(market, home_team, away_team)
                         if not parsed:
                             continue
-                        
+
                         # Only store 2H markets
                         if parsed["period"] == "2h":
                             snapshots.append({
@@ -665,7 +665,7 @@ class OddsSyncService:
                                 "bookmaker": bookie_key,
                                 **parsed,
                             })
-            
+
             stored = self._store_snapshots(conn, snapshots)
             skipped = int(self.skipped_unresolved_events or 0)
             print(f"    ✓ 2H: {processed_events}/{len(events)} events, {stored} snapshots (skipped_unresolved_total={skipped})")
@@ -673,7 +673,7 @@ class OddsSyncService:
         finally:
             conn.close()
 
-    def sync_all(self) -> Dict[str, Any]:
+    def sync_all(self) -> dict[str, Any]:
         """Sync all enabled odds types. Returns summary."""
         results = {
             "full": {"events": 0, "snapshots": 0},
@@ -685,7 +685,7 @@ class OddsSyncService:
             "success": True,
             "error": None,
         }
-        
+
         try:
             if self.enable_full:
                 events, snaps = self.sync_full_game_odds()
@@ -693,47 +693,47 @@ class OddsSyncService:
                 results["full"]["snapshots"] = snaps
                 results["total_events"] += events
                 results["total_snapshots"] += snaps
-            
+
             if self.enable_h1:
                 events, snaps = self.sync_h1_odds()
                 results["h1"]["events"] = events
                 results["h1"]["snapshots"] = snaps
                 results["total_events"] += events
                 results["total_snapshots"] += snaps
-            
+
             if self.enable_h2:
                 events, snaps = self.sync_h2_odds()
                 results["h2"]["events"] = events
                 results["h2"]["snapshots"] = snaps
                 results["total_events"] += events
                 results["total_snapshots"] += snaps
-        
+
         except Exception as e:
             results["success"] = False
             results["error"] = str(e)
             print(f"    ❌ Odds sync error: {e}")
-        
+
         results["skipped_unresolved_events"] = int(self.skipped_unresolved_events or 0)
         return results
 
 
 def sync_odds(
     database_url: str,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     enable_full: bool = True,
     enable_h1: bool = True,
     enable_h2: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function to sync odds.
-    
+
     Args:
         database_url: PostgreSQL connection URL
         api_key: The Odds API key (optional, will read from env/secrets)
         enable_full: Sync full-game odds
         enable_h1: Sync first-half odds
         enable_h2: Sync second-half odds
-    
+
     Returns:
         Summary dict with results
     """
@@ -750,20 +750,20 @@ def sync_odds(
 if __name__ == "__main__":
     # CLI usage for testing
     import sys
-    
+
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
         print("DATABASE_URL not set")
         sys.exit(1)
-    
+
     print("Starting odds sync...")
     result = sync_odds(db_url)
-    
-    print(f"\nResults:")
+
+    print("\nResults:")
     print(f"  Full-game: {result['full']['events']} events, {result['full']['snapshots']} snapshots")
     print(f"  1H: {result['h1']['events']} events, {result['h1']['snapshots']} snapshots")
     print(f"  Total: {result['total_events']} events, {result['total_snapshots']} snapshots")
-    
+
     if not result["success"]:
         print(f"  Error: {result['error']}")
         sys.exit(1)

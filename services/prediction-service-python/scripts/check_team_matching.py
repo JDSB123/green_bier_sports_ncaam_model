@@ -10,7 +10,7 @@ import pandas as pd
 ROOT_DIR = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT_DIR))
 
-from testing.azure_io import read_csv, blob_exists
+from testing.azure_io import blob_exists, read_csv
 from testing.data_paths import DATA_PATHS
 from testing.data_window import CANONICAL_START_SEASON
 

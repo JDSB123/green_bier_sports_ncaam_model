@@ -21,7 +21,6 @@ import argparse
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import pandas as pd
 
@@ -29,10 +28,10 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from testing.azure_data_reader import get_azure_reader
-from testing.data_window import default_backtest_seasons, enforce_min_season
 from testing.canonical.quality_gates import DataQualityGate, ValidationSeverity
 from testing.canonical.schema_evolution import SchemaEvolutionManager, detect_data_vintage
 from testing.canonical.team_resolution_service import get_team_resolver
+from testing.data_window import default_backtest_seasons, enforce_min_season
 
 
 class CanonicalDataValidator:
@@ -62,8 +61,8 @@ class CanonicalDataValidator:
         self,
         data_type: str,
         source: str = "azure",
-        seasons: Optional[List[int]] = None
-    ) -> Dict:
+        seasons: list[int] | None = None
+    ) -> dict:
         """
         Validate a specific data source.
 
@@ -176,7 +175,7 @@ class CanonicalDataValidator:
 
         return results
 
-    def validate_all_sources(self) -> Dict:
+    def validate_all_sources(self) -> dict:
         """Validate all data sources comprehensively."""
         print("\n" + "="*80)
         print("COMPREHENSIVE DATA VALIDATION")
@@ -225,7 +224,7 @@ class CanonicalDataValidator:
 
         return all_results
 
-    def _load_scores_data(self, reader, seasons: Optional[List[int]] = None) -> Optional[pd.DataFrame]:
+    def _load_scores_data(self, reader, seasons: list[int] | None = None) -> pd.DataFrame | None:
         """Load scores data for validation."""
         try:
             seasons = seasons or default_backtest_seasons()
@@ -238,7 +237,7 @@ class CanonicalDataValidator:
             print(f"Failed to load scores data: {e}")
             return None
 
-    def _load_odds_data(self, reader, seasons: Optional[List[int]] = None) -> Optional[pd.DataFrame]:
+    def _load_odds_data(self, reader, seasons: list[int] | None = None) -> pd.DataFrame | None:
         """Load odds data for validation."""
         try:
             seasons = seasons or default_backtest_seasons()
@@ -251,7 +250,7 @@ class CanonicalDataValidator:
             print(f"Failed to load odds data: {e}")
             return None
 
-    def _load_ratings_data(self, reader, seasons: Optional[List[int]] = None) -> Optional[pd.DataFrame]:
+    def _load_ratings_data(self, reader, seasons: list[int] | None = None) -> pd.DataFrame | None:
         """Load ratings data for validation."""
         try:
             seasons = seasons or default_backtest_seasons()
@@ -279,7 +278,7 @@ class CanonicalDataValidator:
         validation_result: "ValidationResult",
         data_type: str,
         vintage: "DataVintage"
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate recommendations based on validation results."""
         recommendations = []
 
@@ -305,7 +304,7 @@ class CanonicalDataValidator:
         return recommendations
 
 
-def save_validation_report(results: Dict, output_path: Optional[Path] = None):
+def save_validation_report(results: dict, output_path: Path | None = None):
     """Save validation results to file."""
     if output_path is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

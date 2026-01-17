@@ -7,7 +7,6 @@ Clean, simple data structures focused on what matters for profitable predictions
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, field_validator
@@ -157,54 +156,54 @@ class MarketOdds(BaseModel):
     """
     model_config = {"frozen": True}
 
-    spread: Optional[float] = None
+    spread: float | None = None
     # Legacy/compat: single spread price (assumes symmetric juice).
     # Prefer using spread_home_price/spread_away_price when available.
-    spread_price: Optional[int] = None
-    spread_home_price: Optional[int] = None
-    spread_away_price: Optional[int] = None
-    total: Optional[float] = None
-    over_price: Optional[int] = None
-    under_price: Optional[int] = None
+    spread_price: int | None = None
+    spread_home_price: int | None = None
+    spread_away_price: int | None = None
+    total: float | None = None
+    over_price: int | None = None
+    under_price: int | None = None
 
     # First half
-    spread_1h: Optional[float] = None
-    total_1h: Optional[float] = None
-    spread_price_1h: Optional[int] = None
-    spread_1h_home_price: Optional[int] = None
-    spread_1h_away_price: Optional[int] = None
-    over_price_1h: Optional[int] = None
-    under_price_1h: Optional[int] = None
+    spread_1h: float | None = None
+    total_1h: float | None = None
+    spread_price_1h: int | None = None
+    spread_1h_home_price: int | None = None
+    spread_1h_away_price: int | None = None
+    over_price_1h: int | None = None
+    under_price_1h: int | None = None
 
     # Sharp book reference (Pinnacle/Circa)
-    sharp_spread: Optional[float] = None
-    sharp_total: Optional[float] = None
-    
+    sharp_spread: float | None = None
+    sharp_total: float | None = None
+
     # Square book reference (DraftKings/FanDuel) for sharp vs square comparison
-    square_spread: Optional[float] = None
-    square_total: Optional[float] = None
+    square_spread: float | None = None
+    square_total: float | None = None
 
     # Opening lines (for market movement/steam context)
-    spread_open: Optional[float] = None
-    total_open: Optional[float] = None
-    spread_1h_open: Optional[float] = None
-    total_1h_open: Optional[float] = None
-    sharp_spread_open: Optional[float] = None
-    sharp_total_open: Optional[float] = None
+    spread_open: float | None = None
+    total_open: float | None = None
+    spread_1h_open: float | None = None
+    total_1h_open: float | None = None
+    sharp_spread_open: float | None = None
+    sharp_total_open: float | None = None
 
     # Optional public sentiment (if available)
-    public_bet_pct_home: Optional[float] = None
-    public_money_pct_home: Optional[float] = None
-    public_bet_pct_over: Optional[float] = None
-    public_money_pct_over: Optional[float] = None
+    public_bet_pct_home: float | None = None
+    public_money_pct_home: float | None = None
+    public_bet_pct_over: float | None = None
+    public_money_pct_over: float | None = None
 
     @field_validator('total', 'total_1h', mode='before')
     @classmethod
-    def validate_totals(cls, v: Optional[float], info) -> Optional[float]:
+    def validate_totals(cls, v: float | None, info) -> float | None:
         if v is not None:
             if v <= 0:
                 raise ValueError("Total must be positive")
-            
+
             if info.field_name == 'total_1h':
                 if v < 40 or v > 120:
                     raise ValueError("1H Total out of reasonable range (40-120)")
@@ -215,7 +214,7 @@ class MarketOdds(BaseModel):
 
     @field_validator('spread', 'spread_1h', mode='before')
     @classmethod
-    def validate_spreads(cls, v: Optional[float]) -> Optional[float]:
+    def validate_spreads(cls, v: float | None) -> float | None:
         if v is not None:
             # Expanded from +/-30 to handle heavy mismatches (e.g., D1 vs SWAC/MEAC).
             if abs(v) > 45:
@@ -253,10 +252,10 @@ class Prediction:
     total_confidence_1h: float
 
     # Market comparison
-    market_spread: Optional[float] = None
-    market_total: Optional[float] = None
-    market_spread_1h: Optional[float] = None
-    market_total_1h: Optional[float] = None
+    market_spread: float | None = None
+    market_total: float | None = None
+    market_spread_1h: float | None = None
+    market_total_1h: float | None = None
 
     # Edges (model - market)
     # FIX: Added signed edges to preserve directional information
@@ -344,14 +343,14 @@ class BettingRecommendation:
     bet_tier: BetTier
 
     # Price context (American odds) for the specific pick side (HOME/AWAY/OVER/UNDER)
-    pick_price: Optional[int] = None
+    pick_price: int | None = None
     # Market-derived extras (best-practice auditing)
-    market_prob_novig: Optional[float] = None
-    market_hold_percent: Optional[float] = None
-    prob_edge: Optional[float] = None
+    market_prob_novig: float | None = None
+    market_hold_percent: float | None = None
+    prob_edge: float | None = None
 
     # Sharp alignment
-    sharp_line: Optional[float] = None
+    sharp_line: float | None = None
     is_sharp_aligned: bool = True   # Are we aligned with sharp movement?
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -359,10 +358,10 @@ class BettingRecommendation:
     # ═══════════════════════════════════════════════════════════════════════════
     # CLV measures if our line was better than the closing line
     # Positive CLV = we got value (line moved in our favor after bet)
-    closing_line: Optional[float] = None           # Final line before game start
-    closing_line_captured_at: Optional[datetime] = None  # When closing line was captured
-    clv: Optional[float] = None                    # Our line - closing line (points)
-    clv_percent: Optional[float] = None            # CLV as % (clv / closing_line * 100)
+    closing_line: float | None = None           # Final line before game start
+    closing_line_captured_at: datetime | None = None  # When closing line was captured
+    clv: float | None = None                    # Our line - closing line (points)
+    clv_percent: float | None = None            # CLV as % (clv / closing_line * 100)
 
     # Metadata
     model_version: str = DEFAULT_MODEL_VERSION
@@ -560,33 +559,33 @@ class Game:
     commence_time: datetime
     status: GameStatus = GameStatus.SCHEDULED
     is_neutral: bool = False
-    venue: Optional[str] = None
+    venue: str | None = None
 
     # Scores (if completed)
-    home_score: Optional[int] = None
-    away_score: Optional[int] = None
-    home_score_1h: Optional[int] = None
-    away_score_1h: Optional[int] = None
+    home_score: int | None = None
+    away_score: int | None = None
+    home_score_1h: int | None = None
+    away_score_1h: int | None = None
 
     # Ratings (loaded separately)
-    home_ratings: Optional[TeamRatings] = None
-    away_ratings: Optional[TeamRatings] = None
+    home_ratings: TeamRatings | None = None
+    away_ratings: TeamRatings | None = None
 
     # Market odds
-    market_odds: Optional[MarketOdds] = None
+    market_odds: MarketOdds | None = None
 
     # Prediction
-    prediction: Optional[Prediction] = None
+    prediction: Prediction | None = None
 
     @property
-    def actual_spread(self) -> Optional[float]:
+    def actual_spread(self) -> float | None:
         """Actual spread result (home perspective)."""
         if self.home_score is not None and self.away_score is not None:
             return self.away_score - self.home_score
         return None
 
     @property
-    def actual_total(self) -> Optional[int]:
+    def actual_total(self) -> int | None:
         """Actual total points."""
         if self.home_score is not None and self.away_score is not None:
             return self.home_score + self.away_score

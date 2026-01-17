@@ -15,15 +15,15 @@ Notes:
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Dict, Iterable, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from app.models import BettingRecommendation, Prediction
-
 
 _COLUMNS_CACHE: dict[str, set[str]] = {}
 
@@ -49,14 +49,14 @@ def _get_table_columns(engine: Engine, table_name: str, schema: str = "public") 
     return cols
 
 
-def _jsonb(value: Optional[Dict[str, Any]]) -> str:
+def _jsonb(value: dict[str, Any] | None) -> str:
     """Serialize a dict to a JSON string for CAST(:x AS jsonb)."""
     if value is None:
         return "{}"
     return json.dumps(value, default=str, ensure_ascii=False)
 
 
-def upsert_prediction(engine: Engine, prediction: Prediction, features: Optional[Dict[str, Any]] = None) -> UUID:
+def upsert_prediction(engine: Engine, prediction: Prediction, features: dict[str, Any] | None = None) -> UUID:
     """
     Upsert a prediction row and return `predictions.id`.
     """
@@ -306,7 +306,7 @@ def persist_prediction_and_recommendations(
     engine: Engine,
     prediction: Prediction,
     recommendations: Iterable[BettingRecommendation],
-    features: Optional[Dict[str, Any]] = None,
+    features: dict[str, Any] | None = None,
 ) -> tuple[UUID, int, int]:
     """
     Persist prediction + recs.
@@ -326,10 +326,10 @@ def persist_prediction_and_recommendations(
 def capture_closing_lines(
     engine: Engine,
     game_id: UUID,
-    closing_spread: Optional[float] = None,
-    closing_total: Optional[float] = None,
-    closing_spread_1h: Optional[float] = None,
-    closing_total_1h: Optional[float] = None,
+    closing_spread: float | None = None,
+    closing_total: float | None = None,
+    closing_spread_1h: float | None = None,
+    closing_total_1h: float | None = None,
 ) -> int:
     """
     Capture closing lines for pending recommendations and calculate CLV.
@@ -413,8 +413,8 @@ def settle_recommendations(
     game_id: UUID,
     home_score: int,
     away_score: int,
-    home_score_1h: Optional[int] = None,
-    away_score_1h: Optional[int] = None,
+    home_score_1h: int | None = None,
+    away_score_1h: int | None = None,
 ) -> dict:
     """
     Settle all pending recommendations for a game.
@@ -572,7 +572,7 @@ def settle_recommendations(
     return results
 
 
-def get_clv_summary(engine: Engine, model_version: Optional[str] = None) -> dict:
+def get_clv_summary(engine: Engine, model_version: str | None = None) -> dict:
     """
     Get CLV summary statistics for all settled bets.
 
@@ -627,4 +627,3 @@ def get_clv_summary(engine: Engine, model_version: Optional[str] = None) -> dict
                 "win_rate": (wins / (wins + losses) * 100) if (wins + losses) > 0 else 0,
             }
         return {}
-

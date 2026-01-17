@@ -7,8 +7,8 @@ just before game tip-off for accurate CLV measurement.
 CLV is the gold standard metric for betting model quality.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -17,19 +17,19 @@ from sqlalchemy.engine import Engine
 def capture_pregame_closing_lines(
     engine: Engine,
     lookahead_minutes: int = 10,
-    sport_key: Optional[str] = None,
-) -> Dict[str, Any]:
+    sport_key: str | None = None,
+) -> dict[str, Any]:
     """
     Capture closing lines for games starting in the next N minutes.
-    
+
     This should be run ~5 min before tip-off to capture the true closing line.
     The closing line is the gold standard for measuring model quality.
-    
+
     Args:
         engine: Database engine
         lookahead_minutes: How far ahead to look for starting games (default 10 min)
         sport_key: Optional sport key for odds API
-        
+
     Returns:
         Dict with:
         - games_checked: number of games considered in the window
@@ -37,10 +37,10 @@ def capture_pregame_closing_lines(
         - error: optional error string when odds API client initialization fails
     """
     from app.odds_api_client import OddsApiClient, OddsApiError
-    
-    now = datetime.now(timezone.utc)
+
+    now = datetime.now(UTC)
     cutoff = now + timedelta(minutes=lookahead_minutes)
-    
+
     # Find games starting soon that have pending bets
     stmt = text(
         """
@@ -60,19 +60,19 @@ def capture_pregame_closing_lines(
         ORDER BY g.commence_time ASC
         """
     )
-    
+
     games_checked = 0
     snapshots_inserted = 0
-    
+
     with engine.begin() as conn:
         games = conn.execute(stmt, {"now": now, "cutoff": cutoff}).fetchall()
-    
+
     if not games:
         return {
             "games_checked": 0,
             "snapshots_inserted": 0,
         }
-    
+
     # Fetch current odds for these games
     try:
         client = OddsApiClient(sport_key=sport_key)
@@ -82,14 +82,14 @@ def capture_pregame_closing_lines(
             "snapshots_inserted": 0,
             "error": str(e),
         }
-    
+
     for game_row in games:
         game = dict(game_row._mapping)
         game_id = game["game_id"]
         external_id = game["external_id"]
         commence_time = game.get("commence_time") or now
         games_checked += 1
-        
+
         try:
             if not external_id:
                 continue
@@ -201,10 +201,10 @@ def capture_pregame_closing_lines(
             with engine.begin() as conn:
                 conn.execute(insert_stmt, rows)
             snapshots_inserted += len(rows)
-        
+
         except OddsApiError:
             continue
-    
+
     return {
         "games_checked": games_checked,
         "snapshots_inserted": snapshots_inserted,

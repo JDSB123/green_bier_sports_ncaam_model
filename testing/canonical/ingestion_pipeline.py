@@ -19,17 +19,15 @@ Usage:
     result = pipeline.ingest_scores_data(df, source="ESPN")
 """
 
-import json
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Union, Callable
 from enum import Enum
 
 import pandas as pd
 
-from .team_resolution_service import get_team_resolver, ResolutionResult
+from .team_resolution_service import get_team_resolver
 
 
 class DataSource(Enum):
@@ -58,10 +56,10 @@ class IngestionResult:
     records_processed: int = 0
     records_accepted: int = 0
     records_rejected: int = 0
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    transformations_applied: List[str] = field(default_factory=list)
-    canonicalization_stats: Dict[str, int] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    transformations_applied: list[str] = field(default_factory=list)
+    canonicalization_stats: dict[str, int] = field(default_factory=dict)
     data_hash: str = ""
     timestamp: datetime = field(default_factory=datetime.now)
 
@@ -79,7 +77,7 @@ class DataQualityRule:
     """A data quality validation rule."""
     name: str
     description: str
-    validator: Callable[[pd.DataFrame], List[str]]
+    validator: Callable[[pd.DataFrame], list[str]]
     severity: str = "error"  # "error" or "warning"
     enabled: bool = True
 
@@ -118,9 +116,9 @@ class CanonicalIngestionPipeline:
         self._quality_rules = self._build_quality_rules()
 
         # Audit log
-        self._audit_log: List[Dict] = []
+        self._audit_log: list[dict] = []
 
-    def _build_quality_rules(self) -> Dict[str, List[DataQualityRule]]:
+    def _build_quality_rules(self) -> dict[str, list[DataQualityRule]]:
         """Build data quality validation rules."""
 
         rules = {}
@@ -196,8 +194,8 @@ class CanonicalIngestionPipeline:
     def ingest_scores_data(
         self,
         df: pd.DataFrame,
-        source: Union[str, DataSource],
-        season: Optional[int] = None
+        source: str | DataSource,
+        season: int | None = None
     ) -> IngestionResult:
         """
         Ingest scores data through the canonical pipeline.
@@ -224,8 +222,7 @@ class CanonicalIngestionPipeline:
                     result.success = False
                     result.errors.extend(validation_errors["errors"])
                     return result
-                else:
-                    result.warnings.extend(validation_errors["errors"])
+                result.warnings.extend(validation_errors["errors"])
 
             # Stage 2: Canonicalization
             self._log_stage(IngestionStage.CANONICALIZATION, "Canonicalizing team names")
@@ -263,7 +260,7 @@ class CanonicalIngestionPipeline:
     def ingest_odds_data(
         self,
         df: pd.DataFrame,
-        source: Union[str, DataSource],
+        source: str | DataSource,
         market: str = "fg_spread"
     ) -> IngestionResult:
         """
@@ -318,7 +315,7 @@ class CanonicalIngestionPipeline:
 
         return result
 
-    def _canonicalize_scores_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, Dict[str, int]]:
+    def _canonicalize_scores_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
         """Canonicalize team names in scores data."""
         df_copy = df.copy()
         stats = {"resolved": 0, "unresolved": 0, "conflicts": 0}
@@ -353,7 +350,7 @@ class CanonicalIngestionPipeline:
 
         return df_copy, stats
 
-    def _canonicalize_odds_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, Dict[str, int]]:
+    def _canonicalize_odds_data(self, df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
         """Canonicalize team names in odds data."""
         df_copy = df.copy()
         stats = {"resolved": 0, "unresolved": 0, "conflicts": 0}
@@ -386,7 +383,7 @@ class CanonicalIngestionPipeline:
         self,
         df: pd.DataFrame,
         source: DataSource,
-        season: Optional[int]
+        season: int | None
     ) -> pd.DataFrame:
         """Apply transformations to scores data."""
         df_copy = df.copy()
@@ -422,7 +419,7 @@ class CanonicalIngestionPipeline:
 
         return df_copy
 
-    def _run_quality_checks(self, df: pd.DataFrame, data_type: str) -> Dict[str, List[str]]:
+    def _run_quality_checks(self, df: pd.DataFrame, data_type: str) -> dict[str, list[str]]:
         """Run quality checks for the given data type."""
         errors = []
         warnings = []
@@ -448,13 +445,13 @@ class CanonicalIngestionPipeline:
         return {"errors": errors, "warnings": warnings}
 
     # Quality validation methods
-    def _validate_required_columns(self, df: pd.DataFrame) -> List[str]:
+    def _validate_required_columns(self, df: pd.DataFrame) -> list[str]:
         """Validate required columns are present."""
         required_cols = ["home_team", "away_team", "date"]
         missing = [col for col in required_cols if col not in df.columns]
         return [f"Missing required columns: {missing}"] if missing else []
 
-    def _validate_non_null_scores(self, df: pd.DataFrame) -> List[str]:
+    def _validate_non_null_scores(self, df: pd.DataFrame) -> list[str]:
         """Validate scores are not null for games that should have scores."""
         errors = []
         score_cols = ["home_score", "away_score"]
@@ -467,7 +464,7 @@ class CanonicalIngestionPipeline:
 
         return errors
 
-    def _validate_reasonable_scores(self, df: pd.DataFrame) -> List[str]:
+    def _validate_reasonable_scores(self, df: pd.DataFrame) -> list[str]:
         """Validate scores are within reasonable ranges."""
         warnings = []
 
@@ -481,7 +478,7 @@ class CanonicalIngestionPipeline:
 
         return warnings
 
-    def _validate_date_format(self, df: pd.DataFrame) -> List[str]:
+    def _validate_date_format(self, df: pd.DataFrame) -> list[str]:
         """Validate date formats."""
         errors = []
 
@@ -495,7 +492,7 @@ class CanonicalIngestionPipeline:
 
         return errors
 
-    def _validate_team_resolution(self, df: pd.DataFrame) -> List[str]:
+    def _validate_team_resolution(self, df: pd.DataFrame) -> list[str]:
         """Validate team names can be resolved."""
         errors = []
         unresolved_teams = set()
@@ -513,13 +510,13 @@ class CanonicalIngestionPipeline:
 
         return errors
 
-    def _validate_odds_columns(self, df: pd.DataFrame) -> List[str]:
+    def _validate_odds_columns(self, df: pd.DataFrame) -> list[str]:
         """Validate odds data has required columns."""
         required_cols = ["home_team", "away_team", "spread"]
         missing = [col for col in required_cols if col not in df.columns]
         return [f"Missing required columns: {missing}"] if missing else []
 
-    def _validate_spread_signs(self, df: pd.DataFrame) -> List[str]:
+    def _validate_spread_signs(self, df: pd.DataFrame) -> list[str]:
         """Validate spread ranges when favorite context is unavailable."""
         issues = []
 
@@ -537,7 +534,7 @@ class CanonicalIngestionPipeline:
 
         return issues
 
-    def _validate_price_ranges(self, df: pd.DataFrame) -> List[str]:
+    def _validate_price_ranges(self, df: pd.DataFrame) -> list[str]:
         """Validate betting prices are reasonable."""
         warnings = []
 
@@ -552,7 +549,7 @@ class CanonicalIngestionPipeline:
 
         return warnings
 
-    def _validate_rating_ranges(self, df: pd.DataFrame) -> List[str]:
+    def _validate_rating_ranges(self, df: pd.DataFrame) -> list[str]:
         """Validate rating values are reasonable."""
         warnings = []
 
@@ -596,7 +593,7 @@ class CanonicalIngestionPipeline:
             })
         print(f"[ERROR] {message}")
 
-    def get_audit_log(self) -> List[Dict]:
+    def get_audit_log(self) -> list[dict]:
         """Get the audit log."""
         return self._audit_log.copy()
 

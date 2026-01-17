@@ -14,8 +14,6 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-from datetime import datetime
-from typing import Any
 
 try:
     import requests
@@ -33,7 +31,7 @@ except ImportError:
 # Canonicalization threshold - fail if more than 10% of games have unresolved teams
 UNRESOLVED_THRESHOLD = 0.10
 
-from testing.azure_io import read_csv, upload_text, write_json, blob_exists
+from testing.azure_io import blob_exists, read_csv, upload_text, write_json
 
 SCORES_FG_BLOB = "scores/fg/games_all.csv"
 SCORES_H1_BLOB = "scores/h1/h1_games_all.csv"
@@ -142,7 +140,7 @@ def parse_h1_scores(summary: dict, game_id: str) -> dict | None:
         # Canonicalize team names using central resolver
         home_team_canonical = resolve_team_name(home_team) if home_team else home_team
         away_team_canonical = resolve_team_name(away_team) if away_team else away_team
-        
+
         # Check for unresolved teams
         unresolved = []
         if home_team and home_team_canonical == home_team:
@@ -154,7 +152,7 @@ def parse_h1_scores(summary: dict, game_id: str) -> dict | None:
             check = resolve_team_name(away_team.lower())
             if check == away_team.lower():
                 unresolved.append(("away", away_team))
-        
+
         if unresolved:
             return {
                 "_unresolved": unresolved,
@@ -286,7 +284,7 @@ def main() -> int:
     print()
 
     unresolved_games = []  # Track unresolved for summary
-    
+
     for i, game in enumerate(games_to_fetch):
         game_id = game["game_id"]
 
@@ -308,7 +306,7 @@ def main() -> int:
                 for side, name in h1_data["_unresolved"]:
                     print(f"  [WARN] UNRESOLVED {side}: '{name}' (game {game_id})")
                 continue
-            
+
             h1_data["date"] = game["date"]
             h1_games.append(h1_data)
         else:
@@ -331,7 +329,7 @@ def main() -> int:
         failure_rate = len(unresolved_games) / total_processed
         print()
         print(f"[WARN] {len(unresolved_games)}/{total_processed} games ({failure_rate:.1%}) have unresolved teams")
-        
+
         if failure_rate > UNRESOLVED_THRESHOLD:
             print(f"[ERROR] Unresolved rate exceeds {UNRESOLVED_THRESHOLD:.0%} threshold!")
             seen = set()

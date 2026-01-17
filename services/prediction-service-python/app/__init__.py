@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 # Configure structured logging on import
 from .logging_config import configure_logging

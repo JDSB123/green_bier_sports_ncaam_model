@@ -22,13 +22,12 @@ Betting Strategy (v33.10.0):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
-import math
+from typing import TYPE_CHECKING
 
 from app import __version__ as APP_VERSION
+from app.models import BetType
 from app.predictors.base import BasePredictor, MarketPrediction
 from app.statistical_confidence import statistical_confidence
-from app.models import BetType
 
 if TYPE_CHECKING:
     from app.models import TeamRatings
@@ -115,8 +114,8 @@ class FGTotalModel(BasePredictor):
 
     def _calculate_base_total(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
         is_neutral: bool = False,
     ) -> tuple[float, float, float]:
         """
@@ -140,8 +139,8 @@ class FGTotalModel(BasePredictor):
 
     def _calculate_adjustment(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
         base_total: float,
     ) -> tuple[float, str]:
         """
@@ -241,8 +240,8 @@ class FGTotalModel(BasePredictor):
 
     def _calculate_variance(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
     ) -> float:
         """
         Calculate prediction variance for totals.
@@ -267,11 +266,11 @@ class FGTotalModel(BasePredictor):
 
     def predict(
         self,
-        home: "TeamRatings",
-        away: "TeamRatings",
+        home: TeamRatings,
+        away: TeamRatings,
         is_neutral: bool = False,
-        home_rest_days: Optional[int] = None,
-        away_rest_days: Optional[int] = None,
+        home_rest_days: int | None = None,
+        away_rest_days: int | None = None,
     ) -> MarketPrediction:
         """
         Generate total prediction using hybrid approach.

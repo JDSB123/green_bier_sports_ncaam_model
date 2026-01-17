@@ -15,9 +15,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 
 import psycopg2
 import psycopg2.extras
@@ -33,7 +32,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _utc_now_z() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _normalize_db_url(url: str) -> str:
@@ -45,7 +44,7 @@ def _normalize_db_url(url: str) -> str:
     return u
 
 
-def _read_secret(path: Path) -> Optional[str]:
+def _read_secret(path: Path) -> str | None:
     try:
         s = path.read_text(encoding="utf-8").strip()
         return s or None
@@ -53,7 +52,7 @@ def _read_secret(path: Path) -> Optional[str]:
         return None
 
 
-def _load_aliases_from_azure(container: str, blob_path: str) -> Dict[str, str]:
+def _load_aliases_from_azure(container: str, blob_path: str) -> dict[str, str]:
     if not AZURE_AVAILABLE:
         raise ImportError("azure-storage-blob is required to load aliases from Azure.")
 
@@ -106,7 +105,7 @@ def _fetch_dicts(conn, sql: str, params: tuple = ()) -> list[dict]:
         return [dict(r) for r in rows]
 
 
-def _build_flat_aliases(conn) -> Dict[str, str]:
+def _build_flat_aliases(conn) -> dict[str, str]:
     """
     Build a deterministic flat mapping from DB aliases to canonical names.
 
@@ -124,8 +123,8 @@ def _build_flat_aliases(conn) -> Dict[str, str]:
     aliases = _fetch_dicts(conn, "SELECT team_id::text AS team_id, alias, source, confidence FROM team_aliases")
 
     # canonical self-references
-    mapping: Dict[str, str] = {c.lower().strip(): c for c in canonical_by_id.values()}
-    chosen: Dict[str, tuple[str, bool, float, str]] = {}  # key -> (team_id, has_ratings, confidence, canonical)
+    mapping: dict[str, str] = {c.lower().strip(): c for c in canonical_by_id.values()}
+    chosen: dict[str, tuple[str, bool, float, str]] = {}  # key -> (team_id, has_ratings, confidence, canonical)
     for tid, canonical in canonical_by_id.items():
         chosen[canonical.lower().strip()] = (tid, tid in rated_team_ids, 1.0, canonical)
 
@@ -147,9 +146,7 @@ def _build_flat_aliases(conn) -> Dict[str, str]:
         existing_tid, existing_has_r, existing_conf, existing_canonical = chosen.get(key, ("", False, 0.0, mapping[key]))
         if existing_canonical == canonical:
             # Keep best metadata
-            if has_r and not existing_has_r:
-                chosen[key] = (tid, has_r, conf, canonical)
-            elif (has_r == existing_has_r) and (conf > existing_conf):
+            if has_r and not existing_has_r or (has_r == existing_has_r) and (conf > existing_conf):
                 chosen[key] = (tid, has_r, conf, canonical)
             continue
 
@@ -192,7 +189,7 @@ def main() -> int:
         return 1
 
     # Normalize file keys to match our projection semantics (lowercase).
-    file_map_norm: Dict[str, str] = {str(k).lower().strip(): str(v) for k, v in file_map.items()}
+    file_map_norm: dict[str, str] = {str(k).lower().strip(): str(v) for k, v in file_map.items()}
 
     only_in_db = sorted(set(db_map.keys()) - set(file_map_norm.keys()))
     only_in_file = sorted(set(file_map_norm.keys()) - set(db_map.keys()))
@@ -209,7 +206,7 @@ def main() -> int:
 
     max_diffs = int(args.max_diffs)
 
-    def _print_list(label: str, items: List[str]):
+    def _print_list(label: str, items: list[str]):
         if not items:
             return
         print(f"\n{label} (showing up to {max_diffs}):")
@@ -227,4 +224,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

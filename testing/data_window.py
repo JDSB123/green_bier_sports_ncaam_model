@@ -5,8 +5,8 @@ All historical references must stay within this window.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date
-from typing import Iterable, List
 
 # NCAA season naming: season 2024 == 2023-24 (Nov 2023 through Apr 2024).
 CANONICAL_START_SEASON = 2024
@@ -23,13 +23,13 @@ def current_season(today: date | None = None) -> int:
     return season_from_date(today or date.today())
 
 
-def default_backtest_seasons(today: date | None = None) -> List[int]:
+def default_backtest_seasons(today: date | None = None) -> list[int]:
     """Return canonical seasons from the start window through current season."""
     end = current_season(today)
     return list(range(CANONICAL_START_SEASON, end + 1))
 
 
-def enforce_min_season(seasons: Iterable[int]) -> List[int]:
+def enforce_min_season(seasons: Iterable[int]) -> list[int]:
     """Validate that all seasons are within the canonical window."""
     season_list = list(seasons)
     invalid = sorted({s for s in season_list if s < CANONICAL_START_SEASON})

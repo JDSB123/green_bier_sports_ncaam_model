@@ -19,18 +19,23 @@ Version History:
 - v33.7.0: Initial stable release with modular architecture
 """
 
-from dataclasses import dataclass
-from datetime import datetime
 import math
-from typing import Optional, List, TYPE_CHECKING
+from datetime import datetime
+from typing import Optional
 from uuid import UUID
-import numpy as np
+
+import structlog
 
 from app import __version__ as APP_VERSION
+from app.config import settings
+from app.ml.features import FeatureEngineer, GameFeatures
+
+# ML models are ALWAYS available - integrate trained models into production
+from app.ml.models import ModelRegistry
 from app.models import (
     BetTier,
-    BetType,
     BettingRecommendation,
+    BetType,
     MarketOdds,
     Pick,
     Prediction,
@@ -42,12 +47,7 @@ from app.predictors import (
     h1_spread_model,
     h1_total_model,
 )
-from app.config import settings
-import structlog
 
-# ML models are ALWAYS available - integrate trained models into production
-from app.ml.models import ModelRegistry
-from app.ml.features import FeatureEngineer, GameFeatures
 HAS_ML_MODELS = True
 
 
@@ -62,12 +62,12 @@ H1_TOTAL_MAX_RELIABLE = 85.0   # Above this, model under-predicts
 class PredictionEngineV33:
     """
     v33.10 Prediction Engine - Modular architecture with ML probability models.
-    
+
     ARCHITECTURE:
     1. Analytical models (FGSpreadModel, etc.) predict fair lines
     2. ML models (XGBoost) predict P(bet wins) directly when available
     3. Statistical CDF fallback when ML not trained
-    
+
     Provides same interface as BarttorvikPredictor for drop-in replacement.
     """
 
@@ -106,25 +106,25 @@ class PredictionEngineV33:
 
         # ML models are NOW PRODUCTION INTEGRATED (v33.11)
         self._use_ml = use_ml_models and HAS_ML_MODELS
-        self._ml_registry: Optional["ModelRegistry"] = None
-        self._feature_engineer: Optional["FeatureEngineer"] = None
+        self._ml_registry: ModelRegistry | None = None
+        self._feature_engineer: FeatureEngineer | None = None
         self._ml_loaded = False
 
         # ALWAYS load ML models in production (v33.11)
         if HAS_ML_MODELS:
             self._load_ml_models()
-    
+
     def _load_ml_models(self) -> None:
         """Load trained ML models if available."""
         if not HAS_ML_MODELS:
             self.logger.debug("ML models not available (missing xgboost)")
             return
-        
+
         try:
             self._ml_registry = ModelRegistry()
             self._feature_engineer = FeatureEngineer()
             self._ml_loaded = self._ml_registry.load_models()
-            
+
             if self._ml_loaded:
                 available = self._ml_registry.available_models
                 self.logger.info(f"ML models loaded: {available}")
@@ -146,24 +146,24 @@ class PredictionEngineV33:
         commence_time: datetime,
         home_ratings: TeamRatings,
         away_ratings: TeamRatings,
-        market_odds: Optional[MarketOdds] = None,
+        market_odds: MarketOdds | None = None,
         is_neutral: bool = False,
         home_rest: Optional['RestInfo'] = None,
         away_rest: Optional['RestInfo'] = None,
-        home_hca: Optional[float] = None,
-        home_hca_1h: Optional[float] = None,
-        home_health: Optional[dict] = None,
-        away_health: Optional[dict] = None,
+        home_hca: float | None = None,
+        home_hca_1h: float | None = None,
+        home_health: dict | None = None,
+        away_health: dict | None = None,
     ) -> Prediction:
         """
         Generate predictions using v33.10.0 modular models.
-        
+
         Each market gets its own specialized model:
         - FG Spread: Proven statistical edge
         - FG Total: Hybrid approach
         - 1H Spread: Independent calibration
         - 1H Total: Independent calibration
-        
+
         Args:
             game_id: Unique game identifier
             home_team: Home team name
@@ -179,14 +179,14 @@ class PredictionEngineV33:
             home_hca_1h: Optional team-specific HCA override (1H)
             home_health: Optional health adjustments for home team
             away_health: Optional health adjustments for away team
-            
+
         Returns:
             Complete Prediction object with all 4 market predictions
         """
         if home_ratings is None or away_ratings is None:
             raise ValueError("home_ratings and away_ratings are required")
 
-        def _rest_days(rest: Optional['RestInfo']) -> Optional[int]:
+        def _rest_days(rest: Optional['RestInfo']) -> int | None:
             """Gracefully handle both legacy and current rest attributes."""
             if rest is None:
                 return None
@@ -335,25 +335,25 @@ class PredictionEngineV33:
         self,
         prediction: Prediction,
         market_odds: MarketOdds,
-        home_ratings: Optional[TeamRatings] = None,
-        away_ratings: Optional[TeamRatings] = None,
+        home_ratings: TeamRatings | None = None,
+        away_ratings: TeamRatings | None = None,
         is_neutral: bool = False,
-    ) -> List[BettingRecommendation]:
+    ) -> list[BettingRecommendation]:
         """
         Generate betting recommendations from predictions and market odds.
-        
+
         Uses model-specific minimum edges and confidence thresholds.
-        
+
         v33.10: Optionally uses ML models for probability prediction when
         home_ratings and away_ratings are provided.
-        
+
         Args:
             prediction: Prediction object from make_prediction()
             market_odds: Current market odds
             home_ratings: Home team ratings (for ML models)
             away_ratings: Away team ratings (for ML models)
             is_neutral: Neutral site flag
-            
+
         Returns:
             List of BettingRecommendation objects
         """
@@ -361,7 +361,7 @@ class PredictionEngineV33:
         self._current_home_ratings = home_ratings
         self._current_away_ratings = away_ratings
         self._current_is_neutral = is_neutral
-        
+
         recommendations = []
 
         # ─────────────────────────────────────────────────────────────────────
@@ -466,10 +466,10 @@ class PredictionEngineV33:
         edge: float,
         confidence: float,
         market_odds: MarketOdds,
-    ) -> Optional[BettingRecommendation]:
+    ) -> BettingRecommendation | None:
         """
         Create a single BettingRecommendation.
-        
+
         Handles conversion to Pick perspective (for AWAY picks, flip spread sign).
         """
         # Store bet line from PICK perspective
@@ -507,8 +507,8 @@ class PredictionEngineV33:
 
         # Get probability (ML model if available, otherwise statistical)
         implied_prob = self._calibrated_probability(
-            edge, 
-            final_confidence, 
+            edge,
+            final_confidence,
             bet_type,
             home_ratings=getattr(self, '_current_home_ratings', None),
             away_ratings=getattr(self, '_current_away_ratings', None),
@@ -650,19 +650,19 @@ class PredictionEngineV33:
         away_ratings: TeamRatings,
         market_odds: MarketOdds,
         is_neutral: bool = False,
-    ) -> Optional[float]:
+    ) -> float | None:
         """
         Get probability from trained ML model if available.
-        
+
         Returns None if ML model not available for this bet type.
         """
         if not self._ml_loaded or self._ml_registry is None:
             return None
-        
+
         ml_model_name = self.BET_TYPE_TO_ML_MODEL.get(bet_type)
         if ml_model_name is None or not self._ml_registry.has_model(ml_model_name):
             return None
-        
+
         try:
             # Build features
             game_features = GameFeatures(
@@ -670,7 +670,7 @@ class PredictionEngineV33:
                 game_date="",
                 home_team=home_ratings.team_name,
                 away_team=away_ratings.team_name,
-                
+
                 # Efficiency
                 home_adj_o=home_ratings.adj_o,
                 home_adj_d=home_ratings.adj_d,
@@ -680,7 +680,7 @@ class PredictionEngineV33:
                 away_tempo=away_ratings.tempo,
                 home_rank=home_ratings.rank,
                 away_rank=away_ratings.rank,
-                
+
                 # Four factors
                 home_efg=home_ratings.efg,
                 home_efgd=home_ratings.efgd,
@@ -698,7 +698,7 @@ class PredictionEngineV33:
                 home_ftrd=home_ratings.ftrd,
                 away_ftr=away_ratings.ftr,
                 away_ftrd=away_ratings.ftrd,
-                
+
                 # Shooting
                 home_two_pt_pct=home_ratings.two_pt_pct,
                 home_two_pt_pct_d=home_ratings.two_pt_pct_d,
@@ -712,13 +712,13 @@ class PredictionEngineV33:
                 home_three_pt_rate_d=home_ratings.three_pt_rate_d,
                 away_three_pt_rate=away_ratings.three_pt_rate,
                 away_three_pt_rate_d=away_ratings.three_pt_rate_d,
-                
+
                 # Quality
                 home_barthag=home_ratings.barthag,
                 home_wab=home_ratings.wab,
                 away_barthag=away_ratings.barthag,
                 away_wab=away_ratings.wab,
-                
+
                 # Market
                 spread_open=market_odds.spread_open,
                 total_open=market_odds.total_open,
@@ -728,29 +728,29 @@ class PredictionEngineV33:
                 sharp_total=market_odds.sharp_total,
                 square_spread=market_odds.square_spread,
                 square_total=market_odds.square_total,
-                
+
                 # Situational
                 is_neutral=is_neutral,
-                
+
                 # Public betting
                 public_bet_pct_home=market_odds.public_bet_pct_home,
                 public_money_pct_home=market_odds.public_money_pct_home,
                 public_bet_pct_over=market_odds.public_bet_pct_over,
                 public_money_pct_over=market_odds.public_money_pct_over,
             )
-            
+
             # Extract features
             X = self._feature_engineer.extract_features(game_features)
             X = X.reshape(1, -1)
-            
+
             # Get probability
             proba = self._ml_registry.predict_proba(ml_model_name, X)
             if proba is not None:
                 return float(proba[0])
-            
+
         except Exception as e:
             self.logger.warning(f"ML prediction failed for {bet_type}: {e}")
-        
+
         return None
 
     def _calibrated_probability(
@@ -758,18 +758,18 @@ class PredictionEngineV33:
         edge: float,
         confidence: float,
         bet_type: BetType,
-        home_ratings: Optional[TeamRatings] = None,
-        away_ratings: Optional[TeamRatings] = None,
-        market_odds: Optional[MarketOdds] = None,
+        home_ratings: TeamRatings | None = None,
+        away_ratings: TeamRatings | None = None,
+        market_odds: MarketOdds | None = None,
         is_neutral: bool = False,
     ) -> float:
         """
         Convert edge to win probability.
-        
+
         v33.10: Uses ML model if available, otherwise statistical CDF.
-        
+
         The formula (statistical fallback): P(cover) = Φ(edge / sigma) blended with prior
-        
+
         Key insight: Even large edges have uncertainty because:
         1. Our model has error (MAE ~10-13 points)
         2. Markets incorporate information we don't have
@@ -777,9 +777,9 @@ class PredictionEngineV33:
         """
         # Try ML model first (if available and we have all inputs)
         if (
-            self._ml_loaded 
-            and home_ratings is not None 
-            and away_ratings is not None 
+            self._ml_loaded
+            and home_ratings is not None
+            and away_ratings is not None
             and market_odds is not None
         ):
             ml_prob = self._get_ml_probability(
@@ -788,7 +788,7 @@ class PredictionEngineV33:
             if ml_prob is not None:
                 self.logger.debug(f"Using ML probability for {bet_type}: {ml_prob:.3f}")
                 return ml_prob
-        
+
         # Fallback: Statistical CDF approach
         sigma = self._get_edge_sigma(bet_type)
         conf = min(1.0, max(0.0, confidence))
@@ -801,16 +801,16 @@ class PredictionEngineV33:
             max_z = 2.5
             z = edge / sigma
             z_capped = min(z, max_z)
-            
+
             # Log when we cap (useful for debugging)
             if z > max_z:
                 self.logger.debug(
                     f"Edge capped: {edge:.1f} pts (z={z:.2f} -> {z_capped:.2f})"
                 )
-            
+
             edge_prob = 0.5 * (1.0 + math.erf(z_capped / math.sqrt(2.0)))
             edge_prob = min(0.99, max(0.01, edge_prob))
-            
+
             # Blend with confidence: move from 50% toward edge_prob
             # Lower confidence = stay closer to 50%
             base_prob = 0.5 + (edge_prob - 0.5) * conf
@@ -819,7 +819,7 @@ class PredictionEngineV33:
         prior_rate, prior_weight = self._get_bayes_prior(bet_type)
         model_weight = max(1.0, prior_weight * max(0.25, conf))
         blended = (prior_rate * prior_weight + base_prob * model_weight) / (prior_weight + model_weight)
-        
+
         # Hard floor/ceiling to prevent extreme Kelly sizing
         return min(0.85, max(0.15, blended))
 
@@ -852,17 +852,16 @@ class PredictionEngineV33:
         """Determine bet tier based on edge and confidence."""
         if edge >= 5.0 and confidence >= 0.75:
             return BetTier.MAX
-        elif edge >= 3.0 and confidence >= 0.70:
+        if edge >= 3.0 and confidence >= 0.70:
             return BetTier.MEDIUM
-        else:
-            return BetTier.STANDARD
+        return BetTier.STANDARD
 
     def _check_sharp_alignment(
         self,
         pick: Pick,
         model_line: float,
         market_line: float,
-        sharp_line: Optional[float],
+        sharp_line: float | None,
         bet_type: BetType,
     ) -> bool:
         """Check if we're aligned with sharp movement."""
@@ -874,11 +873,10 @@ class PredictionEngineV33:
             model_favors_home = model_line < market_line
             sharp_favors_home = sharp_line < market_line
             return model_favors_home == sharp_favors_home
-        else:
-            # For totals: model and sharp should agree on direction
-            model_over = model_line > market_line
-            sharp_over = sharp_line > market_line
-            return model_over == sharp_over
+        # For totals: model and sharp should agree on direction
+        model_over = model_line > market_line
+        sharp_over = sharp_line > market_line
+        return model_over == sharp_over
 
     def _apply_market_context(
         self,
@@ -889,7 +887,7 @@ class PredictionEngineV33:
     ) -> float:
         """Adjust confidence using line movement/steam/RLM/sharp-square signals."""
         adjusted = confidence
-        
+
         # 1. Line movement signals (requires opening line)
         move = self._get_market_move(bet_type, market_odds)
         if move is not None:
@@ -931,7 +929,7 @@ class PredictionEngineV33:
 
         return min(0.99, max(0.01, adjusted))
 
-    def _get_market_move(self, bet_type: BetType, market_odds: MarketOdds) -> Optional[float]:
+    def _get_market_move(self, bet_type: BetType, market_odds: MarketOdds) -> float | None:
         """Return current - open line for the bet type (home-perspective for spreads)."""
         if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
             current = market_odds.spread if bet_type == BetType.SPREAD else market_odds.spread_1h
@@ -1017,14 +1015,14 @@ class PredictionEngineV33:
     ) -> tuple[bool, float]:
         """
         Detect when sharp books (Pinnacle) have moved but square books haven't.
-        
+
         This is an alternative to public betting percentages - we infer sharp action
         from the difference between sharp and square lines.
-        
+
         Returns: (divergence_detected, divergence_amount)
         """
         divergence_threshold = 0.5  # Half-point difference is meaningful
-        
+
         if bet_type in (BetType.SPREAD, BetType.SPREAD_1H):
             sharp = market_odds.sharp_spread
             square = market_odds.square_spread
@@ -1033,21 +1031,21 @@ class PredictionEngineV33:
                 square = market_odds.spread
             if sharp is None or square is None:
                 return False, 0.0
-            
+
             divergence = abs(sharp - square)
             return divergence >= divergence_threshold, divergence
-        
-        else:  # Totals
-            sharp = market_odds.sharp_total
-            square = market_odds.square_total
-            if sharp is None or square is None:
-                square = market_odds.total
-            if sharp is None or square is None:
-                return False, 0.0
-            
-            divergence = abs(sharp - square)
-            return divergence >= 1.0, divergence  # Full point for totals
-    
+
+        # Totals
+        sharp = market_odds.sharp_total
+        square = market_odds.square_total
+        if sharp is None or square is None:
+            square = market_odds.total
+        if sharp is None or square is None:
+            return False, 0.0
+
+        divergence = abs(sharp - square)
+        return divergence >= 1.0, divergence  # Full point for totals
+
     def _is_aligned_with_sharp_divergence(
         self,
         bet_type: BetType,
@@ -1056,7 +1054,7 @@ class PredictionEngineV33:
     ) -> bool:
         """
         Check if our pick is on the same side as the sharp divergence.
-        
+
         If sharp spread is more negative than square (sharps favor home more),
         and we're picking HOME, we're aligned with sharps.
         """
@@ -1065,24 +1063,24 @@ class PredictionEngineV33:
             square = market_odds.square_spread or market_odds.spread
             if sharp is None or square is None:
                 return True  # No data = neutral
-            
+
             sharps_favor_home = sharp < square  # More negative = more home favorite
             if pick == Pick.HOME:
                 return sharps_favor_home
-            else:  # AWAY
-                return not sharps_favor_home
-        
-        else:  # Totals
-            sharp = market_odds.sharp_total
-            square = market_odds.square_total or market_odds.total
-            if sharp is None or square is None:
-                return True
-            
-            sharps_favor_over = sharp > square  # Higher total = over
-            if pick == Pick.OVER:
-                return sharps_favor_over
-            else:  # UNDER
-                return not sharps_favor_over
+            # AWAY
+            return not sharps_favor_home
+
+        # Totals
+        sharp = market_odds.sharp_total
+        square = market_odds.square_total or market_odds.total
+        if sharp is None or square is None:
+            return True
+
+        sharps_favor_over = sharp > square  # Higher total = over
+        if pick == Pick.OVER:
+            return sharps_favor_over
+        # UNDER
+        return not sharps_favor_over
 
     def _get_market_probability(
         self,
@@ -1094,8 +1092,7 @@ class PredictionEngineV33:
         def american_to_prob(odds: int) -> float:
             if odds < 0:
                 return abs(odds) / (abs(odds) + 100)
-            else:
-                return 100 / (odds + 100)
+            return 100 / (odds + 100)
 
         odds = self._get_pick_price(bet_type, pick, market_odds)
         return american_to_prob(odds)
@@ -1105,7 +1102,7 @@ class PredictionEngineV33:
         bet_type: BetType,
         market_odds: MarketOdds,
         pick: Pick,
-    ) -> tuple[Optional[float], Optional[float]]:
+    ) -> tuple[float | None, float | None]:
         """Return (no-vig probability for pick, market hold %), when both sides are available."""
 
         def american_to_prob(odds: int) -> float:
