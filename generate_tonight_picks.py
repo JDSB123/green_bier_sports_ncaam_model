@@ -513,34 +513,46 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightPick]:
-    """Generate predictions for tonight's games."""
+    """Generate predictions for tonight's games using v33 formula-based predictions."""
     picks = []
 
-    # Add derived features used by trained residual models.
+    # Add derived features for v33 predictions
     df = _add_derived_features(df)
 
+    # Create BacktestConfig and Predictor for v33 formulas
+    config = BacktestConfig(
+        market=MarketType.FG_SPREAD,  # Dummy market (not used by predictor directly)
+        seasons=[2026],  # Dummy season
+        hca_spread=5.8,
+        hca_total=3.4,
+        hca_h1_spread=3.6,
+    )
+
+    from testing.scripts.run_historical_backtest import NCAAMPredictor
+    predictor = NCAAMPredictor(config)
+
     for market in markets:
-        # Load trained model (linear residual) for the market.
-        try:
-            from ncaam.linear_json_model import load_linear_json_model
+        print(f"\n[INFO] Generating {market.value} predictions...")
 
-            trained_model, trained_features, trained_meta = load_linear_json_model(
-                ROOT_DIR / "models" / "linear" / f"{market.value}.json",
-                allow_linear=True,
-            )
-        except Exception as exc:
-            trained_model, trained_features, trained_meta = None, None, None
-            print(f"[WARN] Failed to load trained model for {market.value}: {exc}")
-
-        if trained_model is None or not trained_features:
-            print(f"[WARN] Trained model not found for {market.value}; skipping.")
+        # Determine line column and prediction method
+        if market == MarketType.FG_SPREAD:
+            line_col = "fg_spread"
+            predict_func = predictor.predict_spread
+        elif market == MarketType.H1_SPREAD:
+            line_col = "h1_spread"
+            predict_func = predictor.predict_h1_spread
+        elif market == MarketType.FG_TOTAL:
+            line_col = "fg_total"
+            predict_func = predictor.predict_total
+        elif market == MarketType.H1_TOTAL:
+            line_col = "h1_total"
+            predict_func = predictor.predict_h1_total
+        else:
+            print(f"[WARN] Market {market.value} not supported; skipping.")
             continue
 
-        target_mode = (trained_meta or {}).get("target_mode", "raw")
-        sigma = float((trained_meta or {}).get("sigma", 11.0))
-        min_edge_points = float((trained_meta or {}).get("min_edge", 1.5))
-
-        line_col = "fg_spread" if market == MarketType.FG_SPREAD else "h1_spread"
+        # Default edge thresholds
+        min_edge_points = 5.0  # Conservative threshold for live betting
 
         for _, game in df.iterrows():
             # Extract required fields
@@ -554,31 +566,68 @@ def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightP
                 if pd.isna(market_line):
                     continue
 
-                # Build feature vector; if a feature is missing, impute the model mean.
-                features: list[float] = []
-                for i, name in enumerate(trained_features):
-                    val = game.get(name)
-                    if pd.isna(val):
-                        try:
-                            val = float(trained_model.means[i])
-                        except Exception:
-                            val = None
-                    if val is None or pd.isna(val):
-                        features = []
-                        break
-                    features.append(float(val))
+                # Get required ratings
+                home_adj_o = game.get("home_adj_o")
+                home_adj_d = game.get("home_adj_d")
+                away_adj_o = game.get("away_adj_o")
+                away_adj_d = game.get("away_adj_d")
 
-                if not features:
+                if any(pd.isna(x) for x in [home_adj_o, home_adj_d, away_adj_o, away_adj_d]):
+                    print(f"[SKIP] {away_team} @ {home_team} - missing ratings")
                     continue
 
-                predicted_raw = float(trained_model.predict([features])[0])
-                if target_mode == "residual":
-                    predicted = float(market_line) - predicted_raw
-                else:
-                    predicted = predicted_raw
+                # Build prediction kwargs based on market type
+                kwargs = {
+                    "home_adj_o": float(home_adj_o),
+                    "home_adj_d": float(home_adj_d),
+                    "away_adj_o": float(away_adj_o),
+                    "away_adj_d": float(away_adj_d),
+                    "is_neutral": bool(game.get("neutral", False)),
+                }
+
+                # Add optional Four Factors if available
+                for factor in ["efg", "efgd", "tor", "orb", "drb", "ftr"]:
+                    for side in ["home", "away"]:
+                        col = f"{side}_{factor}"
+                        val = game.get(col)
+                        if not pd.isna(val):
+                            kwargs[col] = float(val)
+
+                # Add tempo for totals
+                if "total" in market.value:
+                    home_tempo = game.get("home_tempo")
+                    away_tempo = game.get("away_tempo")
+                    if not pd.isna(home_tempo):
+                        kwargs["home_tempo"] = float(home_tempo)
+                    if not pd.isna(away_tempo):
+                        kwargs["away_tempo"] = float(away_tempo)
+
+                    # 3PT rate for totals
+                    home_3pt = game.get("home_three_pt_rate")
+                    away_3pt = game.get("away_three_pt_rate")
+                    if not pd.isna(home_3pt):
+                        kwargs["home_three_pt_rate"] = float(home_3pt)
+                    if not pd.isna(away_3pt):
+                        kwargs["away_three_pt_rate"] = float(away_3pt)
+
+                # Add advanced features for spreads
+                if "spread" in market.value:
+                    conf_diff = game.get("conf_strength_diff")
+                    if not pd.isna(conf_diff):
+                        kwargs["conf_strength_diff"] = float(conf_diff)
+
+                    for feat in ["team_depth_rolling", "ast_to_ratio_rolling"]:
+                        for side in ["home", "away"]:
+                            col = f"{side}_{feat}"
+                            val = game.get(col)
+                            if not pd.isna(val):
+                                kwargs[col] = float(val)
+
+                # Make prediction using v33 formula
+                predicted = predict_func(**kwargs)
 
                 edge_points = abs(predicted - float(market_line))
-                edge_pct = (edge_points / sigma) * 100.0 if sigma else 0.0
+                edge_pct = (edge_points / 11.0) * 100.0  # sigma = 11.0 for spread
 
                 if edge_points < min_edge_points:
                     continue
@@ -614,7 +663,7 @@ def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightP
                 picks.append(pick)
 
             except Exception as e:
-                print(f"[WARN] Error processing {home_team} vs {away_team}: {e}")
+                print(f"[WARN] Error processing game: {e}")
                 continue
 
     return picks
