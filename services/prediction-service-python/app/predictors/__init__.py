@@ -1,17 +1,15 @@
-"""
-Modular Prediction Models v33.10.0
+"""app.predictors
 
-All 4 markets are TRULY INDEPENDENT & BACKTESTED:
-- FG Spread: HCA=5.8 (from 3,318-game backtest, MAE=10.57)
-- FG Total: Calibration=+7.0 (from 3,318-game backtest, MAE=13.1)
-- 1H Spread: HCA=3.6 (from 904-game 1H backtest, MAE=8.25)
-- 1H Total: Calibration=+2.7 (from 562-game 1H backtest, MAE=8.88)
+All 4 markets are designed to be independent and backtested:
+- FG Spread (HCA tuned from historical results)
+- FG Total (calibration tuned from historical results)
+- 1H Spread (HCA tuned from historical results)
+- 1H Total (calibration tuned from historical results)
 
-All calibrations derived from real ESPN game data.
-
-v33.10.0 Changes:
-- Removed FG Total MAX_EDGE cap (all edges >= MIN_EDGE are bet candidates)
-- Added Azure Key Vault integration for secrets
+Notes:
+- Model versions are sourced from the service VERSION via app.__version__.
+- Calibration constants are periodically re-fit/recalibrated; refer to each
+    model class for the current constants.
 """
 
 # Import base classes first (no circular dependencies)

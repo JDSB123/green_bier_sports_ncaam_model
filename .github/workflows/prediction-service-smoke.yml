@@ -1,0 +1,49 @@
+name: Prediction Service Smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/prediction-service-python/**'
+      - 'ncaam/**'
+      - 'models/linear/**'
+      - '.github/workflows/prediction-service-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'services/prediction-service-python/**'
+      - 'ncaam/**'
+      - 'models/linear/**'
+      - '.github/workflows/prediction-service-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r services/prediction-service-python/requirements-base.txt
+          pip install slowapi==0.1.9 numpy==1.26.2 pandas==2.1.4
+
+      - name: Import smoke
+        run: |
+          python -c "import sys; sys.path.insert(0, 'services/prediction-service-python'); from app.main import app; assert app is not None; print('import_ok')"
+
+      - name: API smoke tests
+        run: |
+          cd services/prediction-service-python
+          pytest -q \
+            tests/test_api.py::TestHealthEndpoints::test_health_endpoint \
+            tests/test_api.py::TestHealthEndpoints::test_health_predict_endpoint \
+            tests/test_api.py::TestHealthEndpoints::test_health_predict_endpoint_linear_json_backend

@@ -418,6 +418,26 @@ class Settings(BaseSettings):
     # Model config
     model: ModelConfig = Field(default_factory=ModelConfig)
 
+    # Prediction backend selection
+    # IMPORTANT: keep this explicit to avoid accidental coupling between
+    # production and backtesting artifacts.
+    prediction_backend: str = Field(
+        default="v33",
+        description="Prediction backend. Supported: v33, linear_json",
+    )
+    linear_json_model_dir: str = Field(
+        default="/app/models/linear",
+        description="Directory containing JSON linear/logistic model artifacts when prediction_backend=linear_json.",
+    )
+
+    @field_validator("prediction_backend")
+    @classmethod
+    def _validate_prediction_backend(cls, v: str) -> str:
+        allowed = {"v33", "linear_json"}
+        if v not in allowed:
+            raise ValueError(f"prediction_backend must be one of {sorted(allowed)}")
+        return v
+
     class Config:
         # NO .env file - all configuration from environment variables set by docker-compose
         env_nested_delimiter = "__"

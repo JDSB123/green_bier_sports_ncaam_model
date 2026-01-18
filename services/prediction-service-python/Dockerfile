@@ -80,10 +80,17 @@ COPY --chown=ncaam:ncaam services/prediction-service-python/run_today.py /app/ru
 COPY --chown=ncaam:ncaam services/prediction-service-python/validate_team_matching.py /app/validate_team_matching.py
 COPY --chown=ncaam:ncaam services/prediction-service-python/run_migrations.py /app/run_migrations.py
 COPY --chown=ncaam:ncaam services/prediction-service-python/start.sh /app/start.sh
+
+# Optional backend support: lightweight JSON models
+COPY --chown=ncaam:ncaam ncaam /app/ncaam
+COPY --chown=ncaam:ncaam models/linear /app/models/linear
 # Bake DB migrations and seed/verification scripts into the image so the
 # entire team-matching pipeline is self-contained inside the container.
 COPY --chown=ncaam:ncaam database/migrations /app/migrations
 COPY --chown=ncaam:ncaam database/seeds /app/database/seeds
+
+# Build-time smoke check: validate imports and basic wiring.
+RUN python -c "from app.main import app; assert app is not None; print('smoke_import_ok')"
 # Fix line endings (CRLF -> LF) and make executable
 RUN sed -i 's/\r$//' /app/start.sh 2>/dev/null || true && chmod +x /app/start.sh
 RUN chmod +x /app/run_migrations.py

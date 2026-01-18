@@ -4,7 +4,7 @@ Full Game Total Prediction Model v33.10.0
 BACKTESTED on 3,318 games with actual scores from ESPN.
 
 Backtest Results:
-- MAE: 13.1 points (with +7.0 calibration)
+- MAE: 13.1 points (historical backtest; calibration has since been updated)
 - Market benchmark: ~10.5 MAE (we're ~2.6 pts worse)
 - Middle games (120-170): MAE = 10.7 (matches market!)
 
@@ -79,7 +79,7 @@ class FGTotalModel(BasePredictor):
         Total = BaseEfficiencyPrediction + Adjustment + Calibration
 
     Backtest Results:
-        - Calibration: +7.0 (derived from FG backtest data)
+        - Calibration: see CALIBRATION constant (recalibrated over time)
         - MAE: 13.1 pts overall
         - Middle games (120-170): MAE = 10.7 (matches market)
     """

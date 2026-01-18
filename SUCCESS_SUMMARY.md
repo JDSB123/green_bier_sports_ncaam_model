@@ -55,7 +55,7 @@ Was too simplistic and systematically wrong.
 
 ### ML Models Learn Correct Calibration
 
-The trained LinearRegression models ([testing/models/fg_spread.json](testing/models/fg_spread.json)) automatically learned:
+The trained LinearRegression models ([models/linear/fg_spread.json](models/linear/fg_spread.json)) automatically learned:
 - Correct home court advantage
 - Team strength scaling
 - Conference effects
@@ -102,7 +102,7 @@ python testing/scripts/run_historical_backtest.py --market h1_total --seasons 20
 
 Make sure live betting uses ML models:
 - Set `use_ml_model=True` in production config
-- Load models from [testing/models/](testing/models/)
+- Load models from [models/linear/](models/linear/)
 - **Do NOT use formula-based predictions**
 
 ---

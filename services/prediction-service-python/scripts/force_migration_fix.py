@@ -175,8 +175,8 @@ def main():
                 print(f"❌ Failed to apply {mig_file.name}: {e}")
                 return 1
 
-        print("
-🎉 All migrations applied successfully!"        print("🔍 Verifying schema...")
+        print("\n🎉 All migrations applied successfully!")
+        print("🔍 Verifying schema...")
 
         # Final verification
         final_applied = get_applied_migrations(engine)
@@ -194,8 +194,8 @@ def main():
                 missing_critical.append(f"{mig} ({desc})")
 
         if missing_critical:
-            print("
-⚠️  WARNING: Critical migrations still missing:"            for mig in missing_critical:
+            print("\n⚠️  WARNING: Critical migrations still missing:")
+            for mig in missing_critical:
                 print(f"   ❌ {mig}")
             return 1
         else:

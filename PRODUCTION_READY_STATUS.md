@@ -1,6 +1,6 @@
 # SYSTEM READY FOR PRODUCTION - FINAL STATUS REPORT
 
-**Date**: 2026-01-16  
+**Date**: 2026-01-16
 **Status**: ✅ BACKTESTING COMPLETE | PREDICTION MODELS READY | PAPER MODE OPERATIONAL
 
 ---
@@ -106,7 +106,7 @@ All 6 NCAAM prediction markets are now **backtested and ready for production**:
 
 ### 6. H1 MONEYLINE ❌ NO DATA
 
-**Status**: 
+**Status**:
 - Total Bets: 0
 - Reason: No FG moneyline odds in canonical master yet
 
@@ -162,12 +162,12 @@ All 6 NCAAM prediction markets are now **backtested and ready for production**:
   - Output: CSV + JSON results with detailed breakdowns
 
 ### ✅ Prediction Models (Trained)
-- [testing/models/fg_spread.json](testing/models/fg_spread.json) - ✅ Ready
-- [testing/models/fg_total.json](testing/models/fg_total.json) - ✅ Ready (but unprofitable)
-- [testing/models/fg_moneyline.json](testing/models/fg_moneyline.json) - ✅ Ready (but unprofitable)
-- [testing/models/h1_spread.json](testing/models/h1_spread.json) - ✅ Ready
-- [testing/models/h1_total.json](testing/models/h1_total.json) - ✅ Ready (but unprofitable)
-- [testing/models/h1_moneyline.json](testing/models/h1_moneyline.json) - ❌ Missing (no data)
+- [models/linear/fg_spread.json](models/linear/fg_spread.json) - ✅ Ready
+- [models/linear/fg_total.json](models/linear/fg_total.json) - ✅ Ready (but unprofitable)
+- [models/linear/fg_moneyline.json](models/linear/fg_moneyline.json) - ✅ Ready (but unprofitable)
+- [models/linear/h1_spread.json](models/linear/h1_spread.json) - ✅ Ready
+- [models/linear/h1_total.json](models/linear/h1_total.json) - ✅ Ready (but unprofitable)
+- [models/linear/h1_moneyline.json](models/linear/h1_moneyline.json) - ❌ Missing (no data)
 
 ### ✅ Tonight's Picks Generator (NEW)
 - [generate_tonight_picks.py](generate_tonight_picks.py)
@@ -398,6 +398,6 @@ All 6 NCAAM prediction markets are now **backtested and ready for production**:
 
 ---
 
-**Generated**: 2026-01-16 18:37 UTC  
-**System Status**: 🟢 READY  
+**Generated**: 2026-01-16 18:37 UTC
+**System Status**: 🟢 READY
 **Next Action**: Set ODDS_API_KEY and run tonight's picks generator

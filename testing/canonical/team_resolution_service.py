@@ -109,7 +109,8 @@ class TeamResolutionService:
         self.resolve = lru_cache(maxsize=cache_size)(self._resolve_uncached)
 
     def _load_aliases(self) -> dict[str, str]:
-        """Load team aliases from Azure blob storage."""
+        """Load team aliases from Azure blob storage, with local Barttorvik fallback."""
+        # Try Azure first (production/backtest environment)
         try:
             from testing.azure_data_reader import AzureDataReader
 
@@ -125,8 +126,37 @@ class TeamResolutionService:
                     continue
                 normalized[key] = canonical
             return normalized
-        except Exception as e:
-            raise RuntimeError(f"Failed to load aliases from Azure: {e}") from e
+        except Exception as azure_error:
+            # FALLBACK: Use Barttorvik live data for local/live predictions
+            # This provides the same canonical team names that the Azure DB has
+            try:
+                import requests
+                from datetime import datetime
+
+                season = datetime.now().year if datetime.now().month >= 11 else datetime.now().year
+                url = f"https://barttorvik.com/{season}_team_results.json"
+                resp = requests.get(url, timeout=30)
+                resp.raise_for_status()
+                data = resp.json()
+
+                # Build aliases using Barttorvik team names as canonical
+                normalized: dict[str, str] = {}
+                for row in data:
+                    if not isinstance(row, list) or len(row) < 2:
+                        continue
+                    canonical_name = str(row[1]).strip()  # Barttorvik's team name
+
+                    # Add self-reference
+                    key = self._normalize_team_name(canonical_name)
+                    if key:
+                        normalized[key] = canonical_name
+
+                return normalized
+            except Exception as fallback_error:
+                raise RuntimeError(
+                    f"Failed to load aliases from Azure: {azure_error}\n"
+                    f"Failed to load fallback from Barttorvik: {fallback_error}"
+                ) from azure_error
 
     def _build_canonical_set(self) -> set[str]:
         """Build set of all canonical team names."""

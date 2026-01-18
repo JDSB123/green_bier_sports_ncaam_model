@@ -43,6 +43,25 @@ class TestHealthEndpoints:
         assert data["status"] in ("ok", "degraded", "error")
         assert "version" in data
 
+    def test_health_predict_endpoint(self):
+        """Smoke-check endpoint should return a sample prediction."""
+        response = client.get("/health/predict")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ok"] is True
+        assert "backend" in data
+        assert "sample_prediction" in data
+
+    def test_health_predict_endpoint_linear_json_backend(self):
+        """Smoke-check the optional linear_json backend wiring and artifacts."""
+        response = client.get("/health/predict?backend=linear_json")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ok"] is True
+        assert data["backend"] == "linear_json"
+        assert "backend_meta" in data
+        assert "sample_prediction" in data
+
     def test_config_endpoint(self):
         """Config endpoint should return model configuration."""
         response = client.get("/config")

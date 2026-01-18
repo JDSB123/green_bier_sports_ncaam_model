@@ -49,8 +49,8 @@ def resolve_team_name(name: str, source: str = "unknown") -> str:
     if not name:
         return ""
 
-    # Use the gate
-    canonical = _resolve(name, source)
+    # Use the gate (note: source is for tracking only, not used by resolver)
+    canonical = _resolve(name)
 
     # Return canonical name or original if not matched
     return canonical if canonical else name

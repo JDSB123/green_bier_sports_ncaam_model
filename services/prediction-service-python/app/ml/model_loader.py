@@ -102,8 +102,7 @@ class ProductionModelLoader:
             # Try multiple locations
             possible_dirs = [
                 Path("/app/models"),  # Docker container
-                Path(__file__).parent / "trained_models",  # Local development
-                Path(__file__).resolve().parents[4] / "testing" / "models",  # Project root
+                Path(__file__).parent / "trained_models",  # Local dev/prod-relative
             ]
 
             for dir_path in possible_dirs:

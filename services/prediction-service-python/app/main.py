@@ -27,6 +27,149 @@ from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_
 
 logger = get_logger(__name__)
 
+
+def _get_prediction_backend(override: str | None = None) -> str:
+    """Return the selected prediction backend.
+
+    This is intentionally explicit to avoid accidental coupling between
+    production service predictions and backtesting artifacts.
+    """
+
+    return (override or settings.prediction_backend).strip()
+
+
+def _make_prediction_with_backend(
+    *,
+    backend: str,
+    game_id: UUID,
+    home_team: str,
+    away_team: str,
+    commence_time: datetime,
+    home_ratings: TeamRatings,
+    away_ratings: TeamRatings,
+    market_odds: MarketOdds | None,
+    is_neutral: bool,
+) -> tuple[Prediction, dict]:
+    if backend == "v33":
+        pred: Prediction = prediction_engine.make_prediction(
+            game_id=game_id,
+            home_team=home_team,
+            away_team=away_team,
+            commence_time=commence_time,
+            home_ratings=home_ratings,
+            away_ratings=away_ratings,
+            market_odds=market_odds,
+            is_neutral=is_neutral,
+        )
+        return pred, {"backend": "v33"}
+
+    if backend == "linear_json":
+        # This backend predicts residuals vs market; it requires the market lines.
+        if market_odds is None:
+            raise HTTPException(
+                status_code=422,
+                detail="prediction_backend=linear_json requires market_odds",
+            )
+
+        required = {
+            "spread": market_odds.spread,
+            "total": market_odds.total,
+            "spread_1h": market_odds.spread_1h,
+            "total_1h": market_odds.total_1h,
+        }
+        missing = [k for k, v in required.items() if v is None]
+        if missing:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "prediction_backend=linear_json requires market_odds fields: "
+                    + ", ".join(missing)
+                ),
+            )
+
+        # Wire model dir explicitly for the backend loader.
+        os.environ["LINEAR_JSON_MODEL_DIR"] = settings.linear_json_model_dir
+
+        from app.ml.linear_json_backend import backend_status, predict_line
+
+        fg_spread, fg_spread_conf, fg_spread_meta = predict_line(
+            market="fg_spread",
+            home=home_ratings,
+            away=away_ratings,
+            market_odds=market_odds,
+        )
+        fg_total, fg_total_conf, fg_total_meta = predict_line(
+            market="fg_total",
+            home=home_ratings,
+            away=away_ratings,
+            market_odds=market_odds,
+        )
+        h1_spread, h1_spread_conf, h1_spread_meta = predict_line(
+            market="h1_spread",
+            home=home_ratings,
+            away=away_ratings,
+            market_odds=market_odds,
+        )
+        h1_total, h1_total_conf, h1_total_meta = predict_line(
+            market="h1_total",
+            home=home_ratings,
+            away=away_ratings,
+            market_odds=market_odds,
+        )
+
+        if any(v is None for v in [fg_spread, fg_total, h1_spread, h1_total]):
+            raise HTTPException(
+                status_code=500,
+                detail="linear_json backend failed to compute one or more markets",
+            )
+
+        fg_spread_v = float(fg_spread)
+        fg_total_v = float(fg_total)
+        h1_spread_v = float(h1_spread)
+        h1_total_v = float(h1_total)
+
+        # Derive scores from spread/total (home perspective spread convention).
+        predicted_home_score = (fg_total_v - fg_spread_v) / 2.0
+        predicted_away_score = (fg_total_v + fg_spread_v) / 2.0
+        predicted_home_score_1h = (h1_total_v - h1_spread_v) / 2.0
+        predicted_away_score_1h = (h1_total_v + h1_spread_v) / 2.0
+
+        pred = Prediction(
+            game_id=game_id,
+            home_team=home_team,
+            away_team=away_team,
+            commence_time=commence_time,
+            predicted_spread=fg_spread_v,
+            predicted_total=fg_total_v,
+            predicted_home_score=predicted_home_score,
+            predicted_away_score=predicted_away_score,
+            spread_confidence=float(fg_spread_conf or 0.0),
+            total_confidence=float(fg_total_conf or 0.0),
+            predicted_spread_1h=h1_spread_v,
+            predicted_total_1h=h1_total_v,
+            predicted_home_score_1h=predicted_home_score_1h,
+            predicted_away_score_1h=predicted_away_score_1h,
+            spread_confidence_1h=float(h1_spread_conf or 0.0),
+            total_confidence_1h=float(h1_total_conf or 0.0),
+            market_spread=float(market_odds.spread) if market_odds.spread is not None else None,
+            market_total=float(market_odds.total) if market_odds.total is not None else None,
+            market_spread_1h=float(market_odds.spread_1h) if market_odds.spread_1h is not None else None,
+            market_total_1h=float(market_odds.total_1h) if market_odds.total_1h is not None else None,
+        )
+
+        return pred, {
+            "backend": "linear_json",
+            "status": backend_status(),
+            "markets": {
+                "fg_spread": fg_spread_meta,
+                "fg_total": fg_total_meta,
+                "h1_spread": h1_spread_meta,
+                "h1_total": h1_total_meta,
+            },
+        }
+
+    raise HTTPException(status_code=500, detail=f"Unknown prediction_backend: {backend}")
+
 # Rate limiter configuration
 limiter = Limiter(key_func=get_remote_address)
 
@@ -726,6 +869,128 @@ async def health():
         })
 
     return health_status
+
+
+@app.get("/health/predict")
+async def health_predict(backend: str | None = None):
+    """Smoke-check that the configured prediction backend can generate a prediction.
+
+    This endpoint intentionally avoids DB dependencies so it can be used for:
+    - container startup validation
+    - CI smoke tests
+    - operational debugging
+    """
+
+    selected = _get_prediction_backend(backend)
+
+    # Deterministic sample inputs (no external calls).
+    home = TeamRatings(
+        team_name="SmokeHome",
+        adj_o=112.0,
+        adj_d=100.0,
+        tempo=68.0,
+        rank=50,
+        efg=51.0,
+        efgd=49.0,
+        tor=18.0,
+        tord=19.0,
+        orb=30.0,
+        drb=72.0,
+        ftr=33.0,
+        ftrd=32.0,
+        two_pt_pct=51.0,
+        two_pt_pct_d=49.5,
+        three_pt_pct=35.0,
+        three_pt_pct_d=34.0,
+        three_pt_rate=35.0,
+        three_pt_rate_d=35.0,
+        barthag=0.800,
+        wab=2.0,
+    )
+    away = TeamRatings(
+        team_name="SmokeAway",
+        adj_o=108.0,
+        adj_d=102.0,
+        tempo=67.0,
+        rank=75,
+        efg=50.0,
+        efgd=50.5,
+        tor=18.5,
+        tord=18.0,
+        orb=28.5,
+        drb=71.0,
+        ftr=32.0,
+        ftrd=33.0,
+        two_pt_pct=50.0,
+        two_pt_pct_d=50.0,
+        three_pt_pct=34.0,
+        three_pt_pct_d=35.0,
+        three_pt_rate=34.0,
+        three_pt_rate_d=36.0,
+        barthag=0.720,
+        wab=0.5,
+    )
+    market = MarketOdds(
+        spread=-4.5,
+        spread_home_price=-110,
+        spread_away_price=-110,
+        total=145.5,
+        over_price=-110,
+        under_price=-110,
+        spread_1h=-2.0,
+        spread_1h_home_price=-110,
+        spread_1h_away_price=-110,
+        total_1h=68.5,
+        over_price_1h=-110,
+        under_price_1h=-110,
+    )
+
+    try:
+        pred, backend_meta = _make_prediction_with_backend(
+            backend=selected,
+            game_id=UUID("00000000-0000-0000-0000-000000000000"),
+            home_team="SmokeHome",
+            away_team="SmokeAway",
+            commence_time=datetime.now(UTC),
+            home_ratings=home,
+            away_ratings=away,
+            market_odds=market,
+            is_neutral=False,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {
+            "ok": False,
+            "backend": selected,
+            "error": str(e),
+        }
+
+    ml_models = None
+    if selected == "v33":
+        try:
+            from app.ml.model_loader import get_model_manager
+
+            manager = get_model_manager()
+            ml_models = {
+                k: v.__dict__
+                for k, v in manager.get_all_model_info().items()
+            }
+        except Exception as e:
+            ml_models = {"error": str(e)}
+
+    return {
+        "ok": True,
+        "backend": selected,
+        "backend_meta": backend_meta,
+        "ml_models": ml_models,
+        "sample_prediction": {
+            "predicted_spread": pred.predicted_spread,
+            "predicted_total": pred.predicted_total,
+            "predicted_spread_1h": pred.predicted_spread_1h,
+            "predicted_total_1h": pred.predicted_total_1h,
+        },
+    }
 
 
 @app.get("/metrics")
@@ -1464,7 +1729,9 @@ async def predict(request: Request, req: PredictRequest):
             away = req.away_ratings.to_domain()
             market = req.market_odds.to_domain() if req.market_odds else None
 
-            pred: Prediction = prediction_engine.make_prediction(
+            backend = _get_prediction_backend()
+            pred, backend_meta = _make_prediction_with_backend(
+                backend=backend,
                 game_id=req.game_id,
                 home_team=req.home_team,
                 away_team=req.away_team,
@@ -1488,6 +1755,7 @@ async def predict(request: Request, req: PredictRequest):
                 home_team=req.home_team,
                 away_team=req.away_team,
                 recommendations_count=len(recs),
+                prediction_backend=backend_meta.get("backend"),
             )
 
         # Convert dataclasses to serializable dicts
@@ -1495,6 +1763,9 @@ async def predict(request: Request, req: PredictRequest):
             k: (v.isoformat() if isinstance(v, datetime) else v)
             for k, v in pred.__dict__.items()
         }
+
+        # Include backend metadata to make deployments self-describing.
+        prediction_dict["backend"] = backend_meta
 
         recommendations_list = []
         for r in recs:

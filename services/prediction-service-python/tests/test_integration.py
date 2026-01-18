@@ -114,7 +114,8 @@ def test_full_prediction_pipeline(
     assert prediction.game_id == game_id
     assert prediction.home_team == "Duke"
     assert prediction.away_team == "North Carolina"
-    assert prediction.model_version.startswith("v33")
+    # Model version is sourced from the service VERSION (see app.__version__)
+    assert prediction.model_version.startswith("v")
 
     # Verify all 4 markets are predicted
     assert prediction.predicted_spread is not None

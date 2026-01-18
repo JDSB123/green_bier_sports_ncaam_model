@@ -96,8 +96,8 @@ Same format as FG but for first half.
 |------|---------|
 | `generate_tonight_picks.py` | Generate predictions for tonight |
 | `capture_closing_lines.py` | Capture lines 60-90 min pre-tip (setup tomorrow) |
-| `testing/models/fg_spread.json` | FG Spread prediction model |
-| `testing/models/h1_spread.json` | H1 Spread prediction model |
+| `models/linear/fg_spread.json` | FG Spread prediction model |
+| `models/linear/h1_spread.json` | H1 Spread prediction model |
 | `manifests/canonical_training_data_master.csv` | All historical data (3,339 games) |
 | `PRODUCTION_READY_STATUS.md` | Full technical documentation |
 
@@ -117,7 +117,7 @@ Same format as FG but for first half.
 
 ### "KeyError: 'ODDS_API_KEY'"
 ```
-→ Set ODDS_API_KEY in PowerShell: 
+→ Set ODDS_API_KEY in PowerShell:
   $env:ODDS_API_KEY = "your_key"
 ```
 
@@ -129,7 +129,7 @@ Same format as FG but for first half.
 
 ### "Can't find canonical_training_data_master.csv"
 ```
-→ Verify file exists: 
+→ Verify file exists:
   ls manifests/canonical_training_data_master.csv
 → If not, run: python deploy_to_azure.py
 ```
@@ -173,10 +173,10 @@ python capture_closing_lines.py --run-once
 
 ---
 
-**Status**: 🟢 Ready for paper trading tonight  
-**Confidence**: High (backtested +3.82% ROI)  
-**Risk**: Low (paper mode; no real money)  
-**Expected Result**: 50-100 predictions tonight  
+**Status**: 🟢 Ready for paper trading tonight
+**Confidence**: High (backtested +3.82% ROI)
+**Risk**: Low (paper mode; no real money)
+**Expected Result**: 50-100 predictions tonight
 
 **GO LIVE DECISION**: End of week if paper ROI validates backtest.
 

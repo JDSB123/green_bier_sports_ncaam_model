@@ -969,8 +969,12 @@ def run_backtest(config: BacktestConfig, skip_validation: bool = False) -> Backt
     trained_meta = None
     if config.use_trained_models:
         try:
-            from testing.scripts.train_independent_models import load_model
-            trained_model, trained_features, trained_meta = load_model(config.market.value, allow_linear=True)
+            from ncaam.linear_json_model import load_linear_json_model
+
+            trained_model, trained_features, trained_meta = load_linear_json_model(
+                ROOT_DIR / "models" / "linear" / f"{config.market.value}.json",
+                allow_linear=True,
+            )
             if trained_model is None or not trained_features:
                 print(f"[WARN] Trained model not found for {config.market.value}; using formula.")
             else:
@@ -1360,7 +1364,7 @@ def main():
     parser.add_argument(
         "--use-trained-models",
         action="store_true",
-        help="Use retrained models from testing/models/"
+        help="Use retrained models from models/linear/"
     )
     parser.add_argument(
         "--use-model-min-edge",
@@ -1395,7 +1399,7 @@ def main():
     print(f"Seasons: {seasons}")
     print(f"Min Edge: {args.min_edge}%")
     if args.use_trained_models:
-        print("Model: retrained (testing/models/)")
+        print("Model: retrained (models/linear/)")
     if args.use_model_min_edge:
         print("Min Edge: model metadata (if available)")
     if args.start_date or args.end_date:

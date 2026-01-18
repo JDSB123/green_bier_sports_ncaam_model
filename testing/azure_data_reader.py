@@ -31,6 +31,7 @@ import json
 import os
 import warnings
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 try:
@@ -131,12 +132,30 @@ class AzureDataReader:
 
     def _get_connection_string(self) -> str:
         """Get Azure connection string from environment or Azure CLI."""
-        # Try canonical connection string first (historical data)
+        # Prefer explicit env var / secret-file patterns.
         conn_str = os.getenv("AZURE_CANONICAL_CONNECTION_STRING")
         if conn_str:
             return conn_str
 
-        # Try Azure CLI
+        file_path = os.getenv("AZURE_CANONICAL_CONNECTION_STRING_FILE") or "/run/secrets/azure_canonical_connection_string"
+        try:
+            if file_path:
+                value = Path(file_path).read_text(encoding="utf-8").strip()
+                if value:
+                    return value
+        except Exception:
+            pass
+
+        # Azure CLI is a last resort and must be explicitly enabled.
+        allow_cli = os.getenv("AZURE_CANONICAL_ALLOW_AZ_CLI", "").strip().lower() in {"1", "true", "yes"}
+        if not allow_cli:
+            raise RuntimeError(
+                "Azure canonical connection string not found. Either:\n"
+                "1. Set AZURE_CANONICAL_CONNECTION_STRING\n"
+                "2. Or set AZURE_CANONICAL_CONNECTION_STRING_FILE (default: /run/secrets/azure_canonical_connection_string)\n"
+                "3. Or enable Azure CLI lookup by setting AZURE_CANONICAL_ALLOW_AZ_CLI=1 and ensure you're logged in (az login)"
+            )
+
         import shutil
         import subprocess
 
@@ -145,22 +164,29 @@ class AzureDataReader:
             raise RuntimeError(
                 "Azure CLI not found. Either:\n"
                 "1. Set AZURE_CANONICAL_CONNECTION_STRING\n"
-                "2. Install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
+                "2. Or install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
             )
 
         try:
             result = subprocess.run(
                 [
-                    az_cmd, "storage", "account", "show-connection-string",
-                    "--name", STORAGE_ACCOUNT,
-                    "--resource-group", RESOURCE_GROUP,
-                    "--query", "connectionString",
-                    "-o", "tsv"
+                    az_cmd,
+                    "storage",
+                    "account",
+                    "show-connection-string",
+                    "--name",
+                    STORAGE_ACCOUNT,
+                    "--resource-group",
+                    RESOURCE_GROUP,
+                    "--query",
+                    "connectionString",
+                    "-o",
+                    "tsv",
                 ],
                 capture_output=True,
                 text=True,
                 check=True,
-                shell=(os.name == 'nt')
+                shell=(os.name == "nt"),
             )
             return result.stdout.strip()
         except subprocess.CalledProcessError as e:

@@ -49,6 +49,32 @@ class ClosingLine:
     source: str = "the_odds_api"
 
 
+def _read_secret_file(path: str) -> str | None:
+    try:
+        value = Path(path).read_text(encoding="utf-8").strip()
+        return value if value else None
+    except Exception:
+        return None
+
+
+def _get_odds_api_key() -> str | None:
+    """Best-effort Odds API key lookup (env, docker secret, local secrets file)."""
+    env_key = os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")
+    if env_key:
+        return env_key.strip()
+
+    file_path = os.getenv("THE_ODDS_API_KEY_FILE") or "/run/secrets/odds_api_key"
+    file_key = _read_secret_file(file_path)
+    if file_key:
+        return file_key
+
+    local_key = _read_secret_file(str(ROOT_DIR / "secrets" / "odds_api_key.txt"))
+    if local_key:
+        return local_key
+
+    return None
+
+
 def fetch_closing_lines() -> dict[str, ClosingLine]:
     """
     Fetch latest odds 60-90 minutes before tip-off.
@@ -61,9 +87,12 @@ def fetch_closing_lines() -> dict[str, ClosingLine]:
         print("[ERROR] requests library required: pip install requests")
         return {}
 
-    api_key = os.environ.get("ODDS_API_KEY")
+    api_key = _get_odds_api_key()
     if not api_key:
-        print("[WARN] ODDS_API_KEY not in environment; skipping capture")
+        print(
+            "[WARN] Odds API key not found; skipping capture. "
+            "Set THE_ODDS_API_KEY/ODDS_API_KEY or provide /run/secrets/odds_api_key (Compose)."
+        )
         return {}
 
     try:

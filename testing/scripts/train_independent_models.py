@@ -25,8 +25,10 @@ sys.path.insert(0, str(ROOT_DIR))
 from testing.azure_data_reader import get_azure_reader
 from testing.data_window import CANONICAL_START_SEASON, default_backtest_seasons, enforce_min_season
 
-MODEL_DIR = ROOT_DIR / "testing" / "models"
+MODEL_DIR = ROOT_DIR / "models" / "linear"
 RESULTS_DIR = ROOT_DIR / "testing" / "results" / "training"
+
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_canonical_master() -> pd.DataFrame:
@@ -691,59 +693,12 @@ def save_model(
     return path
 
 
-class ModelWrapper:
-    def __init__(
-        self,
-        model_type: str,
-        weights: list[float],
-        intercept: float,
-        means: list[float],
-        stds: list[float],
-    ) -> None:
-        self.model_type = model_type
-        self.weights = np.array(weights, dtype=float)
-        self.intercept = float(intercept)
-        self.means = np.array(means, dtype=float)
-        self.stds = np.array(stds, dtype=float)
+def load_model(market: str, allow_linear: bool = False):
+    # Backwards-compatible wrapper for older backtesting code.
+    # The JSON model format and inference live in `ncaam.linear_json_model`.
+    from ncaam.linear_json_model import load_linear_json_model
 
-    def _transform(self, X: np.ndarray) -> np.ndarray:
-        X = np.array(X, dtype=float)
-        Xz = (X - self.means) / self.stds
-        return Xz
-
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        Xz = self._transform(X)
-        if self.model_type == "linear":
-            return Xz @ self.weights + self.intercept
-        return sigmoid(Xz @ self.weights + self.intercept)
-
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        if self.model_type != "logistic":
-            raise ValueError("predict_proba is only available for logistic models")
-        probs = self.predict(X)
-        return np.column_stack([1.0 - probs, probs])
-
-
-def load_model(market: str, allow_linear: bool = False) -> tuple[ModelWrapper | None, list[str] | None, dict | None]:
-    path = MODEL_DIR / f"{market}.json"
-    if not path.exists():
-        return None, None, None
-    with open(path) as f:
-        data = json.load(f)
-    model_type = data.get("model_type")
-    metadata = data.get("metadata", {})
-    metadata["target_mode"] = data.get("target_mode", "raw")
-    metadata["model_type"] = model_type
-    if model_type != "logistic" and not allow_linear:
-        return None, None, metadata
-    model = ModelWrapper(
-        model_type=model_type,
-        weights=data.get("weights", []),
-        intercept=data.get("intercept", 0.0),
-        means=data.get("means", []),
-        stds=data.get("stds", []),
-    )
-    return model, data.get("feature_names"), metadata
+    return load_linear_json_model(MODEL_DIR / f"{market}.json", allow_linear=allow_linear)
 
 
 def main() -> int:

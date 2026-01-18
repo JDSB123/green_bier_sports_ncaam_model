@@ -8,6 +8,12 @@ Generates predictions for tonight's NCAAM slate using profitable models:
 
 Paper mode: No real money. Outputs predictions to CSV for review.
 
+GOVERNANCE - TEAM NAME RESOLUTION:
+    ALWAYS use testing.canonical.barttorvik_team_mappings for team resolution.
+    This module contains the authoritative mappings from Postgres team_aliases
+    table (95%+ coverage, 600+ aliases). DO NOT create ad-hoc mappings or
+    use fuzzy matching - all team name resolution must go through the canonical gate.
+
 Usage:
     python generate_tonight_picks.py
     python generate_tonight_picks.py --market fg_spread
@@ -17,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -28,10 +35,10 @@ ROOT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from testing.azure_data_reader import get_azure_reader
+from testing.canonical.barttorvik_team_mappings import resolve_odds_api_to_barttorvik
 from testing.scripts.run_historical_backtest import (
     BacktestConfig,
     MarketType,
-    NCAAMPredictor,
     _add_derived_features,
 )
 
@@ -58,6 +65,235 @@ class TonightPick:
     paper_mode: bool = True
 
 
+def _read_secret_file(path: str) -> str | None:
+    try:
+        value = Path(path).read_text(encoding="utf-8").strip()
+        return value if value else None
+    except Exception:
+        return None
+
+
+def _get_odds_api_key() -> str | None:
+    """Best-effort Odds API key retrieval across local/dev/prod patterns."""
+    env_key = os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")
+    if env_key:
+        return env_key.strip()
+
+    file_path = os.getenv("THE_ODDS_API_KEY_FILE") or "/run/secrets/odds_api_key"
+    file_key = _read_secret_file(file_path)
+    if file_key:
+        return file_key
+
+    local_key = _read_secret_file(str(ROOT_DIR / "secrets" / "odds_api_key.txt"))
+    if local_key:
+        return local_key
+
+    return None
+
+
+def _determine_current_season(today: datetime | None = None) -> int:
+    """Return the NCAAM season year used by Barttorvik (e.g., Jan 2026 -> 2026)."""
+    dt = today or datetime.now()
+    return dt.year if dt.month <= 6 else dt.year + 1
+
+
+def _safe_canonicalize_team(name: str | None, source: str) -> str | None:
+    if not name:
+        return name
+    try:
+        from testing.scripts.team_utils import resolve_team_name
+
+        return resolve_team_name(name, source=source)
+    except Exception:
+        return str(name).strip()
+
+
+def _extract_spread_from_bookmakers(
+    bookmakers: list[dict] | None,
+    market_key: str,
+    home_team: str,
+    away_team: str,
+) -> tuple[float | None, float | None, float | None]:
+    """Return (home_point, home_price, away_price) for a spreads-like market."""
+    if not bookmakers:
+        return None, None, None
+
+    preferred = [
+        "draftkings",
+        "fanduel",
+        "betmgm",
+        "caesars",
+        "pointsbetus",
+        "betrivers",
+    ]
+    ordered = sorted(
+        bookmakers,
+        key=lambda b: (0 if b.get("key") in preferred else 1),
+    )
+
+    for book in ordered:
+        markets = book.get("markets") or []
+        for m in markets:
+            if m.get("key") != market_key:
+                continue
+            outcomes = m.get("outcomes") or []
+            home = next((o for o in outcomes if o.get("name") == home_team), None)
+            away = next((o for o in outcomes if o.get("name") == away_team), None)
+            if not home or not away:
+                continue
+
+            point = home.get("point")
+            if point is None:
+                continue
+            try:
+                home_point = float(point)
+            except Exception:
+                continue
+
+            def _as_float(v):
+                try:
+                    return float(v)
+                except Exception:
+                    return None
+
+            return home_point, _as_float(home.get("price")), _as_float(away.get("price"))
+
+    return None, None, None
+
+
+def _fetch_live_games_with_odds() -> pd.DataFrame:
+    """Fetch upcoming games + spread lines from The Odds API (live mode)."""
+    import requests
+
+    api_key = _get_odds_api_key()
+    if not api_key:
+        print(
+            "[WARN] Odds API key not found; can't fetch live games. "
+            "Set THE_ODDS_API_KEY/ODDS_API_KEY or provide /run/secrets/odds_api_key (Compose)."
+        )
+        return pd.DataFrame()
+
+    url = "https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds"
+    params = {
+        "apiKey": api_key,
+        "regions": "us",
+        # We need spreads + (if available) 1H spreads.
+        "markets": "spreads,spreads_1st_half",
+        "oddsFormat": "american",
+        "dateFormat": "iso",
+    }
+
+    resp = requests.get(url, params=params, timeout=20)
+    if resp.status_code == 422 and "spreads_1st_half" in str(params.get("markets")):
+        # Some Odds API plans/sports don't expose 1H spreads; fall back to full-game spreads.
+        params["markets"] = "spreads"
+        resp = requests.get(url, params=params, timeout=20)
+    resp.raise_for_status()
+    games = resp.json() or []
+    if not games:
+        print("[INFO] No upcoming games found from Odds API")
+        return pd.DataFrame()
+
+    rows: list[dict] = []
+    for g in games:
+        home_team = _safe_canonicalize_team(g.get("home_team"), source="the_odds_api")
+        away_team = _safe_canonicalize_team(g.get("away_team"), source="the_odds_api")
+        if not home_team or not away_team:
+            continue
+
+        fg_spread, fg_home_price, fg_away_price = _extract_spread_from_bookmakers(
+            g.get("bookmakers"), "spreads", home_team, away_team
+        )
+        h1_spread, h1_home_price, h1_away_price = _extract_spread_from_bookmakers(
+            g.get("bookmakers"), "spreads_1st_half", home_team, away_team
+        )
+
+        rows.append(
+            {
+                "game_id": g.get("id"),
+                "commence_time": g.get("commence_time"),
+                "game_date": (
+                    (lambda ts: ts.date() if not pd.isna(ts) else None)(
+                        pd.to_datetime(g.get("commence_time"), errors="coerce")
+                    )
+                    if g.get("commence_time")
+                    else None
+                ),
+                "home_team": home_team,
+                "away_team": away_team,
+                "neutral": False,
+                "fg_spread": fg_spread,
+                "fg_spread_home_price": fg_home_price,
+                "fg_spread_away_price": fg_away_price,
+                "h1_spread": h1_spread,
+                "h1_spread_home_price": h1_home_price,
+                "h1_spread_away_price": h1_away_price,
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def _load_barttorvik_ratings_live(season: int) -> dict[str, dict]:
+    """Fetch Barttorvik season ratings directly from the public endpoint (no Azure)."""
+    import requests
+
+    url = f"https://barttorvik.com/{season}_team_results.json"
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    payload = resp.json()
+
+    ratings: dict[str, dict] = {}
+    if isinstance(payload, list):
+        for row in payload:
+            if not isinstance(row, list) or len(row) < 9:
+                continue
+            # Use Barttorvik's raw team name (already in canonical short form)
+            # e.g., "tulane", "north texas", "george washington"
+            name = str(row[1]).strip()
+            if not name:
+                continue
+
+            def _num(idx: int) -> float | None:
+                if idx >= len(row):
+                    return None
+                try:
+                    return float(row[idx])
+                except Exception:
+                    return None
+
+            adj_o = _num(4)
+            adj_d = _num(6)
+            barthag = _num(8)
+            if barthag is None and adj_o is not None and adj_d is not None:
+                # Fallback approximation.
+                exp = 11.5
+                try:
+                    barthag = (adj_o**exp) / ((adj_o**exp) + (adj_d**exp))
+                except Exception:
+                    barthag = None
+
+            # Best-effort mapping for additional fields used by derived features.
+            # Some fields are percentages on the 0-100 scale in the JSON.
+            tor_pct = _num(12)
+            orb_pct = _num(10)
+            tempo = _num(44)
+            wab = _num(11)
+            rank = _num(0)
+
+            ratings[name.lower()] = {
+                "adj_o": adj_o,
+                "adj_d": adj_d,
+                "barthag": barthag,
+                "tempo": tempo,
+                "wab": wab,
+                "rank": rank,
+                "tor": (tor_pct / 100.0) if tor_pct is not None and tor_pct > 1.0 else tor_pct,
+                "orb": (orb_pct / 100.0) if orb_pct is not None and orb_pct > 1.0 else orb_pct,
+            }
+    return ratings
+
+
 def load_games_for_tonight(live: bool = False) -> pd.DataFrame:
     """
     Load games for tonight.
@@ -65,57 +301,30 @@ def load_games_for_tonight(live: bool = False) -> pd.DataFrame:
     If live=True, fetch from Odds API (requires API key).
     If live=False, use tomorrow's date from canonical master as a simulation.
     """
-    reader = get_azure_reader()
-
     if live:
         try:
-            # Load Odds API to get tonight's games
-            import requests
-
-            api_key = os.environ.get("ODDS_API_KEY")
-            if not api_key:
-                print("[WARN] ODDS_API_KEY not in environment; can't fetch live games")
-                return pd.DataFrame()
-
-            # Fetch upcoming games for NCAAM
-            url = "https://api.the-odds-api.com/v4/sports/basketball_ncaab/events"
-            params = {
-                "apiKey": api_key,
-            }
-
-            resp = requests.get(url, params=params, timeout=10)
-            resp.raise_for_status()
-
-            events = resp.json()
-            if not events:
-                print("[INFO] No upcoming games found from Odds API")
-                return pd.DataFrame()
-
-            # Parse events into DataFrame
-            games = []
-            for event in events:
-                games.append({
-                    "game_id": event["id"],
-                    "commence_time": event["commence_time"],
-                    "home_team": event["home_team"],
-                    "away_team": event["away_team"],
-                    "home_score": None,
-                    "away_score": None,
-                    "home_h1": None,
-                    "away_h1": None,
-                })
-
-            return pd.DataFrame(games)
-
+            return _fetch_live_games_with_odds()
         except Exception as e:
-            print(f"[ERROR] Failed to fetch live games: {e}")
+            print(f"[ERROR] Failed to fetch live games/odds: {e}")
             return pd.DataFrame()
 
     else:
         # For demo: use tomorrow's date
         print("[INFO] Live mode off; using canonical master for demo purposes")
         local_master = ROOT_DIR / "manifests" / "canonical_training_data_master.csv"
-        df = pd.read_csv(local_master)
+        if local_master.exists():
+            df = pd.read_csv(local_master)
+        else:
+            try:
+                reader = get_azure_reader()
+                df = reader.read_csv("manifests/canonical_training_data_master.csv")
+            except Exception as exc:
+                print(
+                    "[ERROR] Can't load canonical master (local file missing and Azure unavailable). "
+                    "Set AZURE_CANONICAL_CONNECTION_STRING (or AZURE_CANONICAL_CONNECTION_STRING_FILE) "
+                    "or sync manifests/canonical_training_data_master.csv locally."
+                )
+                return pd.DataFrame()
 
         # Get tomorrow's date
         tomorrow = (datetime.now() + timedelta(days=1)).date()
@@ -133,63 +342,172 @@ def load_games_for_tonight(live: bool = False) -> pd.DataFrame:
 
 
 def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
-    """Join ratings to tonight's games from canonical master."""
-    reader = get_azure_reader()
+    """Populate ratings for tonight's games.
+
+    - If the canonical master exists locally, use it (stable/reproducible).
+    - Otherwise, for live mode, fetch Barttorvik ratings directly (no Azure).
+    - As a last resort, fall back to Azure.
+    """
+    # Normalize team names in input
+    result = df.copy()
+    if "home_team" in result.columns:
+        result["home_team"] = result["home_team"].astype(str).str.strip()
+        result["away_team"] = result["away_team"].astype(str).str.strip()
+    elif "home_abbr" in result.columns:
+        result["home_team"] = result["home_abbr"].astype(str).str.strip()
+        result["away_team"] = result["away_abbr"].astype(str).str.strip()
+    else:
+        print("[WARN] No home/away team columns found")
+        return result
 
     local_master = ROOT_DIR / "manifests" / "canonical_training_data_master.csv"
     if local_master.exists():
         master = pd.read_csv(local_master)
-    else:
-        master = reader.read_csv("manifests/canonical_training_data_master.csv")
 
-    # Normalize team names
-    if "home_canonical" in master.columns:
-        master["home_team"] = master["home_canonical"].str.strip()
-        master["away_team"] = master["away_canonical"].str.strip()
-    elif "home_team" in master.columns:
-        master["home_team"] = master["home_team"].str.strip()
-        master["away_team"] = master["away_team"].str.strip()
+        if "home_canonical" in master.columns:
+            master["home_team"] = master["home_canonical"].astype(str).str.strip()
+            master["away_team"] = master["away_canonical"].astype(str).str.strip()
+        elif "home_team" in master.columns:
+            master["home_team"] = master["home_team"].astype(str).str.strip()
+            master["away_team"] = master["away_team"].astype(str).str.strip()
 
-    # Handle input dataframe columns
-    if "home_team" in df.columns:
-        df["home_team"] = df["home_team"].str.strip()
-        df["away_team"] = df["away_team"].str.strip()
-    elif "home_abbr" in df.columns:
-        df["home_team"] = df["home_abbr"]
-        df["away_team"] = df["away_abbr"]
-    else:
-        print("[WARN] No home/away team columns found")
-        return df
-
-    # Keep most recent rating columns
-    rating_cols = [
-        "home_adj_o", "home_adj_d", "home_barthag", "home_efg", "home_efgd",
-        "home_tor", "home_orb", "home_drb", "home_ftr", "home_tempo",
-        "home_three_pt_rate", "home_wab",
-        "away_adj_o", "away_adj_d", "away_barthag", "away_efg", "away_efgd",
-        "away_tor", "away_orb", "away_drb", "away_ftr", "away_tempo",
-        "away_three_pt_rate", "away_wab",
-        "fg_spread", "fg_total", "h1_spread", "h1_total",
-        "fg_spread_home_price", "fg_spread_away_price",
-        "h1_spread_home_price", "h1_spread_away_price"
-    ]
-
-    # Merge on team names
-    result = df.copy()
-
-    for _, row in df.iterrows():
-        home_name = row["home_team"]
-        away_name = row["away_team"]
-
-        matching = master[
-            (master["home_team"] == home_name) & (master["away_team"] == away_name)
+        rating_cols = [
+            "home_adj_o",
+            "home_adj_d",
+            "home_barthag",
+            "home_efg",
+            "home_efgd",
+            "home_tor",
+            "home_orb",
+            "home_drb",
+            "home_ftr",
+            "home_tempo",
+            "home_three_pt_rate",
+            "home_wab",
+            "home_rank",
+            "away_adj_o",
+            "away_adj_d",
+            "away_barthag",
+            "away_efg",
+            "away_efgd",
+            "away_tor",
+            "away_orb",
+            "away_drb",
+            "away_ftr",
+            "away_tempo",
+            "away_three_pt_rate",
+            "away_wab",
+            "away_rank",
+            # market lines/prices are also in the master
+            "fg_spread",
+            "h1_spread",
+            "fg_spread_home_price",
+            "fg_spread_away_price",
+            "h1_spread_home_price",
+            "h1_spread_away_price",
         ]
 
-        if not matching.empty:
+        for _, row in result.iterrows():
+            home_name = row["home_team"]
+            away_name = row["away_team"]
+            matching = master[(master["home_team"] == home_name) & (master["away_team"] == away_name)]
+            if matching.empty:
+                continue
             latest = matching.iloc[-1]
             for col in rating_cols:
                 if col in latest:
                     result.loc[result.index == row.name, col] = latest[col]
+
+        return result
+
+    # No local master: if we have odds lines already, we can still do live predictions by pulling ratings.
+    try:
+        season = _determine_current_season()
+        ratings = _load_barttorvik_ratings_live(season)
+    except Exception as exc:
+        ratings = {}
+        print(f"[WARN] Failed to fetch live Barttorvik ratings: {exc}")
+
+    if ratings:
+        # ============================================================
+        # GOVERNANCE: AUTHORITATIVE TEAM NAME RESOLUTION GATE
+        # ============================================================
+        # Source: Postgres team_aliases table (95%+ coverage, 600+ aliases)
+        # Module: testing.canonical.barttorvik_team_mappings
+        #
+        # DO NOT modify this section to use:
+        # - Ad-hoc dictionaries
+        # - Inline string manipulation
+        # - Fuzzy matching
+        #
+        # All changes to team mappings must go through:
+        # 1. Postgres team_aliases table (authoritative source)
+        # 2. Export via scripts/export_team_registry.py
+        # 3. Update testing.canonical.barttorvik_team_mappings module
+        # ============================================================
+
+        for idx, row in result.iterrows():
+            home_team = row["home_team"]
+            away_team = row["away_team"]
+
+            # Resolve using authoritative mappings module
+            home_bart = resolve_odds_api_to_barttorvik(home_team)
+            away_bart = resolve_odds_api_to_barttorvik(away_team)
+
+            # Lookup in Barttorvik ratings using resolved names
+            h = ratings.get(home_bart) if home_bart else None
+            a = ratings.get(away_bart) if away_bart else None
+
+            if h:
+                result.at[idx, "home_adj_o"] = h.get("adj_o")
+                result.at[idx, "home_adj_d"] = h.get("adj_d")
+                result.at[idx, "home_barthag"] = h.get("barthag")
+                result.at[idx, "home_tempo"] = h.get("tempo")
+                result.at[idx, "home_wab"] = h.get("wab")
+                result.at[idx, "home_rank"] = h.get("rank")
+                result.at[idx, "home_tor"] = h.get("tor")
+                result.at[idx, "home_orb"] = h.get("orb")
+                result.at[idx, "home_ftr"] = h.get("ftr", 0.3)  # Default if missing
+                result.at[idx, "home_efg"] = h.get("efg", 50.0)  # Default if missing
+                result.at[idx, "home_efgd"] = h.get("efgd", 50.0)  # Default if missing
+                result.at[idx, "home_drb"] = h.get("drb", 70.0)  # Default if missing
+                result.at[idx, "home_three_pt_rate"] = h.get("three_pt_rate", 35.0)  # Default if missing
+            if a:
+                result.at[idx, "away_adj_o"] = a.get("adj_o")
+                result.at[idx, "away_adj_d"] = a.get("adj_d")
+                result.at[idx, "away_barthag"] = a.get("barthag")
+                result.at[idx, "away_tempo"] = a.get("tempo")
+                result.at[idx, "away_wab"] = a.get("wab")
+                result.at[idx, "away_rank"] = a.get("rank")
+                result.at[idx, "away_tor"] = a.get("tor")
+                result.at[idx, "away_orb"] = a.get("orb")
+                result.at[idx, "away_ftr"] = a.get("ftr", 0.3)  # Default if missing
+                result.at[idx, "away_efg"] = a.get("efg", 50.0)  # Default if missing
+                result.at[idx, "away_efgd"] = a.get("efgd", 50.0)  # Default if missing
+                result.at[idx, "away_drb"] = a.get("drb", 70.0)  # Default if missing
+                result.at[idx, "away_three_pt_rate"] = a.get("three_pt_rate", 35.0)  # Default if missing
+
+        return result
+
+    # Last resort: Azure (requires creds)
+    reader = get_azure_reader()
+    master = reader.read_csv("manifests/canonical_training_data_master.csv")
+    if "home_canonical" in master.columns:
+        master["home_team"] = master["home_canonical"].astype(str).str.strip()
+        master["away_team"] = master["away_canonical"].astype(str).str.strip()
+    elif "home_team" in master.columns:
+        master["home_team"] = master["home_team"].astype(str).str.strip()
+        master["away_team"] = master["away_team"].astype(str).str.strip()
+
+    for _, row in result.iterrows():
+        home_name = row["home_team"]
+        away_name = row["away_team"]
+        matching = master[(master["home_team"] == home_name) & (master["away_team"] == away_name)]
+        if matching.empty:
+            continue
+        latest = matching.iloc[-1]
+        for col in [c for c in master.columns if c.startswith("home_") or c.startswith("away_") or c in {"fg_spread", "h1_spread", "fg_spread_home_price", "fg_spread_away_price", "h1_spread_home_price", "h1_spread_away_price"}]:
+            result.loc[result.index == row.name, col] = latest.get(col)
 
     return result
 
@@ -198,20 +516,31 @@ def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightP
     """Generate predictions for tonight's games."""
     picks = []
 
-    # Create predictor
-    config = BacktestConfig(
-        market=MarketType.FG_SPREAD,
-        seasons=[2025],
-        use_trained_models=True,
-        min_edge=1.5
-    )
-    predictor = NCAAMPredictor(config)
-
-    # Add derived features
+    # Add derived features used by trained residual models.
     df = _add_derived_features(df)
 
     for market in markets:
-        config.market = market
+        # Load trained model (linear residual) for the market.
+        try:
+            from ncaam.linear_json_model import load_linear_json_model
+
+            trained_model, trained_features, trained_meta = load_linear_json_model(
+                ROOT_DIR / "models" / "linear" / f"{market.value}.json",
+                allow_linear=True,
+            )
+        except Exception as exc:
+            trained_model, trained_features, trained_meta = None, None, None
+            print(f"[WARN] Failed to load trained model for {market.value}: {exc}")
+
+        if trained_model is None or not trained_features:
+            print(f"[WARN] Trained model not found for {market.value}; skipping.")
+            continue
+
+        target_mode = (trained_meta or {}).get("target_mode", "raw")
+        sigma = float((trained_meta or {}).get("sigma", 11.0))
+        min_edge_points = float((trained_meta or {}).get("min_edge", 1.5))
+
+        line_col = "fg_spread" if market == MarketType.FG_SPREAD else "h1_spread"
 
         for _, game in df.iterrows():
             # Extract required fields
@@ -221,75 +550,37 @@ def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightP
                 game_date = game.get("game_date", datetime.now().date())
                 game_time = game.get("commence_time", "TBD")
 
-                # Ratings
-                home_adj_o = game.get("home_adj_o")
-                home_adj_d = game.get("home_adj_d")
-                away_adj_o = game.get("away_adj_o")
-                away_adj_d = game.get("away_adj_d")
-
-                if any(pd.isna(x) for x in [home_adj_o, home_adj_d, away_adj_o, away_adj_d]):
-                    continue  # Skip if missing ratings
-
-                # Make prediction
-                if market == MarketType.FG_SPREAD:
-                    predicted = predictor.predict_spread(
-                        home_adj_o, home_adj_d, away_adj_o, away_adj_d,
-                        is_neutral=game.get("neutral", False),
-                        home_efg=game.get("home_efg"),
-                        away_efg=game.get("away_efg"),
-                    )
-                    market_line = game.get("fg_spread")
-                    price_home = game.get("fg_spread_home_price")
-                    price_away = game.get("fg_spread_away_price")
-
-                elif market == MarketType.H1_SPREAD:
-                    predicted = predictor.predict_h1_spread(
-                        home_adj_o, home_adj_d, away_adj_o, away_adj_d,
-                        is_neutral=game.get("neutral", False),
-                        home_efg=game.get("home_efg"),
-                        away_efg=game.get("away_efg"),
-                    )
-                    market_line = game.get("h1_spread")
-                    price_home = game.get("h1_spread_home_price")
-                    price_away = game.get("h1_spread_away_price")
-
-                elif market == MarketType.FG_TOTAL:
-                    predicted = predictor.predict_total(
-                        home_adj_o, home_adj_d, game.get("home_tempo", 67),
-                        away_adj_o, away_adj_d, game.get("away_tempo", 67),
-                        is_neutral=game.get("neutral", False),
-                    )
-                    market_line = game.get("fg_total")
-                    price_home = game.get("fg_total_over_price")
-                    price_away = game.get("fg_total_under_price")
-
-                elif market == MarketType.H1_TOTAL:
-                    predicted = predictor.predict_h1_total(
-                        home_adj_o, home_adj_d, game.get("home_tempo", 67),
-                        away_adj_o, away_adj_d, game.get("away_tempo", 67),
-                        is_neutral=game.get("neutral", False),
-                    )
-                    market_line = game.get("h1_total")
-                    price_home = game.get("h1_total_over_price")
-                    price_away = game.get("h1_total_under_price")
-
-                else:
-                    continue
-
-                # Check if we have market line
+                market_line = game.get(line_col)
                 if pd.isna(market_line):
                     continue
 
-                # Calculate edge
-                if "spread" in market.value:
-                    edge_points = abs(predicted - market_line)
-                    edge_pct = (edge_points / 11.0) * 100  # Assume 11 point std dev for spreads
-                else:
-                    edge_points = abs(predicted - market_line)
-                    edge_pct = (edge_points / 8.0) * 100  # Assume 8 point std dev for totals
+                # Build feature vector; if a feature is missing, impute the model mean.
+                features: list[float] = []
+                for i, name in enumerate(trained_features):
+                    val = game.get(name)
+                    if pd.isna(val):
+                        try:
+                            val = float(trained_model.means[i])
+                        except Exception:
+                            val = None
+                    if val is None or pd.isna(val):
+                        features = []
+                        break
+                    features.append(float(val))
 
-                # Only pick if edge > 1.5%
-                if edge_pct < 1.5:
+                if not features:
+                    continue
+
+                predicted_raw = float(trained_model.predict([features])[0])
+                if target_mode == "residual":
+                    predicted = float(market_line) - predicted_raw
+                else:
+                    predicted = predicted_raw
+
+                edge_points = abs(predicted - float(market_line))
+                edge_pct = (edge_points / sigma) * 100.0 if sigma else 0.0
+
+                if edge_points < min_edge_points:
                     continue
 
                 # Determine bet side
@@ -299,9 +590,9 @@ def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightP
                     bet_side = "over" if predicted > market_line else "under"
 
                 # Confidence based on edge
-                if edge_pct >= 10:
+                if edge_points >= 7:
                     confidence = "HIGH"
-                elif edge_pct >= 5:
+                elif edge_points >= 4:
                     confidence = "MEDIUM"
                 else:
                     confidence = "LOW"
@@ -380,7 +671,7 @@ def main():
     picks = generate_picks(games_df, markets)
 
     if not picks:
-        print("[WARN] No picks generated (all edges below 1.5%)")
+        print("[WARN] No picks generated (all edges below thresholds)")
         return
 
     # Output results
@@ -438,5 +729,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import os
     main()

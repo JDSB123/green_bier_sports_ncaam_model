@@ -26,7 +26,7 @@
 - **Improving trend**: +4.7% year-over-year
 - Total profit: **$4,660** on 1,221 bets
 
-**Models**: [testing/models/fg_spread.json](testing/models/fg_spread.json)
+**Models**: [models/linear/fg_spread.json](models/linear/fg_spread.json)
 
 ### Other Markets
 Status: Trained models exist, need validation
@@ -105,7 +105,7 @@ Status: Trained models exist, need validation
 - `train_independent_models.py` - Model training pipeline
 
 ### Trained Models
-**testing/models/**:
+**models/linear/**:
 - `fg_spread.json` (+3.82% ROI) ✓
 - `fg_total.json` (needs validation)
 - `fg_moneyline.json` (needs validation)
@@ -159,7 +159,7 @@ Status: Trained models exist, need validation
 
 2. **Deploy to production**:
    - Set `use_ml_model=True` in production config
-   - Load models from `testing/models/`
+   - Load models from `models/linear/`
    - Start with paper trading (no real money)
 
 3. **Monitor performance**:
@@ -202,7 +202,7 @@ Status: Trained models exist, need validation
 
 **MUST USE**:
 - `--use-trained-models` flag (or `use_ml_model=True` in config)
-- ML models from `testing/models/`
+- ML models from `models/linear/`
 - **DO NOT use formula-based predictions**
 
 **MUST HAVE**:
