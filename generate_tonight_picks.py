@@ -766,25 +766,58 @@ def main():
     output_file = RESULTS_DIR / f"tonight_picks_{timestamp}.csv"
     picks_df.to_csv(output_file, index=False)
 
-    # Save JSON for integration with betting systems
+    # Save JSON for integration with betting systems and website
     json_file = RESULTS_DIR / f"tonight_picks_{timestamp}.json"
-    picks_json = [
-        {
-            "game_date": p.game_date,
-            "game_time": p.game_time,
+
+    # Format matching greenbiersportventures.com/weekly-lineup API
+    picks_json = {
+        "generated_at": datetime.now(pytz.timezone("US/Central")).isoformat(),
+        "model_version": "v33_formula",
+        "date": datetime.now(pytz.timezone("US/Central")).strftime("%Y-%m-%d"),
+        "picks": []
+    }
+
+    for p in picks:
+        # Determine fire_rating based on edge
+        if p.edge >= 7:
+            fire_rating = "MAX"
+        elif p.edge >= 5:
+            fire_rating = "STRONG"
+        elif p.edge >= 3:
+            fire_rating = "GOOD"
+        else:
+            fire_rating = "STANDARD"
+
+        # Format pick label
+        if p.bet_side == "home":
+            pick_label = p.home_team
+        elif p.bet_side == "away":
+            pick_label = p.away_team
+        else:
+            pick_label = p.bet_side.upper()
+
+        # Determine market and period
+        market_type = "SPREAD" if "spread" in p.market else "TOTAL"
+        period = "1H" if "h1" in p.market else "FG"
+
+        picks_json["picks"].append({
+            "time_cst": p.game_time,
+            "matchup": f"{p.away_team} @ {p.home_team}",
             "home_team": p.home_team,
             "away_team": p.away_team,
-            "market": p.market,
-            "predicted_line": p.predicted_line,
+            "period": period,
+            "market": market_type,
+            "pick": pick_label,
+            "pick_odds": "N/A",  # Not available in live mode
+            "model_line": p.predicted_line,
             "market_line": p.market_line,
-            "edge_points": p.edge,
-            "edge_pct": p.edge_pct,
-            "bet_side": p.bet_side,
-            "confidence": p.confidence,
-            "paper_mode": p.paper_mode,
-        }
-        for p in picks
-    ]
+            "edge": f"+{p.edge:.1f}" if p.edge > 0 else f"{p.edge:.1f}",
+            "confidence": f"{p.edge_pct:.0f}%",
+            "fire_rating": fire_rating,
+            "model_version": "v33_formula",
+            "is_current_model": True,
+        })
+
     with open(json_file, "w") as f:
         json.dump(picks_json, f, indent=2)
 
