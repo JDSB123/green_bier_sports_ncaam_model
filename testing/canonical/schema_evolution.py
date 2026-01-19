@@ -162,7 +162,7 @@ class SchemaEvolutionManager:
         schema_files = list(self.config_dir.glob("*.json"))
         for schema_file in schema_files:
             try:
-                with open(schema_file) as f:
+                with schema_file.open(encoding="utf-8") as f:
                     schema_data = json.load(f)
 
                 schema = SchemaVersion(
@@ -434,8 +434,7 @@ class SchemaEvolutionManager:
         # Apply v1 -> v2 migration
         df = self._migrate_v1_to_v2(df)
         # Apply v2 -> v3 migration
-        df = self._migrate_v2_to_v3(df)
-        return df
+        return self._migrate_v2_to_v3(df)
 
     def create_custom_migration(
         self,
@@ -473,7 +472,7 @@ class SchemaEvolutionManager:
         }
 
         try:
-            with open(schema_file, 'w') as f:
+            with schema_file.open("w", encoding="utf-8") as f:
                 json.dump(schema_data, f, indent=2)
             print(f"Saved schema {schema.version} to {schema_file}")
         except Exception as e:

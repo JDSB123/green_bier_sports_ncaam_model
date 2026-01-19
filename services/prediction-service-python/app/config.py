@@ -8,7 +8,7 @@ Versioning:
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
-from . import __version__ as APP_VERSION
+from . import __version__ as app_version
 
 
 class ModelConfig(BaseSettings):
@@ -398,7 +398,7 @@ class Settings(BaseSettings):
 
     # Service
     service_name: str = "prediction-service"
-    service_version: str = APP_VERSION  # Single source of truth (VERSION)
+    service_version: str = app_version  # Single source of truth (VERSION)
     git_sha: str = Field(
         default="unknown",
         description="Git commit SHA used to build the container image (GIT_SHA env var).",

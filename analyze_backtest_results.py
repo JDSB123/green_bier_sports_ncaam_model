@@ -88,14 +88,14 @@ def main():
             team_performance.append((team, len(team_df), team_wins, team_losses, roi))
 
     team_performance.sort(key=lambda x: x[4], reverse=True)
-    for team, bets, w, l, roi in team_performance[:10]:
-        print(f'{team:28s}: {bets:3d} bets, {w:3d}W/{l:3d}L, ROI: {roi:7.2f}%')
+    for team, bets, w, losses, roi in team_performance[:10]:
+        print(f'{team:28s}: {bets:3d} bets, {w:3d}W/{losses:3d}L, ROI: {roi:7.2f}%')
 
     print('\n' + '='*80)
     print('WORST PERFORMING TEAMS (min 15 bets)')
     print('='*80)
-    for team, bets, w, l, roi in team_performance[-10:]:
-        print(f'{team:28s}: {bets:3d} bets, {w:3d}W/{l:3d}L, ROI: {roi:7.2f}%')
+    for team, bets, w, losses, roi in team_performance[-10:]:
+        print(f'{team:28s}: {bets:3d} bets, {w:3d}W/{losses:3d}L, ROI: {roi:7.2f}%')
 
     # Analyze prediction accuracy
     print('\n' + '='*80)

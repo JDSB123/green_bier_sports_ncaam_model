@@ -16,6 +16,7 @@ Exit codes:
     1: Environment has issues requiring attention
 """
 
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -24,7 +25,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "services" / "prediction-service-python"))
 
 try:
-    import psycopg2
     from sqlalchemy import create_engine, text
     HAS_SQLALCHEMY = True
 except ImportError:
@@ -47,7 +47,7 @@ def get_database_url():
     # Read password from Docker secret
     pw_file = os.environ.get("DB_PASSWORD_FILE", "/run/secrets/db_password")
     if Path(pw_file).exists():
-        with open(pw_file) as f:
+        with Path(pw_file).open(encoding="utf-8") as f:
             password = f.read().strip()
         return f"postgresql://{db_user}:{password}@{db_host}:{db_port}/{db_name}"
 
@@ -174,18 +174,12 @@ def check_service_dependencies():
     # Check Redis (if configured)
     redis_url = os.environ.get("REDIS_URL")
     if redis_url:
-        try:
-            import redis
-            # Parse Redis URL
-            if redis_url.startswith("rediss://"):
-                # SSL connection - basic connectivity check
-                print("✅ Redis URL configured (SSL)")
-            else:
-                print("✅ Redis URL configured")
-        except ImportError:
+        if importlib.util.find_spec("redis") is None:
             issues.append("redis library not available")
-        except Exception as e:
-            issues.append(f"Redis connection issue: {e}")
+        elif redis_url.startswith("rediss://"):
+            print("✅ Redis URL configured (SSL)")
+        else:
+            print("✅ Redis URL configured")
     else:
         issues.append("REDIS_URL not configured")
 

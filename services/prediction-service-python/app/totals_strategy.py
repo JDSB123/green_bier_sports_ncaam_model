@@ -22,7 +22,6 @@ Backtest Results (from canonical_training_data_master.csv):
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 import structlog
 
@@ -57,9 +56,9 @@ class TotalsSignal:
         """Human-readable signal strength."""
         if self.expected_roi >= 5.0:
             return "STRONG"
-        elif self.expected_roi >= 2.0:
+        if self.expected_roi >= 2.0:
             return "MODERATE"
-        elif self.expected_roi > 0:
+        if self.expected_roi > 0:
             return "WEAK"
         return "NEGATIVE"
 
@@ -146,15 +145,14 @@ class TotalsStrategy:
                     reasoning=f"Sharp money and seasonal pattern both favor {sharp_signal['pick']}. "
                               f"Sharp: {sharp_signal['reasoning']}. Seasonal: {seasonal_signal['reasoning']}"
                 )
-            else:
-                # Signals conflict - prefer sharp money (real-time)
-                return TotalsSignal(
-                    signal_type=TotalsSignalType.SHARP_MONEY,
-                    pick=sharp_signal["pick"],
-                    confidence=sharp_signal["hit_rate"],
-                    expected_roi=self._calculate_roi(sharp_signal["hit_rate"]),
-                    reasoning=f"Sharp money signal overrides conflicting seasonal pattern. {sharp_signal['reasoning']}"
-                )
+            # Signals conflict - prefer sharp money (real-time)
+            return TotalsSignal(
+                signal_type=TotalsSignalType.SHARP_MONEY,
+                pick=sharp_signal["pick"],
+                confidence=sharp_signal["hit_rate"],
+                expected_roi=self._calculate_roi(sharp_signal["hit_rate"]),
+                reasoning=f"Sharp money signal overrides conflicting seasonal pattern. {sharp_signal['reasoning']}"
+            )
 
         if sharp_signal:
             return TotalsSignal(
@@ -274,10 +272,10 @@ class TotalsStrategy:
 
         # Convert American odds to decimal probability
         if juice < 0:
-            implied_prob = abs(juice) / (abs(juice) + 100)
+            abs(juice) / (abs(juice) + 100)
             win_amount = 100 / abs(juice) * 100  # Per $100 wagered
         else:
-            implied_prob = 100 / (juice + 100)
+            100 / (juice + 100)
             win_amount = juice  # Per $100 wagered
 
         # ROI = (P(win) * win_amount) - (P(lose) * wager) / wager * 100

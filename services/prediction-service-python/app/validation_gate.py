@@ -408,9 +408,11 @@ class PrePredictionGate:
             result.add_warning("odds", "No spread or total provided - cannot generate pick recommendations")
 
         # Check for juice/vig if available
-        if game.get("spread") is not None:
-            if game.get("spread_home_juice") is None or game.get("spread_away_juice") is None:
-                result.add_warning("juice", "Spread juice not provided - will use default -110")
+        if (
+            game.get("spread") is not None
+            and (game.get("spread_home_juice") is None or game.get("spread_away_juice") is None)
+        ):
+            result.add_warning("juice", "Spread juice not provided - will use default -110")
 
     def validate_barttorvik_freshness(self,
                                        ratings_date: datetime | None = None,

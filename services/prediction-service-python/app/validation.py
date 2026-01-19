@@ -281,14 +281,13 @@ def validate_market_odds(
     # Cross-field validation
 
     # 1H spread should be smaller magnitude than FG spread
-    if spread is not None and spread_1h is not None:
-        if abs(spread_1h) > abs(spread):
-            issues.append(ValidationIssue(
-                field="spread_1h",
-                value=spread_1h,
-                message=f"1H spread ({spread_1h}) larger than FG spread ({spread})",
-                severity=ValidationSeverity.WARNING,
-            ))
+    if spread is not None and spread_1h is not None and abs(spread_1h) > abs(spread):
+        issues.append(ValidationIssue(
+            field="spread_1h",
+            value=spread_1h,
+            message=f"1H spread ({spread_1h}) larger than FG spread ({spread})",
+            severity=ValidationSeverity.WARNING,
+        ))
 
     # 1H total should be less than FG total
     if total is not None and total_1h is not None:

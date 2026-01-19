@@ -23,6 +23,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import Any
 
 import structlog
@@ -32,8 +33,6 @@ logger = structlog.get_logger(__name__)
 # Import schedule cache (optimized path)
 try:
     from .schedule_cache import (
-        ScheduleCache,
-        get_or_load_schedule,
         get_today_games,
     )
     CACHE_AVAILABLE = True
@@ -242,7 +241,7 @@ class ParallelOrchestrator:
         start = time.time()
 
         # Try Go binary first
-        if os.path.exists("/app/bin/ratings-sync"):
+        if Path("/app/bin/ratings-sync").exists():
             try:
                 proc = subprocess.run(
                     ["/app/bin/ratings-sync"],

@@ -165,7 +165,7 @@ class TrainingDataLoader:
             raise ValueError(f"No valid training samples for {bet_type}")
 
         # Extract feature matrix
-        X = self.feature_engineer.extract_batch(games)
+        x = self.feature_engineer.extract_batch(games)
         y = np.array(labels, dtype=np.float32)
 
         logger.info(
@@ -173,7 +173,7 @@ class TrainingDataLoader:
             positive_rate=float(y.mean()),
         )
 
-        return X, y, games
+        return x, y, games
 
     def _build_fg_spread_query(self, start_date: str, end_date: str) -> str:
         """
@@ -456,32 +456,32 @@ class TrainingPipeline:
         logger.info(f"Training {bet_type} model...")
 
         # Load data
-        X, y, games = self.data_loader.load_training_data(
+        x, y, games = self.data_loader.load_training_data(
             self.config.start_date,
             self.config.end_date,
             bet_type,
         )
 
         # Time-series cross-validation
-        cv_results = self._cross_validate(X, y, bet_type)
+        cv_results = self._cross_validate(x, y, bet_type)
 
         # Train final model on all data
         model = BetPredictionModel(bet_type)
 
         # Use last fold as validation for early stopping
-        n = len(X)
+        n = len(x)
         train_size = int(n * 0.85)
-        X_train, X_val = X[:train_size], X[train_size:]
+        x_train, x_val = x[:train_size], x[train_size:]
         y_train, y_val = y[:train_size], y[train_size:]
 
         model.fit(
-            X_train, y_train,
-            X_val, y_val,
+            x_train, y_train,
+            x_val, y_val,
             feature_names=self.feature_engineer.feature_names,
         )
 
         # Evaluate on held-out validation
-        y_pred_proba = model.predict_proba(X_val)
+        y_pred_proba = model.predict_proba(x_val)
 
         # Calibration analysis
         prob_true, prob_pred = calibration_curve(
@@ -493,8 +493,8 @@ class TrainingPipeline:
             model_type=bet_type,
             version="1.0.0",
             trained_at=datetime.now().isoformat(),
-            training_samples=len(X_train),
-            validation_samples=len(X_val),
+            training_samples=len(x_train),
+            validation_samples=len(x_val),
             accuracy=cv_results["accuracy"],
             log_loss=cv_results["log_loss"],
             auc_roc=cv_results["auc_roc"],
@@ -514,7 +514,7 @@ class TrainingPipeline:
 
     def _cross_validate(
         self,
-        X: np.ndarray,
+        x: np.ndarray,
         y: np.ndarray,
         bet_type: str,
     ) -> dict[str, float]:
@@ -530,19 +530,19 @@ class TrainingPipeline:
         aucs = []
         briers = []
 
-        for fold, (train_idx, val_idx) in enumerate(tscv.split(X)):
+        for fold, (train_idx, val_idx) in enumerate(tscv.split(x)):
             if len(train_idx) < self.config.min_train_size:
                 continue
 
-            X_train, X_val = X[train_idx], X[val_idx]
+            x_train, x_val = x[train_idx], x[val_idx]
             y_train, y_val = y[train_idx], y[val_idx]
 
             # Train fold model
             model = BetPredictionModel(bet_type)
-            model.fit(X_train, y_train)
+            model.fit(x_train, y_train)
 
             # Evaluate
-            y_pred_proba = model.predict_proba(X_val)
+            y_pred_proba = model.predict_proba(x_val)
             y_pred = (y_pred_proba >= 0.5).astype(int)
 
             accuracies.append(accuracy_score(y_val, y_pred))

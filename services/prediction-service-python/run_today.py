@@ -287,7 +287,7 @@ def _configure_stdout() -> None:
 def _read_secret_file(file_path: str, secret_name: str) -> str:
     """Read secret from Docker secret file - FAILS HARD if missing."""
     try:
-        with open(file_path) as f:
+        with Path(file_path).open(encoding="utf-8") as f:
             value = f.read().strip()
             if not value:
                 raise ValueError(f"Secret file {file_path} is empty")
@@ -403,7 +403,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
     odds_success = False
     rust_binary = "/app/bin/odds-ingestion"
 
-    if os.path.exists(rust_binary):
+    if Path(rust_binary).exists():
         print("  [INFO] Syncing odds from The Odds API (Rust binary)...")
         try:
             # Get API key from env (Azure: ODDS_API_KEY or THE_ODDS_API_KEY) or Docker secret file (Compose)
@@ -467,7 +467,7 @@ def sync_fresh_data(skip_sync: bool = False) -> bool:
         print("  [RETRY] One quick retry for transient sync issues...")
         try:
             # Retry ratings using Go binary if available
-            if not ratings_success and os.path.exists("/app/bin/ratings-sync"):
+            if not ratings_success and Path("/app/bin/ratings-sync").exists():
                 result = subprocess.run(
                     ["/app/bin/ratings-sync"],
                     env={
@@ -1670,7 +1670,6 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
         return False
 
     # Webhook sending disabled - function now just saves CSV and uploads to Blob
-    send_enabled = False
 
     # Sort picks by game time ascending (earliest games first)
     sorted_picks = sorted(all_picks, key=lambda p: p['time_cst'])
@@ -1918,7 +1917,7 @@ def send_picks_to_teams(all_picks: list, target_date, webhook_url: str = "") -> 
     max_count = len(max_plays)
 
     # Build simple Adaptive Card that actually works
-    card_payload = {
+    {
         "type": "message",
         "attachments": [
             {

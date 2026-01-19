@@ -73,7 +73,7 @@ def verify_manifest_checksums() -> tuple[int, int]:
 
 def verify_team_aliases() -> bool:
     """Verify team aliases file is loadable and has expected count."""
-    reader = get_data_reader()
+    get_data_reader()
     print("  OK Team aliases check skipped (canonical master only)")
     return True
 

@@ -25,7 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from app import __version__ as APP_VERSION
+from app import __version__ as app_version
 from app.models import BetType
 from app.predictors.base import BasePredictor, MarketPrediction
 from app.statistical_confidence import statistical_confidence
@@ -88,7 +88,7 @@ class H1TotalModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Total"
-    MODEL_VERSION = APP_VERSION  # Truly independent & backtested
+    MODEL_VERSION = app_version  # Truly independent & backtested
     MARKET_TYPE = "total"
 
     # ═══════════════════════════════════════════════════════════════════════

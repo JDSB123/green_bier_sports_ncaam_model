@@ -62,8 +62,7 @@ def extract_hardcoded_aliases() -> dict[str, str]:
     dict_content = "\n".join(lines)
 
     try:
-        aliases = ast.literal_eval(dict_content)
-        return aliases
+        return ast.literal_eval(dict_content)
     except (SyntaxError, ValueError) as e:
         print(f"ERROR: Could not parse TEAM_NAME_ALIASES: {e}")
         sys.exit(1)

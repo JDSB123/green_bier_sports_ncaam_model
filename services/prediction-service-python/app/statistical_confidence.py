@@ -254,9 +254,8 @@ class StatisticalConfidenceCalculator:
         z = self.z_scores[confidence_level]
 
         # Edge needed to be confident at target level
-        required_edge = z * stats.std_error / math.sqrt(stats.sample_size)
+        return z * stats.std_error / math.sqrt(stats.sample_size)
 
-        return required_edge
 
 
 # Global instance for use throughout the application

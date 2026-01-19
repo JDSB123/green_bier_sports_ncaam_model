@@ -66,7 +66,7 @@ def _load_team_names() -> dict[int, str]:
     frame = pd.read_csv(TEAM_MAP_FILE)
     if "TeamID" not in frame or "TeamName" not in frame:
         raise ValueError("MTeams.csv is missing expected columns TeamID/TeamName")
-    return dict(zip(frame["TeamID"], frame["TeamName"]))
+    return dict(zip(frame["TeamID"], frame["TeamName"], strict=False))
 
 
 def _load_spellings() -> dict[int, list[str]]:

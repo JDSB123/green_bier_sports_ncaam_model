@@ -519,28 +519,27 @@ def settle_recommendations(
                             result = "PUSH"
                             pnl = 0
 
-            elif bet_type == "TOTAL_1H":
-                if actual_total_1h is not None:
-                    if pick == "OVER":
-                        if actual_total_1h > line:
-                            result = "WIN"
-                            pnl = units * 0.909
-                        elif actual_total_1h < line:
-                            result = "LOSS"
-                            pnl = -units
-                        else:
-                            result = "PUSH"
-                            pnl = 0
-                    else:  # UNDER
-                        if actual_total_1h < line:
-                            result = "WIN"
-                            pnl = units * 0.909
-                        elif actual_total_1h > line:
-                            result = "LOSS"
-                            pnl = -units
-                        else:
-                            result = "PUSH"
-                            pnl = 0
+            elif bet_type == "TOTAL_1H" and actual_total_1h is not None:
+                if pick == "OVER":
+                    if actual_total_1h > line:
+                        result = "WIN"
+                        pnl = units * 0.909
+                    elif actual_total_1h < line:
+                        result = "LOSS"
+                        pnl = -units
+                    else:
+                        result = "PUSH"
+                        pnl = 0
+                else:  # UNDER
+                    if actual_total_1h < line:
+                        result = "WIN"
+                        pnl = units * 0.909
+                    elif actual_total_1h > line:
+                        result = "LOSS"
+                        pnl = -units
+                    else:
+                        result = "PUSH"
+                        pnl = 0
 
             # Update the recommendation
             if result:

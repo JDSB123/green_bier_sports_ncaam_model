@@ -134,7 +134,7 @@ class DataQualityGate:
     def _build_standard_rules(self) -> list[QualityRule]:
         """Build the standard set of quality validation rules."""
 
-        rules = [
+        return [
             # Universal rules (apply to all data types)
             QualityRule(
                 name="null_check",
@@ -229,7 +229,6 @@ class DataQualityGate:
             )
         ]
 
-        return rules
 
     def validate(
         self,
@@ -524,7 +523,7 @@ class DataQualityGate:
 
         for col in team_columns:
             if col in df.columns:
-                for idx, team in df[col].dropna().items():
+                for _idx, team in df[col].dropna().items():
                     result = resolver.resolve(str(team))
 
                     if result.confidence == 0:
@@ -671,7 +670,7 @@ class DataQualityGate:
     def _load_config(self, config_file: Path):
         """Load configuration from JSON file."""
         try:
-            with open(config_file) as f:
+            with config_file.open(encoding="utf-8") as f:
                 config = json.load(f)
 
             # Apply rule configurations

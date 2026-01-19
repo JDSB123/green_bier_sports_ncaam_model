@@ -1,5 +1,7 @@
+import contextlib
 import os
 import time
+from pathlib import Path
 from typing import Any
 
 import requests
@@ -19,8 +21,7 @@ class OddsApiError(Exception):
 
 def _read_secret_file(path: str, name: str) -> str:
     try:
-        with open(path, encoding="utf-8") as f:
-            return f.read().strip()
+        return Path(path).read_text(encoding="utf-8").strip()
     except Exception as e:
         raise OddsApiError(f"Secret file missing at {path} ({name}): {e}")
 
@@ -47,10 +48,8 @@ class OddsApiClient:
         # Priority: 1. Constructor arg, 2. Env var (Azure uses ODDS_API_KEY, local uses THE_ODDS_API_KEY), 3. Docker Secret File
         env_key = os.getenv("ODDS_API_KEY") or os.getenv("THE_ODDS_API_KEY")
         file_key = None
-        try:
+        with contextlib.suppress(Exception):
             file_key = _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
-        except Exception:
-            pass
 
         self.api_key = api_key or env_key or file_key
 
@@ -155,10 +154,8 @@ class OddsApiClient:
                     delay = 2 ** attempt
                     ra = resp.headers.get("Retry-After")
                     if ra:
-                        try:
+                        with contextlib.suppress(ValueError):
                             delay = int(ra)
-                        except ValueError:
-                            pass
                     time.sleep(delay)
                     continue
 

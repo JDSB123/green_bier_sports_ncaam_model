@@ -1,18 +1,38 @@
+#!/usr/bin/env python3
+"""Deploy governance artifacts and canonical master to Azure Blob Storage."""
+
+import sys
+import traceback
+from pathlib import Path
+
 import pandas as pd
 
+# Fix encoding for Windows console
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
 
-def deploy_canonical_master():
+ROOT = Path(__file__).resolve().parent
+
+try:
+    from testing.azure_data_reader import AzureDataReader
+    from testing.azure_io import upload_text, write_csv
+except ImportError as e:
+    print(f"[ERROR] Azure utilities not available: {e}")
+    traceback.print_exc()
+    sys.exit(1)
+
+
+def deploy_canonical_master() -> int:
     """Upload canonical_training_data_master.csv to Azure canonical blob storage."""
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("DEPLOYING CANONICAL MASTER TO AZURE")
-    print("="*80)
-    local_path = Path(__file__).resolve().parent / "manifests" / "canonical_training_data_master.csv"
+    print("=" * 80)
+    local_path = ROOT / "manifests" / "canonical_training_data_master.csv"
     if not local_path.exists():
         print(f"  ✗ NOT FOUND: {local_path}")
         return 0
     try:
         df = pd.read_csv(local_path)
-        from testing.azure_io import write_csv
         azure_path = "canonical/canonical_training_data_master.csv"
         write_csv(azure_path, df)
         print(f"  ✓ {local_path} → {azure_path}")
@@ -20,35 +40,6 @@ def deploy_canonical_master():
     except Exception as e:
         print(f"  ✗ {local_path}: {e}")
         return 0
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-DEPLOY TO AZURE: Sync governance files and cleanup artifacts
-
-Syncs to Azure blob storage:
-1. Governance documentation
-2. Audit trails
-3. Cleanup scripts
-4. Infrastructure documentation
-"""
-
-import sys
-from pathlib import Path
-
-# Fix encoding for Windows console
-if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8')
-
-ROOT = Path(__file__).resolve().parents[2]
-
-try:
-    from testing.azure_data_reader import AzureDataReader
-    from testing.azure_io import upload_text, write_csv
-except ImportError as e:
-    print(f"[ERROR] Azure utilities not available: {e}")
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
 
 def deploy_governance_files():
     """Deploy governance files to Azure."""
@@ -74,8 +65,7 @@ def deploy_governance_files():
             continue
 
         try:
-            with open(filepath) as f:
-                content = f.read()
+            content = filepath.read_text(encoding="utf-8")
 
             # Upload to Azure governance folder
             azure_path = f"governance/{filename}"
@@ -105,8 +95,7 @@ def deploy_audit_trails():
             continue
 
         try:
-            with open(filepath) as f:
-                content = f.read()
+            content = filepath.read_text(encoding="utf-8")
 
             # Upload audit trail
             azure_path = f"governance/audits/{filename.split('/')[-1]}"

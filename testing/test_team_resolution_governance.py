@@ -8,7 +8,6 @@ team resolution gate and that no ad-hoc mappings or fuzzy matching exist.
 This test MUST pass before any code can be merged to main.
 """
 
-import ast
 import re
 from pathlib import Path
 
@@ -19,7 +18,7 @@ def test_no_adhoc_team_mappings():
     """Ensure no ad-hoc team mapping dictionaries exist in the codebase."""
 
     # Files that are allowed to have team mappings (authoritative sources only)
-    ALLOWED_FILES = {
+    allowed_files = {
         "testing/canonical/barttorvik_team_mappings.py",
         "testing/canonical/team_resolution_service.py",
         "services/prediction-service-python/app/canonical/team_resolution_service.py",
@@ -35,7 +34,7 @@ def test_no_adhoc_team_mappings():
             continue
 
         rel_path = str(py_file.relative_to(ROOT))
-        if rel_path in ALLOWED_FILES:
+        if rel_path in allowed_files:
             continue
 
         # CRITICAL: Don't allow ad-hoc mappings in generate_tonight_picks.py
@@ -80,7 +79,7 @@ def test_no_fuzzy_matching_imports():
     """Ensure fuzzy matching libraries aren't imported for team resolution."""
 
     # Files allowed to import fuzzy libraries (for testing/validation only)
-    ALLOWED_FILES = {
+    allowed_files = {
         "testing/canonical/team_resolution_service.py",
         "services/prediction-service-python/app/canonical/team_resolution_service.py",
         "testing/test_team_resolution_governance.py",  # This test file
@@ -93,7 +92,7 @@ def test_no_fuzzy_matching_imports():
             continue
 
         rel_path = str(py_file.relative_to(ROOT))
-        if rel_path in ALLOWED_FILES:
+        if rel_path in allowed_files:
             continue
 
         content = py_file.read_text()

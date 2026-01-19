@@ -21,12 +21,11 @@ Version History:
 
 import math
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 import structlog
 
-from app import __version__ as APP_VERSION
+from app import __version__ as app_version
 from app.config import settings
 from app.ml.features import FeatureEngineer, GameFeatures
 
@@ -47,7 +46,8 @@ from app.predictors import (
     h1_spread_model,
     h1_total_model,
 )
-from app.totals_strategy import totals_strategy, TotalsSignalType
+from app.situational import RestInfo
+from app.totals_strategy import totals_strategy
 
 HAS_ML_MODELS = True
 
@@ -96,7 +96,7 @@ class PredictionEngineV33:
         """
         self.config = settings.model
         self.logger = structlog.get_logger()
-        self.version_tag = f"v{APP_VERSION}"
+        self.version_tag = f"v{app_version}"
         self.bayes_priors: dict[BetType, dict[str, float]] = {}
 
         # Analytical models for fair line prediction
@@ -149,8 +149,8 @@ class PredictionEngineV33:
         away_ratings: TeamRatings,
         market_odds: MarketOdds | None = None,
         is_neutral: bool = False,
-        home_rest: Optional['RestInfo'] = None,
-        away_rest: Optional['RestInfo'] = None,
+        home_rest: RestInfo | None = None,
+        away_rest: RestInfo | None = None,
         home_hca: float | None = None,
         home_hca_1h: float | None = None,
         home_health: dict | None = None,
@@ -187,7 +187,7 @@ class PredictionEngineV33:
         if home_ratings is None or away_ratings is None:
             raise ValueError("home_ratings and away_ratings are required")
 
-        def _rest_days(rest: Optional['RestInfo']) -> int | None:
+        def _rest_days(rest: RestInfo | None) -> int | None:
             """Gracefully handle both legacy and current rest attributes."""
             if rest is None:
                 return None
@@ -374,21 +374,24 @@ class PredictionEngineV33:
         # ─────────────────────────────────────────────────────────────────────
         # FG SPREAD RECOMMENDATIONS
         # ─────────────────────────────────────────────────────────────────────
-        if market_odds.spread is not None and prediction.spread_edge >= self.fg_spread_model.MIN_EDGE:
-            if prediction.spread_confidence >= self.config.min_confidence:
-                pick = Pick.HOME if prediction.predicted_spread < market_odds.spread else Pick.AWAY
-                rec = self._create_recommendation(
-                    prediction,
-                    BetType.SPREAD,
-                    pick,
-                    prediction.predicted_spread,
-                    market_odds.spread,
-                    prediction.spread_edge,
-                    prediction.spread_confidence,
-                    market_odds,
-                )
-                if rec:
-                    recommendations.append(rec)
+        if (
+            market_odds.spread is not None
+            and prediction.spread_edge >= self.fg_spread_model.MIN_EDGE
+            and prediction.spread_confidence >= self.config.min_confidence
+        ):
+            pick = Pick.HOME if prediction.predicted_spread < market_odds.spread else Pick.AWAY
+            rec = self._create_recommendation(
+                prediction,
+                BetType.SPREAD,
+                pick,
+                prediction.predicted_spread,
+                market_odds.spread,
+                prediction.spread_edge,
+                prediction.spread_confidence,
+                market_odds,
+            )
+            if rec:
+                recommendations.append(rec)
 
         # ─────────────────────────────────────────────────────────────────────
         # FG TOTAL RECOMMENDATIONS (v33.11 - Independent Totals Strategy)
@@ -455,21 +458,24 @@ class PredictionEngineV33:
         # ─────────────────────────────────────────────────────────────────────
         # 1H SPREAD RECOMMENDATIONS
         # ─────────────────────────────────────────────────────────────────────
-        if market_odds.spread_1h is not None and prediction.spread_edge_1h >= self.h1_spread_model.MIN_EDGE:
-            if prediction.spread_confidence_1h >= self.config.min_confidence:
-                pick = Pick.HOME if prediction.predicted_spread_1h < market_odds.spread_1h else Pick.AWAY
-                rec = self._create_recommendation(
-                    prediction,
-                    BetType.SPREAD_1H,
-                    pick,
-                    prediction.predicted_spread_1h,
-                    market_odds.spread_1h,
-                    prediction.spread_edge_1h,
-                    prediction.spread_confidence_1h,
-                    market_odds,
-                )
-                if rec:
-                    recommendations.append(rec)
+        if (
+            market_odds.spread_1h is not None
+            and prediction.spread_edge_1h >= self.h1_spread_model.MIN_EDGE
+            and prediction.spread_confidence_1h >= self.config.min_confidence
+        ):
+            pick = Pick.HOME if prediction.predicted_spread_1h < market_odds.spread_1h else Pick.AWAY
+            rec = self._create_recommendation(
+                prediction,
+                BetType.SPREAD_1H,
+                pick,
+                prediction.predicted_spread_1h,
+                market_odds.spread_1h,
+                prediction.spread_edge_1h,
+                prediction.spread_confidence_1h,
+                market_odds,
+            )
+            if rec:
+                recommendations.append(rec)
 
         # ─────────────────────────────────────────────────────────────────────
         # 1H TOTAL RECOMMENDATIONS
@@ -481,21 +487,25 @@ class PredictionEngineV33:
                 f"Skipping 1H total bet - prediction {prediction.predicted_total_1h:.1f} outside reliable range "
                 f"({H1_TOTAL_MIN_RELIABLE}-{H1_TOTAL_MAX_RELIABLE})"
             )
-        if market_odds.total_1h is not None and prediction.total_edge_1h >= self.h1_total_model.MIN_EDGE and h1_total_in_range:
-            if prediction.total_confidence_1h >= self.config.min_confidence:
-                pick = Pick.OVER if prediction.predicted_total_1h > market_odds.total_1h else Pick.UNDER
-                rec = self._create_recommendation(
-                    prediction,
-                    BetType.TOTAL_1H,
-                    pick,
-                    prediction.predicted_total_1h,
-                    market_odds.total_1h,
-                    prediction.total_edge_1h,
-                    prediction.total_confidence_1h,
-                    market_odds,
-                )
-                if rec:
-                    recommendations.append(rec)
+        if (
+            market_odds.total_1h is not None
+            and prediction.total_edge_1h >= self.h1_total_model.MIN_EDGE
+            and h1_total_in_range
+            and prediction.total_confidence_1h >= self.config.min_confidence
+        ):
+            pick = Pick.OVER if prediction.predicted_total_1h > market_odds.total_1h else Pick.UNDER
+            rec = self._create_recommendation(
+                prediction,
+                BetType.TOTAL_1H,
+                pick,
+                prediction.predicted_total_1h,
+                market_odds.total_1h,
+                prediction.total_edge_1h,
+                prediction.total_confidence_1h,
+                market_odds,
+            )
+            if rec:
+                recommendations.append(rec)
 
         return recommendations
 
@@ -789,11 +799,11 @@ class PredictionEngineV33:
             )
 
             # Extract features
-            X = self._feature_engineer.extract_features(game_features)
-            X = X.reshape(1, -1)
+            x = self._feature_engineer.extract_features(game_features)
+            x = x.reshape(1, -1)
 
             # Get probability
-            proba = self._ml_registry.predict_proba(ml_model_name, X)
+            proba = self._ml_registry.predict_proba(ml_model_name, x)
             if proba is not None:
                 return float(proba[0])
 
@@ -956,9 +966,8 @@ class PredictionEngineV33:
                     adjusted *= (1 - self.config.steam_confidence_penalty)
 
             # RLM detection (if public percentages available)
-            if self._is_reverse_line_move(bet_type, move, market_odds):
-                if aligned:
-                    adjusted *= (1 + self.config.rlm_confidence_boost)
+            if self._is_reverse_line_move(bet_type, move, market_odds) and aligned:
+                adjusted *= (1 + self.config.rlm_confidence_boost)
 
         # 2. Sharp vs Square divergence (alternative to public percentages)
         # When sharp books have moved but square books haven't, that's actionable
@@ -1040,9 +1049,7 @@ class PredictionEngineV33:
                 return False
             if public_home and move > 0:
                 return True
-            if public_away and move < 0:
-                return True
-            return False
+            return bool(public_away and move < 0)
 
         pct_over = market_odds.public_bet_pct_over
         if pct_over is None:
@@ -1053,9 +1060,7 @@ class PredictionEngineV33:
             return False
         if public_over and move < 0:
             return True
-        if public_under and move > 0:
-            return True
-        return False
+        return bool(public_under and move > 0)
 
     def _detect_sharp_square_divergence(
         self,

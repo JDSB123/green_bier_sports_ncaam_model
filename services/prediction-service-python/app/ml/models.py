@@ -105,9 +105,9 @@ class BetPredictionModel:
 
     def fit(
         self,
-        X_train: np.ndarray,
+        x_train: np.ndarray,
         y_train: np.ndarray,
-        X_val: np.ndarray | None = None,
+        x_val: np.ndarray | None = None,
         y_val: np.ndarray | None = None,
         feature_names: list[str] | None = None,
         early_stopping_rounds: int = 20,
@@ -116,9 +116,9 @@ class BetPredictionModel:
         Train the model.
 
         Args:
-            X_train: Training features (n_samples, n_features)
+            x_train: Training features (n_samples, n_features)
             y_train: Training labels (1 = bet won, 0 = bet lost)
-            X_val: Validation features (for early stopping)
+            x_val: Validation features (for early stopping)
             y_val: Validation labels
             feature_names: Names of features for interpretability
             early_stopping_rounds: Stop if no improvement
@@ -129,24 +129,24 @@ class BetPredictionModel:
         self.model = xgb.XGBClassifier(**self.params)
 
         # Fit with optional early stopping
-        if X_val is not None and y_val is not None:
+        if x_val is not None and y_val is not None:
             self.model.fit(
-                X_train, y_train,
-                eval_set=[(X_val, y_val)],
+                x_train, y_train,
+                eval_set=[(x_val, y_val)],
                 verbose=False,
             )
         else:
-            self.model.fit(X_train, y_train, verbose=False)
+            self.model.fit(x_train, y_train, verbose=False)
 
         self._is_fitted = True
         return self
 
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+    def predict_proba(self, x: np.ndarray) -> np.ndarray:
         """
         Predict probability of bet winning.
 
         Args:
-            X: Features (n_samples, n_features)
+            x: Features (n_samples, n_features)
 
         Returns:
             Array of probabilities (n_samples,)
@@ -155,23 +155,23 @@ class BetPredictionModel:
             raise RuntimeError("Model must be fitted before prediction")
 
         # Get probability of class 1 (bet wins)
-        proba = self.model.predict_proba(X)[:, 1]
+        proba = self.model.predict_proba(x)[:, 1]
 
         # Clip to reasonable range
         return np.clip(proba, 0.15, 0.85)
 
-    def predict(self, X: np.ndarray, threshold: float = 0.52) -> np.ndarray:
+    def predict(self, x: np.ndarray, threshold: float = 0.52) -> np.ndarray:
         """
         Predict binary outcome (bet or don't bet).
 
         Args:
-            X: Features
+            x: Features
             threshold: Probability threshold for recommending bet
 
         Returns:
             Array of 0/1 predictions
         """
-        proba = self.predict_proba(X)
+        proba = self.predict_proba(x)
         return (proba >= threshold).astype(int)
 
     def get_feature_importance(self) -> dict[str, float]:
@@ -180,7 +180,7 @@ class BetPredictionModel:
             return {}
 
         importance = self.model.feature_importances_
-        return dict(zip(self.feature_names, importance.tolist()))
+        return dict(zip(self.feature_names, importance.tolist(), strict=False))
 
     def save(self, path: Path) -> None:
         """Save model and metadata to disk."""
@@ -194,13 +194,13 @@ class BetPredictionModel:
         # Save metadata
         if self.metadata:
             meta_path = path / f"{self.model_type}_metadata.json"
-            with open(meta_path, "w") as f:
+            with meta_path.open("w") as f:
                 json.dump(self.metadata.__dict__, f, indent=2, default=str)
 
         # Save feature names
         if self.feature_names:
             names_path = path / f"{self.model_type}_features.json"
-            with open(names_path, "w") as f:
+            with names_path.open("w") as f:
                 json.dump(self.feature_names, f)
 
         logger.info(f"Model saved to {path}")
@@ -226,14 +226,14 @@ class BetPredictionModel:
         # Load metadata
         meta_path = path / f"{model_type}_metadata.json"
         if meta_path.exists():
-            with open(meta_path) as f:
+            with meta_path.open() as f:
                 meta_dict = json.load(f)
             instance.metadata = ModelMetadata(**meta_dict)
 
         # Load feature names
         names_path = path / f"{model_type}_features.json"
         if names_path.exists():
-            with open(names_path) as f:
+            with names_path.open() as f:
                 instance.feature_names = json.load(f)
 
         logger.info(f"Model loaded from {path}")

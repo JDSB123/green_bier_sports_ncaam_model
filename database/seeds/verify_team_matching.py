@@ -9,6 +9,7 @@ Run inside Docker:
 
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, '/app')
 from sqlalchemy import create_engine, text
@@ -17,7 +18,7 @@ from sqlalchemy import create_engine, text
 def get_db_password():
     """Read password from Docker secret file or environment variable."""
     try:
-        with open('/run/secrets/db_password') as f:
+        with Path("/run/secrets/db_password").open(encoding="utf-8") as f:
             return f.read().strip()
     except FileNotFoundError:
         password = os.getenv('DB_PASSWORD')

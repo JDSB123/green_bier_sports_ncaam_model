@@ -17,6 +17,7 @@ import os
 import sys
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import create_engine, text
 
@@ -24,7 +25,7 @@ from sqlalchemy import create_engine, text
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     try:
-        with open("/run/secrets/db_password") as f:
+        with Path("/run/secrets/db_password").open(encoding="utf-8") as f:
             DB_PASSWORD = f.read().strip()
         DATABASE_URL = f"postgresql://ncaam:{DB_PASSWORD}@postgres:5432/ncaam"
     except FileNotFoundError:

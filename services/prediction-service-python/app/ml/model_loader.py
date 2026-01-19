@@ -18,6 +18,7 @@ Usage:
     proba = manager.get_bet_probability("fg_spread", features)
 """
 
+import importlib.util
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,11 +35,8 @@ try:
 except ImportError:
     HAS_NUMPY = False
 
-try:
-    import xgboost as xgb
-    HAS_XGBOOST = True
-except ImportError:
-    HAS_XGBOOST = False
+HAS_XGBOOST = importlib.util.find_spec("xgboost") is not None
+if not HAS_XGBOOST:
     logger.warning("XGBoost not installed. ML models will not be available.")
 
 
@@ -142,7 +140,7 @@ class ProductionModelLoader:
             return False
 
         try:
-            with open(model_path, 'rb') as f:
+            with model_path.open("rb") as f:
                 data = pickle.load(f)
 
             self._models[market] = data.get("model")
@@ -255,8 +253,8 @@ class ProductionModelLoader:
             feature_vector.append(value)
 
         # Make prediction
-        X = np.array([feature_vector])
-        proba = model.predict_proba(X)[0][1]
+        x = np.array([feature_vector])
+        proba = model.predict_proba(x)[0][1]
 
         # Clip to reasonable range
         proba = np.clip(proba, 0.15, 0.85)

@@ -11,9 +11,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, field_validator
 
-from app import __version__ as APP_VERSION
+from app import __version__ as app_version
 
-DEFAULT_MODEL_VERSION = f"v{APP_VERSION}"
+DEFAULT_MODEL_VERSION = f"v{app_version}"
 
 
 class BetType(str, Enum):
@@ -215,10 +215,9 @@ class MarketOdds(BaseModel):
     @field_validator('spread', 'spread_1h', mode='before')
     @classmethod
     def validate_spreads(cls, v: float | None) -> float | None:
-        if v is not None:
-            # Expanded from +/-30 to handle heavy mismatches (e.g., D1 vs SWAC/MEAC).
-            if abs(v) > 45:
-                raise ValueError("Spread exceeds reasonable limit (+/-45)")
+        # Expanded from +/-30 to handle heavy mismatches (e.g., D1 vs SWAC/MEAC).
+        if v is not None and abs(v) > 45:
+            raise ValueError("Spread exceeds reasonable limit (+/-45)")
         return v
 
 

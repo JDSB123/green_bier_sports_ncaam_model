@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 from .odds_api_client import OddsApiClient, OddsApiError
 
@@ -34,15 +35,15 @@ def main() -> int:
         print(f"  Second-half odds:    {summary['h2_events']}")
 
         # Optional: persist a dry-run snapshot for inspection
-        out_dir = os.getenv("ODDS_PULL_OUT", "output/tmp_odds_pull")
-        os.makedirs(out_dir, exist_ok=True)
-        with open(os.path.join(out_dir, "events.json"), "w", encoding="utf-8") as f:
+        out_dir = Path(os.getenv("ODDS_PULL_OUT", "output/tmp_odds_pull"))
+        out_dir.mkdir(parents=True, exist_ok=True)
+        with (out_dir / "events.json").open("w", encoding="utf-8") as f:
             json.dump(events, f, indent=2)
-        with open(os.path.join(out_dir, "full_game.json"), "w", encoding="utf-8") as f:
+        with (out_dir / "full_game.json").open("w", encoding="utf-8") as f:
             json.dump(full, f, indent=2)
-        with open(os.path.join(out_dir, "first_half.json"), "w", encoding="utf-8") as f:
+        with (out_dir / "first_half.json").open("w", encoding="utf-8") as f:
             json.dump(h1, f, indent=2)
-        with open(os.path.join(out_dir, "second_half.json"), "w", encoding="utf-8") as f:
+        with (out_dir / "second_half.json").open("w", encoding="utf-8") as f:
             json.dump(h2, f, indent=2)
 
         print(f"\nSaved dry-run output to: {out_dir}")

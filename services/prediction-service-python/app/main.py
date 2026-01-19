@@ -1,4 +1,8 @@
+import base64
+import contextlib
 import hashlib
+import hmac
+import json
 import os
 import re
 import subprocess
@@ -7,6 +11,7 @@ import time
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +20,7 @@ from pydantic import BaseModel, Field, model_validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
@@ -337,28 +342,26 @@ class MarketOddsInput(BaseModel):
             raise ValueError("1H total prices require total_1h")
 
         # Full game spread must include pricing if provided.
-        if self.spread is not None:
-            if self.spread_price is None and not _has_pair(self.spread_home_price, self.spread_away_price):
-                raise ValueError(
-                    "spread requires either spread_price or (spread_home_price and spread_away_price)"
-                )
+        if self.spread is not None and self.spread_price is None and not _has_pair(
+            self.spread_home_price, self.spread_away_price
+        ):
+            raise ValueError("spread requires either spread_price or (spread_home_price and spread_away_price)")
 
         # Full game total must include both sides if provided.
-        if self.total is not None:
-            if self.over_price is None or self.under_price is None:
-                raise ValueError("total requires both over_price and under_price")
+        if self.total is not None and (self.over_price is None or self.under_price is None):
+            raise ValueError("total requires both over_price and under_price")
 
         # First half spread must include pricing if provided.
-        if self.spread_1h is not None:
-            if self.spread_price_1h is None and not _has_pair(self.spread_1h_home_price, self.spread_1h_away_price):
-                raise ValueError(
-                    "spread_1h requires either spread_price_1h or (spread_1h_home_price and spread_1h_away_price)"
-                )
+        if self.spread_1h is not None and self.spread_price_1h is None and not _has_pair(
+            self.spread_1h_home_price, self.spread_1h_away_price
+        ):
+            raise ValueError(
+                "spread_1h requires either spread_price_1h or (spread_1h_home_price and spread_1h_away_price)"
+            )
 
         # First half total must include both sides if provided.
-        if self.total_1h is not None:
-            if self.over_price_1h is None or self.under_price_1h is None:
-                raise ValueError("total_1h requires both over_price_1h and under_price_1h")
+        if self.total_1h is not None and (self.over_price_1h is None or self.under_price_1h is None):
+            raise ValueError("total_1h requires both over_price_1h and under_price_1h")
 
         # Require at least one market if market_odds block is present.
         if all(v is None for v in [self.spread, self.total, self.spread_1h, self.total_1h]):
@@ -706,20 +709,19 @@ async def debug_team_matching():
 @app.get("/debug/sync-odds")
 async def debug_sync_odds():
     """Test the Python odds sync directly."""
-    import os
     try:
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
             return {"error": "DATABASE_URL not set"}
 
         from app.odds_sync import sync_odds
-        result = sync_odds(
+
+        return sync_odds(
             database_url=database_url,
             enable_full=True,
             enable_h1=True,
             enable_h2=False,
         )
-        return result
     except Exception as e:
         import traceback
         return {"error": str(e), "traceback": traceback.format_exc()}
@@ -1066,10 +1068,6 @@ async def config():
 # Picks API Endpoint (for frontend integration)
 # -----------------------------
 
-from zoneinfo import ZoneInfo
-
-from sqlalchemy import create_engine
-
 CST = ZoneInfo("America/Chicago")
 
 
@@ -1151,9 +1149,9 @@ def _get_db_engine():
         db_port = os.getenv("DB_PORT", "5432")
 
         db_password_file = os.getenv("DB_PASSWORD_FILE", "/run/secrets/db_password")
-        if os.path.exists(db_password_file):
-            with open(db_password_file, encoding="utf-8") as f:
-                db_password = f.read().strip()
+        db_password_path = Path(db_password_file)
+        if db_password_path.exists():
+            db_password = db_password_path.read_text(encoding="utf-8").strip()
             if db_password:
                 db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
     if not db_url:
@@ -1238,7 +1236,7 @@ def _check_and_release_stale_lock(conn, lock_key: int, max_lock_age_seconds: int
         # On any error, just try to acquire the lock
         try:
             return bool(conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": lock_key}).scalar())
-        except:
+        except Exception:
             return False
 
 
@@ -1342,10 +1340,8 @@ def _trigger_run_today(
             "date": target_date.isoformat(),
         }
     finally:
-        try:
+        with contextlib.suppress(Exception):
             conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": lock_key})
-        except Exception:
-            pass
         conn.close()
 
 
@@ -1800,25 +1796,14 @@ async def predict(request: Request, req: PredictRequest):
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 
-# -----------------------------
-# Teams Outgoing Webhook Handler
-# -----------------------------
-
-import base64
-import hmac
-import json
-
-from fastapi import Request
-
-
 def _load_teams_webhook_secret() -> str | None:
     """Load Teams webhook secret from Docker secret or environment."""
     # Try Docker secret first
     secret_file = os.getenv("TEAMS_WEBHOOK_SECRET_FILE", "/run/secrets/teams_webhook_secret")
-    if os.path.exists(secret_file):
+    secret_path = Path(secret_file)
+    if secret_path.exists():
         try:
-            with open(secret_file, encoding="utf-8") as f:
-                return f.read().strip()
+            return secret_path.read_text(encoding="utf-8").strip()
         except Exception:
             pass
     # Fall back to environment variable
@@ -1858,11 +1843,14 @@ def _verify_teams_hmac(body: bytes, auth_header: str | None, secret: str) -> boo
 
 class TeamsWebhookMessage(BaseModel):
     """Teams outgoing webhook message structure."""
+
+    model_config = {"populate_by_name": True}
+
     text: str
     type: str = "message"
     timestamp: str | None = None
     from_field: dict | None = Field(alias="from", default=None)
-    channelData: dict | None = None
+    channel_data: dict | None = Field(alias="channelData", default=None)
 
 
 @app.post("/teams-webhook")

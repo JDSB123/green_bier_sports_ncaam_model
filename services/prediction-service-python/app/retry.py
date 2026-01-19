@@ -49,7 +49,7 @@ def calculate_delay(
     return delay
 
 
-async def retry_async(
+async def retry_async[T](
     func: Callable[..., T],
     *args,
     config: RetryConfig | None = None,
@@ -94,7 +94,7 @@ async def retry_async(
     raise last_exception
 
 
-def retry_sync(
+def retry_sync[T](
     func: Callable[..., T],
     *args,
     config: RetryConfig | None = None,
@@ -211,7 +211,7 @@ class CircuitBreaker:
                     self._success_count = 0
                     logger.info("Circuit breaker entering HALF_OPEN state")
                 else:
-                    raise CircuitBreakerOpen(
+                    raise CircuitBreakerOpenError(
                         f"Circuit breaker is open. Retry after {self.timeout}s"
                     )
 
@@ -250,6 +250,5 @@ class CircuitBreaker:
                 )
 
 
-class CircuitBreakerOpen(Exception):
+class CircuitBreakerOpenError(Exception):
     """Raised when circuit breaker is open."""
-    pass

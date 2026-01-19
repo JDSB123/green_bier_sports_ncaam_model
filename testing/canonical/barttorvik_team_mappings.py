@@ -226,8 +226,7 @@ def resolve_odds_api_to_barttorvik(odds_api_name: str) -> str | None:
     # Fallback: strip common mascot suffixes
     for suffix in MASCOT_SUFFIXES:
         if normalized.endswith(suffix):
-            core_name = normalized[:-len(suffix)].strip()
-            return core_name
+            return normalized[:-len(suffix)].strip()
 
     # Last resort: return the core name as-is
     return normalized

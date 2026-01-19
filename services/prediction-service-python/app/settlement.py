@@ -464,10 +464,7 @@ def _settle_spread(pick: str, line: float, home_score: int, away_score: int) -> 
     # - HOME: home_score + line vs away_score
     # - AWAY: away_score + line vs home_score
     pick = (pick or "").upper()
-    if pick == "HOME":
-        diff = (home_score + line) - away_score
-    else:
-        diff = (away_score + line) - home_score
+    diff = home_score + line - away_score if pick == "HOME" else away_score + line - home_score
     if diff > 0:
         return "won"
     if diff < 0:

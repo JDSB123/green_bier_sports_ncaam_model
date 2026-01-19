@@ -8,6 +8,7 @@ using the same schema as the Rust service for compatibility.
 Use this when the Rust binary is not available (e.g., in Azure Container Apps).
 """
 
+import contextlib
 import os
 import uuid
 from datetime import UTC, datetime
@@ -206,7 +207,7 @@ class OddsSyncService:
                 row = cur.fetchone()
                 resolved = row[0] if row and row[0] else None
                 # Best-effort fallback audit log if log_team_resolution() isn't available.
-                try:
+                with contextlib.suppress(Exception):
                     cur.execute(
                         """
                         INSERT INTO team_resolution_audit (input_name, resolved_name, source, context)
@@ -214,8 +215,6 @@ class OddsSyncService:
                         """,
                         (name, resolved, source, context),
                     )
-                except Exception:
-                    pass
                 return resolved
             except Exception:
                 return None
@@ -323,10 +322,8 @@ class OddsSyncService:
 
             # If either side is unresolved, commit audit rows (best-effort) and skip.
             if not home_team_id or not away_team_id:
-                try:
+                with contextlib.suppress(Exception):
                     conn.commit()
-                except Exception:
-                    pass
                 self.skipped_unresolved_events += 1
                 return None
 
@@ -509,12 +506,10 @@ class OddsSyncService:
 
                 commence_time = None
                 if commence_time_str:
-                    try:
+                    with contextlib.suppress(ValueError):
                         commence_time = datetime.fromisoformat(
                             commence_time_str.replace("Z", "+00:00")
                         )
-                    except ValueError:
-                        pass
 
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time
@@ -571,12 +566,10 @@ class OddsSyncService:
 
                 commence_time = None
                 if commence_time_str:
-                    try:
+                    with contextlib.suppress(ValueError):
                         commence_time = datetime.fromisoformat(
                             commence_time_str.replace("Z", "+00:00")
                         )
-                    except ValueError:
-                        pass
 
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time
@@ -635,12 +628,10 @@ class OddsSyncService:
 
                 commence_time = None
                 if commence_time_str:
-                    try:
+                    with contextlib.suppress(ValueError):
                         commence_time = datetime.fromisoformat(
                             commence_time_str.replace("Z", "+00:00")
                         )
-                    except ValueError:
-                        pass
 
                 game_id = self._get_or_create_game_id(
                     conn, external_id, home_team, away_team, commence_time

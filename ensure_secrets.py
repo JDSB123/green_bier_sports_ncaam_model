@@ -23,6 +23,7 @@ NOTE: The Odds API key must be provided. Get it from https://the-odds-api.com/
 
 import secrets
 import sys
+from contextlib import suppress
 from pathlib import Path
 
 
@@ -38,10 +39,8 @@ def create_secret_file(filepath: Path, value: str, description: str) -> bool:
         return False
 
     filepath.write_text(value)
-    try:
+    with suppress(Exception):
         filepath.chmod(0o600)  # Owner read/write only
-    except Exception:
-        pass # Windows might ignore this
     print(f"  [CREATE] {filepath.name} - {description}")
     return True
 

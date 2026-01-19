@@ -10,6 +10,7 @@ Basketball API: Requires BASKETBALL_API_KEY
 v33.11.0: Part of unified orchestrator architecture.
 """
 
+import contextlib
 import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -208,10 +209,8 @@ class ESPNScheduleClient:
         game_time = None
         date_str = event.get("date", "")
         if date_str:
-            try:
+            with contextlib.suppress(ValueError):
                 game_time = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-            except ValueError:
-                pass
 
         # Status
         status_data = event.get("status", {}).get("type", {})
@@ -353,17 +352,13 @@ class BasketballAPIScheduleClient:
         game_time = None
 
         if date_str:
-            try:
+            with contextlib.suppress(ValueError):
                 game_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-            except ValueError:
-                pass
 
         full_date_str = game_data.get("date", "")
         if full_date_str:
-            try:
+            with contextlib.suppress(ValueError):
                 game_time = datetime.fromisoformat(full_date_str.replace("Z", "+00:00"))
-            except ValueError:
-                pass
 
         # Status
         status_data = game_data.get("status", {})

@@ -130,8 +130,9 @@ class TeamResolutionService:
             # FALLBACK: Use Barttorvik live data for local/live predictions
             # This provides the same canonical team names that the Azure DB has
             try:
-                import requests
                 from datetime import datetime
+
+                import requests
 
                 season = datetime.now().year if datetime.now().month >= 11 else datetime.now().year
                 url = f"https://barttorvik.com/{season}_team_results.json"
@@ -160,9 +161,8 @@ class TeamResolutionService:
 
     def _build_canonical_set(self) -> set[str]:
         """Build set of all canonical team names."""
-        canonical = set(self._aliases.values())
+        return set(self._aliases.values())
         # Add some common variations that might not be in aliases
-        return canonical
 
     def _build_reverse_aliases(self) -> dict[str, list[str]]:
         """Build reverse mapping from canonical name to all variants."""

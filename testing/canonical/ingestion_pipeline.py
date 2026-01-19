@@ -285,11 +285,10 @@ class CanonicalIngestionPipeline:
 
             # Validation
             validation_errors = self._run_quality_checks(df, "odds")
-            if validation_errors["errors"]:
-                if self.strict_mode:
-                    result.success = False
-                    result.errors.extend(validation_errors["errors"])
-                    return result
+            if validation_errors["errors"] and self.strict_mode:
+                result.success = False
+                result.errors.extend(validation_errors["errors"])
+                return result
 
             # Canonicalization
             df_canonical, canon_stats = self._canonicalize_odds_data(df)

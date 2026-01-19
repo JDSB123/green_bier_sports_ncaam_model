@@ -218,7 +218,7 @@ def log_capture_event(closing_lines: dict[str, ClosingLine]) -> None:
         "closing_lines": [asdict(cl) for cl in closing_lines.values()],
     }
 
-    with open(log_file, "w") as f:
+    with log_file.open("w", encoding="utf-8") as f:
         json.dump(log_data, f, indent=2)
 
     print(f"[OK] Logged to {log_file}")

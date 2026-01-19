@@ -19,6 +19,8 @@ from typing import Any
 
 import structlog
 
+from .schedule_sources import ScheduledGame
+
 logger = structlog.get_logger(__name__)
 
 try:
@@ -30,8 +32,6 @@ try:
     from sqlalchemy import create_engine, text
 except ImportError:
     create_engine = None
-
-from .schedule_sources import ScheduledGame
 
 # Cache keys
 SCHEDULE_CACHE_KEY = "ncaam:schedule:season:{season}"
@@ -502,10 +502,7 @@ class ScheduleCache:
         if season is None:
             # Determine season from date
             # Season 2025 = Nov 2024 - Apr 2025
-            if target_date.month >= 11:
-                season = target_date.year + 1
-            else:
-                season = target_date.year
+            season = target_date.year + 1 if target_date.month >= 11 else target_date.year
 
         all_games, _, _ = self.get_cached_schedule(season)
 
@@ -577,10 +574,7 @@ def get_today_games(force_refresh: bool = False) -> list[ScheduledGame]:
     today = date.today()
 
     # Determine season
-    if today.month >= 11:
-        season = today.year + 1
-    else:
-        season = today.year
+    season = today.year + 1 if today.month >= 11 else today.year
 
     cache = ScheduleCache()
 

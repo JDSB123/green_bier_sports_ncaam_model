@@ -4,6 +4,14 @@
 target-version = "py312"
 line-length = 100
 
+# Most code in `testing/scripts/` is intentionally "script-y" (ad-hoc analysis,
+# one-off runners, local tooling) and doesn't follow the same strict lint rules
+# as production/library code.
+exclude = [
+  "testing/scripts",
+  "services/prediction-service-python/scripts",
+]
+
 [lint]
 select = [
   "E",   # pycodestyle errors

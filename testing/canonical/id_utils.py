@@ -59,10 +59,7 @@ def load_team_registry(registry_path: Path | None = None) -> TeamRegistry:
     """
     if registry_path is None:
         env_path = os.getenv("TEAM_REGISTRY_PATH", "").strip()
-        if env_path:
-            registry_path = Path(env_path)
-        else:
-            registry_path = ROOT / "manifests" / "team_registry.json"
+        registry_path = Path(env_path) if env_path else ROOT / "manifests" / "team_registry.json"
 
     try:
         if registry_path.exists():

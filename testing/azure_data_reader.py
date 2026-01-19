@@ -46,7 +46,7 @@ try:
     AZURE_AVAILABLE = True
 except ImportError:
     AZURE_AVAILABLE = False
-    warnings.warn("azure-storage-blob not installed. Run: pip install azure-storage-blob")
+    warnings.warn("azure-storage-blob not installed. Run: pip install azure-storage-blob", stacklevel=2)
 
 # Import canonical ingestion components
 try:
@@ -56,7 +56,7 @@ try:
     CANONICAL_AVAILABLE = True
 except ImportError:
     CANONICAL_AVAILABLE = False
-    warnings.warn("Canonical ingestion components not available. Data will not be canonicalized.")
+    warnings.warn("Canonical ingestion components not available. Data will not be canonicalized.", stacklevel=2)
 
 from .data_window import (
     CANONICAL_START_DATE,
@@ -668,7 +668,7 @@ class AzureDataReader:
         if enhanced:
             warnings.warn(
                 "Enhanced backtest master deprecated; using backtest_master.csv.",
-                RuntimeWarning,
+                RuntimeWarning, stacklevel=2,
             )
 
         df = self.read_csv("backtest_datasets/backtest_master.csv", data_type="backtest")

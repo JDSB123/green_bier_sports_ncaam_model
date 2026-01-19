@@ -24,7 +24,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from app import __version__ as APP_VERSION
+from app import __version__ as app_version
 from app.models import BetType
 from app.predictors.base import BasePredictor, MarketPrediction
 from app.statistical_confidence import statistical_confidence
@@ -85,7 +85,7 @@ class FGTotalModel(BasePredictor):
     """
 
     MODEL_NAME = "FGTotal"
-    MODEL_VERSION = APP_VERSION
+    MODEL_VERSION = app_version
     MARKET_TYPE = "total"
 
     # ═══════════════════════════════════════════════════════════════════════

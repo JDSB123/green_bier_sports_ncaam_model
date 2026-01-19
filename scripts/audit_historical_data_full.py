@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 from datetime import date, timedelta
+from pathlib import Path
 
 import pandas as pd
 
@@ -134,7 +135,7 @@ def main() -> int:
     }
 
     # Leakage cutoff checks
-    for key, column in [
+    for key, _column in [
         ("scores_fg", "date"),
         ("scores_h1", "date"),
         ("odds_consolidated", "game_date"),
@@ -166,8 +167,8 @@ def main() -> int:
         "odds_canonical_present": bool(reader.list_files("odds/canonical/")),
     }
 
-    output_path = args.output
-    with open(output_path, "w", encoding="utf-8") as handle:
+    output_path = Path(args.output)
+    with output_path.open("w", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)
     return 0
 

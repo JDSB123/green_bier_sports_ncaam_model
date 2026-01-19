@@ -188,8 +188,8 @@ def print_data_status():
 
         # Check ncaahoopR
         reader_raw = AzureDataReader(container_name=AZURE_RAW_CONTAINER)
-        ncaahoopR_files = reader_raw.list_files("ncaahoopR_data-master/")
-        print(f"  ncaahoopR files in Azure: {len(ncaahoopR_files)}")
+        ncaahoopr_files = reader_raw.list_files("ncaahoopR_data-master/")
+        print(f"  ncaahoopR files in Azure: {len(ncaahoopr_files)}")
 
     except Exception as e:
         print(f"  [ERROR] Could not connect: {e}")

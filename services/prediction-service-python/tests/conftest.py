@@ -11,7 +11,7 @@ import pytest
 SERVICE_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(SERVICE_ROOT))
 
-from app.models import MarketOdds, TeamRatings
+from app.models import MarketOdds, TeamRatings  # noqa: E402
 
 
 @pytest.fixture

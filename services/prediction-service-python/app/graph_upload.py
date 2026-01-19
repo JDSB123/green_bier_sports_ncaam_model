@@ -73,8 +73,7 @@ def upload_file_to_teams(file_path: Path, target_date: str):
     upload_url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/{file_name}:/content"
 
     try:
-        with open(file_path, 'rb') as f:
-            file_content = f.read()
+        file_content = file_path.read_bytes()
 
         put_resp = requests.put(upload_url, headers=headers, data=file_content)
 

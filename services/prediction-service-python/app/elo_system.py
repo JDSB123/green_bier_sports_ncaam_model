@@ -22,10 +22,9 @@ CONVERSION:
 - 400 Elo points ≈ 14 point spread (75% win probability)
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Optional
 import math
+from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass

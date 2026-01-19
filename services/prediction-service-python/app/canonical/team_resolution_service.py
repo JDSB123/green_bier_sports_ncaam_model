@@ -151,8 +151,7 @@ class TeamResolutionService:
 
     def _build_canonical_set(self) -> set[str]:
         """Build set of all canonical team names."""
-        canonical = set(self._aliases.values())
-        return canonical
+        return set(self._aliases.values())
 
     def _build_reverse_aliases(self) -> dict[str, list[str]]:
         """Build reverse mapping from canonical name to all variants."""

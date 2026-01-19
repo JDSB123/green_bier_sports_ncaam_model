@@ -359,7 +359,7 @@ class TestPickRecommendations:
         # Edge of 10 points should trigger AVOID
         assert rec["abs_edge"] > h1_total_model.MAX_EDGE
         assert rec["strength"] == "AVOID"
-        assert rec["recommended"] == False
+        assert not rec["recommended"]
 
 
 class TestLeagueAverages:

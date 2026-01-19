@@ -11,6 +11,7 @@ Authentication Flow:
 4. If no credentials or login fails, fallback to /web/v1/scoreboard/ncaab
 """
 
+import contextlib
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -396,12 +397,10 @@ class ActionNetworkClient:
         # Parse game time
         game_time = None
         if game.get("start_time"):
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 game_time = datetime.fromisoformat(
                     game["start_time"].replace("Z", "+00:00")
                 )
-            except (ValueError, TypeError):
-                pass
 
         splits = BettingSplits(
             home_team=home_team,
@@ -542,10 +541,8 @@ def get_betting_splits_for_games(
                 if len(splits_parts) == 2:
                     splits_home, splits_away = splits_parts
                     # Require exact word boundary match, not substring
-                    home_match = (home_norm == splits_home or
-                                  home_norm == splits_away)
-                    away_match = (away_norm == splits_home or
-                                  away_norm == splits_away)
+                    home_match = (home_norm in (splits_home, splits_away))
+                    away_match = (away_norm in (splits_home, splits_away))
                     if home_match and away_match:
                         game_key = f"{home}_vs_{away}"
                         result[game_key] = splits

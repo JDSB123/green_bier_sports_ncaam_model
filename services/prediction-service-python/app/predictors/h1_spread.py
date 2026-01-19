@@ -21,7 +21,7 @@ Formula:
 
 from typing import TYPE_CHECKING
 
-from app import __version__ as APP_VERSION
+from app import __version__ as app_version
 from app.models import BetType
 from app.predictors.base import BasePredictor, MarketPrediction
 from app.statistical_confidence import statistical_confidence
@@ -43,7 +43,7 @@ class H1SpreadModel(BasePredictor):
     """
 
     MODEL_NAME = "H1Spread"
-    MODEL_VERSION = APP_VERSION
+    MODEL_VERSION = app_version
     MARKET_TYPE = "spread"
     IS_FIRST_HALF = True
 
@@ -250,10 +250,7 @@ class H1SpreadModel(BasePredictor):
         model_spread = prediction.value
         edge = abs(model_spread - market_line)
 
-        if model_spread < market_line:
-            pick = "HOME"
-        else:
-            pick = "AWAY"
+        pick = "HOME" if model_spread < market_line else "AWAY"
 
         if edge >= 7:
             strength = "STRONG"
