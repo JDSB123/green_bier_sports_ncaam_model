@@ -26,10 +26,11 @@ import json
 import os
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+import pytz
 
 ROOT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT_DIR))
@@ -560,7 +561,23 @@ def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightP
                 home_team = game.get("home_team", "UNKNOWN")
                 away_team = game.get("away_team", "UNKNOWN")
                 game_date = game.get("game_date", datetime.now().date())
-                game_time = game.get("commence_time", "TBD")
+                game_time_utc = game.get("commence_time", "TBD")
+
+                # Convert UTC time to CST
+                if game_time_utc and game_time_utc != "TBD":
+                    try:
+                        # Parse UTC datetime
+                        dt_utc = pd.to_datetime(game_time_utc)
+                        if dt_utc.tzinfo is None:
+                            dt_utc = pytz.UTC.localize(dt_utc)
+                        # Convert to CST
+                        cst = pytz.timezone("US/Central")
+                        dt_cst = dt_utc.astimezone(cst)
+                        game_time = dt_cst.strftime("%Y-%m-%d %H:%M %Z")
+                    except Exception:
+                        game_time = str(game_time_utc)
+                else:
+                    game_time = "TBD"
 
                 market_line = game.get(line_col)
                 if pd.isna(market_line):
