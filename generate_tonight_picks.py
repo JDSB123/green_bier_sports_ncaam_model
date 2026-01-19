@@ -37,6 +37,8 @@ sys.path.insert(0, str(ROOT_DIR))
 
 from testing.azure_data_reader import get_azure_reader
 from testing.canonical.barttorvik_team_mappings import resolve_odds_api_to_barttorvik
+from testing.canonical.ingestion_pipeline import CanonicalIngestionPipeline, DataSource
+from testing.canonical.team_resolution_service import get_team_resolver
 from testing.scripts.run_historical_backtest import (
     BacktestConfig,
     MarketType,
@@ -235,8 +237,192 @@ def _fetch_live_games_with_odds() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _load_barttorvik_ratings_canonical(season: int) -> dict[str, dict] | None:
+    """
+    Load Barttorvik ratings through the CANONICAL INGESTION PIPELINE.
+
+    This ensures all data goes through:
+    1. VALIDATION - Check data quality and completeness
+    2. CANONICALIZATION - Resolve team names to canonical format
+    3. TRANSFORMATION - Apply business rules and calculations
+    4. QUALITY_CHECK - Final validation before use
+    5. Only then provide to picks generation
+
+    ⚠️  GOVERNANCE: DO NOT bypass this pipeline for any Barttorvik data.
+        All external data sources must go through canonicalization.
+    """
+    import requests
+
+    print(f"[INFO] Loading Barttorvik ratings through canonical ingestion pipeline...")
+
+    # Fetch raw Barttorvik data
+    url = f"https://barttorvik.com/{season}_team_results.json"
+    try:
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        payload = resp.json()
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch Barttorvik data: {e}")
+        return None
+
+    # Parse into DataFrame for canonical ingestion
+    records = []
+
+    def to_float(value):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    if isinstance(payload, list):
+        for row in payload:
+            if not isinstance(row, list) or len(row) < 9:
+                continue
+            team_raw = str(row[1]).strip()
+            if not team_raw:
+                continue
+
+            records.append({
+                "team_raw": team_raw,
+                "rank": to_float(row[0]) if len(row) > 0 else None,
+                "adj_o": to_float(row[4]) if len(row) > 4 else None,
+                "adj_d": to_float(row[6]) if len(row) > 6 else None,
+                "tempo": to_float(row[44]) if len(row) > 44 else None,
+                "barthag": to_float(row[8]) if len(row) > 8 else None,
+                "wab": to_float(row[11]) if len(row) > 11 else None,
+                "orb": to_float(row[10]) if len(row) > 10 else None,
+                "tor": to_float(row[12]) if len(row) > 12 else None,
+            })
+    else:
+        print(f"[WARN] Unexpected Barttorvik payload type: {type(payload)}")
+        return None
+
+    if not records:
+        print("[WARN] No valid records extracted from Barttorvik payload")
+        return None
+
+    df = pd.DataFrame(records)
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # STAGE 1: VALIDATE RAW DATA
+    # ═══════════════════════════════════════════════════════════════════════════════
+    print(f"[INFO] STAGE 1: VALIDATION - Checking {len(df)} records")
+    if df.empty:
+        print("[ERROR] Validation failed: empty DataFrame")
+        return None
+
+    if "team_raw" not in df.columns or df["team_raw"].isna().all():
+        print("[ERROR] Validation failed: no team names found")
+        return None
+
+    print(f"[OK] Validation passed: {len(df)} records with team names")
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # STAGE 2: CANONICALIZE TEAM NAMES
+    # ═══════════════════════════════════════════════════════════════════════════════
+    print(f"[INFO] STAGE 2: CANONICALIZATION - Resolving team names via authoritative pipeline")
+    resolver = get_team_resolver()
+    canonical_names = []
+    resolution_stats = {"resolved": 0, "unresolved": 0}
+
+    for team_raw in df["team_raw"]:
+        try:
+            result = resolver.resolve(str(team_raw))
+            canonical_name = result.canonical_name or str(team_raw).lower()
+            canonical_names.append(canonical_name)
+            if result.confidence >= 80:
+                resolution_stats["resolved"] += 1
+            else:
+                resolution_stats["unresolved"] += 1
+        except Exception as e:
+            print(f"[WARN] Failed to resolve team '{team_raw}': {e}")
+            canonical_names.append(str(team_raw).lower())
+            resolution_stats["unresolved"] += 1
+
+    df["team_canonical"] = canonical_names
+    print(f"[OK] Canonicalization complete: {resolution_stats['resolved']} resolved, {resolution_stats['unresolved']} unresolved")
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # STAGE 3: TRANSFORMATION - Apply business rules
+    # ═══════════════════════════════════════════════════════════════════════════════
+    print(f"[INFO] STAGE 3: TRANSFORMATION - Normalizing field values")
+
+    # Normalize percentage fields (convert 0-100 scale to decimals if needed)
+    for col in ["tor", "orb"]:
+        if col in df.columns:
+            df[col] = df[col].apply(lambda x: (x / 100.0) if x is not None and x > 1.0 else x)
+
+    # Calculate barthag fallback if missing
+    for idx, row in df.iterrows():
+        if row["barthag"] is None and row["adj_o"] is not None and row["adj_d"] is not None:
+            try:
+                exp = 11.5
+                barthag = (row["adj_o"] ** exp) / ((row["adj_o"] ** exp) + (row["adj_d"] ** exp))
+                df.at[idx, "barthag"] = barthag
+            except Exception:
+                pass
+
+    print(f"[OK] Transformation complete")
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # STAGE 4: QUALITY CHECK - Validate transformed data
+    # ═══════════════════════════════════════════════════════════════════════════════
+    print(f"[INFO] STAGE 4: QUALITY CHECK - Validating transformed data")
+
+    if df[["adj_o", "adj_d"]].isna().all().all():
+        print("[ERROR] Quality check failed: no rating data found")
+        return None
+
+    rating_count = df[["adj_o", "adj_d"]].notna().all(axis=1).sum()
+    print(f"[OK] Quality check passed: {rating_count}/{len(df)} teams have complete ratings")
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # Convert to dictionary for usage (map both short AND long canonical forms)
+    # ═══════════════════════════════════════════════════════════════════════════════
+    print(f"[INFO] STAGE 5: Building canonical ratings dictionary with dual-key mapping")
+    ratings: dict[str, dict] = {}
+
+    # To handle both Barttorvik short names ("Tulane") and canonical long names
+    # ("Tulane Green Wave"), we need to query the resolver for the full canonical name
+    for idx, row in df.iterrows():
+        team_canonical_short = row["team_canonical"]  # e.g., "Tulane"
+        team_raw = str(row["team_raw"]).lower()
+
+        rating_dict = {
+            "adj_o": row["adj_o"],
+            "adj_d": row["adj_d"],
+            "barthag": row["barthag"],
+            "tempo": row["tempo"],
+            "wab": row["wab"],
+            "rank": row["rank"],
+            "tor": row["tor"],
+            "orb": row["orb"],
+        }
+
+        # Store under short canonical name (Barttorvik's form)
+        ratings[team_canonical_short] = rating_dict
+
+        # Also try to resolve to the FULL canonical name and store under that too
+        # This handles cases where Odds API uses mascot names
+        try:
+            full_canonical_result = resolver.resolve(team_canonical_short)
+            full_canonical_name = full_canonical_result.canonical_name
+            if full_canonical_name and full_canonical_name != team_canonical_short:
+                ratings[full_canonical_name] = rating_dict
+        except Exception:
+            pass  # Fallback to just short name
+
+    print(f"[OK] Barttorvik ratings loaded through canonical pipeline: {len(df)} teams, {len(ratings)} total lookup keys")
+    return ratings
+
+
 def _load_barttorvik_ratings_live(season: int) -> dict[str, dict]:
-    """Fetch Barttorvik season ratings directly from the public endpoint (no Azure)."""
+    """
+    DEPRECATED: Use _load_barttorvik_ratings_canonical instead.
+
+    This function loads raw Barttorvik data without canonical validation.
+    """
+    print("[WARN] _load_barttorvik_ratings_live() is DEPRECATED. Use _load_barttorvik_ratings_canonical() instead.")
     import requests
 
     url = f"https://barttorvik.com/{season}_team_results.json"
@@ -424,40 +610,102 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
     # No local master: if we have odds lines already, we can still do live predictions by pulling ratings.
     try:
         season = _determine_current_season()
-        ratings = _load_barttorvik_ratings_live(season)
+        ratings = _load_barttorvik_ratings_canonical(season)
     except Exception as exc:
-        ratings = {}
-        print(f"[WARN] Failed to fetch live Barttorvik ratings: {exc}")
+        ratings = None
+        print(f"[ERROR] Failed to load Barttorvik ratings through canonical pipeline: {exc}")
 
     if ratings:
         # ============================================================
-        # GOVERNANCE: AUTHORITATIVE TEAM NAME RESOLUTION GATE
+        # GOVERNANCE: CANONICAL TEAM NAME RESOLUTION FOR RATING LOOKUP
         # ============================================================
-        # Source: Postgres team_aliases table (95%+ coverage, 600+ aliases)
-        # Module: testing.canonical.barttorvik_team_mappings
+        # Barttorvik ratings were canonicalized with SHORT team names.
+        # Odds API provides LONG names with mascots.
         #
-        # DO NOT modify this section to use:
-        # - Ad-hoc dictionaries
-        # - Inline string manipulation
-        # - Fuzzy matching
-        #
-        # All changes to team mappings must go through:
-        # 1. Postgres team_aliases table (authoritative source)
-        # 2. Export via scripts/export_team_registry.py
-        # 3. Update testing.canonical.barttorvik_team_mappings module
+        # Process:
+        # 1. Extract core team name from Odds API (strip mascot)
+        # 2. Resolve via team_resolver.resolve() using SHORT form
+        # 3. Lookup in ratings using resolved SHORT name
+        # 4. This ensures consistency with Barttorvik canonical form
         # ============================================================
+
+        resolver = get_team_resolver()
+
+        def _extract_core_team_name(full_name: str) -> str:
+            """Extract core team name by stripping mascot (removes trailing mascot words)."""
+            if not full_name:
+                return full_name
+
+            parts = full_name.strip().split()
+            if len(parts) <= 1:
+                return full_name
+
+            # Common NCAA mascot words - comprehensive list
+            # These are typically at the END and should be stripped
+            mascot_words = {
+                # Single word mascots (comprehensive)
+                "eagles", "hawks", "tigers", "lions", "bears", "wolves", "panthers",
+                "cougars", "wildcats", "bulldogs", "demon", "demons", "deacons",
+                "hoosiers", "boilermakers", "spartans", "jayhawks", "sooners",
+                "mustangs", "comets", "rockets", "hurricanes", "gators", "seminoles",
+                "tarheels", "wolfpack", "terrapins", "cavaliers", "hokies",
+                "razorbacks", "aggies", "longhorns", "mountaineers", "orangemen",
+                "patriots", "lumberjacks", "blue", "red", "white", "green", "wave",
+                "bengals", "broncos", "falcons", "rebels", "utes", "grizzlies",
+                "pioneers", "cowboys", "miners", "commodores", "leathernecks",
+                "gulls", "highlanders", "peacocks", "pirates", "dolphins",
+                "chargers", "trailblazers", "revolutionaries", "dragon", "dragons",
+                "rams", "cardinals", "huskies", "nittany", "illini", "gamecocks",
+                "braves", "rays", "privateers", "vaqueros", "colonels", "delta",
+                "devils", "bulldogs", "knights", "terriers", "horned",
+                "frogs", "flash", "saints", "friars", "gaels",
+                "minutemen", "mocs", "catamounts", "bearcats",
+                "retrievers", "royals", "flames",
+                "owls", "crushers", "tritons", "mean", # <-- Add "mean" for "North Texas Mean Green"
+            }
+
+            # Remove trailing mascot words from the end, one at a time
+            remaining = list(parts)
+            while remaining and remaining[-1].lower() in mascot_words:
+                remaining.pop()
+
+            # If we stripped everything, fall back to original minus last word
+            if not remaining:
+                remaining = parts[:-1] if len(parts) > 1 else parts
+
+            return " ".join(remaining) if remaining else full_name
+
+        resolution_debug = {}  # Track what resolves to what
 
         for idx, row in result.iterrows():
-            home_team = row["home_team"]
-            away_team = row["away_team"]
+            home_odds_api = row["home_team"]
+            away_odds_api = row["away_team"]
 
-            # Resolve using authoritative mappings module
-            home_bart = resolve_odds_api_to_barttorvik(home_team)
-            away_bart = resolve_odds_api_to_barttorvik(away_team)
+            # Extract core team names (strip mascots)
+            home_core = _extract_core_team_name(str(home_odds_api))
+            away_core = _extract_core_team_name(str(away_odds_api))
 
-            # Lookup in Barttorvik ratings using resolved names
-            h = ratings.get(home_bart) if home_bart else None
-            a = ratings.get(away_bart) if away_bart else None
+            # Resolve using the SAME canonical resolver used for Barttorvik
+            try:
+                home_result = resolver.resolve(home_core)
+                home_canonical = home_result.canonical_name
+            except Exception as e:
+                home_canonical = None
+
+            try:
+                away_result = resolver.resolve(away_core)
+                away_canonical = away_result.canonical_name
+            except Exception as e:
+                away_canonical = None
+
+            # Track resolutions for debugging (first 3 games)
+            if idx < 3:
+                resolution_debug[f"{home_odds_api}→{home_core}→{home_canonical}"] = home_canonical in ratings if home_canonical else False
+                resolution_debug[f"{away_odds_api}→{away_core}→{away_canonical}"] = away_canonical in ratings if away_canonical else False
+
+            # Lookup in canonicalized ratings using resolved canonical names
+            h = ratings.get(home_canonical) if home_canonical else None
+            a = ratings.get(away_canonical) if away_canonical else None
 
             if h:
                 result.at[idx, "home_adj_o"] = h.get("adj_o")
@@ -487,6 +735,10 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
                 result.at[idx, "away_efgd"] = a.get("efgd", 50.0)  # Default if missing
                 result.at[idx, "away_drb"] = a.get("drb", 70.0)  # Default if missing
                 result.at[idx, "away_three_pt_rate"] = a.get("three_pt_rate", 35.0)  # Default if missing
+
+        # Debug: Show first few resolutions
+        if resolution_debug:
+            print(f"[DEBUG] Resolution sample: {resolution_debug}")
 
         return result
 
