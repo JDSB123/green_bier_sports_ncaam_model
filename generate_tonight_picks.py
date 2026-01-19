@@ -19,31 +19,27 @@ Usage:
     python generate_tonight_picks.py --market fg_spread
     python generate_tonight_picks.py --live  # To pull real games from Odds API
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import sys
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 import pytz
 
-ROOT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT_DIR))
-
+from ncaam.linear_json_predictor import predict_line as predict_line_json
+from ncaam.markets import MarketType
+from ncaam.types import MarketOdds, TeamRatingsLike
 from testing.azure_data_reader import get_azure_reader
 from testing.canonical.barttorvik_team_mappings import resolve_odds_api_to_barttorvik
-from testing.canonical.ingestion_pipeline import CanonicalIngestionPipeline, DataSource
 from testing.canonical.team_resolution_service import get_team_resolver
-from testing.scripts.run_historical_backtest import (
-    BacktestConfig,
-    MarketType,
-    _add_derived_features,
-)
+
+ROOT_DIR = Path(__file__).resolve().parent
 
 RESULTS_DIR = ROOT_DIR / "testing" / "results" / "predictions"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -51,9 +47,11 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 # Markets that are historically profitable
 PROFITABLE_MARKETS = [MarketType.FG_SPREAD, MarketType.H1_SPREAD]
 
+
 @dataclass
 class TonightPick:
     """A single pick for tonight."""
+
     game_date: str
     game_time: str
     home_team: str
@@ -104,9 +102,10 @@ def _safe_canonicalize_team(name: str | None, source: str) -> str | None:
     if not name:
         return name
     try:
-        from testing.scripts.team_utils import resolve_team_name
+        if source in {"the_odds_api", "odds_api", "oddsapi"}:
+            return resolve_odds_api_to_barttorvik(name)
 
-        return resolve_team_name(name, source=source)
+        return str(name).strip()
     except Exception:
         return str(name).strip()
 
@@ -253,7 +252,7 @@ def _load_barttorvik_ratings_canonical(season: int) -> dict[str, dict] | None:
     """
     import requests
 
-    print(f"[INFO] Loading Barttorvik ratings through canonical ingestion pipeline...")
+    print("[INFO] Loading Barttorvik ratings through canonical ingestion pipeline...")
 
     # Fetch raw Barttorvik data
     url = f"https://barttorvik.com/{season}_team_results.json"
@@ -282,17 +281,19 @@ def _load_barttorvik_ratings_canonical(season: int) -> dict[str, dict] | None:
             if not team_raw:
                 continue
 
-            records.append({
-                "team_raw": team_raw,
-                "rank": to_float(row[0]) if len(row) > 0 else None,
-                "adj_o": to_float(row[4]) if len(row) > 4 else None,
-                "adj_d": to_float(row[6]) if len(row) > 6 else None,
-                "tempo": to_float(row[44]) if len(row) > 44 else None,
-                "barthag": to_float(row[8]) if len(row) > 8 else None,
-                "wab": to_float(row[11]) if len(row) > 11 else None,
-                "orb": to_float(row[10]) if len(row) > 10 else None,
-                "tor": to_float(row[12]) if len(row) > 12 else None,
-            })
+            records.append(
+                {
+                    "team_raw": team_raw,
+                    "rank": to_float(row[0]) if len(row) > 0 else None,
+                    "adj_o": to_float(row[4]) if len(row) > 4 else None,
+                    "adj_d": to_float(row[6]) if len(row) > 6 else None,
+                    "tempo": to_float(row[44]) if len(row) > 44 else None,
+                    "barthag": to_float(row[8]) if len(row) > 8 else None,
+                    "wab": to_float(row[11]) if len(row) > 11 else None,
+                    "orb": to_float(row[10]) if len(row) > 10 else None,
+                    "tor": to_float(row[12]) if len(row) > 12 else None,
+                }
+            )
     else:
         print(f"[WARN] Unexpected Barttorvik payload type: {type(payload)}")
         return None
@@ -320,7 +321,7 @@ def _load_barttorvik_ratings_canonical(season: int) -> dict[str, dict] | None:
     # ═══════════════════════════════════════════════════════════════════════════════
     # STAGE 2: CANONICALIZE TEAM NAMES
     # ═══════════════════════════════════════════════════════════════════════════════
-    print(f"[INFO] STAGE 2: CANONICALIZATION - Resolving team names via authoritative pipeline")
+    print("[INFO] STAGE 2: CANONICALIZATION - Resolving team names via authoritative pipeline")
     resolver = get_team_resolver()
     canonical_names = []
     resolution_stats = {"resolved": 0, "unresolved": 0}
@@ -340,12 +341,14 @@ def _load_barttorvik_ratings_canonical(season: int) -> dict[str, dict] | None:
             resolution_stats["unresolved"] += 1
 
     df["team_canonical"] = canonical_names
-    print(f"[OK] Canonicalization complete: {resolution_stats['resolved']} resolved, {resolution_stats['unresolved']} unresolved")
+    print(
+        f"[OK] Canonicalization complete: {resolution_stats['resolved']} resolved, {resolution_stats['unresolved']} unresolved"
+    )
 
     # ═══════════════════════════════════════════════════════════════════════════════
     # STAGE 3: TRANSFORMATION - Apply business rules
     # ═══════════════════════════════════════════════════════════════════════════════
-    print(f"[INFO] STAGE 3: TRANSFORMATION - Normalizing field values")
+    print("[INFO] STAGE 3: TRANSFORMATION - Normalizing field values")
 
     # Normalize percentage fields (convert 0-100 scale to decimals if needed)
     for col in ["tor", "orb"]:
@@ -353,21 +356,21 @@ def _load_barttorvik_ratings_canonical(season: int) -> dict[str, dict] | None:
             df[col] = df[col].apply(lambda x: (x / 100.0) if x is not None and x > 1.0 else x)
 
     # Calculate barthag fallback if missing
-    for idx, row in df.iterrows():
+    for _idx, row in df.iterrows():
         if row["barthag"] is None and row["adj_o"] is not None and row["adj_d"] is not None:
             try:
                 exp = 11.5
                 barthag = (row["adj_o"] ** exp) / ((row["adj_o"] ** exp) + (row["adj_d"] ** exp))
-                df.at[idx, "barthag"] = barthag
+                df.at[_idx, "barthag"] = barthag
             except Exception:
                 pass
 
-    print(f"[OK] Transformation complete")
+    print("[OK] Transformation complete")
 
     # ═══════════════════════════════════════════════════════════════════════════════
     # STAGE 4: QUALITY CHECK - Validate transformed data
     # ═══════════════════════════════════════════════════════════════════════════════
-    print(f"[INFO] STAGE 4: QUALITY CHECK - Validating transformed data")
+    print("[INFO] STAGE 4: QUALITY CHECK - Validating transformed data")
 
     if df[["adj_o", "adj_d"]].isna().all().all():
         print("[ERROR] Quality check failed: no rating data found")
@@ -379,12 +382,12 @@ def _load_barttorvik_ratings_canonical(season: int) -> dict[str, dict] | None:
     # ═══════════════════════════════════════════════════════════════════════════════
     # Convert to dictionary for usage (map both short AND long canonical forms)
     # ═══════════════════════════════════════════════════════════════════════════════
-    print(f"[INFO] STAGE 5: Building canonical ratings dictionary with dual-key mapping")
+    print("[INFO] STAGE 5: Building canonical ratings dictionary with dual-key mapping")
     ratings: dict[str, dict] = {}
 
     # To handle both Barttorvik short names ("Tulane") and canonical long names
     # ("Tulane Green Wave"), we need to query the resolver for the full canonical name
-    for idx, row in df.iterrows():
+    for _idx, row in df.iterrows():
         team_canonical_short = row["team_canonical"]  # e.g., "Tulane"
         team_raw = str(row["team_raw"]).lower()
 
@@ -412,7 +415,9 @@ def _load_barttorvik_ratings_canonical(season: int) -> dict[str, dict] | None:
         except Exception:
             pass  # Fallback to just short name
 
-    print(f"[OK] Barttorvik ratings loaded through canonical pipeline: {len(df)} teams, {len(ratings)} total lookup keys")
+    print(
+        f"[OK] Barttorvik ratings loaded through canonical pipeline: {len(df)} teams, {len(ratings)} total lookup keys"
+    )
     return ratings
 
 
@@ -422,7 +427,9 @@ def _load_barttorvik_ratings_live(season: int) -> dict[str, dict]:
 
     This function loads raw Barttorvik data without canonical validation.
     """
-    print("[WARN] _load_barttorvik_ratings_live() is DEPRECATED. Use _load_barttorvik_ratings_canonical() instead.")
+    print(
+        "[WARN] _load_barttorvik_ratings_live() is DEPRECATED. Use _load_barttorvik_ratings_canonical() instead."
+    )
     import requests
 
     url = f"https://barttorvik.com/{season}_team_results.json"
@@ -441,11 +448,11 @@ def _load_barttorvik_ratings_live(season: int) -> dict[str, dict]:
             if not name:
                 continue
 
-            def _num(idx: int) -> float | None:
-                if idx >= len(row):
+            def _num(idx: int, values: list[object] = row) -> float | None:
+                if idx >= len(values):
                     return None
                 try:
-                    return float(row[idx])
+                    return float(values[idx])
                 except Exception:
                     return None
 
@@ -505,7 +512,7 @@ def load_games_for_tonight(live: bool = False) -> pd.DataFrame:
             try:
                 reader = get_azure_reader()
                 df = reader.read_csv("manifests/canonical_training_data_master.csv")
-            except Exception as exc:
+            except Exception:
                 print(
                     "[ERROR] Can't load canonical master (local file missing and Azure unavailable). "
                     "Set AZURE_CANONICAL_CONNECTION_STRING (or AZURE_CANONICAL_CONNECTION_STRING_FILE) "
@@ -597,7 +604,9 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
         for _, row in result.iterrows():
             home_name = row["home_team"]
             away_name = row["away_team"]
-            matching = master[(master["home_team"] == home_name) & (master["away_team"] == away_name)]
+            matching = master[
+                (master["home_team"] == home_name) & (master["away_team"] == away_name)
+            ]
             if matching.empty:
                 continue
             latest = matching.iloc[-1]
@@ -644,24 +653,100 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
             # These are typically at the END and should be stripped
             mascot_words = {
                 # Single word mascots (comprehensive)
-                "eagles", "hawks", "tigers", "lions", "bears", "wolves", "panthers",
-                "cougars", "wildcats", "bulldogs", "demon", "demons", "deacons",
-                "hoosiers", "boilermakers", "spartans", "jayhawks", "sooners",
-                "mustangs", "comets", "rockets", "hurricanes", "gators", "seminoles",
-                "tarheels", "wolfpack", "terrapins", "cavaliers", "hokies",
-                "razorbacks", "aggies", "longhorns", "mountaineers", "orangemen",
-                "patriots", "lumberjacks", "blue", "red", "white", "green", "wave",
-                "bengals", "broncos", "falcons", "rebels", "utes", "grizzlies",
-                "pioneers", "cowboys", "miners", "commodores", "leathernecks",
-                "gulls", "highlanders", "peacocks", "pirates", "dolphins",
-                "chargers", "trailblazers", "revolutionaries", "dragon", "dragons",
-                "rams", "cardinals", "huskies", "nittany", "illini", "gamecocks",
-                "braves", "rays", "privateers", "vaqueros", "colonels", "delta",
-                "devils", "bulldogs", "knights", "terriers", "horned",
-                "frogs", "flash", "saints", "friars", "gaels",
-                "minutemen", "mocs", "catamounts", "bearcats",
-                "retrievers", "royals", "flames",
-                "owls", "crushers", "tritons", "mean", # <-- Add "mean" for "North Texas Mean Green"
+                "eagles",
+                "hawks",
+                "tigers",
+                "lions",
+                "bears",
+                "wolves",
+                "panthers",
+                "cougars",
+                "wildcats",
+                "bulldogs",
+                "demon",
+                "demons",
+                "deacons",
+                "hoosiers",
+                "boilermakers",
+                "spartans",
+                "jayhawks",
+                "sooners",
+                "mustangs",
+                "comets",
+                "rockets",
+                "hurricanes",
+                "gators",
+                "seminoles",
+                "tarheels",
+                "wolfpack",
+                "terrapins",
+                "cavaliers",
+                "hokies",
+                "razorbacks",
+                "aggies",
+                "longhorns",
+                "mountaineers",
+                "orangemen",
+                "patriots",
+                "lumberjacks",
+                "blue",
+                "red",
+                "white",
+                "green",
+                "wave",
+                "bengals",
+                "broncos",
+                "falcons",
+                "rebels",
+                "utes",
+                "grizzlies",
+                "pioneers",
+                "cowboys",
+                "miners",
+                "commodores",
+                "leathernecks",
+                "gulls",
+                "highlanders",
+                "peacocks",
+                "pirates",
+                "dolphins",
+                "chargers",
+                "trailblazers",
+                "revolutionaries",
+                "dragon",
+                "dragons",
+                "rams",
+                "cardinals",
+                "huskies",
+                "nittany",
+                "illini",
+                "gamecocks",
+                "braves",
+                "rays",
+                "privateers",
+                "vaqueros",
+                "colonels",
+                "delta",
+                "devils",
+                "knights",
+                "terriers",
+                "horned",
+                "frogs",
+                "flash",
+                "saints",
+                "friars",
+                "gaels",
+                "minutemen",
+                "mocs",
+                "catamounts",
+                "bearcats",
+                "retrievers",
+                "royals",
+                "flames",
+                "owls",
+                "crushers",
+                "tritons",
+                "mean",  # <-- Add "mean" for "North Texas Mean Green"
             }
 
             # Remove trailing mascot words from the end, one at a time
@@ -689,19 +774,23 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
             try:
                 home_result = resolver.resolve(home_core)
                 home_canonical = home_result.canonical_name
-            except Exception as e:
+            except Exception:
                 home_canonical = None
 
             try:
                 away_result = resolver.resolve(away_core)
                 away_canonical = away_result.canonical_name
-            except Exception as e:
+            except Exception:
                 away_canonical = None
 
             # Track resolutions for debugging (first 3 games)
             if idx < 3:
-                resolution_debug[f"{home_odds_api}→{home_core}→{home_canonical}"] = home_canonical in ratings if home_canonical else False
-                resolution_debug[f"{away_odds_api}→{away_core}→{away_canonical}"] = away_canonical in ratings if away_canonical else False
+                resolution_debug[f"{home_odds_api}→{home_core}→{home_canonical}"] = (
+                    home_canonical in ratings if home_canonical else False
+                )
+                resolution_debug[f"{away_odds_api}→{away_core}→{away_canonical}"] = (
+                    away_canonical in ratings if away_canonical else False
+                )
 
             # Lookup in canonicalized ratings using resolved canonical names
             h = ratings.get(home_canonical) if home_canonical else None
@@ -720,7 +809,9 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
                 result.at[idx, "home_efg"] = h.get("efg", 50.0)  # Default if missing
                 result.at[idx, "home_efgd"] = h.get("efgd", 50.0)  # Default if missing
                 result.at[idx, "home_drb"] = h.get("drb", 70.0)  # Default if missing
-                result.at[idx, "home_three_pt_rate"] = h.get("three_pt_rate", 35.0)  # Default if missing
+                result.at[idx, "home_three_pt_rate"] = h.get(
+                    "three_pt_rate", 35.0
+                )  # Default if missing
             if a:
                 result.at[idx, "away_adj_o"] = a.get("adj_o")
                 result.at[idx, "away_adj_d"] = a.get("adj_d")
@@ -734,7 +825,9 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
                 result.at[idx, "away_efg"] = a.get("efg", 50.0)  # Default if missing
                 result.at[idx, "away_efgd"] = a.get("efgd", 50.0)  # Default if missing
                 result.at[idx, "away_drb"] = a.get("drb", 70.0)  # Default if missing
-                result.at[idx, "away_three_pt_rate"] = a.get("three_pt_rate", 35.0)  # Default if missing
+                result.at[idx, "away_three_pt_rate"] = a.get(
+                    "three_pt_rate", 35.0
+                )  # Default if missing
 
         # Debug: Show first few resolutions
         if resolution_debug:
@@ -759,53 +852,49 @@ def add_ratings_to_games(df: pd.DataFrame) -> pd.DataFrame:
         if matching.empty:
             continue
         latest = matching.iloc[-1]
-        for col in [c for c in master.columns if c.startswith("home_") or c.startswith("away_") or c in {"fg_spread", "h1_spread", "fg_spread_home_price", "fg_spread_away_price", "h1_spread_home_price", "h1_spread_away_price"}]:
+        for col in [
+            c
+            for c in master.columns
+            if c.startswith("home_")
+            or c.startswith("away_")
+            or c
+            in {
+                "fg_spread",
+                "h1_spread",
+                "fg_spread_home_price",
+                "fg_spread_away_price",
+                "h1_spread_home_price",
+                "h1_spread_away_price",
+            }
+        ]:
             result.loc[result.index == row.name, col] = latest.get(col)
 
     return result
 
 
 def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightPick]:
-    """Generate predictions for tonight's games using v33 formula-based predictions."""
+    """Generate predictions for tonight's games using JSON residual models.
+
+    This uses the same JSON artifacts as the prediction service's `linear_json`
+    backend, including per-market sigma and min_edge thresholds.
+    """
     picks = []
-
-    # Add derived features for v33 predictions
-    df = _add_derived_features(df)
-
-    # Create BacktestConfig and Predictor for v33 formulas
-    config = BacktestConfig(
-        market=MarketType.FG_SPREAD,  # Dummy market (not used by predictor directly)
-        seasons=[2026],  # Dummy season
-        hca_spread=5.8,
-        hca_total=3.4,
-        hca_h1_spread=3.6,
-    )
-
-    from testing.scripts.run_historical_backtest import NCAAMPredictor
-    predictor = NCAAMPredictor(config)
 
     for market in markets:
         print(f"\n[INFO] Generating {market.value} predictions...")
 
-        # Determine line column and prediction method
+        # Market line column
         if market == MarketType.FG_SPREAD:
             line_col = "fg_spread"
-            predict_func = predictor.predict_spread
         elif market == MarketType.H1_SPREAD:
             line_col = "h1_spread"
-            predict_func = predictor.predict_h1_spread
         elif market == MarketType.FG_TOTAL:
             line_col = "fg_total"
-            predict_func = predictor.predict_total
         elif market == MarketType.H1_TOTAL:
             line_col = "h1_total"
-            predict_func = predictor.predict_h1_total
         else:
             print(f"[WARN] Market {market.value} not supported; skipping.")
             continue
-
-        # Default edge thresholds
-        min_edge_points = 5.0  # Conservative threshold for live betting
 
         for _, game in df.iterrows():
             # Extract required fields
@@ -835,82 +924,122 @@ def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightP
                 if pd.isna(market_line):
                     continue
 
-                # Get required ratings
-                home_adj_o = game.get("home_adj_o")
-                home_adj_d = game.get("home_adj_d")
-                away_adj_o = game.get("away_adj_o")
-                away_adj_d = game.get("away_adj_d")
+                # Build minimal ratings objects required by JSON models.
+                home_ratings = TeamRatingsLike(
+                    team_name=str(home_team),
+                    adj_o=None
+                    if pd.isna(game.get("home_adj_o"))
+                    else float(game.get("home_adj_o")),
+                    adj_d=None
+                    if pd.isna(game.get("home_adj_d"))
+                    else float(game.get("home_adj_d")),
+                    tempo=None
+                    if pd.isna(game.get("home_tempo"))
+                    else float(game.get("home_tempo")),
+                    rank=None if pd.isna(game.get("home_rank")) else float(game.get("home_rank")),
+                    efg=None if pd.isna(game.get("home_efg")) else float(game.get("home_efg")),
+                    efgd=None if pd.isna(game.get("home_efgd")) else float(game.get("home_efgd")),
+                    tor=None if pd.isna(game.get("home_tor")) else float(game.get("home_tor")),
+                    orb=None if pd.isna(game.get("home_orb")) else float(game.get("home_orb")),
+                    drb=None if pd.isna(game.get("home_drb")) else float(game.get("home_drb")),
+                    ftr=None if pd.isna(game.get("home_ftr")) else float(game.get("home_ftr")),
+                    barthag=None
+                    if pd.isna(game.get("home_barthag"))
+                    else float(game.get("home_barthag")),
+                    wab=None if pd.isna(game.get("home_wab")) else float(game.get("home_wab")),
+                    three_pt_rate=None
+                    if pd.isna(game.get("home_three_pt_rate"))
+                    else float(game.get("home_three_pt_rate")),
+                    two_pt_pct=None
+                    if pd.isna(game.get("home_two_pt_pct"))
+                    else float(game.get("home_two_pt_pct")),
+                )
+                away_ratings = TeamRatingsLike(
+                    team_name=str(away_team),
+                    adj_o=None
+                    if pd.isna(game.get("away_adj_o"))
+                    else float(game.get("away_adj_o")),
+                    adj_d=None
+                    if pd.isna(game.get("away_adj_d"))
+                    else float(game.get("away_adj_d")),
+                    tempo=None
+                    if pd.isna(game.get("away_tempo"))
+                    else float(game.get("away_tempo")),
+                    rank=None if pd.isna(game.get("away_rank")) else float(game.get("away_rank")),
+                    efg=None if pd.isna(game.get("away_efg")) else float(game.get("away_efg")),
+                    efgd=None if pd.isna(game.get("away_efgd")) else float(game.get("away_efgd")),
+                    tor=None if pd.isna(game.get("away_tor")) else float(game.get("away_tor")),
+                    orb=None if pd.isna(game.get("away_orb")) else float(game.get("away_orb")),
+                    drb=None if pd.isna(game.get("away_drb")) else float(game.get("away_drb")),
+                    ftr=None if pd.isna(game.get("away_ftr")) else float(game.get("away_ftr")),
+                    barthag=None
+                    if pd.isna(game.get("away_barthag"))
+                    else float(game.get("away_barthag")),
+                    wab=None if pd.isna(game.get("away_wab")) else float(game.get("away_wab")),
+                    three_pt_rate=None
+                    if pd.isna(game.get("away_three_pt_rate"))
+                    else float(game.get("away_three_pt_rate")),
+                    two_pt_pct=None
+                    if pd.isna(game.get("away_two_pt_pct"))
+                    else float(game.get("away_two_pt_pct")),
+                )
 
-                if any(pd.isna(x) for x in [home_adj_o, home_adj_d, away_adj_o, away_adj_d]):
-                    print(f"[SKIP] {away_team} @ {home_team} - missing ratings")
+                # Require core efficiency ratings (models can impute some features but adj_o/adj_d are foundational).
+                if (
+                    home_ratings.adj_o is None
+                    or home_ratings.adj_d is None
+                    or away_ratings.adj_o is None
+                    or away_ratings.adj_d is None
+                ):
+                    print(f"[SKIP] {away_team} @ {home_team} - missing core ratings")
                     continue
 
-                # Build prediction kwargs based on market type
-                kwargs = {
-                    "home_adj_o": float(home_adj_o),
-                    "home_adj_d": float(home_adj_d),
-                    "away_adj_o": float(away_adj_o),
-                    "away_adj_d": float(away_adj_d),
-                    "is_neutral": bool(game.get("neutral", False)),
-                }
+                market_odds = MarketOdds(
+                    spread=None if pd.isna(game.get("fg_spread")) else float(game.get("fg_spread")),
+                    spread_1h=None
+                    if pd.isna(game.get("h1_spread"))
+                    else float(game.get("h1_spread")),
+                    total=None if pd.isna(game.get("fg_total")) else float(game.get("fg_total")),
+                    total_1h=None if pd.isna(game.get("h1_total")) else float(game.get("h1_total")),
+                )
 
-                # Add optional Four Factors if available
-                for factor in ["efg", "efgd", "tor", "orb", "drb", "ftr"]:
-                    for side in ["home", "away"]:
-                        col = f"{side}_{factor}"
-                        val = game.get(col)
-                        if not pd.isna(val):
-                            kwargs[col] = float(val)
+                predicted, _, meta = predict_line_json(
+                    market=market.value,
+                    home=home_ratings,
+                    away=away_ratings,
+                    market_odds=market_odds,
+                )
+                if predicted is None or not meta.get("ok"):
+                    continue
 
-                # Add tempo for totals
-                if "total" in market.value:
-                    home_tempo = game.get("home_tempo")
-                    away_tempo = game.get("away_tempo")
-                    if not pd.isna(home_tempo):
-                        kwargs["home_tempo"] = float(home_tempo)
-                    if not pd.isna(away_tempo):
-                        kwargs["away_tempo"] = float(away_tempo)
+                edge_points = float(
+                    meta.get("edge_points") or abs(float(predicted) - float(market_line))
+                )
+                edge_pct = float(meta.get("edge_pct") or 0.0)
+                min_edge_pct = meta.get("min_edge_pct")
+                sigma = float(meta.get("sigma") or 11.0)
 
-                    # 3PT rate for totals
-                    home_3pt = game.get("home_three_pt_rate")
-                    away_3pt = game.get("away_three_pt_rate")
-                    if not pd.isna(home_3pt):
-                        kwargs["home_three_pt_rate"] = float(home_3pt)
-                    if not pd.isna(away_3pt):
-                        kwargs["away_three_pt_rate"] = float(away_3pt)
+                # Conservative floor: require at least 5.0 points of edge, expressed as % of sigma.
+                # Also respect the trained artifact's min_edge threshold (if present).
+                min_edge_points_floor = 5.0
+                min_edge_pct_floor = (min_edge_points_floor / sigma) * 100.0 if sigma else 0.0
+                trained_min_edge_pct = float(min_edge_pct) if min_edge_pct is not None else 0.0
+                required_min_edge_pct = max(min_edge_pct_floor, trained_min_edge_pct)
 
-                # Add advanced features for spreads
-                if "spread" in market.value:
-                    conf_diff = game.get("conf_strength_diff")
-                    if not pd.isna(conf_diff):
-                        kwargs["conf_strength_diff"] = float(conf_diff)
-
-                    for feat in ["team_depth_rolling", "ast_to_ratio_rolling"]:
-                        for side in ["home", "away"]:
-                            col = f"{side}_{feat}"
-                            val = game.get(col)
-                            if not pd.isna(val):
-                                kwargs[col] = float(val)
-
-                # Make prediction using v33 formula
-                predicted = predict_func(**kwargs)
-
-                edge_points = abs(predicted - float(market_line))
-                edge_pct = (edge_points / 11.0) * 100.0  # sigma = 11.0 for spread
-
-                if edge_points < min_edge_points:
+                if edge_pct < required_min_edge_pct:
                     continue
 
                 # Determine bet side
                 if "spread" in market.value:
-                    bet_side = "home" if predicted < market_line else "away"
+                    bet_side = "home" if float(predicted) < float(market_line) else "away"
                 else:
-                    bet_side = "over" if predicted > market_line else "under"
+                    bet_side = "over" if float(predicted) > float(market_line) else "under"
 
-                # Confidence based on edge
-                if edge_points >= 7:
+                # Confidence based on edge scaled by market sigma (0..1).
+                conf = edge_points / float(sigma or 1.0)
+                if conf >= 0.6:
                     confidence = "HIGH"
-                elif edge_points >= 4:
+                elif conf >= 0.35:
                     confidence = "MEDIUM"
                 else:
                     confidence = "LOW"
@@ -921,7 +1050,7 @@ def generate_picks(df: pd.DataFrame, markets: list[MarketType]) -> list[TonightP
                     home_team=home_team,
                     away_team=away_team,
                     market=market.value,
-                    predicted_line=round(predicted, 1),
+                    predicted_line=round(float(predicted), 1),
                     market_line=round(market_line, 1),
                     edge=round(edge_points, 1),
                     bet_side=bet_side,
@@ -946,29 +1075,26 @@ def main():
         "--market",
         choices=["fg_spread", "h1_spread", "fg_total", "h1_total"],
         default=None,
-        help="Specific market to generate picks for (default: all profitable)"
+        help="Specific market to generate picks for (default: all profitable)",
     )
     parser.add_argument(
         "--live",
         action="store_true",
-        help="Fetch real games from Odds API (requires ODDS_API_KEY environment variable)"
+        help="Fetch real games from Odds API (requires ODDS_API_KEY environment variable)",
     )
 
     args = parser.parse_args()
 
     # Select markets
-    if args.market:
-        markets = [MarketType(args.market)]
-    else:
-        markets = PROFITABLE_MARKETS
+    markets = [MarketType(args.market)] if args.market else PROFITABLE_MARKETS
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TONIGHT'S PICKS - PAPER MODE")
-    print("="*70)
+    print("=" * 70)
     print(f"Markets: {[m.value for m in markets]}")
     print(f"Live Mode: {args.live}")
     print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*70 + "\n")
+    print("=" * 70 + "\n")
 
     # Load games
     print("[INFO] Loading games for tonight...")
@@ -995,21 +1121,23 @@ def main():
     # Output results
     print(f"\n[OK] Generated {len(picks)} picks:\n")
 
-    picks_df = pd.DataFrame([
-        {
-            "Date": p.game_date,
-            "Time": p.game_time,
-            "Matchup": f"{p.away_team} @ {p.home_team}",
-            "Market": p.market,
-            "Predicted": p.predicted_line,
-            "Market Line": p.market_line,
-            "Edge (pts)": p.edge,
-            "Bet": p.bet_side,
-            "Edge %": f"{p.edge_pct}%",
-            "Confidence": p.confidence,
-        }
-        for p in picks
-    ])
+    picks_df = pd.DataFrame(
+        [
+            {
+                "Date": p.game_date,
+                "Time": p.game_time,
+                "Matchup": f"{p.away_team} @ {p.home_team}",
+                "Market": p.market,
+                "Predicted": p.predicted_line,
+                "Market Line": p.market_line,
+                "Edge (pts)": p.edge,
+                "Bet": p.bet_side,
+                "Edge %": f"{p.edge_pct}%",
+                "Confidence": p.confidence,
+            }
+            for p in picks
+        ]
+    )
 
     print(picks_df.to_string(index=False))
 
@@ -1026,7 +1154,7 @@ def main():
         "generated_at": datetime.now(pytz.timezone("US/Central")).isoformat(),
         "model_version": "v33_formula",
         "date": datetime.now(pytz.timezone("US/Central")).strftime("%Y-%m-%d"),
-        "picks": []
+        "picks": [],
     }
 
     for p in picks:
@@ -1052,25 +1180,27 @@ def main():
         market_type = "SPREAD" if "spread" in p.market else "TOTAL"
         period = "1H" if "h1" in p.market else "FG"
 
-        picks_json["picks"].append({
-            "time_cst": p.game_time,
-            "matchup": f"{p.away_team} @ {p.home_team}",
-            "home_team": p.home_team,
-            "away_team": p.away_team,
-            "period": period,
-            "market": market_type,
-            "pick": pick_label,
-            "pick_odds": "N/A",  # Not available in live mode
-            "model_line": p.predicted_line,
-            "market_line": p.market_line,
-            "edge": f"+{p.edge:.1f}" if p.edge > 0 else f"{p.edge:.1f}",
-            "confidence": f"{p.edge_pct:.0f}%",
-            "fire_rating": fire_rating,
-            "model_version": "v33_formula",
-            "is_current_model": True,
-        })
+        picks_json["picks"].append(
+            {
+                "time_cst": p.game_time,
+                "matchup": f"{p.away_team} @ {p.home_team}",
+                "home_team": p.home_team,
+                "away_team": p.away_team,
+                "period": period,
+                "market": market_type,
+                "pick": pick_label,
+                "pick_odds": "N/A",  # Not available in live mode
+                "model_line": p.predicted_line,
+                "market_line": p.market_line,
+                "edge": f"+{p.edge:.1f}" if p.edge > 0 else f"{p.edge:.1f}",
+                "confidence": f"{p.edge_pct:.0f}%",
+                "fire_rating": fire_rating,
+                "model_version": "v33_formula",
+                "is_current_model": True,
+            }
+        )
 
-    with open(json_file, "w") as f:
+    with Path(json_file).open("w", encoding="utf-8") as f:
         json.dump(picks_json, f, indent=2)
 
     print(f"\n[OK] Saved picks to {output_file}")

@@ -44,19 +44,17 @@ class LinearJsonModel:
 
     def _transform_row(self, row: list[float]) -> list[float]:
         if len(row) != len(self.weights):
-            raise ValueError(
-                f"Expected {len(self.weights)} features, got {len(row)}"
-            )
+            raise ValueError(f"Expected {len(self.weights)} features, got {len(row)}")
         out: list[float] = []
         for x, mean, std in zip(row, self.means, self.stds, strict=True):
             denom = std if std != 0.0 else 1.0
             out.append((float(x) - mean) / denom)
         return out
 
-    def predict(self, X: list[list[float]] | tuple[tuple[float, ...], ...]) -> list[float]:
+    def predict(self, rows: list[list[float]] | tuple[tuple[float, ...], ...]) -> list[float]:
         """Return predictions for a batch of rows."""
         preds: list[float] = []
-        for row in X:
+        for row in rows:
             xz = self._transform_row(list(row))
             raw = self.intercept
             for w, v in zip(self.weights, xz, strict=True):

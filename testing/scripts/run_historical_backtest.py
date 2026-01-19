@@ -13,6 +13,7 @@ Usage:
 """
 from __future__ import annotations
 
+# ruff: noqa: E402, F841, N806, PTH123, SIM108
 import argparse
 import json
 import math
@@ -43,52 +44,15 @@ def _first_present(df: pd.DataFrame, candidates: list[str]) -> str | None:
 
 
 def _add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Add derived features used by retrained models."""
-    df = df.copy()
+    """Add derived features used by retrained models.
 
-    def _col(name: str) -> pd.Series:
-        if name in df.columns:
-            return df[name]
-        return pd.Series(np.nan, index=df.index)
+    Canonical implementation lives in `ncaam.derived_features.add_derived_features`.
+    This wrapper is kept to avoid breaking existing imports.
+    """
 
-    home_adj_o = _col("home_adj_o")
-    home_adj_d = _col("home_adj_d")
-    away_adj_o = _col("away_adj_o")
-    away_adj_d = _col("away_adj_d")
+    from ncaam.derived_features import add_derived_features
 
-    df["net_diff"] = (home_adj_o - home_adj_d) - (away_adj_o - away_adj_d)
-    df["barthag_diff"] = _col("home_barthag") - _col("away_barthag")
-    df["efg_diff"] = (_col("home_efg") - _col("away_efgd")) - (_col("away_efg") - _col("home_efgd"))
-    df["tor_diff"] = _col("away_tor") - _col("home_tor")
-    df["orb_diff"] = (_col("home_orb") - _col("away_drb")) - (_col("away_orb") - _col("home_drb"))
-    df["ftr_diff"] = _col("home_ftr") - _col("away_ftr")
-    df["rank_diff"] = _col("away_rank") - _col("home_rank")
-    df["wab_diff"] = _col("home_wab") - _col("away_wab")
-
-    df["tempo_avg"] = (_col("home_tempo") + _col("away_tempo")) / 2.0
-    df["home_eff"] = home_adj_o + away_adj_d
-    df["away_eff"] = away_adj_o + home_adj_d
-    three_pt_rate_avg = (_col("home_three_pt_rate") + _col("away_three_pt_rate")) / 2.0
-    three_pt_rate_avg = three_pt_rate_avg.where(three_pt_rate_avg <= 2.0, three_pt_rate_avg / 100.0)
-    df["three_pt_rate_avg"] = three_pt_rate_avg
-    df["two_pt_pct_avg"] = (_col("home_two_pt_pct") + _col("away_two_pt_pct")) / 2.0
-
-    def _odds_to_prob(series: pd.Series) -> pd.Series:
-        def _calc(value: float) -> float | None:
-            if pd.isna(value):
-                return None
-            if value >= 100:
-                return 100.0 / (value + 100.0)
-            return abs(value) / (abs(value) + 100.0)
-
-        return series.apply(_calc)
-
-    if "moneyline_home_price" in df.columns:
-        df["ml_implied_home"] = _odds_to_prob(df["moneyline_home_price"])
-    if "moneyline_away_price" in df.columns:
-        df["ml_implied_away"] = _odds_to_prob(df["moneyline_away_price"])
-
-    return df
+    return add_derived_features(df)
 
 
 class MarketType(str, Enum):

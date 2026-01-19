@@ -57,7 +57,7 @@ class TestHealthEndpoints:
         response = client.get("/health/predict?backend=linear_json")
         assert response.status_code == 200
         data = response.json()
-        assert data["ok"] is True
+        assert data["ok"] is True, data
         assert data["backend"] == "linear_json"
         assert "backend_meta" in data
         assert "sample_prediction" in data

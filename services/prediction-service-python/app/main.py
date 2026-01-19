@@ -88,7 +88,17 @@ def _make_prediction_with_backend(
             )
 
         # Wire model dir explicitly for the backend loader.
-        os.environ["LINEAR_JSON_MODEL_DIR"] = settings.linear_json_model_dir
+        # In production containers, artifacts live under /app/models/linear.
+        # In local/dev/test runs, prefer the repo-root artifacts if the configured
+        # path doesn't exist.
+        configured_model_dir = Path(settings.linear_json_model_dir)
+        if configured_model_dir.exists():
+            os.environ["LINEAR_JSON_MODEL_DIR"] = str(configured_model_dir)
+        else:
+            repo_root_model_dir = Path(__file__).resolve().parents[3] / "models" / "linear"
+            os.environ["LINEAR_JSON_MODEL_DIR"] = (
+                str(repo_root_model_dir) if repo_root_model_dir.exists() else str(configured_model_dir)
+            )
 
         from app.ml.linear_json_backend import backend_status, predict_line
 
@@ -1082,7 +1092,7 @@ def _check_recent_team_resolution(engine) -> dict:
     # Keep this aligned with `run_today.py` defaults so behavior is consistent.
     lookback_days = int(os.getenv("TEAM_MATCHING_LOOKBACK_DAYS", "7"))
     min_rate = float(os.getenv("MIN_TEAM_RESOLUTION_RATE", "0.98"))
-    max_unmatched = int(os.getenv("MAX_UNMATCHED_TEAMS", "0"))  # Stricter: no unmatched
+    max_unresolved = int(os.getenv("MAX_UNMATCHED_TEAMS", "0"))  # Stricter: no unmatched
     now_utc = datetime.now(UTC)
     lookback_start = now_utc - timedelta(days=lookback_days)
 
