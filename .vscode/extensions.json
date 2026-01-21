@@ -1,0 +1,19 @@
+{
+  "recommendations": [
+    "astral-sh.ruff",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-azuretools.vscode-docker",
+    "ms-azuretools.vscode-bicep",
+    "ms-azuretools.vscode-azureaccount",
+    "ms-vscode.azurecli",
+    "ms-azuretools.vscode-cosmosdb",
+    "ms-azuretools.vscode-azure-postgres",
+    "golang.go",
+    "rust-lang.rust-analyzer",
+    "github.vscode-github-actions",
+    "redhat.vscode-yaml",
+    "editorconfig.editorconfig",
+    "mikestead.dotenv"
+  ]
+}

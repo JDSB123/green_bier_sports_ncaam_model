@@ -32,16 +32,27 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        "astral-sh.ruff",
         "ms-python.python",
         "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker",
+        "ms-azuretools.vscode-bicep",
+        "ms-azuretools.vscode-azureaccount",
+        "ms-vscode.azurecli",
+        "ms-azuretools.vscode-cosmosdb",
         "golang.go",
+        "rust-lang.rust-analyzer",
         "ms-vscode.makefile-tools",
-        "ms-azuretools.vscode-azure-postgres"
+        "ms-azuretools.vscode-azure-postgres",
+        "redhat.vscode-yaml",
+        "github.vscode-github-actions",
+        "editorconfig.editorconfig",
+        "mikestead.dotenv"
       ],
       "settings": {
         "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
         "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
+        "python.linting.pylintEnabled": false,
         "python.linting.ruffEnabled": true,
         "[python]": {
           "editor.defaultFormatter": "ms-python.python",
