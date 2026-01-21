@@ -32,18 +32,18 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "astral-sh.ruff",
+        "charliermarsh.ruff",
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-azuretools.vscode-docker",
         "ms-azuretools.vscode-bicep",
-        "ms-azuretools.vscode-azureaccount",
+        "ms-vscode.azure-account",
         "ms-vscode.azurecli",
         "ms-azuretools.vscode-cosmosdb",
         "golang.go",
         "rust-lang.rust-analyzer",
         "ms-vscode.makefile-tools",
-        "ms-azuretools.vscode-azure-postgres",
+        "ckolkman.vscode-postgres",
         "redhat.vscode-yaml",
         "github.vscode-github-actions",
         "editorconfig.editorconfig",
