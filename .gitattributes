@@ -1,0 +1,14 @@
+# Normalize line endings to reduce noisy diffs and prevent devcontainer rebuild prompts
+# caused by CRLF/LF flip-flopping across environments.
+
+# Keep shell scripts consistent
+*.sh text eol=lf
+
+# Keep JSON/YAML consistent (devcontainer + workflows)
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Devcontainer configs should always be LF
+.devcontainer/* text eol=lf
+.vscode/* text eol=lf
