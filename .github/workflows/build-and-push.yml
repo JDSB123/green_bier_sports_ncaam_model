@@ -1,17 +1,19 @@
 name: Build and Push to ACR
 
+# Only run manually - requires AZURE_CREDENTIALS secret to be configured
+# To enable automatic builds on push, uncomment the push trigger below
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'services/prediction-service-python/**'
-      - 'services/ratings-sync-go/**'
-      - 'services/odds-ingestion-rust/**'
-      - 'services/web-frontend/**'
-      - 'azure/**'
-      - 'database/migrations/**'
-      - '.github/workflows/build-and-push.yml'
-  workflow_dispatch:  # Allow manual triggering
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'services/prediction-service-python/**'
+  #     - 'services/ratings-sync-go/**'
+  #     - 'services/odds-ingestion-rust/**'
+  #     - 'services/web-frontend/**'
+  #     - 'azure/**'
+  #     - 'database/migrations/**'
+  #     - '.github/workflows/build-and-push.yml'
+  workflow_dispatch:  # Manual trigger only until Azure credentials are configured
 
 env:
   ACR_NAME: ncaamstablegbsvacr

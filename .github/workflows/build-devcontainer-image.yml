@@ -36,7 +36,7 @@ jobs:
       - name: Build and push devcontainer image (GHCR)
         uses: docker/build-push-action@v4
         with:
-          context: ./.devcontainer
+          context: .  # Use repo root so COPY from services/ works
           file: .devcontainer/Dockerfile
           push: true
           tags: |
@@ -56,7 +56,7 @@ jobs:
         if: ${{ secrets.ACR_REGISTRY != '' && secrets.AZURE_CLIENT_ID != '' && secrets.AZURE_CLIENT_SECRET != '' }}
         uses: docker/build-push-action@v4
         with:
-          context: ./.devcontainer
+          context: .  # Use repo root so COPY from services/ works
           file: .devcontainer/Dockerfile
           push: true
           tags: ${{ secrets.ACR_REGISTRY }}/green_bier_sports_ncaam_model:${{ matrix.install_heavy == 'true' && 'heavy' || 'latest' }}
