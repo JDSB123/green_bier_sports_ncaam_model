@@ -134,7 +134,7 @@ services:
     # Image tag can be overridden via environment variable for local development
     # Production (Azure): ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v34.0.0
     # Local development: ncaam-prediction:latest (from docker compose build)
-    image: ${PREDICTION_SERVICE_IMAGE:-ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v34.0.0}
+    image: ncaamstablegbsvacr.azurecr.io/ncaam-prediction:v34.0.0
     build:
       context: .
       dockerfile: services/prediction-service-python/Dockerfile
