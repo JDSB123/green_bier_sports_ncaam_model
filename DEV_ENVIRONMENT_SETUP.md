@@ -71,7 +71,7 @@ python --version
 pip list
 
 # Run a quick test
-.\predict.bat --help
+python services/prediction-service-python/run_today.py --help
 ```
 
 ---
@@ -90,8 +90,7 @@ green_bier_sports_ncaam_model/          ← THIS is your workspace root
 │   ├── odds-ingestion-rust/            ← Rust service
 │   └── web-frontend/                   ← Frontend service
 ├── docker-compose.yml                  ← Local development containers
-├── predict.bat                         ← Single entry point for predictions
-├── requirements-dev.txt                ← Dev tools (NEW - to be created)
+├── requirements-dev.txt                ← Dev tools (linting/testing/etc.)
 └── README.md                           ← Main documentation
 ```
 
@@ -116,14 +115,19 @@ docker compose up -d postgres redis
 
 ### Running the Model
 ```powershell
-# Full slate (syncs data + runs predictions)
-.\predict.bat
+# Option A: Run inside Docker Compose (recommended for parity)
+docker compose up -d postgres redis prediction-service
+docker compose exec prediction-service python /app/run_today.py
 
-# Skip data sync (faster)
-.\predict.bat --no-sync
+# Skip data sync (use cached DB + odds)
+docker compose exec prediction-service python /app/run_today.py --no-sync
 
 # Specific game
-.\predict.bat --game "Duke" "UNC"
+docker compose exec prediction-service python /app/run_today.py --game "Duke" "UNC"
+
+# Option B: Run the API locally
+cd services/prediction-service-python
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Running Tests
@@ -236,7 +240,7 @@ Install these for the best development experience:
 | Task | Command |
 |------|---------|
 | **Activate venv** | `.\.venv\Scripts\Activate.ps1` |
-| **Run predictions** | `.\predict.bat` |
+| **Run predictions (container)** | `docker compose exec prediction-service python /app/run_today.py` |
 | **Run tests** | `pytest` |
 | **Start Docker** | `docker compose up -d` |
 | **Stop Docker** | `docker compose down` |
@@ -265,6 +269,6 @@ Install these for the best development experience:
 - [ ] Pre-commit hooks installed (`pre-commit install`)
 - [ ] Secrets configured (`python ensure_secrets.py`)
 - [ ] VS Code Python interpreter set to `.venv`
-- [ ] Successfully run `.\predict.bat --help`
+- [ ] Successfully run `python services/prediction-service-python/run_today.py --help`
 - [ ] Successfully started Docker containers
 - [ ] Read [README.md](README.md) and [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)

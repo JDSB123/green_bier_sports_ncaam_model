@@ -18,6 +18,7 @@ Usage:
     result = go()  # Single entry point
 """
 
+import contextlib
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -117,8 +118,35 @@ class ParallelOrchestrator:
             "DATABASE_URL", ""
         )
         self.redis_url = redis_url or os.environ.get("REDIS_URL", "")
-        # Accept both names to avoid env var mismatches across environments.
-        self.odds_api_key = odds_api_key or os.environ.get("THE_ODDS_API_KEY", "") or os.environ.get("ODDS_API_KEY", "")
+
+        def _read_secret_file(path: str) -> str:
+            try:
+                return Path(path).read_text(encoding="utf-8").strip()
+            except Exception:
+                return ""
+
+        def _load_odds_api_key() -> str:
+            # Accept both names to avoid env var mismatches across environments.
+            env_key = os.environ.get("ODDS_API_KEY", "").strip() or os.environ.get("THE_ODDS_API_KEY", "").strip()
+            if env_key:
+                return env_key
+
+            # Support file-based secrets for Docker Compose (and other runtimes).
+            file_path = (
+                os.environ.get("ODDS_API_KEY_FILE", "").strip()
+                or os.environ.get("THE_ODDS_API_KEY_FILE", "").strip()
+                or "/run/secrets/odds_api_key"
+            )
+
+            with contextlib.suppress(Exception):
+                if file_path:
+                    key = _read_secret_file(file_path)
+                    if key:
+                        return key
+
+            return ""
+
+        self.odds_api_key = odds_api_key or _load_odds_api_key()
         self.basketball_api_key = basketball_api_key or os.environ.get(
             "BASKETBALL_API_KEY", ""
         )
@@ -283,7 +311,7 @@ class ParallelOrchestrator:
             return DataSourceResult(
                 source="odds",
                 success=False,
-                error="Missing DATABASE_URL or (THE_ODDS_API_KEY/ODDS_API_KEY)",
+                error="Missing DATABASE_URL or Odds API key (ODDS_API_KEY/THE_ODDS_API_KEY or *_FILE)",
                 duration_ms=0,
             )
 

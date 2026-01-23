@@ -1,6 +1,6 @@
 # COMPREHENSIVE END-TO-END MODEL REVIEW
-**Date:** January 2026  
-**Model Version:** v33.11.0  
+**Date:** January 2026
+**Model Version:** v33.11.0
 **Status:** ✅ PRODUCTION READY
 
 ---
@@ -459,8 +459,8 @@ MODEL__MIN_SPREAD_EDGE: 2.0
 - ✅ Volume mounts for persistence
 
 **Entry Point:**
-- `.\predict.bat` - Single command execution
-- Runs all services in correct order
+- `services/prediction-service-python/run_today.py` - Single command execution (inside container)
+- Run via Docker Compose: `docker compose exec prediction-service python /app/run_today.py`
 
 ---
 
@@ -554,10 +554,10 @@ MODEL__MIN_SPREAD_EDGE: 2.0
 
 Your NCAA basketball prediction system is **production-ready** with:
 
-✅ **Solid Architecture:** Modular, clean separation of concerns  
-✅ **Proven Performance:** Backtested on 3,318+ real games  
-✅ **Proper Guardrails:** Team matching, odds freshness, data quality checks  
-✅ **Production Deployment:** Running on Azure (manual deploy via `azure/deploy.ps1`)  
+✅ **Solid Architecture:** Modular, clean separation of concerns
+✅ **Proven Performance:** Backtested on 3,318+ real games
+✅ **Proper Guardrails:** Team matching, odds freshness, data quality checks
+✅ **Production Deployment:** Running on Azure (manual deploy via `azure/deploy.ps1`)
 ✅ **Good Code Quality:** Type-safe, documented, tested
 
 **Confidence Level:** 95% - System is ready for production use
@@ -570,8 +570,7 @@ Your NCAA basketball prediction system is **production-ready** with:
 
 ---
 
-**Review Completed:** January 2026  
-**Reviewer:** AI Assistant  
-**Model Version:** v33.10.0  
+**Review Completed:** January 2026
+**Reviewer:** AI Assistant
+**Model Version:** v33.10.0
 **Status:** ✅ PRODUCTION READY
-

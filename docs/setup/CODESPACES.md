@@ -13,22 +13,10 @@ On Codespace start/restart, the devcontainer runs:
 
 ## Run Readiness Manually
 
-### Option 1 (Recommended): Python readiness script
+### Python readiness script (recommended)
 
 ```bash
 python scripts/codespaces/ensure_codespace_ready.py
-```
-
-Back-compat shim (still works):
-
-```bash
-python ensure_codespace_ready.py
-```
-
-### Option 2: Shell script
-
-```bash
-bash .devcontainer/ensure-codespace-ready.sh
 ```
 
 ## Start/Stop/Restart the API
@@ -57,5 +45,5 @@ See: `docs/setup/API_KEY_SETUP.md`
 
 ## Troubleshooting
 
-- If the venv is broken: `rm -rf .venv && python ensure_codespace_ready.py`
+- If the venv is broken: `rm -rf .venv && python scripts/codespaces/ensure_codespace_ready.py`
 - If Redis/Postgres aren’t running locally: that can be OK depending on your mode; check `.env.local` and Docker compose.

@@ -19,12 +19,6 @@ The access manager checks common “can’t work in Codespaces” failure modes:
 python scripts/codespaces/ensure_all_access.py --status
 ```
 
-Back-compat shim (still works):
-
-```bash
-python ensure_all_access.py --status
-```
-
 ### Shell wrapper (runs automatically in devcontainer)
 
 ```bash

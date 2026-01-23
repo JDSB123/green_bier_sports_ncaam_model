@@ -142,7 +142,7 @@ latest_ratings AS (
     WHERE rating_date <= :target_date
     ORDER BY team_id, rating_date DESC
 )
-SELECT 
+SELECT
     g.id as game_id,
     g.commence_time,
     ht.canonical_name as home,
@@ -398,11 +398,11 @@ Similar to FG Total but scaled for first half:
 
 ### 4.1 Entry Point
 
-**File:** `predict.bat` (Windows) or `run_today.py` (Python)
+**File:** `services/prediction-service-python/run_today.py` (Python)
 
 **Single Command:**
 ```powershell
-.\predict.bat
+docker compose exec prediction-service python /app/run_today.py
 ```
 
 **What It Does:**
@@ -494,7 +494,7 @@ All models use **all 22 Barttorvik fields** and are **fully deterministic** (no 
 1. **Go service** (`ratings-sync-go`): Fetches Barttorvik ratings (22 fields per team)
 2. **Rust service** (`odds-ingestion-rust`): Fetches The Odds API (spreads, totals, prices)
 
-Both services run in **manual-only mode** (triggered by `predict.bat`).
+Both services run in **manual-only mode** (triggered by `run_today.py`).
 
 ### Q: Does it merge data?
 
@@ -548,16 +548,16 @@ The system logs all skipped games with reasons for debugging.
 
 Your production model is **well-architected, production-ready, and fully documented**:
 
-✅ **Data Ingestion:** Two services (Go + Rust) fetch and validate data  
-✅ **Data Merging:** Single unified query ensures consistency  
-✅ **Sparse Data:** Fail-fast validation gates skip incomplete games  
-✅ **Prediction:** 4 independent, backtested models with proven performance  
+✅ **Data Ingestion:** Two services (Go + Rust) fetch and validate data
+✅ **Data Merging:** Single unified query ensures consistency
+✅ **Sparse Data:** Fail-fast validation gates skip incomplete games
+✅ **Prediction:** 4 independent, backtested models with proven performance
 ✅ **Production:** Manual-only mode, error handling, logging, versioning
 
 **Confidence Level:** 95% - System is ready for production use
 
 ---
 
-**Review Completed:** January 2026  
-**Model Version:** v33.11.0  
+**Review Completed:** January 2026
+**Model Version:** v33.11.0
 **Status:** ✅ PRODUCTION READY

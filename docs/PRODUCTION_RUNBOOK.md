@@ -20,7 +20,7 @@
 
 ## Daily operation (manual-only mode)
 
-- Run `predict.bat`
+- Run `run_today.py` (inside the container)
   - Sync ratings (Go) + odds (Rust; falls back to Python if needed)
   - Enforce today’s 100% matching gate
   - Enforce odds freshness gate
@@ -37,7 +37,7 @@ Symptom:
 Fix:
 - Add/update `team_aliases` for the exact incoming string (`source='the_odds_api'`).
 - If the alias exists but points at an **unrated** team, repoint it to the rated canonical team.
-- Re-run `predict.bat`.
+- Re-run `run_today.py`.
 
 ### 2) Odds freshness gate fails
 
@@ -70,4 +70,3 @@ Fix:
 ## Notes
 
 - Historical resolution audit can be <100% without blocking production (monitoring only). The “today gate” is the blocker.
-

@@ -272,7 +272,7 @@ def print_summary() -> None:
     print("  • Format:     ruff format .")
 
     print("\n💡 Re-run this script anytime to ensure everything is ready:")
-    print("  python ensure_codespace_ready.py")
+    print("  python scripts/codespaces/ensure_codespace_ready.py")
     print()
 
 

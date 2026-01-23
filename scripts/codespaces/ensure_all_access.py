@@ -494,7 +494,7 @@ def generate_status_report() -> None:
     if missing_vars > 0:
         print(f"\n{RED}⚠ Action Required:{NC}")
         print("  1. Check missing environment variables above")
-        print("  2. Run: python ensure_all_access.py --keys")
+        print("  2. Run: python scripts/codespaces/ensure_all_access.py --keys")
         print("  3. Add credentials to .env.local")
 
 
@@ -506,10 +506,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python ensure_all_access.py              # Check all systems
-  python ensure_all_access.py --fix        # Auto-fix issues
-  python ensure_all_access.py --keys       # Show required keys
-  python ensure_all_access.py --status     # Detailed report
+    python scripts/codespaces/ensure_all_access.py              # Check all systems
+    python scripts/codespaces/ensure_all_access.py --fix        # Auto-fix issues
+    python scripts/codespaces/ensure_all_access.py --keys       # Show required keys
+    python scripts/codespaces/ensure_all_access.py --status     # Detailed report
         """,
     )
     parser.add_argument("--fix", action="store_true", help="Auto-fix issues")

@@ -267,12 +267,12 @@ docker compose build
 docker compose up -d
 
 # 5. Run predictions
-.\predict.bat
+docker compose exec prediction-service python /app/run_today.py
 ```
 
 ### **Daily Use:**
 ```powershell
-.\predict.bat
+docker compose exec prediction-service python /app/run_today.py
 ```
 
 ---
@@ -403,7 +403,7 @@ SELECT * FROM team_resolution_audit ORDER BY created_at DESC LIMIT 20;
 
 **Purpose:** Team efficiency ratings (AdjO, AdjD, Tempo + Four Factors)
 **URL:** `https://barttorvik.com/{season}_team_results.json`
-**Frequency:** **On-demand only** (manual-only mode; triggered via `predict.bat` / `run_today.py`)
+**Frequency:** **On-demand only** (manual-only mode; triggered via `run_today.py`)
 **Authentication:** None (public API)
 **Rate Limits:** Not documented (assumed reasonable)
 **Data Format:** JSON array-of-arrays

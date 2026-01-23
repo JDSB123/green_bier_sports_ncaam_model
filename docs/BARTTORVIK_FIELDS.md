@@ -1,6 +1,6 @@
 # Bart Torvik Data Fields Reference
 
-**Last Updated:** December 20, 2025  
+**Last Updated:** December 20, 2025
 **Version:** v6.0
 
 ---
@@ -9,9 +9,9 @@
 
 This document provides a comprehensive reference of all fields pulled from the Bart Torvik API and how they are used in the NCAA Basketball prediction system.
 
-**API Endpoint:** `https://barttorvik.com/{season}_team_results.json`  
-**Data Format:** JSON array-of-arrays (not array-of-objects)  
-**Sync Frequency:** **On-demand only** via `predict.bat` / `run_today.py` (manual-only mode)  
+**API Endpoint:** `https://barttorvik.com/{season}_team_results.json`
+**Data Format:** JSON array-of-arrays (not array-of-objects)
+**Sync Frequency:** **On-demand only** via `run_today.py` (manual-only mode)
 **Service:** `ratings-sync-go` (Go binary)
 
 ---
@@ -23,7 +23,7 @@ Bart Torvik returns data as an array of arrays. Each team is represented by an a
 ```json
 [
   [rank, team, conf, record, adjoe, adjoe_rank, adjde, adjde_rank, barthag, barthag_rank,
-   efg%, efgd%, tor, tord, orb, drb, ftr, ftrd, 2p%, 2pd%, 3p%, 3pd%, 
+   efg%, efgd%, tor, tord, orb, drb, ftr, ftrd, 2p%, 2pd%, 3p%, 3pd%,
    3pr, 3prd, ... adj_t, wab],
   ...
 ]
@@ -144,35 +144,35 @@ CREATE TABLE team_ratings (
     id UUID PRIMARY KEY,
     team_id UUID REFERENCES teams(id),
     rating_date DATE NOT NULL,
-    
+
     -- Core efficiency metrics
     adj_o DECIMAL(6,2),         -- AdjOE (index 4)
     adj_d DECIMAL(6,2),         -- AdjDE (index 6)
     tempo DECIMAL(5,2),         -- AdjTempo (index 44)
     net_rating DECIMAL(6,2),    -- Calculated: adj_o - adj_d
-    
+
     -- Ranking and record
     torvik_rank INTEGER,        -- Rank (index 0)
     wins INTEGER,               -- Parsed from record (index 3)
     losses INTEGER,             -- Parsed from record (index 3)
     games_played INTEGER,       -- wins + losses
-    
+
     -- Four Factors - Shooting
     efg DECIMAL(5,2),          -- EFG% (index 10)
     efgd DECIMAL(5,2),         -- EFGD% (index 11)
-    
+
     -- Four Factors - Turnovers
     tor DECIMAL(5,2),          -- TOR (index 12)
     tord DECIMAL(5,2),         -- TORD (index 13)
-    
+
     -- Four Factors - Rebounding
     orb DECIMAL(5,2),          -- ORB% (index 14)
     drb DECIMAL(5,2),          -- DRB% (index 15)
-    
+
     -- Four Factors - Free Throws
     ftr DECIMAL(5,2),          -- FTR (index 16)
     ftrd DECIMAL(5,2),         -- FTRD (index 17)
-    
+
     -- Shooting breakdown
     two_pt_pct DECIMAL(5,2),   -- 2P% (index 18)
     two_pt_pct_d DECIMAL(5,2), -- 2PD% (index 19)
@@ -180,14 +180,14 @@ CREATE TABLE team_ratings (
     three_pt_pct_d DECIMAL(5,2), -- 3PD% (index 21)
     three_pt_rate DECIMAL(5,2), -- 3PR (index 22)
     three_pt_rate_d DECIMAL(5,2), -- 3PRD (index 23)
-    
+
     -- Quality metrics
     barthag DECIMAL(5,4),      -- Barthag (index 8)
     wab DECIMAL(5,2),          -- WAB (index 45)
-    
+
     -- Raw payload (full JSON for audit/compatibility)
     raw_barttorvik JSONB,
-    
+
     UNIQUE(team_id, rating_date)
 );
 ```
@@ -425,7 +425,7 @@ class ExtendedTeamRatings:
     adj_d: float          # From index 6
     tempo: float          # From index 44
     rank: int             # From index 0
-    
+
     # Four Factors
     efg: Optional[float]  # From index 10
     efgd: Optional[float] # From index 11
@@ -435,11 +435,11 @@ class ExtendedTeamRatings:
     drb: Optional[float]  # From index 15
     ftr: Optional[float]  # From index 16
     ftrd: Optional[float] # From index 17
-    
+
     # Shooting profile
     three_pt_rate: Optional[float]   # From index 22
     three_pt_rate_d: Optional[float] # From index 23
-    
+
     # Quality
     barthag: Optional[float]  # From index 8
     wab: Optional[float]      # From index 45
@@ -502,5 +502,5 @@ class ExtendedTeamRatings:
 
 ---
 
-**Version:** v6.3  
+**Version:** v6.3
 **Last Updated:** December 21, 2025

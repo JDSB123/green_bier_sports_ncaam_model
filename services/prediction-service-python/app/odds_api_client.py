@@ -45,16 +45,25 @@ class OddsApiClient:
         self.base_url = base_url.rstrip("/")
         self.sport_key = sport_key or DEFAULT_SPORT_KEY
 
-        # Priority: 1. Constructor arg, 2. Env var (Azure uses ODDS_API_KEY, local uses THE_ODDS_API_KEY), 3. Docker Secret File
-        env_key = os.getenv("ODDS_API_KEY") or os.getenv("THE_ODDS_API_KEY")
+        # Priority: 1) Constructor arg, 2) Env var, 3) Secret file (Docker Compose / other runtimes)
+        env_key = (os.getenv("ODDS_API_KEY") or "").strip() or (os.getenv("THE_ODDS_API_KEY") or "").strip()
+
         file_key = None
+        file_path = (
+            (os.getenv("ODDS_API_KEY_FILE") or "").strip()
+            or (os.getenv("THE_ODDS_API_KEY_FILE") or "").strip()
+            or "/run/secrets/odds_api_key"
+        )
         with contextlib.suppress(Exception):
-            file_key = _read_secret_file("/run/secrets/odds_api_key", "odds_api_key")
+            file_key = _read_secret_file(file_path, "odds_api_key")
 
         self.api_key = api_key or env_key or file_key
 
         if not self.api_key:
-             raise OddsApiError("ODDS_API_KEY not found in env vars or secrets/odds_api_key.txt")
+            raise OddsApiError(
+                "Odds API key not found. Set ODDS_API_KEY (preferred) or THE_ODDS_API_KEY, "
+                "or provide a secret file via ODDS_API_KEY_FILE/THE_ODDS_API_KEY_FILE (default /run/secrets/odds_api_key)."
+            )
 
         # Config defaults mirror Rust ingestion
         self.regions = regions or os.getenv("REGIONS", "us")
@@ -81,10 +90,10 @@ class OddsApiClient:
             or key_lower == "4a0b80471d1ebeeb74c358fa0fcc4a2"  # Known example/test key
         ):
             raise OddsApiError(
-                "THE_ODDS_API_KEY appears to be a placeholder value. "
+                "ODDS_API_KEY appears to be a placeholder value. "
                 "Get your API key from https://the-odds-api.com/ and set it in: "
                 "Docker Compose: secrets/odds_api_key.txt → /run/secrets/odds_api_key, "
-                "or Azure: environment variable THE_ODDS_API_KEY"
+                "or Azure: environment variable ODDS_API_KEY"
             )
 
     def _request(

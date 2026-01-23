@@ -17,13 +17,11 @@ import csv
 import io
 import json
 import os
-
-# Use existing Go/Rust binaries (reuse all hard work!)
-# No need to recreate - just call the proven binaries
 import subprocess
 import sys
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from urllib.parse import quote
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -35,11 +33,14 @@ from app.graph_upload import upload_file_to_teams
 from app.logging_config import get_logger
 from app.models import BetType, MarketOdds, TeamRatings
 from app.persistence import persist_prediction_and_recommendations
-
-# Import prediction engine (modular independent models)
 from app.prediction_engine_v33 import prediction_engine_v33 as prediction_engine
 from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_total_model
 from app.situational import RestInfo, SituationalAdjuster
+
+# Use existing Go/Rust binaries (reuse all hard work!)
+# No need to recreate - just call the proven binaries
+
+# Import prediction engine (modular independent models)
 
 # Azure Blob Storage for pick history snapshots (v33.14)
 try:
@@ -325,8 +326,12 @@ if not DATABASE_URL:
 
 REDIS_URL = os.getenv("REDIS_URL")
 if not REDIS_URL:
-    REDIS_PASSWORD = _read_secret_file("/run/secrets/redis_password", "redis_password")
-    REDIS_URL = f"redis://:{REDIS_PASSWORD}@redis:6379"
+    redis_host = os.getenv("REDIS_HOST", "redis")
+    redis_port = os.getenv("REDIS_PORT", "6379")
+    redis_db = os.getenv("REDIS_DB", "0")
+    redis_password_file = os.getenv("REDIS_PASSWORD_FILE", "/run/secrets/redis_password")
+    redis_password = _read_secret_file(redis_password_file, "redis_password")
+    REDIS_URL = f"redis://:{quote(redis_password)}@{redis_host}:{redis_port}/{redis_db}"
 
 # Output directory for picks/reports
 PICKS_OUTPUT_DIR = os.getenv("PICKS_OUTPUT_DIR", "/app/output")

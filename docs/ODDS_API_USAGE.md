@@ -1,12 +1,12 @@
 # Basketball API Analysis - Critical Findings Report
 ## NCAAM Integration Review & Recommendations
 
-**Date:** December 20, 2025  
-**Branch:** basketball-api-endpoints  
+**Date:** December 20, 2025
+**Branch:** basketball-api-endpoints
 **Status:** ANALYSIS COMPLETE
 
 > **Update (manual-only mode):** The current stack is **manual-only** (no continuous polling).
-> Odds/rates are synced **one-shot** when you run `predict.bat` / `run_today.py`.
+> Odds/rates are synced **one-shot** when you run `run_today.py`.
 > The quota math below is still useful if you ever re-enable polling, but it is **not the default behavior**.
 
 ---
@@ -504,9 +504,9 @@ See: `docs/BASKETBALL_API_QUICK_REFERENCE.md`
 
 ---
 
-**Last Updated:** December 20, 2025  
-**Analysis Complete:** ✅  
-**Documentation:** 3 comprehensive guides created  
+**Last Updated:** December 20, 2025
+**Analysis Complete:** ✅
+**Documentation:** 3 comprehensive guides created
 **Branch:** basketball-api-endpoints
 
 **Status:** Ready for review and implementation

@@ -1,13 +1,13 @@
 # Manual-Only Mode - Zero Automation
 
-**Date:** December 20, 2025  
+**Date:** December 20, 2025
 **Status:** ✅ ENFORCED
 
 ---
 
 ## Overview
 
-This system keeps prediction runs **100% manual-only**—no polling, cron jobs, or scheduled tasks automatically trigger picks.  
+This system keeps prediction runs **100% manual-only**—no polling, cron jobs, or scheduled tasks automatically trigger picks.
 Deployments are also operator-initiated (see `azure/deploy.ps1`). Nothing auto-deploys or auto-runs predictions.
 
 You control when data is synced and predictions are run.
@@ -35,7 +35,7 @@ You control when data is synced and predictions are run.
 ### ❌ Release Automation is Separate
 - Deployments are run manually via `azure/deploy.ps1`
 - Deploy **never** runs predictions, sync jobs, or backtests automatically
-- Operators still choose when to execute `./predict.bat` or backtesting scripts
+- Operators still choose when to execute `run_today.py` (inside the container) or backtesting scripts
 
 ### ❌ No Automated Backtesting
 - No background backtesting tasks
@@ -46,9 +46,9 @@ You control when data is synced and predictions are run.
 
 ## How It Works
 
-### Manual Trigger: `.\predict.bat`
+### Manual Trigger: `run_today.py`
 
-When you run `.\predict.bat`:
+When you run `run_today.py` (inside the prediction-service container):
 
 1. **Starts containers** (postgres, redis, prediction-service)
 2. **Calls `run_today.py`** inside the container
@@ -116,18 +116,21 @@ When you run `.\predict.bat`:
 
 ### Get Fresh Picks (Manual)
 
-```powershell
+```bash
+# Start dependencies + API container (if not already running)
+docker compose up -d postgres redis prediction-service
+
 # Run predictions with fresh data sync
-.\predict.bat
+docker compose exec prediction-service python /app/run_today.py
 
 # Skip data sync (use cached data)
-.\predict.bat --no-sync
+docker compose exec prediction-service python /app/run_today.py --no-sync
 
 # Specific game
-.\predict.bat --game "Duke" "UNC"
+docker compose exec prediction-service python /app/run_today.py --game "Duke" "UNC"
 
 # Specific date
-.\predict.bat --date 2025-12-20
+docker compose exec prediction-service python /app/run_today.py --date 2025-12-20
 ```
 
 ### What Happens
@@ -169,17 +172,16 @@ docker compose exec prediction-service env | grep RUN_ONCE
 
 ## Summary
 
-✅ **Manual-only** - You control when data syncs  
-✅ **No polling** - Services run once and exit  
-✅ **No cron** - No scheduled tasks  
-✅ **No daemons** - No background sync processes  
-✅ **Release automation only** - CI/CD builds/pushes containers but never runs predictions  
-✅ **No automated backtesting** - All backtesting is manual-only  
+✅ **Manual-only** - You control when data syncs
+✅ **No polling** - Services run once and exit
+✅ **No cron** - No scheduled tasks
+✅ **No daemons** - No background sync processes
+✅ **Release automation only** - CI/CD builds/pushes containers but never runs predictions
+✅ **No automated backtesting** - All backtesting is manual-only
 
-**You run `.\predict.bat` when you want fresh picks. That's it.**
+**You run `run_today.py` when you want fresh picks. That's it.**
 
 ---
 
-**Last Updated:** December 20, 2025  
+**Last Updated:** December 20, 2025
 **Enforcement:** Compile-time and runtime checks prevent automation
-
