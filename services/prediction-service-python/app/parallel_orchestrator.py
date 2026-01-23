@@ -117,9 +117,8 @@ class ParallelOrchestrator:
             "DATABASE_URL", ""
         )
         self.redis_url = redis_url or os.environ.get("REDIS_URL", "")
-        self.odds_api_key = odds_api_key or os.environ.get(
-            "THE_ODDS_API_KEY", ""
-        )
+        # Accept both names to avoid env var mismatches across environments.
+        self.odds_api_key = odds_api_key or os.environ.get("THE_ODDS_API_KEY", "") or os.environ.get("ODDS_API_KEY", "")
         self.basketball_api_key = basketball_api_key or os.environ.get(
             "BASKETBALL_API_KEY", ""
         )
@@ -284,7 +283,7 @@ class ParallelOrchestrator:
             return DataSourceResult(
                 source="odds",
                 success=False,
-                error="Missing DATABASE_URL or THE_ODDS_API_KEY",
+                error="Missing DATABASE_URL or (THE_ODDS_API_KEY/ODDS_API_KEY)",
                 duration_ms=0,
             )
 

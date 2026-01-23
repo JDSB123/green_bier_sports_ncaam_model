@@ -28,11 +28,10 @@ RUN python -m pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r /tmp/requirements-base.txt && \
     rm -f /tmp/requirements-base.txt
 
-# Optionally install heavy requirements if requested at build time
+
+# Always install heavy requirements (ML/data packages)
 COPY services/prediction-service-python/requirements-heavy.txt /tmp/requirements-heavy.txt
-RUN if [ "${INSTALL_HEAVY}" = "true" ]; then \
-      pip install --no-cache-dir -r /tmp/requirements-heavy.txt ; \
-    fi && rm -f /tmp/requirements-heavy.txt || true
+RUN pip install --no-cache-dir -r /tmp/requirements-heavy.txt && rm -f /tmp/requirements-heavy.txt
 
 # Create marker file so post-create script can skip base installs
 RUN touch /usr/local/.image_built_base

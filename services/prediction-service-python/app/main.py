@@ -463,6 +463,64 @@ app.add_middleware(
 )
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# STARTUP VALIDATION - Fail fast if critical settings are missing
+# ─────────────────────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+async def validate_config_on_startup():
+    """Validate critical configuration at app startup.
+
+    This ensures we fail immediately rather than on first request.
+    Critical validations:
+    - Model settings are valid (HCA, edges, confidence thresholds)
+    - Prediction backend is recognized
+    - Database connectivity (if configured)
+    """
+    errors = []
+
+    # Validate model config
+    try:
+        assert settings.model.home_court_advantage_spread >= 0, \
+            "home_court_advantage_spread must be >= 0"
+        assert settings.model.min_spread_edge > 0, \
+            "min_spread_edge must be > 0"
+        assert settings.model.min_total_edge > 0, \
+            "min_total_edge must be > 0"
+        assert 0 < settings.model.min_confidence < 1, \
+            "min_confidence must be between 0 and 1"
+    except AssertionError as e:
+        errors.append(f"Model config validation: {e}")
+
+    # Validate prediction backend
+    try:
+        backend = _get_prediction_backend()
+        assert backend in {"v33", "linear_json"}, \
+            f"prediction_backend must be 'v33' or 'linear_json', got '{backend}'"
+    except AssertionError as e:
+        errors.append(f"Prediction backend validation: {e}")
+
+    # Try database connectivity (non-fatal if fails, just warn)
+    try:
+        engine = _get_db_engine()
+        if engine:
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT 1")).scalar()
+                assert result == 1, "Database connection test failed"
+            logger.info("✓ Database connectivity validated")
+        else:
+            logger.warning("⚠ Database not configured (may be OK for local dev)")
+    except Exception as e:
+        logger.warning(f"Database connectivity check failed: {e} (non-fatal, will retry on first request)")
+
+    if errors:
+        error_summary = "\n".join(f"  - {e}" for e in errors)
+        logger.error(f"Startup validation failed:\n{error_summary}")
+        raise RuntimeError(f"Configuration validation failed:\n{error_summary}")
+
+    logger.info(f"✓ Startup validation passed: {settings.service_name} v{settings.service_version}")
+
+
 @app.get("/debug/odds-periods")
 async def debug_odds_periods():
     """Diagnostic endpoint to check odds periods in database."""

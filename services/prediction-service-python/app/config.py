@@ -409,6 +409,49 @@ class Settings(BaseSettings):
     )
     debug: bool = False
 
+    # Runtime / environment
+    environment: str = Field(
+        default="development",
+        description="Runtime environment label (e.g., local, codespaces, prod).",
+    )
+    log_level: str = Field(
+        default="INFO",
+        description="Logging level (e.g., DEBUG, INFO, WARNING).",
+    )
+    api_port: int = Field(
+        default=8000,
+        description="Port the API server listens on.",
+    )
+
+    # Common infrastructure settings
+    database_url: str = Field(
+        default="",
+        description="Database connection URL (DATABASE_URL).",
+    )
+    redis_url: str = Field(
+        default="",
+        description="Redis connection URL (REDIS_URL).",
+    )
+
+    # External API keys (optional here; modules may also read env/secrets directly)
+    odds_api_key: str = Field(
+        default="",
+        description="Odds API key (ODDS_API_KEY or THE_ODDS_API_KEY).",
+    )
+    basketball_api_key: str = Field(
+        default="",
+        description="Basketball API key.",
+    )
+    teams_webhook_secret: str = Field(
+        default="",
+        description="Secret used to validate Teams webhook requests.",
+    )
+
+    # Azure (optional)
+    azure_subscription_id: str = ""
+    azure_resource_group: str = ""
+    azure_cosmos_db_endpoint: str = ""
+
     # Feature Store
     feature_store_url: str = Field(
         default="http://localhost:8081",
@@ -439,8 +482,14 @@ class Settings(BaseSettings):
         return v
 
     class Config:
-        # NO .env file - all configuration from environment variables set by docker-compose
+        # Production containers (Docker Compose / Azure) provide environment variables and/or /run/secrets.
+        # Local development (including Codespaces) may use an env file if present.
         env_nested_delimiter = "__"
+        env_file = (".env.local", ".env")
+        env_file_encoding = "utf-8"
+        # Allow env files to contain keys that this Settings model doesn't use.
+        # This prevents test collection/imports from failing due to unrelated variables.
+        extra = "ignore"
 
 
 # Global settings instance

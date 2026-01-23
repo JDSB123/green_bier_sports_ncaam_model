@@ -11,11 +11,14 @@ Storage Options:
 v33.11.0: Optimized schedule fetching - load once, sync changes.
 """
 
+import contextlib
 import hashlib
 import json
 import os
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import structlog
 
@@ -42,6 +45,38 @@ SCHEDULE_LAST_SYNC_KEY = "ncaam:schedule:last_sync:{season}"
 SCHEDULE_CACHE_TTL = 24 * 60 * 60
 
 
+def _build_redis_url_from_env() -> str:
+    """Build a Redis URL from environment variables and an optional secret file.
+
+    Priority:
+    1) REDIS_URL (explicit)
+    2) REDIS_PASSWORD_FILE + REDIS_HOST/REDIS_PORT/REDIS_DB
+    3) REDIS_HOST/REDIS_PORT/REDIS_DB without auth
+    """
+
+    explicit = (os.getenv("REDIS_URL") or "").strip()
+    if explicit:
+        return explicit
+
+    host = (os.getenv("REDIS_HOST") or "").strip() or "redis"
+    port = (os.getenv("REDIS_PORT") or "").strip() or "6379"
+    db = (os.getenv("REDIS_DB") or "").strip() or "0"
+
+    pw_file = (os.getenv("REDIS_PASSWORD_FILE") or "").strip()
+    password: str | None = None
+    if pw_file:
+        with contextlib.suppress(Exception):
+            p = Path(pw_file)
+            if p.exists():
+                val = p.read_text(encoding="utf-8").strip()
+                if val:
+                    password = val
+
+    if password:
+        return f"redis://:{quote(password)}@{host}:{port}/{db}"
+    return f"redis://{host}:{port}/{db}"
+
+
 class ScheduleCache:
     """
     Manages cached season schedule data.
@@ -54,7 +89,7 @@ class ScheduleCache:
         redis_url: str | None = None,
         database_url: str | None = None,
     ):
-        self.redis_url = redis_url or os.environ.get("REDIS_URL", "")
+        self.redis_url = redis_url or _build_redis_url_from_env()
         self.database_url = database_url or os.environ.get("DATABASE_URL", "")
 
         self._redis_client = None
