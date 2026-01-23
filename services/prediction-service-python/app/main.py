@@ -62,9 +62,7 @@ def _allow_dev_fallback() -> bool:
     if env_name in {"dev", "development", "local", "test"}:
         return True
     # When running under pytest, allow dev fallbacks for artifact loading.
-    if os.getenv("PYTEST_CURRENT_TEST"):
-        return True
-    return False
+    return bool(os.getenv("PYTEST_CURRENT_TEST"))
 
 
 def _make_prediction_with_backend(
@@ -495,8 +493,7 @@ app.add_middleware(
 # STARTUP VALIDATION - Fail fast if critical settings are missing
 # ─────────────────────────────────────────────────────────────────────────
 
-@app.on_event("startup")
-async def validate_config_on_startup():
+async def _run_startup_validation():
     """Validate critical configuration at app startup.
 
     This ensures we fail immediately rather than on first request.
@@ -547,6 +544,16 @@ async def validate_config_on_startup():
         raise RuntimeError(f"Configuration validation failed:\n{error_summary}")
 
     logger.info(f"✓ Startup validation passed: {settings.service_name} v{settings.service_version}")
+
+
+@contextlib.asynccontextmanager
+async def _lifespan(app: FastAPI):
+    await _run_startup_validation()
+    yield
+
+
+# Register lifespan handler (replaces deprecated on_event startup hook)
+app.router.lifespan_context = _lifespan
 
 
 @app.get("/debug/odds-periods")

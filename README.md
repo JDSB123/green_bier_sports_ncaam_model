@@ -4,8 +4,9 @@ This repository contains the NCAAM prediction service (FastAPI) plus supporting 
 
 ## Start Here
 
-- Setup overview: [SETUP.md](SETUP.md)
-- Quick start: [QUICK_START.md](QUICK_START.md)
+- Quick start (canonical): [QUICK_START.md](QUICK_START.md)
+- Extended setup reference: [SETUP.md](SETUP.md)
+- Repo map (services, commands, envs): [docs/REPO_MAP.md](docs/REPO_MAP.md)
 - Codespaces canonical doc: [docs/setup/CODESPACES.md](docs/setup/CODESPACES.md)
 - Secrets / API keys: [docs/setup/API_KEY_SETUP.md](docs/setup/API_KEY_SETUP.md)
 - Legacy root scripts archived: [archive/README.md](archive/README.md)
@@ -17,7 +18,15 @@ cd services/prediction-service-python
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Or from repo root using the standard task runner:
+
+```bash
+make api
+```
+
 VS Code tasks are available in `.vscode/tasks.json` (start/stop/restart, pytest, ruff).
+
+`make` targets (root): `install`, `lint`, `format`, `test`, `api` (see [docs/REPO_MAP.md](docs/REPO_MAP.md)).
 
 ## Codespaces quick-start notes
 
@@ -69,6 +78,7 @@ Use the `:heavy` image in ACA if you want the ML deps preinstalled in production
 
 - Odds API key: `ODDS_API_KEY` (preferred) or `THE_ODDS_API_KEY` (legacy name, still accepted)
 - Docker Compose/Azure secrets are supported via env vars and secret files.
+- Env files: copy `.env.example` (root) or `services/*/.env.example` to `.env` for local runs; keep secrets out of git.
 
 See [docs/setup/API_KEY_SETUP.md](docs/setup/API_KEY_SETUP.md).
 

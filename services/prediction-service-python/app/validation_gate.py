@@ -57,9 +57,7 @@ def _allow_aggressive_resolution() -> bool:
         return True
     if env_name in {"dev", "development", "local", "test"}:
         return True
-    if os.getenv("PYTEST_CURRENT_TEST"):
-        return True
-    return False
+    return bool(os.getenv("PYTEST_CURRENT_TEST"))
 
 
 def _load_alias_blob(container_client, blob_path: str) -> dict[str, str]:

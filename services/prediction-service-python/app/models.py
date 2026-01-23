@@ -5,7 +5,7 @@ Clean, simple data structures focused on what matters for profitable predictions
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from uuid import UUID
 
@@ -272,7 +272,7 @@ class Prediction:
 
     # Model metadata
     model_version: str = DEFAULT_MODEL_VERSION
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def calculate_edges(self, market: MarketOdds) -> None:
         """Calculate edges vs market odds.
@@ -364,7 +364,7 @@ class BettingRecommendation:
 
     # Metadata
     model_version: str = DEFAULT_MODEL_VERSION
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def calculate_clv(self, closing_line: float, captured_at: datetime) -> None:
         """

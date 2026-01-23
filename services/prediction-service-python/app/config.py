@@ -5,7 +5,7 @@ Versioning:
 - Historical change notes live in docs/VERSIONING.md.
 """
 
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings
 
 from . import __version__ as app_version
@@ -388,9 +388,7 @@ class ModelConfig(BaseSettings):
         description="Margin adjustment per % EFG differential."
     )
 
-    class Config:
-        # Note: env_prefix removed - use parent's env_nested_delimiter instead
-        pass
+    model_config = ConfigDict(extra="ignore")
 
 
 class Settings(BaseSettings):
@@ -481,15 +479,16 @@ class Settings(BaseSettings):
             raise ValueError(f"prediction_backend must be one of {sorted(allowed)}")
         return v
 
-    class Config:
+    model_config = ConfigDict(
         # Production containers (Docker Compose / Azure) provide environment variables and/or /run/secrets.
         # Local development (including Codespaces) may use an env file if present.
-        env_nested_delimiter = "__"
-        env_file = (".env.local", ".env")
-        env_file_encoding = "utf-8"
+        env_nested_delimiter="__",
+        env_file=(".env.local", ".env"),
+        env_file_encoding="utf-8",
         # Allow env files to contain keys that this Settings model doesn't use.
         # This prevents test collection/imports from failing due to unrelated variables.
-        extra = "ignore"
+        extra="ignore",
+    )
 
 
 # Global settings instance

@@ -59,6 +59,15 @@ Python ML Models (FastAPI)
 Redis Cache (6379)
 
 Plus: Go ratings sync service
+
+---
+
+## Tonight workflow (live odds)
+
+1) Set `ODDS_API_KEY` (or `THE_ODDS_API_KEY`).
+2) From repo root: `python generate_tonight_picks.py --live` (2-3 hours before first tip).
+3) Review outputs under `testing/results/predictions/tonight_picks_*.{csv,json}`.
+4) Paper mode only; gate go-live on sustained positive ROI.
 ```
 
 ---

@@ -1,5 +1,7 @@
 # NCAAM Sports Model - Setup & Architecture Guide
 
+> Canonical onboarding lives in README + QUICK_START.md. Use this file as the extended reference when you need deeper architecture/setup detail.
+
 ## 🎯 One-Step Setup (Choose One Path)
 
 ### Path 1: Local Development (Windows 10/11)

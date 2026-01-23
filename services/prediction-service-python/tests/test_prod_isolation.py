@@ -4,11 +4,9 @@ These checks ensure production modules do not reference backtest datasets or
 testing packages at runtime. They are intentionally lightweight so they can
 run in CI without dependencies beyond the standard library.
 """
-
 from __future__ import annotations
 
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 APP_DIR = ROOT / "app"

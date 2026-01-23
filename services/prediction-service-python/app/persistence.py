@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -339,7 +339,7 @@ def capture_closing_lines(
 
     Returns: number of recommendations updated
     """
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     updated = 0
 
     # Update each bet type with its closing line
@@ -423,7 +423,7 @@ def settle_recommendations(
 
     Returns: dict with settlement summary
     """
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     actual_spread = away_score - home_score  # From home perspective (positive = home lost)
     actual_total = home_score + away_score
     actual_spread_1h = (away_score_1h - home_score_1h) if home_score_1h is not None and away_score_1h is not None else None
