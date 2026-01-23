@@ -271,32 +271,27 @@ Go Ratings Sync Service
 
 ### .env.local (Local Development)
 
+Note: `.env.local` is optional for *non-secret* local overrides and is ignored by git.
+
+For the full stack, prefer Docker Compose + secret files (see `docker-compose.yml`):
+
 ```
-# Database
-DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/ncaam_local
-DB_HOST=localhost
+# Secrets are injected via files (Docker Compose mounts these at /run/secrets/*)
+DB_PASSWORD_FILE=/run/secrets/db_password
+REDIS_PASSWORD_FILE=/run/secrets/redis_password
+
+# Odds API key supports either name
+ODDS_API_KEY_FILE=/run/secrets/odds_api_key
+THE_ODDS_API_KEY_FILE=/run/secrets/odds_api_key
+
+# Non-secret connection details (example)
+DB_HOST=postgres
 DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres123
-
-# Cache
-REDIS_URL=redis://localhost:6379/0
-REDIS_HOST=localhost
+DB_USER=ncaam
+DB_NAME=ncaam
+REDIS_HOST=redis
 REDIS_PORT=6379
-
-# Application
-ENVIRONMENT=local
-DEBUG=true
-LOG_LEVEL=DEBUG
-API_PORT=8000
-
-# API Keys (obtain from respective services)
-ODDS_API_KEY=<your_key>
-TEAMS_WEBHOOK_SECRET=<your_secret>
-
-# Azure (optional, for production)
-AZURE_STORAGE_ACCOUNT_NAME=
-AZURE_STORAGE_ACCOUNT_KEY=
+REDIS_DB=0
 ```
 
 ### Codespaces (Automatic)
@@ -433,5 +428,5 @@ Code Push → GitHub
 
 ---
 
-**Last Updated:** January 17, 2026  
+**Last Updated:** January 17, 2026
 **Status:** Production Ready

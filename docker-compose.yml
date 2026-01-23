@@ -233,6 +233,7 @@ services:
       DB_NAME: ${DB_NAME:-${SPORT:-ncaam}}
       DB_HOST: postgres
       DB_PORT: "5432"
+      DB_PASSWORD_FILE: /run/secrets/db_password
       # MANUAL-ONLY: Run once and exit (no automation)
       # User triggers via run_today.py when they want fresh picks
       RUN_ONCE: "${RATINGS_RUN_ONCE:-true}"
@@ -268,6 +269,13 @@ services:
       DB_NAME: ${DB_NAME:-${SPORT:-ncaam}}
       DB_HOST: postgres
       DB_PORT: "5432"
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      ODDS_API_KEY_FILE: /run/secrets/odds_api_key
+      THE_ODDS_API_KEY_FILE: /run/secrets/odds_api_key
       # Odds config (full-game only)
       RUN_ONCE: "true"
       ENABLE_FULL: "true"
@@ -301,6 +309,13 @@ services:
       DB_NAME: ${DB_NAME:-${SPORT:-ncaam}}
       DB_HOST: postgres
       DB_PORT: "5432"
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      ODDS_API_KEY_FILE: /run/secrets/odds_api_key
+      THE_ODDS_API_KEY_FILE: /run/secrets/odds_api_key
       # Odds config (first-half only)
       RUN_ONCE: "true"
       ENABLE_FULL: "false"

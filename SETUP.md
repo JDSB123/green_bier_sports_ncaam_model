@@ -56,8 +56,8 @@ green_bier_sports_ncaam_model/
 │   ├── migrations/                   # ← PostgreSQL schema
 │   └── seeds/
 │
-├── .env.local                        # ← Local config (DO NOT COMMIT)
-├── docker-compose.yml                # ← For Codespaces/production only
+├── .env.local                        # ← Optional local overrides (DO NOT COMMIT)
+├── docker-compose.yml                # ← Full stack (local/Codespaces)
 │
 ├── SETUP.md                          # ← THIS FILE - read first!
 ├── ARCHITECTURE.md                   # ← System design
@@ -86,7 +86,7 @@ green_bier_sports_ncaam_model/
 📡 API LAYER
 ├─ FastAPI (Python) - HTTP REST endpoints
 │  └─ Handles: /predict, /picks, /history
-└─ Health check: localhost:8000/health
+└─ Health check: http://localhost:8092/health (Docker Compose) or http://localhost:8000/health (uvicorn --reload)
 
 ⚙️ BUSINESS LOGIC
 ├─ Python ML Models
@@ -128,8 +128,8 @@ green_bier_sports_ncaam_model/
 ### CODESPACES (Cloud)
 ```
 ✅ Everything automatic (no manual install needed)
-✅ PostgreSQL 15         → localhost:5432 (container)
-✅ Redis 7               → localhost:6379 (container)
+✅ PostgreSQL 15         → localhost:5450 (Docker Compose)
+✅ Redis 7               → localhost:6390 (Docker Compose)
 ✅ Python 3.12           → Pre-installed
 ✅ Go 1.22               → Pre-installed
 ✅ R 4.5.2               → Pre-installed
@@ -162,7 +162,11 @@ python -m uvicorn app.main:app --reload --port 8000
 # Verify readiness (recommended)
 python scripts/codespaces/ensure_codespace_ready.py
 
-# Run app
+# Full stack (recommended)
+docker compose up -d --build
+curl -fsS http://localhost:8092/health
+
+# Run app (dev-only, no compose)
 cd services/prediction-service-python
 python -m uvicorn app.main:app --reload --port 8000
 ```
@@ -234,9 +238,9 @@ python -m venv .venv
 
 ### Can't connect to PostgreSQL
 ```powershell
-# Default credentials (from .env.local)
+# Example envs for local-only troubleshooting (do not commit)
 $env:PGUSER="postgres"
-$env:PGPASSWORD="postgres123"
+$env:PGPASSWORD="<your_password>"
 $env:PGHOST="localhost"
 $env:PGPORT="5432"
 
@@ -269,21 +273,18 @@ psql -d ncaam_local
 
 ## 🔐 Secrets & Configuration
 
-### Local Development (.env.local)
-```
-DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/ncaam_local
-REDIS_URL=redis://localhost:6379/0
-ODDS_API_KEY=<your key from OddsAPI.com>
-```
+### Docker Compose (Recommended)
 
-⚠️ **NEVER commit .env.local to git**
-✅ Already in .gitignore
+Secrets are supplied via files in `secrets/*.txt` (ignored by git) and mounted into containers as `/run/secrets/*`.
 
-### Codespaces
-```
-Configured via .devcontainer/.
-`.env.local` is created if missing, but you still need to set `ODDS_API_KEY` for live odds pulls.
-```
+Key env vars used by services:
+- `DB_PASSWORD_FILE=/run/secrets/db_password`
+- `REDIS_PASSWORD_FILE=/run/secrets/redis_password`
+- `ODDS_API_KEY_FILE=/run/secrets/odds_api_key` (or `THE_ODDS_API_KEY_FILE`)
+
+### Local Development (Optional)
+
+You can also use `.env.local` for local overrides, but do not commit it. Prefer `*_FILE` patterns for secrets when possible.
 
 ---
 

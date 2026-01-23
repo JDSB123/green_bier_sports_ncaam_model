@@ -54,5 +54,3 @@ To run the full stack via Docker Compose inside Codespaces, the devcontainer mus
 
     docker compose up -d --build
     curl -fsS http://localhost:8092/health
-
-````
