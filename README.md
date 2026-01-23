@@ -8,6 +8,7 @@ This repository contains the NCAAM prediction service (FastAPI) plus supporting 
 - Quick start: [QUICK_START.md](QUICK_START.md)
 - Codespaces canonical doc: [docs/setup/CODESPACES.md](docs/setup/CODESPACES.md)
 - Secrets / API keys: [docs/setup/API_KEY_SETUP.md](docs/setup/API_KEY_SETUP.md)
+- Legacy root scripts archived: [archive/README.md](archive/README.md)
 
 ## Run The API (Local or Codespaces)
 

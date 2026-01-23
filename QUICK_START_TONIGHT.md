@@ -95,7 +95,6 @@ Same format as FG but for first half.
 | File | Purpose |
 |------|---------|
 | `generate_tonight_picks.py` | Generate predictions for tonight |
-| `capture_closing_lines.py` | Capture lines 60-90 min pre-tip (setup tomorrow) |
 | `models/linear/fg_spread.json` | FG Spread prediction model |
 | `models/linear/h1_spread.json` | H1 Spread prediction model |
 | `manifests/canonical_training_data_master.csv` | All historical data (3,339 games) |
@@ -131,7 +130,7 @@ Same format as FG but for first half.
 ```
 → Verify file exists:
   ls manifests/canonical_training_data_master.csv
-→ If not, run: python deploy_to_azure.py
+→ If not, pull from source control or request the latest export
 ```
 
 ### Odds API rate limited
@@ -146,7 +145,6 @@ Same format as FG but for first half.
 ## 📞 Next Steps (After Tonight)
 
 - **Tomorrow Morning**: Review paper picks vs actual outcomes
-- **Tomorrow (Setup)**: Set up closing line capture with `python capture_closing_lines.py --daemon`
 - **Next 7 Days**: Run paper picks nightly; track ROI
 - **Next Week**: If paper ROI positive, deploy with real money ($50-100/night)
 
@@ -166,9 +164,6 @@ cat testing/results/predictions/tonight_picks_*.csv
 
 # Track results manually
 # (Expected: 54% win rate, +1.5-6.2% ROI)
-
-# Tomorrow: Set up closing line capture
-python capture_closing_lines.py --run-once
 ```
 
 ---
