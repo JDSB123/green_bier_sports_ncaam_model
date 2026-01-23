@@ -8,8 +8,8 @@ $containers = docker ps -a --filter "name=ncaam" --format "{{.ID}} {{.Names}}"
 if ($containers) {
     Write-Host "Found containers to check:"
     $containers | ForEach-Object { Write-Host "  $_" }
-    
-    # Ask for confirmation or just do it if they are stopped? 
+
+    # Ask for confirmation or just do it if they are stopped?
     # For safety, we'll just list them and suggest removal command
     Write-Host "To remove all stopped containers: docker container prune -f" -ForegroundColor Yellow
 }
@@ -19,10 +19,10 @@ $oldImages = docker images --format "{{.Repository}}:{{.Tag}}" | Where-Object { 
 if ($oldImages) {
     Write-Host "Found images from old ACR (ncaamgbsvacr):" -ForegroundColor Yellow
     $oldImages | ForEach-Object { Write-Host "  $_" }
-    
+
     Write-Host "Removing old ACR images..." -ForegroundColor Cyan
-    $oldImages | ForEach-Object { 
-        docker rmi $_ 
+    $oldImages | ForEach-Object {
+        docker rmi $_
         Write-Host "  Removed $_" -ForegroundColor Green
     }
 } else {

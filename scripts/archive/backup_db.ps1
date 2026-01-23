@@ -21,4 +21,3 @@ docker compose exec -T postgres sh -c "export PGPASSWORD=\$(cat /run/secrets/db_
   | Out-File -FilePath $outFile -Encoding utf8
 
 Write-Host "OK"
-

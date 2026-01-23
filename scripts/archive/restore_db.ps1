@@ -20,4 +20,3 @@ Get-Content -LiteralPath $Path -Raw `
   | docker compose exec -T postgres sh -c "export PGPASSWORD=\$(cat /run/secrets/db_password); psql -U $DbUser -d $DbName -v ON_ERROR_STOP=1"
 
 Write-Host "OK"
-
