@@ -2,11 +2,17 @@
 
 This guide enables **automated CI/CD from GitHub Actions to Azure Container Apps** without needing Azure CLI in Codespaces.
 
-## Why This Matters
+## Required GitHub Secrets
 
-- **No more `az login` in Codespaces** - GitHub Actions authenticates via service principal
-- **Push to main → auto-deploy** - Code changes automatically build and deploy
-- **No rebuilds needed** - The workflow runs on GitHub-hosted runners, not your Codespace
+| Secret Name | Required | Description |
+|-------------|----------|-------------|
+| `AZURE_CREDENTIALS` | ✅ Yes | Service principal JSON for Azure login |
+| `GITHUB_TOKEN` | Auto | Automatically provided by GitHub |
+| `ACR_REGISTRY` | Optional | ACR login server (for devcontainer builds) |
+| `AZURE_CLIENT_ID` | Optional | Service principal client ID (for devcontainer builds) |
+| `AZURE_CLIENT_SECRET` | Optional | Service principal secret (for devcontainer builds) |
+| `HISTORICAL_DATA_PAT` | Optional | PAT for cross-repo historical data sync |
+| `AZURE_STORAGE_CONNECTION_STRING` | Optional | For blob storage operations |
 
 ---
 

@@ -1,10 +1,15 @@
 name: Build and push devcontainer image
 
+# Manual trigger only - this workflow builds the devcontainer base image
+# Run manually when Dockerfile or requirements change significantly
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      push_to_acr:
+        description: 'Also push to ACR (requires ACR secrets)'
+        required: false
+        default: 'false'
+        type: boolean
 
 permissions:
   contents: read

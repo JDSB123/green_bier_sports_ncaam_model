@@ -30,27 +30,18 @@ jobs:
       contents: write
 
     steps:
-      - name: Validate required secrets and environment variables
+      - name: Validate required secrets
+        env:
+          AZURE_CREDS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
-          echo "Checking required secrets and environment variables..."
-          missing=0
-          for secret in AZURE_CREDENTIALS GITHUB_TOKEN; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Missing secret: $secret"
-              missing=1
-            fi
-          done
-          for envvar in ACR_NAME ACR_LOGIN_SERVER PRED_IMAGE WEB_IMAGE RESOURCE_GROUP; do
-            if [ -z "${{ env[envvar] }}" ]; then
-              echo "❌ Missing env: $envvar"
-              missing=1
-            fi
-          done
-          if [ $missing -eq 1 ]; then
-            echo "❌ One or more required secrets/env vars are missing. Workflow cannot continue."
+          echo "Checking required secrets..."
+          if [ -z "$AZURE_CREDS" ]; then
+            echo "❌ Missing secret: AZURE_CREDENTIALS"
+            echo "Please add AZURE_CREDENTIALS to repository secrets."
+            echo "See docs/security/GITHUB_ACTIONS_AZURE_SETUP.md for instructions."
             exit 1
           fi
-          echo "✅ All required secrets and env vars are present."
+          echo "✅ AZURE_CREDENTIALS is configured."
 
       - name: Checkout code
         uses: actions/checkout@v4
