@@ -5,14 +5,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'services/prediction-service-python/**'
-      - 'services/ratings-sync-go/**'
-      - 'services/odds-ingestion-rust/**'
-      - 'services/web-frontend/**'
-      - 'azure/**'
-      - 'database/migrations/**'
-      - '.github/workflows/build-and-push.yml'
-  workflow_dispatch:  # Manual trigger always available
+      - "services/prediction-service-python/**"
+      - "services/ratings-sync-go/**"
+      - "services/odds-ingestion-rust/**"
+      - "services/web-frontend/**"
+      - "azure/**"
+      - "database/migrations/**"
+      - ".github/workflows/build-and-push.yml"
+  workflow_dispatch: # Manual trigger always available
 
 env:
   ACR_NAME: ncaamstablegbsvacr

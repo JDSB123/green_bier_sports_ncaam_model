@@ -10,6 +10,30 @@ echo "╔═══════════════════════�
 echo "║  NCAAM Model - Codespaces Startup                         ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 
+
+# --- ENVIRONMENT AUTO-POPULATION ---
+ENV_EXAMPLE="$PROJECT_ROOT/.env.example"
+ENV_FILE="$PROJECT_ROOT/.env"
+
+# If .env does not exist, copy from .env.example
+if [ ! -f "$ENV_FILE" ] && [ -f "$ENV_EXAMPLE" ]; then
+    cp "$ENV_EXAMPLE" "$ENV_FILE"
+    echo "✓ Created .env from .env.example"
+fi
+
+# Warn if any required variable is unset in .env
+REQUIRED_VARS=(AZURE_CLIENT_ID AZURE_CLIENT_SECRET AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID COSMOSDB_CONNECTION_STRING THE_ODDS_API_KEY API_BASKETBALL_KEY ACTION_NETWORK_USERNAME ACTION_NETWORK_PASSWORD)
+MISSING=0
+for var in "${REQUIRED_VARS[@]}"; do
+    if ! grep -q "^$var=" "$ENV_FILE" 2>/dev/null || [ -z "$(grep "^$var=" "$ENV_FILE" | cut -d= -f2)" ]; then
+        echo "⚠ $var is missing or empty in .env. Please set it."
+        MISSING=1
+    fi
+done
+if [ $MISSING -eq 1 ]; then
+    echo "⚠ One or more required environment variables are missing in .env."
+fi
+
 # Check if venv exists and is valid
 if [ -f "$VENV_PATH/bin/activate" ]; then
     echo "✓ Virtual environment found"
