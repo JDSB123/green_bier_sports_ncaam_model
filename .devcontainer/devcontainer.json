@@ -2,13 +2,17 @@
   "name": "NCAAM Sports Model (Python + Go)",
   "image": "ghcr.io/jdsb123/green_bier_sports_ncaam_model-devcontainer:latest-heavy",
   "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/go:1": {},
     "ghcr.io/devcontainers/features/azure-cli:1": {}
   },
   "forwardPorts": [
     8000,
+    8092,
     5432,
+    5450,
     6379,
+    6390,
     8081
   ],
   "portsAttributes": {
@@ -16,12 +20,24 @@
       "label": "FastAPI",
       "onAutoForward": "notify"
     },
+    "8092": {
+      "label": "Prediction Service (compose)",
+      "onAutoForward": "notify"
+    },
     "5432": {
       "label": "PostgreSQL",
       "onAutoForward": "silent"
     },
+    "5450": {
+      "label": "PostgreSQL (compose)",
+      "onAutoForward": "silent"
+    },
     "6379": {
       "label": "Redis",
+      "onAutoForward": "silent"
+    },
+    "6390": {
+      "label": "Redis (compose)",
       "onAutoForward": "silent"
     },
     "8081": {

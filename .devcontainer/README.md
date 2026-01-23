@@ -47,3 +47,12 @@ The devcontainer image is automatically rebuilt when:
 - Manual trigger via GitHub Actions UI
 
 The workflow builds both standard and heavy variants in parallel.
+
+## Docker Compose in Codespaces
+
+To run the full stack via Docker Compose inside Codespaces, the devcontainer must have Docker access. After rebuilding the devcontainer, run:
+
+    docker compose up -d --build
+    curl -fsS http://localhost:8092/health
+
+````
