@@ -16,7 +16,8 @@ cd C:\Users\JDSB\dev\green_bier_sport_ventures\ncaam_gbsv_local\green_bier_sport
 
 # Run
 .\.venv\Scripts\Activate.ps1
-python services\prediction-service-python\main.py
+cd services\prediction-service-python
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 **Time:** 15 minutes | **Cost:** Free | **Best for:** Full control
@@ -36,11 +37,11 @@ GitHub → Code button → Codespaces → Create codespace on main
 
 ## Files You Need
 
-✅ **SETUP.md** - Read this first (setup guide)  
-✅ **QUICK_START.md** - This file  
-✅ **scripts/setup-local-complete.ps1** - One setup script  
-✅ **scripts/verify-all.ps1** - Verify system  
-✅ **.devcontainer/devcontainer.json** - Codespaces config  
+✅ **SETUP.md** - Read this first (setup guide)
+✅ **QUICK_START.md** - This file
+✅ **scripts/setup-local-complete.ps1** - One setup script
+✅ **scripts/verify-all.ps1** - Verify system
+✅ **.devcontainer/devcontainer.json** - Codespaces config
 
 ❌ **DELETE** (old, no longer used):
 - install-local-services.ps1

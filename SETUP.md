@@ -42,7 +42,7 @@ green_bier_sports_ncaam_model/
 │
 ├── services/
 │   ├── prediction-service-python/    # ← ML models + API (Python)
-│   │   ├── main.py
+│   │   ├── app/main.py
 │   │   ├── requirements.txt           # ← Install this with pip
 │   │   └── ...
 │   │
@@ -61,7 +61,8 @@ green_bier_sports_ncaam_model/
 │
 ├── SETUP.md                          # ← THIS FILE - read first!
 ├── ARCHITECTURE.md                   # ← System design
-├── VERIFY.md                         # ← Health check commands
+├── docs/setup/CODESPACES.md           # ← Codespaces setup (canonical)
+├── docs/setup/API_KEY_SETUP.md        # ← API keys / secrets (canonical)
 │
 └── scripts/
     ├── setup-local-complete.ps1      # ← ONE setup script for Windows
@@ -146,12 +147,10 @@ green_bier_sports_ncaam_model/
 # 2. Verify everything works
 .\scripts\verify-all.ps1
 
-# 3. Start services (keep running)
-.\scripts\start-services.ps1
-
-# 4. In NEW terminal: Activate venv and run app
+# 3. In NEW terminal: Activate venv and run app
 .\.venv\Scripts\Activate.ps1
-python services/prediction-service-python/main.py
+cd services/prediction-service-python
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 ### First Time: CODESPACES
@@ -160,11 +159,12 @@ python services/prediction-service-python/main.py
 # 2. Wait 2-3 minutes
 # 3. Everything ready - start coding!
 
-# Verify
-./scripts/verify-all.sh
+# Verify readiness (recommended)
+python scripts/codespaces/ensure_codespace_ready.py
 
 # Run app
-python services/prediction-service-python/main.py
+cd services/prediction-service-python
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 ---
@@ -176,8 +176,8 @@ python services/prediction-service-python/main.py
 # Windows
 .\scripts\verify-all.ps1
 
-# Codespaces
-./scripts/verify-all.sh
+# Codespaces / Linux
+bash scripts/verify-all.sh
 ```
 
 **Full health check (2 minutes):**
@@ -250,8 +250,8 @@ psql -d ncaam_local
 **Read in order:**
 1. **SETUP.md** (this file) - Getting started
 2. **ARCHITECTURE.md** - How it's organized
-3. **VERIFY.md** - Health checks
-4. **CONTRIBUTING.md** - How to add features
+3. **docs/setup/CODESPACES.md** - Codespaces setup (canonical)
+4. **docs/setup/API_KEY_SETUP.md** - API keys / secrets (canonical)
 
 ---
 
@@ -263,7 +263,7 @@ psql -d ncaam_local
 | Do you want cloud dev? | Yes | Click "Codespaces" button |
 | Is your venv broken? | Yes | Run `setup-local-complete.ps1` again |
 | Can't connect to DB? | Run `verify-all.ps1` first |
-| Want to add a feature? | Read CONTRIBUTING.md |
+| Want to add a feature? | Start with `docs/DEVELOPMENT_WORKFLOW.md` |
 
 ---
 
@@ -281,8 +281,8 @@ ODDS_API_KEY=<your key from OddsAPI.com>
 
 ### Codespaces
 ```
-All configured automatically via .devcontainer/
-No manual .env needed
+Configured via .devcontainer/.
+`.env.local` is created if missing, but you still need to set `ODDS_API_KEY` for live odds pulls.
 ```
 
 ---

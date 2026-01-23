@@ -1,8 +1,10 @@
 #!/bin/bash
 # Post-start script for Codespaces - runs on EVERY container start/restart
 # This ensures the venv is ready without reinstalling everything
+# It also runs the comprehensive readiness check
 
 VENV_PATH="/workspaces/green_bier_sports_ncaam_model/.venv"
+PROJECT_ROOT="/workspaces/green_bier_sports_ncaam_model"
 
 echo "╔════════════════════════════════════════════════════════════╗"
 echo "║  NCAAM Model - Codespaces Startup                         ║"
@@ -47,6 +49,20 @@ if ! grep -qF ".venv/bin/activate" "$BASHRC" 2>/dev/null; then
 fi
 
 echo ""
-echo "Ready! Virtual environment will auto-activate in new terminals."
+echo "Running comprehensive readiness check..."
+echo ""
+
+# Run the comprehensive readiness check
+"$VENV_PATH/bin/python" "$PROJECT_ROOT/scripts/codespaces/ensure_codespace_ready.py" 2>&1 || true
+
+echo ""
+echo "Running universal access manager..."
+echo ""
+
+# Run the universal access manager
+bash "$PROJECT_ROOT/.devcontainer/ensure-all-access.sh" 2>&1 || true
+
+echo ""
+echo "✓ Codespace startup complete"
 echo "Run 'source .venv/bin/activate' in existing terminals."
 echo ""

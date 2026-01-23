@@ -1,27 +1,22 @@
-# NCAA Basketball v33.15.0
+# NCAA Basketball Model
 
-## 🚀 **NEW USERS: START HERE**
+This repository contains the NCAAM prediction service (FastAPI) plus supporting scripts and documentation.
 
-**First time setting up?** Read this first → [START_HERE.md](../START_HERE.md)
+## Start Here
 
-**Having issues?** Run environment checker: `.\check-environment.bat`
+- Setup overview: [SETUP.md](SETUP.md)
+- Quick start: [QUICK_START.md](QUICK_START.md)
+- Codespaces canonical doc: [docs/setup/CODESPACES.md](docs/setup/CODESPACES.md)
+- Secrets / API keys: [docs/setup/API_KEY_SETUP.md](docs/setup/API_KEY_SETUP.md)
 
----
+## Run The API (Local or Codespaces)
 
-## Single Point of Entry
-
-```powershell
-.\predict.bat
+```bash
+cd services/prediction-service-python
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-That's it. One command. Everything runs inside the container.
-
-## What This Does
-
-1. Syncs fresh ratings from Barttorvik (Go binary)
-2. Syncs fresh odds from The Odds API (Rust binary)
-3. Runs predictions using the model (Python)
-4. Outputs betting recommendations with edge calculations
+VS Code tasks are available in `.vscode/tasks.json` (start/stop/restart, pytest, ruff).
 
 ## Codespaces quick-start notes
 
@@ -69,79 +64,30 @@ If ACR secrets are configured, both variants are also mirrored to your ACR as `A
 
 Use the `:heavy` image in ACA if you want the ML deps preinstalled in production (note larger image size and longer build times).
 
-## First-Time Setup
+## Secrets
 
-1. **Create secrets files** (REQUIRED - NO .env fallbacks):
-   ```powershell
-   python ensure_secrets.py
-   ```
-   This creates `db_password.txt` and `redis_password.txt` with secure random values.
+- Odds API key: `ODDS_API_KEY` (preferred) or `THE_ODDS_API_KEY` (legacy name, still accepted)
+- Docker Compose/Azure secrets are supported via env vars and secret files.
 
-2. **Create** `secrets/odds_api_key.txt` with your The Odds API key:
+See [docs/setup/API_KEY_SETUP.md](docs/setup/API_KEY_SETUP.md).
 
-   **Configuration locations (used by code):**
-   - **Docker Compose:** File `secrets/odds_api_key.txt` → mounted at `/run/secrets/odds_api_key`
-   - **Azure Container Apps:** Environment variable `THE_ODDS_API_KEY`
+## Generate Picks (CLI)
 
-   **Get your API key from:** https://the-odds-api.com/
+```bash
+# Paper-mode picks from canonical data
+python generate_tonight_picks.py
 
-   **Create the file (replace `YOUR_ACTUAL_KEY` with your real key):**
-   ```powershell
-   # Windows PowerShell - replace YOUR_ACTUAL_KEY with your real API key
-   $apiKey = "YOUR_ACTUAL_KEY"  # Get from https://the-odds-api.com/
-   $apiKey | Out-File -FilePath secrets/odds_api_key.txt -NoNewline -Encoding utf8
-   ```
-
-   **Or use environment variable (Azure only):**
-   ```powershell
-   # Set environment variable - code reads from THE_ODDS_API_KEY
-   $env:THE_ODDS_API_KEY = "YOUR_ACTUAL_KEY"
-   ```
-
-   Or use the helper script:
-   ```powershell
-   python ensure_secrets.py
-   ```
-   (It will prompt for the API key if not found)
-
-3. **Set Azure historical data access:**
-   ```powershell
-   # Required for canonical historical data + team aliases
-   $env:AZURE_CANONICAL_CONNECTION_STRING = "YOUR_CANONICAL_CONNECTION_STRING"
-   ```
-4. Build the container: `docker compose build`
-5. Run: `.\predict.bat`
-
-**IMPORTANT:** All secrets MUST be in `secrets/` directory. Container will FAIL if secrets are missing - NO fallbacks to .env or localhost.
-
-## Options
-
-```powershell
-.\predict.bat                       # Full slate today
-.\predict.bat --no-sync             # Skip data sync (use cached)
-.\predict.bat --game "Duke" "UNC"   # Specific game
-.\predict.bat --date 2025-12-20     # Specific date
+# Live mode pulls games/odds from The Odds API
+python generate_tonight_picks.py --live
 ```
+
+See [QUICK_START_TONIGHT.md](QUICK_START_TONIGHT.md) for common workflows.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                  prediction-service                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│  │ ratings-sync│  │odds-ingestion│  │  predictor.py  │ │
-│  │   (Go)      │  │   (Rust)     │  │   (Python)     │ │
-│  └──────┬──────┘  └──────┬───────┘  └────────┬───────┘ │
-│         │                │                    │         │
-│         └────────────────┴────────────────────┘         │
-│                          │                              │
-└──────────────────────────┼──────────────────────────────┘
-                           │
-                    ┌──────▼──────┐
-                    │  PostgreSQL  │
-                    │   (ncaam)    │
-                    └─────────────┘
-```
+- FastAPI service: `services/prediction-service-python/app/main.py` (run via uvicorn)
+- Data sources: Azure Blob canonical data + The Odds API (optional live mode)
+- Storage/cache: PostgreSQL + Redis (used in container/dev modes)
 
 ## Model Parameters (v33.10.0)
 
@@ -179,11 +125,10 @@ This is the **FINAL** production container. Do not modify unless creating a new 
 - ✅ Deployments are run via `azure/deploy.ps1` (manual)
 - ✅ No cron jobs or scheduled tasks kick off predictions.
 - ✅ No continuous polling loops (RUN_ONCE=true enforced in Go/Rust services).
-- ✅ No automated data/backtesting workflows—`.\predict.bat` is still the only way to refresh data and make picks.
+- ✅ No automated schedules: runs are operator-initiated.
 - ✅ Services run once and exit; everything is manual-run + manual-review.
 - ✅ Backtesting remains manual-only (see `MODEL_BACKTEST_AND_INDEPENDENCE_CONFIRMATION.md`).
 
 **To get fresh picks:**
-1. Execute `.\predict.bat` manually when you want fresh data and recommendations
-2. System syncs ratings and odds once, runs predictions, and exits
-3. You have full control - nothing runs automatically
+1. Run `python generate_tonight_picks.py` (or `--live`)
+2. Review outputs under `testing/results/predictions/`

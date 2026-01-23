@@ -1,6 +1,6 @@
 {
   "name": "NCAAM Sports Model (Python + Go)",
-  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+  "image": "ghcr.io/jdsb123/green_bier_sports_ncaam_model-devcontainer:latest-heavy",
   "features": {
     "ghcr.io/devcontainers/features/go:1": {},
     "ghcr.io/devcontainers/features/azure-cli:1": {}

@@ -38,15 +38,15 @@ if (Test-Path $pgExe) {
     try {
         $pgInstaller = "$env:TEMP\postgresql-15-installer.exe"
         $pgUrl = "https://get.enterprisedb.com/postgresql/postgresql-15.5-1-windows-x64.exe"
-        
+
         Invoke-WebRequest -Uri $pgUrl -OutFile $pgInstaller -TimeoutSec 120 -ErrorAction Stop
         Write-Warn "Running PostgreSQL installer (this may take 2-3 minutes)..."
-        
+
         & $pgInstaller --unattendedmodeui minimal --mode unattended `
                        --superpassword postgres123 --servicepassword postgres123 | Out-Null
-        
+
         Start-Sleep -Seconds 3
-        
+
         if (Test-Path $pgExe) {
             Write-Success "✓ PostgreSQL 15 installed successfully"
             Remove-Item $pgInstaller -Force
@@ -90,13 +90,13 @@ if (Test-Path $redisExe) {
     try {
         $redisInstaller = "$env:TEMP\redis-installer.msi"
         $redisUrl = "https://github.com/microsoftarchive/redis/releases/download/win-3.2.100/Redis-x64-3.2.100.msi"
-        
+
         Invoke-WebRequest -Uri $redisUrl -OutFile $redisInstaller -TimeoutSec 120 -ErrorAction Stop
         Write-Warn "Running Redis installer..."
-        
+
         msiexec /i $redisInstaller /quiet /norestart | Out-Null
         Start-Sleep -Seconds 3
-        
+
         if (Test-Path $redisExe) {
             Write-Success "✓ Redis installed successfully"
             Remove-Item $redisInstaller -Force
@@ -229,7 +229,7 @@ if (Test-Path $pgExe) {
         $env:PGPASSWORD = "postgres123"
         & $pgExe -h localhost -U postgres -c "SELECT 1" -q 2>$null
         Write-Success "✓ PostgreSQL connection verified"
-        
+
         Write-Warn "Creating ncaam_local database..."
         & $pgExe -h localhost -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'ncaam_local'" 2>$null | Select-String "1" | Out-Null
         if (-not $?) {
@@ -274,7 +274,7 @@ if ($failedSteps.Count -eq 0) {
     Write-Host "Next steps:" -ForegroundColor Cyan
     Write-Host "  1. Edit .env.local and add ODDS_API_KEY"
     Write-Host "  2. Run: .\.venv\Scripts\Activate.ps1"
-    Write-Host "  3. Run: python services\prediction-service-python\main.py"
+    Write-Host "  3. Run: cd services\prediction-service-python; python -m uvicorn app.main:app --reload --port 8000"
     Write-Host "  4. Visit: http://localhost:8000/docs"
     Write-Host ""
     Write-Host "To verify everything: .\scripts\verify-all.ps1"

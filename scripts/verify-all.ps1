@@ -75,7 +75,7 @@ if (Test-Path ".\.venv\Scripts\python.exe") {
     try {
         $version = & ".\.venv\Scripts\python.exe" --version 2>&1
         Write-Host "✓ $version" -ForegroundColor Green
-        
+
         $fastapi = & ".\.venv\Scripts\pip.exe" list --quiet 2>&1 | Select-String "fastapi"
         if ($fastapi) {
             Write-Host "✓ FastAPI installed" -ForegroundColor Green
@@ -83,7 +83,7 @@ if (Test-Path ".\.venv\Scripts\python.exe") {
             Write-Host "✗ FastAPI not found" -ForegroundColor Red
             $allGood = $false
         }
-        
+
         $redis = & ".\.venv\Scripts\pip.exe" list --quiet 2>&1 | Select-String "redis"
         if ($redis) {
             Write-Host "✓ Redis Python client installed" -ForegroundColor Green
@@ -91,7 +91,7 @@ if (Test-Path ".\.venv\Scripts\python.exe") {
             Write-Host "✗ Redis Python client not found" -ForegroundColor Red
             $allGood = $false
         }
-        
+
         $psycopg = & ".\.venv\Scripts\pip.exe" list --quiet 2>&1 | Select-String "psycopg"
         if ($psycopg) {
             Write-Host "✓ PostgreSQL driver installed" -ForegroundColor Green
@@ -157,7 +157,7 @@ if ($allGood) {
     Write-Host ""
     Write-Host "Ready to run:" -ForegroundColor Cyan
     Write-Host "  .\.venv\Scripts\Activate.ps1"
-    Write-Host "  python services\prediction-service-python\main.py"
+    Write-Host "  cd services\prediction-service-python; python -m uvicorn app.main:app --reload --port 8000"
 } else {
     Write-Host "║  ⚠ SOME ISSUES DETECTED - SEE ABOVE                         ║" -ForegroundColor Red
     Write-Host "╚════════════════════════════════════════════════════════════════╝" -ForegroundColor Red
