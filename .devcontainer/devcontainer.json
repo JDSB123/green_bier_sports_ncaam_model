@@ -107,6 +107,7 @@
   "remoteUser": "codespace",
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/codespace/.ssh,readonly",
+    "source=codespace-azure-cli,target=/home/codespace/.azure",
     "source=codespace-pip-cache,target=/home/codespace/.cache/pip",
     "source=codespace-venv,target=/workspaces/green_bier_sports_ncaam_model/.venv"
   ]
