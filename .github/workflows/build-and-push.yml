@@ -35,13 +35,20 @@ jobs:
           AZURE_CREDS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
           echo "Checking required secrets..."
+          missing=()
+
           if [ -z "$AZURE_CREDS" ]; then
-            echo "❌ Missing secret: AZURE_CREDENTIALS"
-            echo "Please add AZURE_CREDENTIALS to repository secrets."
+            missing+=("AZURE_CREDENTIALS")
+          fi
+
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "❌ Missing required secrets: ${missing[*]}"
+            echo "Please add them to repository secrets."
             echo "See docs/security/GITHUB_ACTIONS_AZURE_SETUP.md for instructions."
             exit 1
           fi
-          echo "✅ AZURE_CREDENTIALS is configured."
+
+          echo "✅ All required secrets present."
 
       - name: Checkout code
         uses: actions/checkout@v4

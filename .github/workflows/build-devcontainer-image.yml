@@ -22,6 +22,19 @@ jobs:
       matrix:
         install_heavy: ["false", "true"]
     steps:
+      - name: Report secret status (optional ACR push)
+        run: |
+          missing=()
+          if [ -z "${{ secrets.ACR_REGISTRY }}" ]; then missing+=("ACR_REGISTRY"); fi
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then missing+=("AZURE_CLIENT_ID"); fi
+          if [ -z "${{ secrets.AZURE_CLIENT_SECRET }}" ]; then missing+=("AZURE_CLIENT_SECRET"); fi
+
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ℹ️ Optional ACR push will be skipped. Missing: ${missing[*]}"
+          else
+            echo "✅ Optional ACR push prerequisites present."
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
 
