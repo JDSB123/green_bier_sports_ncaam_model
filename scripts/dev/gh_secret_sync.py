@@ -20,6 +20,13 @@ from pathlib import Path
 REPO = "JDSB123/green_bier_sports_ncaam_model"
 DEFAULT_OUTPUT = ".env"
 
+WARNING_BANNER = """
+⚠️  SECURITY WARNING
+This writes all GitHub repo secrets into a plaintext .env file.
+Store it securely and do not commit or share it.
+"""
+
+
 def fetch_github_secrets(repo):
     """Fetch all secrets for the given repo using gh CLI."""
     try:
@@ -48,6 +55,15 @@ def fetch_secret_value(repo, name):
 
 def write_env_file(secrets, repo, output_file):
     """Write all secrets to the output .env file."""
+    print(WARNING_BANNER)
+
+    output_path = Path(output_file)
+    if output_path.exists():
+        response = input(f"{output_file} already exists. Overwrite? [y/N]: ").strip().lower()
+        if response not in {"y", "yes"}:
+            print("Aborted: not overwriting existing file.")
+            sys.exit(1)
+
     with Path(output_file).open("w", encoding="utf-8") as f:
         f.write(f"# Synced from GitHub secrets for {repo}\n")
         for name in secrets:

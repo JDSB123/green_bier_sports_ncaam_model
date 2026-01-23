@@ -14,11 +14,18 @@ echo "╚═══════════════════════�
 # --- ENVIRONMENT AUTO-POPULATION ---
 ENV_EXAMPLE="$PROJECT_ROOT/.env.example"
 ENV_FILE="$PROJECT_ROOT/.env"
+ENV_LOCAL="$PROJECT_ROOT/.env.local"
 
 # If .env does not exist, copy from .env.example
 if [ ! -f "$ENV_FILE" ] && [ -f "$ENV_EXAMPLE" ]; then
     cp "$ENV_EXAMPLE" "$ENV_FILE"
     echo "✓ Created .env from .env.example"
+fi
+
+# If .env.local is missing but .env exists, seed it from .env for local dev parity
+if [ ! -f "$ENV_LOCAL" ] && [ -f "$ENV_FILE" ]; then
+    cp "$ENV_FILE" "$ENV_LOCAL"
+    echo "✓ Seeded .env.local from .env"
 fi
 
 # Warn if any required variable is unset in .env

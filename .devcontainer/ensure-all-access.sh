@@ -300,24 +300,32 @@ REQUIRED_VARS=(
     "ACTION_NETWORK_USERNAME"
     "ACTION_NETWORK_PASSWORD"
 )
+ENV_FILES=("$PROJECT_ROOT/.env.local" "$PROJECT_ROOT/.env")
 MISSING=0
 for var in "${REQUIRED_VARS[@]}"; do
     if [ -n "${!var}" ]; then
         echo -e "${GREEN}✓${NC} $var is set"
-    else
-        # Check in env file
-        if grep -q "^${var}=" "$PROJECT_ROOT/.env.local" 2>/dev/null; then
-            ENV_VAL=$(grep "^${var}=" "$PROJECT_ROOT/.env.local" | cut -d= -f2)
-            if [ -n "$ENV_VAL" ]; then
-                echo -e "${GREEN}✓${NC} $var found in .env.local"
+        continue
+    fi
+
+    FOUND_VAL=""
+    for env_file in "${ENV_FILES[@]}"; do
+        if [ -f "$env_file" ] && grep -q "^${var}=" "$env_file" 2>/dev/null; then
+            FOUND_VAL=$(grep "^${var}=" "$env_file" | cut -d= -f2)
+            if [ -n "$FOUND_VAL" ]; then
+                echo -e "${GREEN}✓${NC} $var found in ${env_file##*/}"
+                break
             else
-                echo -e "${RED}✗${NC} $var is empty in .env.local (REQUIRED)"
+                echo -e "${RED}✗${NC} $var is empty in ${env_file##*/} (REQUIRED)"
                 MISSING=1
+                break
             fi
-        else
-            echo -e "${RED}✗${NC} $var not found (REQUIRED)"
-            MISSING=1
         fi
+    done
+
+    if [ -z "$FOUND_VAL" ]; then
+        echo -e "${RED}✗${NC} $var not found (REQUIRED)"
+        MISSING=1
     fi
 done
 if [ $MISSING -eq 1 ]; then
@@ -356,8 +364,13 @@ echo ""
 
 
 # --- AUTO-APPROVE ALL COMMANDS (DEV ONLY) ---
-export NCAAM_AUTO_APPROVE_ALL=1
-echo -e "${GREEN}✓ Access manager complete!${NC}"
-echo ""
-echo "[DEV MODE] All commands, web searches, and agent actions are auto-approved for this project/container."
-echo "To disable, unset NCAAM_AUTO_APPROVE_ALL."
+if [ "${ENABLE_AUTO_APPROVE:-}" = "1" ] || [ "$ENV_TYPE" = "codespaces" ] || [ "$ENV_TYPE" = "local" ]; then
+    export NCAAM_AUTO_APPROVE_ALL=1
+    echo -e "${GREEN}✓ Access manager complete!${NC}"
+    echo ""
+    echo "[DEV MODE] Auto-approve enabled (ENV_TYPE=$ENV_TYPE). To disable, unset NCAAM_AUTO_APPROVE_ALL."
+else
+    echo -e "${GREEN}✓ Access manager complete!${NC}"
+    echo ""
+    echo "Auto-approve is disabled for ENV_TYPE=$ENV_TYPE (set ENABLE_AUTO_APPROVE=1 to force)."
+fi
