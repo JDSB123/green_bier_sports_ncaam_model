@@ -1,0 +1,23 @@
+name: Deploy to Production (Auto)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build and push images
+        run: |
+          echo "docker buildx build ... --push (production build step here)"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production (update ACA, etc.)"
