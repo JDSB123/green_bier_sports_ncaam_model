@@ -8,7 +8,7 @@ on:
       push_to_acr:
         description: "Also push to ACR (requires ACR secrets)"
         required: false
-        default: "false"
+        default: false
         type: boolean
 
 permissions:
@@ -25,15 +25,19 @@ jobs:
       - name: Report secret status (optional ACR push)
         run: |
           missing=()
-          if [ -z "${{ secrets.ACR_REGISTRY }}" ]; then missing+=("ACR_REGISTRY"); fi
-          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then missing+=("AZURE_CLIENT_ID"); fi
-          if [ -z "${{ secrets.AZURE_CLIENT_SECRET }}" ]; then missing+=("AZURE_CLIENT_SECRET"); fi
+          if [ -z "$ACR_REGISTRY" ]; then missing+=("ACR_REGISTRY"); fi
+          if [ -z "$AZURE_CLIENT_ID" ]; then missing+=("AZURE_CLIENT_ID"); fi
+          if [ -z "$AZURE_CLIENT_SECRET" ]; then missing+=("AZURE_CLIENT_SECRET"); fi
 
           if [ ${#missing[@]} -gt 0 ]; then
             echo "ℹ️ Optional ACR push will be skipped. Missing: ${missing[*]}"
           else
             echo "✅ Optional ACR push prerequisites present."
           fi
+        env:
+          ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,7 +67,7 @@ jobs:
             INSTALL_HEAVY=${{ matrix.install_heavy }}
 
       - name: Login to ACR (optional)
-        if: ${{ secrets.ACR_REGISTRY != '' && secrets.AZURE_CLIENT_ID != '' && secrets.AZURE_CLIENT_SECRET != '' }}
+        if: ${{ env.ACR_REGISTRY != '' && env.AZURE_CLIENT_ID != '' && env.AZURE_CLIENT_SECRET != '' }}
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_REGISTRY }}
@@ -71,7 +75,7 @@ jobs:
           password: ${{ secrets.AZURE_CLIENT_SECRET }}
 
       - name: Build and push to ACR (optional)
-        if: ${{ secrets.ACR_REGISTRY != '' && secrets.AZURE_CLIENT_ID != '' && secrets.AZURE_CLIENT_SECRET != '' }}
+        if: ${{ env.ACR_REGISTRY != '' && env.AZURE_CLIENT_ID != '' && env.AZURE_CLIENT_SECRET != '' }}
         uses: docker/build-push-action@v4
         with:
           context: . # Use repo root so COPY from services/ works
