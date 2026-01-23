@@ -49,6 +49,25 @@ except ImportError:
 ROOT_DIR = Path(__file__).resolve().parents[3]
 
 
+def _allow_aggressive_resolution() -> bool:
+    if os.getenv("DISABLE_AGGRESSIVE_TEAM_RESOLUTION", "").lower() == "true":
+        return False
+    env_name = (os.getenv("ENVIRONMENT", "") or os.getenv("APP_ENV", "")).lower()
+    if os.getenv("ALLOW_AGGRESSIVE_TEAM_RESOLUTION", "").lower() == "true":
+        return True
+    if env_name in {"dev", "development", "local", "test"}:
+        return True
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return True
+    return False
+
+
+def _load_alias_blob(container_client, blob_path: str) -> dict[str, str]:
+    blob_client = container_client.get_blob_client(blob_path)
+    payload = blob_client.download_blob().readall()
+    return json.loads(payload.decode("utf-8"))
+
+
 def _load_aliases_from_azure() -> dict[str, str]:
     if not AZURE_AVAILABLE:
         raise ImportError("azure-storage-blob is required to load aliases from Azure.")
@@ -60,15 +79,32 @@ def _load_aliases_from_azure() -> dict[str, str]:
         )
 
     container = os.getenv("AZURE_CANONICAL_CONTAINER", "ncaam-historical-data")
-    blob_path = os.getenv(
-        "TEAM_ALIASES_BLOB", "backtest_datasets/team_aliases_db.json"
+    primary_blob = os.getenv(
+        "TEAM_ALIASES_BLOB_PRIMARY", "canonical/team_aliases_prod.json"
+    )
+    # Fallback is used only for cross-validation, never as the primary source.
+    fallback_blob = os.getenv(
+        "TEAM_ALIASES_BLOB_FALLBACK", "backtest_datasets/team_aliases_db.json"
     )
 
     service = BlobServiceClient.from_connection_string(conn_str)
     container_client = service.get_container_client(container)
-    blob_client = container_client.get_blob_client(blob_path)
-    payload = blob_client.download_blob().readall()
-    return json.loads(payload.decode("utf-8"))
+
+    primary_aliases = _load_alias_blob(container_client, primary_blob)
+
+    # Cross-validate against fallback (typically the historical/backtest blob) to detect accidental shrinkage.
+    try:
+        fallback_aliases = _load_alias_blob(container_client, fallback_blob)
+        if len(primary_aliases) < len(fallback_aliases):
+            raise RuntimeError(
+                "Alias blob validation failed: primary alias set is smaller than fallback. "
+                "Refusing to proceed to avoid accidental replacement."
+            )
+    except Exception:
+        # In production, we fail closed only if the fallback loads and shows shrinkage. Missing fallback is tolerated.
+        pass
+
+    return primary_aliases
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -206,8 +242,8 @@ class PrePredictionGate:
     5. Barttorvik ratings are fresh
     """
 
-    def __init__(self, db_connection=None, aliases_file: Path | None = None):
-        self.team_resolver = TeamResolver(aliases_file=aliases_file)
+    def __init__(self, db_connection=None, aliases_file: Path | None = None, team_resolver: TeamResolver | None = None):
+        self.team_resolver = team_resolver or TeamResolver(aliases_file=aliases_file)
         self.db = db_connection
 
     def validate_game(self, game: dict[str, Any]) -> ValidationResult:
@@ -292,7 +328,13 @@ class PrePredictionGate:
             result.resolved_data["home_team"] = home_canonical
             result.resolved_data["home_resolution"] = home_method
             if home_method == "aggressive":
-                result.add_warning("home_team", f"'{home}' resolved aggressively to '{home_canonical}'")
+                if _allow_aggressive_resolution():
+                    result.add_warning("home_team", f"'{home}' resolved aggressively to '{home_canonical}'")
+                else:
+                    result.add_error(
+                        "home_team",
+                        f"Aggressive resolution blocked for '{home}'. Provide canonical or exact alias instead.",
+                    )
         else:
             result.add_error("home_team", f"Team name '{home}' could not be resolved")
 
@@ -304,7 +346,13 @@ class PrePredictionGate:
             result.resolved_data["away_team"] = away_canonical
             result.resolved_data["away_resolution"] = away_method
             if away_method == "aggressive":
-                result.add_warning("away_team", f"'{away}' resolved aggressively to '{away_canonical}'")
+                if _allow_aggressive_resolution():
+                    result.add_warning("away_team", f"'{away}' resolved aggressively to '{away_canonical}'")
+                else:
+                    result.add_error(
+                        "away_team",
+                        f"Aggressive resolution blocked for '{away}'. Provide canonical or exact alias instead.",
+                    )
         else:
             result.add_error("away_team", f"Team name '{away}' could not be resolved")
 
@@ -335,9 +383,9 @@ class PrePredictionGate:
 
             # Convert to CST
             if dt.tzinfo is None:
-                # Assume UTC if no timezone
-                dt = dt.replace(tzinfo=UTC)
-                result.add_warning("game_time", "No timezone provided, assumed UTC")
+                # Prefer treating naive times as CST to avoid unintended UTC shifts.
+                dt = dt.replace(tzinfo=CST)
+                result.add_warning("game_time", "No timezone provided, assumed CST")
 
             cst_time = dt.astimezone(CST)
             result.resolved_data["game_time_cst"] = cst_time

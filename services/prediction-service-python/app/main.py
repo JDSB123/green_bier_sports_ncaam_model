@@ -57,6 +57,16 @@ def _get_prediction_backend(override: str | None = None) -> str:
     return (override or settings.prediction_backend).strip()
 
 
+def _allow_dev_fallback() -> bool:
+    env_name = (os.getenv("ENVIRONMENT", "") or os.getenv("APP_ENV", "")).lower()
+    if env_name in {"dev", "development", "local", "test"}:
+        return True
+    # When running under pytest, allow dev fallbacks for artifact loading.
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return True
+    return False
+
+
 def _make_prediction_with_backend(
     *,
     backend: str,
@@ -107,17 +117,21 @@ def _make_prediction_with_backend(
             )
 
         # Wire model dir explicitly for the backend loader.
-        # In production containers, artifacts live under /app/models/linear.
-        # In local/dev/test runs, prefer the repo-root artifacts if the configured
-        # path doesn't exist.
         configured_model_dir = Path(settings.linear_json_model_dir)
         if configured_model_dir.exists():
             os.environ["LINEAR_JSON_MODEL_DIR"] = str(configured_model_dir)
         else:
             repo_root_model_dir = Path(__file__).resolve().parents[3] / "models" / "linear"
-            os.environ["LINEAR_JSON_MODEL_DIR"] = (
-                str(repo_root_model_dir) if repo_root_model_dir.exists() else str(configured_model_dir)
-            )
+            if _allow_dev_fallback() and repo_root_model_dir.exists():
+                os.environ["LINEAR_JSON_MODEL_DIR"] = str(repo_root_model_dir)
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        "linear_json backend misconfigured: LINEAR_JSON_MODEL_DIR missing "
+                        "and no dev fallback available. Mount artifacts in production."
+                    ),
+                )
 
         from app.ml.linear_json_backend import backend_status, predict_line
 

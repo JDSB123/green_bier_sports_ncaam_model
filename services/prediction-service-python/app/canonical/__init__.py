@@ -2,7 +2,7 @@
 CANONICAL DATA INGESTION COMPONENTS
 
 Production-ready versions of canonical ingestion components.
-These are copied from testing/canonical/ for deployment.
+These are copied from the canonical ingestion package for deployment.
 """
 
 from .quality_gates import DataQualityGate

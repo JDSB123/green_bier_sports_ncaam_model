@@ -23,13 +23,21 @@ def _default_model_dir() -> Path:
 
 
 def _candidate_model_paths(market: str, model_dir: Path) -> list[Path]:
+    env_name = (os.getenv("ENVIRONMENT", "") or os.getenv("APP_ENV", "")).lower()
+    allow_dev_fallback = env_name in {"dev", "development", "local", "test"} or bool(
+        os.getenv("PYTEST_CURRENT_TEST")
+    )
+
     candidates = [
         model_dir / f"{market}.json",
         # Common container layout (Dockerfile copies into /app/models/linear)
         Path("/app/models/linear") / f"{market}.json",
-        # Repo-root fallback (in case model_dir points elsewhere)
-        _repo_root() / "models" / "linear" / f"{market}.json",
     ]
+
+    # Repo-root fallback is only allowed in dev/local to prevent production from
+    # accidentally pulling unchecked artifacts.
+    if allow_dev_fallback:
+        candidates.append(_repo_root() / "models" / "linear" / f"{market}.json")
 
     out: list[Path] = []
     seen: set[str] = set()

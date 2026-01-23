@@ -61,19 +61,24 @@ def _default_model_dir() -> Path:
 
 
 def _candidate_model_paths(market: str, model_dir: Path) -> list[Path]:
-    # Allow a couple fallbacks for local dev.
+    env_name = (os.getenv("ENVIRONMENT", "") or os.getenv("APP_ENV", "")).lower()
+    allow_dev_fallback = env_name in {"dev", "development", "local", "test"} or bool(
+        os.getenv("PYTEST_CURRENT_TEST")
+    )
+
     candidates = [
         model_dir / f"{market}.json",
     ]
 
-    # Optional repo-root fallback (works in monorepo checkouts).
-    repo_root = None
-    try:
-        repo_root = Path(__file__).resolve().parents[4]
-    except Exception:
+    # Optional repo-root fallback (works in monorepo checkouts) allowed only in dev/local.
+    if allow_dev_fallback:
         repo_root = None
-    if repo_root:
-        candidates.append(repo_root / "models" / "linear" / f"{market}.json")
+        try:
+            repo_root = Path(__file__).resolve().parents[4]
+        except Exception:
+            repo_root = None
+        if repo_root:
+            candidates.append(repo_root / "models" / "linear" / f"{market}.json")
     # De-dupe while preserving order
     out: list[Path] = []
     seen: set[Path] = set()

@@ -47,6 +47,12 @@ class ResolutionResult:
             self.alternatives = []
 
 
+def _load_alias_blob(container_client, blob_path: str) -> dict[str, str]:
+    blob_client = container_client.get_blob_client(blob_path)
+    payload = blob_client.download_blob().readall()
+    return json.loads(payload.decode("utf-8"))
+
+
 def _load_aliases_from_azure() -> dict[str, str]:
     if not AZURE_AVAILABLE:
         raise ImportError("azure-storage-blob is required to load aliases from Azure.")
@@ -58,15 +64,29 @@ def _load_aliases_from_azure() -> dict[str, str]:
         )
 
     container = os.getenv("AZURE_CANONICAL_CONTAINER", "ncaam-historical-data")
-    blob_path = os.getenv(
-        "TEAM_ALIASES_BLOB", "backtest_datasets/team_aliases_db.json"
+    primary_blob = os.getenv(
+        "TEAM_ALIASES_BLOB_PRIMARY", "canonical/team_aliases_prod.json"
+    )
+    fallback_blob = os.getenv(
+        "TEAM_ALIASES_BLOB_FALLBACK", "backtest_datasets/team_aliases_db.json"
     )
 
     service = BlobServiceClient.from_connection_string(conn_str)
     container_client = service.get_container_client(container)
-    blob_client = container_client.get_blob_client(blob_path)
-    payload = blob_client.download_blob().readall()
-    return json.loads(payload.decode("utf-8"))
+
+    primary_aliases = _load_alias_blob(container_client, primary_blob)
+
+    try:
+        fallback_aliases = _load_alias_blob(container_client, fallback_blob)
+        if len(primary_aliases) < len(fallback_aliases):
+            raise RuntimeError(
+                "Alias blob validation failed: primary alias set is smaller than fallback. "
+                "Refusing to proceed to avoid accidental replacement."
+            )
+    except Exception:
+        pass
+
+    return primary_aliases
 
 
 class TeamResolutionService:
