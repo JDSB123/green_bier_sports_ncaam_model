@@ -33,6 +33,20 @@ from app.predictors import fg_spread_model, fg_total_model, h1_spread_model, h1_
 logger = get_logger(__name__)
 
 
+def _ops_allowed() -> bool:
+    """Gate operational/debug endpoints to trusted environments."""
+    if settings.debug:
+        return True
+    env_flag = os.getenv("ALLOW_OPS_ENDPOINTS", "").lower() == "true"
+    env_name = (settings.environment or "").lower()
+    return env_flag or env_name in {"development", "dev", "local"}
+
+
+def _require_ops_access():
+    if not _ops_allowed():
+        raise HTTPException(status_code=403, detail="Operational endpoint disabled in this environment")
+
+
 def _get_prediction_backend(override: str | None = None) -> str:
     """Return the selected prediction backend.
 
@@ -524,6 +538,7 @@ async def validate_config_on_startup():
 @app.get("/debug/odds-periods")
 async def debug_odds_periods():
     """Diagnostic endpoint to check odds periods in database."""
+    _require_ops_access()
     import os
 
     from sqlalchemy import create_engine, text
@@ -564,6 +579,7 @@ async def debug_odds_periods():
 @app.get("/debug/game-odds")
 async def debug_game_odds():
     """Check which games have 1H odds loaded."""
+    _require_ops_access()
     import os
     from datetime import date
 
@@ -655,6 +671,7 @@ async def release_lock(request: Request, date_param: str = "today"):
 
     Use only if you're certain no run is actually in progress.
     """
+    _require_ops_access()
     try:
         target_date = _get_target_date(date_param)
     except ValueError:
@@ -708,6 +725,7 @@ async def release_lock(request: Request, date_param: str = "today"):
 @app.get("/debug/team-matching")
 async def debug_team_matching():
     """Check if teams from odds ingestion match ratings teams."""
+    _require_ops_access()
     import os
 
     from sqlalchemy import create_engine, text
@@ -767,6 +785,7 @@ async def debug_team_matching():
 @app.get("/debug/sync-odds")
 async def debug_sync_odds():
     """Test the Python odds sync directly."""
+    _require_ops_access()
     try:
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
@@ -810,6 +829,7 @@ def run_picks_task():
 @limiter.limit("5/minute")
 async def trigger_picks(request: Request, background_tasks: BackgroundTasks):
     """Trigger the daily picks generation process."""
+    _require_ops_access()
     background_tasks.add_task(run_picks_task)
     return {"message": "Picks generation started in background. Use /teams-webhook endpoint for Teams integration."}
 
@@ -818,6 +838,7 @@ async def trigger_picks(request: Request, background_tasks: BackgroundTasks):
 @limiter.limit("3/minute")
 async def trigger_picks_sync(request: Request):
     """Synchronous picks trigger for debugging. Returns result directly."""
+    _require_ops_access()
     try:
         result = subprocess.run(
             ["python", "run_today.py"],
@@ -1927,6 +1948,9 @@ async def teams_webhook_handler(request: Request):
             if not _verify_teams_hmac(body, auth_header, webhook_secret):
                 logger.warning("Teams webhook HMAC verification failed")
                 raise HTTPException(status_code=401, detail="Invalid HMAC signature")
+        elif not _ops_allowed():
+            # Disallow unsigned requests in non-dev environments
+            raise HTTPException(status_code=403, detail="Teams webhook not enabled without secret")
 
         message_data = json.loads(body_str)
         message_text = (message_data.get("text", "") or "").strip().lower()

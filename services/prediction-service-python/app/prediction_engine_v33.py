@@ -363,11 +363,8 @@ class PredictionEngineV33:
         Returns:
             List of BettingRecommendation objects
         """
-        # Store for use in _create_recommendation
-        self._current_home_ratings = home_ratings
-        self._current_away_ratings = away_ratings
-        self._current_is_neutral = is_neutral
-        self._current_game_date = game_date or datetime.now()
+        # Use per-request context (no shared mutable state on the singleton)
+        ctx_game_date = game_date or datetime.now()
 
         recommendations = []
 
@@ -381,14 +378,17 @@ class PredictionEngineV33:
         ):
             pick = Pick.HOME if prediction.predicted_spread < market_odds.spread else Pick.AWAY
             rec = self._create_recommendation(
-                prediction,
-                BetType.SPREAD,
-                pick,
-                prediction.predicted_spread,
-                market_odds.spread,
-                prediction.spread_edge,
-                prediction.spread_confidence,
-                market_odds,
+                prediction=prediction,
+                bet_type=BetType.SPREAD,
+                pick=pick,
+                model_line=prediction.predicted_spread,
+                market_line=market_odds.spread,
+                edge=prediction.spread_edge,
+                confidence=prediction.spread_confidence,
+                market_odds=market_odds,
+                home_ratings=home_ratings,
+                away_ratings=away_ratings,
+                is_neutral=is_neutral,
             )
             if rec:
                 recommendations.append(rec)
@@ -422,7 +422,7 @@ class PredictionEngineV33:
 
             # Check totals strategy for actionable signal
             should_bet, totals_signal = totals_strategy.should_bet_total(
-                game_date=self._current_game_date,
+                game_date=ctx_game_date,
                 total_over_public=total_over_public,
                 total_under_public=total_under_public,
                 total_over_money=total_over_money,
@@ -435,14 +435,18 @@ class PredictionEngineV33:
                 pick = Pick.OVER if totals_signal.pick == "OVER" else Pick.UNDER
                 # Use signal confidence instead of model confidence
                 rec = self._create_recommendation(
-                    prediction,
-                    BetType.TOTAL,
-                    pick,
-                    prediction.predicted_total,
-                    market_odds.total,
-                    totals_signal.expected_roi,  # Use expected ROI as "edge"
-                    totals_signal.confidence,
-                    market_odds,
+                    prediction=prediction,
+                    bet_type=BetType.TOTAL,
+                    pick=pick,
+                    model_line=prediction.predicted_total,
+                    market_line=market_odds.total,
+                    edge=prediction.total_edge,  # keep edge in points for probability sizing
+                    confidence=totals_signal.confidence,
+                    market_odds=market_odds,
+                    home_ratings=home_ratings,
+                    away_ratings=away_ratings,
+                    is_neutral=is_neutral,
+                    game_date=ctx_game_date,
                     signal_type=totals_signal.signal_type.value,
                     signal_reasoning=totals_signal.reasoning,
                 )
@@ -465,14 +469,17 @@ class PredictionEngineV33:
         ):
             pick = Pick.HOME if prediction.predicted_spread_1h < market_odds.spread_1h else Pick.AWAY
             rec = self._create_recommendation(
-                prediction,
-                BetType.SPREAD_1H,
-                pick,
-                prediction.predicted_spread_1h,
-                market_odds.spread_1h,
-                prediction.spread_edge_1h,
-                prediction.spread_confidence_1h,
-                market_odds,
+                prediction=prediction,
+                bet_type=BetType.SPREAD_1H,
+                pick=pick,
+                model_line=prediction.predicted_spread_1h,
+                market_line=market_odds.spread_1h,
+                edge=prediction.spread_edge_1h,
+                confidence=prediction.spread_confidence_1h,
+                market_odds=market_odds,
+                home_ratings=home_ratings,
+                away_ratings=away_ratings,
+                is_neutral=is_neutral,
             )
             if rec:
                 recommendations.append(rec)
@@ -495,14 +502,17 @@ class PredictionEngineV33:
         ):
             pick = Pick.OVER if prediction.predicted_total_1h > market_odds.total_1h else Pick.UNDER
             rec = self._create_recommendation(
-                prediction,
-                BetType.TOTAL_1H,
-                pick,
-                prediction.predicted_total_1h,
-                market_odds.total_1h,
-                prediction.total_edge_1h,
-                prediction.total_confidence_1h,
-                market_odds,
+                prediction=prediction,
+                bet_type=BetType.TOTAL_1H,
+                pick=pick,
+                model_line=prediction.predicted_total_1h,
+                market_line=market_odds.total_1h,
+                edge=prediction.total_edge_1h,
+                confidence=prediction.total_confidence_1h,
+                market_odds=market_odds,
+                home_ratings=home_ratings,
+                away_ratings=away_ratings,
+                is_neutral=is_neutral,
             )
             if rec:
                 recommendations.append(rec)
@@ -519,6 +529,10 @@ class PredictionEngineV33:
         edge: float,
         confidence: float,
         market_odds: MarketOdds,
+        home_ratings: TeamRatings | None = None,
+        away_ratings: TeamRatings | None = None,
+        is_neutral: bool = False,
+        game_date: datetime | None = None,
         signal_type: str | None = None,
         signal_reasoning: str | None = None,
     ) -> BettingRecommendation | None:
@@ -569,10 +583,10 @@ class PredictionEngineV33:
             edge,
             final_confidence,
             bet_type,
-            home_ratings=getattr(self, '_current_home_ratings', None),
-            away_ratings=getattr(self, '_current_away_ratings', None),
+            home_ratings=home_ratings,
+            away_ratings=away_ratings,
             market_odds=market_odds,
-            is_neutral=getattr(self, '_current_is_neutral', False),
+            is_neutral=is_neutral,
         )
         price = self._get_pick_price(bet_type, pick, market_odds)
         ev_percent, kelly = self._calculate_ev_kelly(implied_prob, price)
