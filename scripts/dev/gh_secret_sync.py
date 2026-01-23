@@ -11,11 +11,11 @@ Requirements:
 Usage:
     python scripts/dev/gh_secret_sync.py [--output .env]
 """
+import json
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
-import json
 
 REPO = "JDSB123/green_bier_sports_ncaam_model"
 DEFAULT_OUTPUT = ".env"
@@ -41,15 +41,14 @@ def fetch_secret_value(repo, name):
     if value:
         return value
     try:
-        value = input(f"Enter value for secret {name}: ")
-        return value
+        return input(f"Enter value for secret {name}: ")
     except KeyboardInterrupt:
         print("\nAborted.")
         sys.exit(1)
 
 def write_env_file(secrets, repo, output_file):
     """Write all secrets to the output .env file."""
-    with open(output_file, "w") as f:
+    with Path(output_file).open("w", encoding="utf-8") as f:
         f.write(f"# Synced from GitHub secrets for {repo}\n")
         for name in secrets:
             value = fetch_secret_value(repo, name)
