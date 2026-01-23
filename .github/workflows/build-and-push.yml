@@ -31,6 +31,7 @@ jobs:
 
     steps:
       - name: Validate required secrets
+        id: secrets
         env:
           AZURE_CREDS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
@@ -42,13 +43,14 @@ jobs:
           fi
 
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "❌ Missing required secrets: ${missing[*]}"
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Missing required secrets: ${missing[*]} — build will skip push/deploy."
             echo "Please add them to repository secrets."
             echo "See docs/security/GITHUB_ACTIONS_AZURE_SETUP.md for instructions."
-            exit 1
+          else
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+            echo "✅ All required secrets present."
           fi
-
-          echo "✅ All required secrets present."
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -100,23 +102,27 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Azure
+        if: steps.secrets.outputs.has_creds == 'true'
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Log in to ACR
+        if: steps.secrets.outputs.has_creds == 'true'
         run: az acr login --name ${{ env.ACR_NAME }}
 
       - name: Ensure Container Apps extension
+        if: steps.secrets.outputs.has_creds == 'true'
         run: |
           az config set extension.use_dynamic_install=yes_without_prompt
           az extension add -n containerapp --yes || az extension update -n containerapp --yes
 
       - name: Check Azure connectivity
+        if: steps.secrets.outputs.has_creds == 'true'
         run: |
           bash scripts/check_azure_connectivity.sh
 
-      - name: Build and push images
+      - name: Build images (no push)
         run: |
           set -euo pipefail
 
@@ -137,9 +143,6 @@ jobs:
             exit 1
           fi
 
-          docker push $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.tag }}
-          docker push $ACR_LOGIN_SERVER/$PRED_IMAGE:latest
-
           # Web
           echo "🔨 Building web frontend..."
           docker build --no-cache \
@@ -148,16 +151,20 @@ jobs:
             -t $ACR_LOGIN_SERVER/$WEB_IMAGE:${{ steps.version.outputs.tag }} \
             -t $ACR_LOGIN_SERVER/$WEB_IMAGE:latest \
             services/web-frontend
+          echo "✅ Images built (prediction + web). Push/deploy may be skipped if creds are missing."
 
+      - name: Push images
+        if: steps.secrets.outputs.has_creds == 'true'
+        run: |
+          set -euo pipefail
+          docker push $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.tag }}
+          docker push $ACR_LOGIN_SERVER/$PRED_IMAGE:latest
           docker push $ACR_LOGIN_SERVER/$WEB_IMAGE:${{ steps.version.outputs.tag }}
           docker push $ACR_LOGIN_SERVER/$WEB_IMAGE:latest
-
-          # NOTE (v33.12.0): Standalone ratings-sync and odds-ingestion builds REMOVED
-          # These binaries are embedded in the prediction-service via multi-stage Docker build
-
-          echo "✅ All images built and pushed successfully (2 images: prediction + web)"
+          echo "✅ All images pushed successfully (2 images: prediction + web)"
 
       - name: Deploy to Azure Container Apps (best-effort)
+        if: steps.secrets.outputs.has_creds == 'true'
         run: |
           echo "🚀 Deploying to Azure Container Apps..."
 
@@ -183,12 +190,14 @@ jobs:
           echo "✅ Deployment phase complete (2 apps: prediction + web)"
 
       - name: Update docker-compose.yml with new prediction-service version
+        if: steps.secrets.outputs.has_creds == 'true'
         run: |
           echo "📝 Updating docker-compose.yml with new version..."
           sed -i "s|image: .*/$PRED_IMAGE:.*|image: $ACR_LOGIN_SERVER/$PRED_IMAGE:${{ steps.version.outputs.tag }}|" docker-compose.yml
           echo "✅ docker-compose.yml updated"
 
       - name: Commit updated docker-compose.yml
+        if: steps.secrets.outputs.has_creds == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
